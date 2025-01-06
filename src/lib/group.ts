@@ -8,9 +8,9 @@ interface GroupOptions extends ElementOptions {
 }
 
 export class Group extends Element implements GroupOptions {
-  display?: "flex" | "none";
-  flexDirection?: "row" | "column";
-  flexWrap?: "wrap" | "nowrap";
+  display: "flex" | "none";
+  flexDirection: "row" | "column";
+  flexWrap: "wrap" | "nowrap";
   type = "group";
   _options: GroupOptions;
   constructor(options: GroupOptions) {
@@ -28,7 +28,7 @@ export class Group extends Element implements GroupOptions {
 
   render(parentPoint: Point, constraint: Constraint) {
     super.renderBefore(parentPoint, constraint);
-    const point = this.getWordPoint(parentPoint);
+    const point = this.getWordPoint();
     if (this.flexDirection === "row") {
       const row = new Row(this._options);
       row.parent = this;
@@ -60,7 +60,7 @@ class Row extends Group {
 
   render(parentPoint: Point, constraint: Constraint) {
     super.renderBefore(parentPoint, constraint);
-    const point = this.getWordPoint(parentPoint);
+    const point = this.getWordPoint();
     const rect = this.getLayoutRect();
     const rowElements: Row[] = [];
 
