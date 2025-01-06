@@ -109,17 +109,13 @@ class Row extends Group {
 
       this.children = rowElements;
       rowElements.reduce((prev, child) => {
-        const v = child.renderBeforeAndRender(prev.point, prev.constraint);
-        return {
-          point: v.point,
-          constraint: constraint
-        }
+        //TODO 这里后面减去高度的约束
+        return child.renderBeforeAndRender(prev.point, prev.constraint)
       }, {
         point,
         constraint
       });
     } else {
-      console.log(1);
       this.renderBeforeAndRender(parentPoint, constraint);
     }
     return {
