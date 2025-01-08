@@ -24,7 +24,7 @@ export interface ElementOptions {
 
 export class Element {
   root: Root;
-  isDirty: boolean = true;
+  isDirty: boolean = false;
   type = "element";
   x: number;
   y: number;
@@ -35,8 +35,8 @@ export class Element {
   children: Element[] | undefined;
   parent?: Element;
 
-  declare parentOrSiblingPoint: Point
-  declare constraint: Constraint
+  declare parentOrSiblingPoint: Point;
+  declare constraint: Constraint;
 
   constructor(option: ElementOptions) {
     this.x = option.x ?? 0;
@@ -52,34 +52,23 @@ export class Element {
     return !!this.children;
   }
 
-  getTotalRect(): Point {
-    let totalRect = this.getWordPoint();
-    if (!this.isContainer) {
-      return totalRect;
-    }
-
-    if (this.isContainer && this.children) {
-      for (const child of this.children) {
-        const childRect = child.getTotalRect();
-        totalRect = mergeRects(totalRect, childRect);
-      }
-    }
-    return totalRect;
-  }
-
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
     const localRect = this.getLocalPoint();
-
-    if (this.parent?.type === "expanded" || this.parent?.type === "padding") {
+    const parent = this.parent;
+    if (parent?.type === "padding") {
       return parentPoint;
     }
 
-    if (this.parent?.type === "group" || this.parent?.type === "row") {
-      const parent = this.parent as any as Group;
+    if (
+      parent?.type === "group" ||
+      parent?.type === "row" ||
+      parent?.type === "column"
+    ) {
+      const _parent = parent as any as Group;
       const sibling = this.previousSibling();
       if (sibling) {
         const siblingRect = sibling.getLayoutRect();
-        if (parent.flexDirection === "column" || parent.flexWrap === "wrap") {
+        if (_parent.flexDirection === "column" || _parent.flexWrap === "wrap") {
           return {
             x: parentPoint.x + localRect.x,
             y: parentPoint.y + siblingRect.height
@@ -99,7 +88,11 @@ export class Element {
   }
 
   getLayoutRect() {
-    return this.constraint.small(this.width, this.height)
+    const rect = this.constraint.small(this.width, this.height);
+    return Constraint.from(
+      this.width !== Number.MAX_VALUE ? this.width : rect.width,
+      this.height !== Number.MAX_VALUE ? this.height : rect.height
+    );
   }
 
   getLocalPoint(): Point {
@@ -169,18 +162,28 @@ export class Element {
     }
   }
 
-  render(parentPoint: Point = this.parentOrSiblingPoint, constraint: Constraint = this.constraint) {
-    return this.renderBefore(parentPoint, constraint)._render()
+  render(
+    parentPoint: Point = this.parentOrSiblingPoint,
+    constraint: Constraint = this.constraint
+  ) {
+    return this.renderBefore(parentPoint, constraint)._render();
+  }
+
+  renderBeforeAndRender(parentPoint: Point, constraint: Constraint) {
+    return this.renderBefore(parentPoint, constraint)._render();
   }
 
   renderBefore(parentPoint: Point, constraint: Constraint) {
     this.parentOrSiblingPoint = parentPoint;
-    this.constraint = constraint.clone()
-    return this
-  }
-
-  renderBeforeAndRender(parentPoint: Point, constraint: Constraint) {
-    return this.renderBefore(parentPoint, constraint)._render()
+    this.constraint = constraint.clone();
+    if (this.children) {
+      this.children.map((child) => {
+        child.root = this.root;
+        child.parent = this;
+        return child;
+      });
+    }
+    return this;
   }
 
   protected _render() {
@@ -189,21 +192,22 @@ export class Element {
     this.root.ctx.save();
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
-      this.root.ctx.fillRect(point.x, point.y, constraint.width, constraint.height);
+      this.root.ctx.fillRect(
+        point.x,
+        point.y,
+        constraint.width,
+        constraint.height
+      );
     }
-    if (this.isContainer && this.children) {
-      this.children
-        .map((child) => {
-          child.root = this.root;
-          child.parent = this;
-          return child;
-        })
-        .forEach((child) => {
-          const v = child.render(point, constraint)
-          if (child.parent?.type === "row") {
-            constraint = constraint.subHorizontal(v.constraint.width)
-          }
-        });
+    if (this.children) {
+      let _point = point;
+      this.children.forEach((child) => {
+        const v = child.render(_point, constraint);
+        if (child.parent?.type === "row") {
+          constraint = constraint.subHorizontal(v.constraint.width);
+          _point = v.point;
+        }
+      });
     }
     this.root.ctx.restore();
 
