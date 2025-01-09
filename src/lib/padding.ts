@@ -33,15 +33,15 @@ export class Padding extends Element implements PaddingOptions {
     };
   }
 
-  render(
-    parentPoint: Point = this.parentOrSiblingPoint,
-    constraint: Constraint = this.constraint
-  ) {
-    const width = this.padding![3] + this.padding![1];
-    const height = this.padding![0] + this.padding![2];
-    return this.renderBeforeAndRender(
-      parentPoint,
-      constraint.sub(Constraint.from(width, height))
-    );
+  layout() {
+    const [top, right, bottom, left] = this.padding!;
+    const rect = this.getLayoutRect();
+    const gap = {
+      width: left + right,
+      height: top + bottom
+    };
+    this.children![0].constraint = rect.sub(gap);
+    const childRect = this.children![0].layout();
+    return new Constraint(childRect.width + left, rect.height + top);
   }
 }

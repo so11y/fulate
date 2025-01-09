@@ -1,4 +1,4 @@
-export class Constraint {
+export class Constraint<T extends Record<"width" | "height", number> = any> {
   isOverstep: boolean = false;
   constructor(public width: number, public height: number) {}
 
@@ -17,7 +17,7 @@ export class Constraint {
     );
   }
 
-  sub(c: Constraint) {
+  sub(c: T) {
     this._subWidth(c.width);
     this._subHeight(c.height);
     return this.clone();
@@ -42,6 +42,13 @@ export class Constraint {
     return Constraint.from(
       Math.max((this.width / count) * flex, 0),
       this.height
+    );
+  }
+
+  ratioHeight(flex: number, count: number) {
+    return Constraint.from(
+      this.width,
+      Math.max((this.height / count) * flex, 0)
     );
   }
 

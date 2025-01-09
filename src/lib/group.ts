@@ -3,25 +3,29 @@ import { Expanded } from "./expanded";
 import { Constraint } from "./utils/constraint";
 import { last } from "lodash-es";
 
-interface GroupOptions extends ElementOptions {
-  display?: "flex" | "none";
-  flexDirection?: "row" | "column";
+type ColumnOptions = {
+  flexDirection?: "column";
+};
+type RowOptions = {
+  flexDirection?: "row";
   flexWrap?: "wrap" | "nowrap";
-}
+};
 
-export class Group extends Element implements GroupOptions {
-  display: "flex" | "none";
+type GroupOptions = (ColumnOptions | RowOptions) & ElementOptions;
+
+export class Group extends Element implements ElementOptions {
+  display: "flex" = "flex";
   flexDirection: "row" | "column";
   flexWrap: "wrap" | "nowrap";
   type = "group";
   _options: GroupOptions;
   constructor(options: GroupOptions) {
     super(options);
-    this.display = options.display ?? "none";
     this.flexDirection = options.flexDirection ?? "row";
-    this.flexWrap = options.flexWrap ?? "nowrap";
     this.width = Number.MAX_VALUE;
     this.height = Number.MAX_VALUE;
+    // @ts-ignore
+    this.flexWrap = options.flexWrap ?? "nowrap";
     this._options = options;
   }
 
@@ -52,19 +56,18 @@ class Column extends Group {
       y: options.y,
       width: options.width,
       height: options.height,
-      flexDirection: "row",
+      // @ts-ignore
       flexWrap: options.flexWrap ?? "nowrap",
-      display: "flex",
+      flexDirection: "column",
       children: options.children
     });
   }
   layout() {
     const selfRect = this.getLayoutRect();
-    const rowElements: Row[] = [];
-
     let childConstraint = selfRect.clone();
-
+    let totalHeight = 0;
     if (this.flexWrap === "wrap") {
+      const rowElements: Element[] = [];
       const rows: Array<{
         constraint: Constraint;
         children: Array<{
@@ -77,7 +80,6 @@ class Column extends Group {
           children: []
         }
       ];
-
       for (let i = 0; i < this.children!.length; i++) {
         const lastRow = last(rows);
         const child = this.children![i];
@@ -115,8 +117,6 @@ class Column extends Group {
         });
       }
 
-      console.log(1);
-      let totalHeight = 0;
       for (let index = 0; index < rows.length; index++) {
         const currentRow = rows[index];
 
@@ -170,11 +170,63 @@ class Column extends Group {
         totalHeight += rect.height;
         rowElements.push(row);
       }
-
       this.children = rowElements;
       return Constraint.from(selfRect.width, totalHeight);
     }
-    return selfRect;
+
+    const cols: Array<{
+      element: Element;
+      rect?: Constraint;
+    }> = [];
+
+    for (let i = 0; i < this.children!.length; i++) {
+      const child = this.children![i];
+      child.parent = this;
+      child.root = this.root;
+      if (child.type === "expanded") {
+        cols.push({
+          element: child
+        });
+        continue;
+      }
+      child.constraint = childConstraint;
+      const childRect = child.layout();
+      childConstraint.subVertical(childRect.height);
+      cols.push({
+        element: child,
+        rect: childRect
+      });
+    }
+
+    const expandedChildren = cols
+      .filter((v) => v.element.type === "expanded")
+      .map((v) => v.element) as Expanded[];
+
+    if (expandedChildren.length) {
+      const quantity = expandedChildren.reduce(
+        (prev, child) => prev + child.flex,
+        0
+      );
+
+      if (quantity > 0) {
+        expandedChildren.forEach((v) => {
+          if (v.flex > 0) {
+            v.constraint = childConstraint.ratioHeight(v.flex, quantity);
+          }
+        });
+      }
+    }
+
+    const rectHight = cols.reduce(
+      (prev, next) => {
+        const rect = next.rect ?? next.element.getLayoutRect();
+        return prev + rect.height;
+      },
+      expandedChildren.length ? childConstraint.height : 0
+    );
+    totalHeight += rectHight;
+    console.log(1);
+    return Constraint.from(selfRect.width, totalHeight);
   }
 }
 
@@ -187,8 +239,6 @@ class Row extends Group {
       width: options.width,
       height: options.height,
       flexDirection: "row",
-      flexWrap: options.flexWrap ?? "nowrap",
-      display: "flex",
       children: options.children ?? []
     });
   }

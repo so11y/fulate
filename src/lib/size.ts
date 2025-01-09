@@ -1,7 +1,7 @@
 import { Element, ElementOptions } from "./base";
 
 interface SizeOptions extends Omit<ElementOptions, "children" | "x" | "y"> {
-  child: Element;
+  child?: Element;
 }
 
 export class Size extends Element implements SizeOptions {
@@ -12,7 +12,7 @@ export class Size extends Element implements SizeOptions {
   constructor(options: SizeOptions) {
     super({
       ...options,
-      children: [options.child]
+      children: options.child === undefined ? [] : [options.child]
     });
   }
 }

@@ -38,7 +38,6 @@ const div4 = new Expanded({
 });
 
 const group = new Group({
-  display: "flex",
   flexDirection: "row",
   flexWrap: "wrap",
   children: [div, div2, div3, div4]
@@ -49,15 +48,31 @@ const root = new Root({
   width: 500,
   height: 500,
   children: [
-    new Size({
-      width: 100,
-      height: 100,
-      backgroundColor: "green",
-      child: new Padding({
-        padding: [0, 0, 0, 0],
-        child: group
-      })
+    new Group({
+      flexDirection: "column",
+      children: [
+        new Size({
+          width: 100,
+          height: 100,
+          backgroundColor: "green",
+          child: new Padding({
+            padding: [0, 10, 0, 15],
+            child: group
+          })
+        }),
+        new Size({
+          width: 100,
+          height: 100,
+          backgroundColor: "red"
+        })
+      ]
     })
+
+    // new Size({
+    //   width: 100,
+    //   height: 100,
+    //   backgroundColor: "blue"
+    // })
   ]
 });
 
