@@ -45,7 +45,13 @@ const div5 = new Expanded({
 const group = new Group({
   flexDirection: "row",
   flexWrap: "wrap",
-  children: [div, div2, div3, div4, div5]
+  children: [
+    div,
+    div2,
+    div3,
+    div4
+    // div5
+  ]
 });
 
 const root = new Root({
@@ -71,23 +77,12 @@ const root = new Root({
           backgroundColor: "red"
         })
       ]
-    })
-
-    // new Size({
-    //   width: 100,
-    //   height: 100,
-    //   backgroundColor: "blue"
-    // })
+    }),
   ]
 });
 
 setTimeout(() => {
-  // group.appendChild(
-  //   new Element({
-  //     width: 50,
-  //     backgroundColor: "black",
-  //   })
-  // )
+  group.appendChild(div5);
 }, 1000);
 
 root.render();

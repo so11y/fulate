@@ -21,6 +21,7 @@ export class Root extends Element {
     this.ctx = this.el.getContext("2d")!;
   }
   render() {
+    this.ctx.clearRect(0, 0, this.width!, this.height!);
     const point = this.getLocalPoint();
     this.constraint = new Constraint(this.width!, this.height!);
     this.isDirty = true;
