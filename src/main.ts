@@ -38,19 +38,14 @@ const div4 = new Expanded({
 const div5 = new Expanded({
   child: new Element({
     // height: 10,
-    backgroundColor: ""
+    backgroundColor: "purple"
   })
 });
 
 const group = new Group({
   flexDirection: "row",
   flexWrap: "wrap",
-  children: [
-    div, 
-    div2, 
-    div3, 
-    // div4
-  ]
+  children: [div, div2, div3, div4, div5]
 });
 
 const root = new Root({
