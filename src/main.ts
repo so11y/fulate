@@ -58,6 +58,11 @@ const root = new Root({
       flexDirection: "column",
       children: [
         new Size({
+          width: 20,
+          height: 20,
+          backgroundColor: "red"
+        }),
+        new Size({
           width: 100,
           height: 100,
           backgroundColor: "green",
@@ -65,11 +70,6 @@ const root = new Root({
             padding: [0, 0, 0, 40],
             child: group
           })
-        }),
-        new Size({
-          width: 100,
-          height: 100,
-          backgroundColor: "red"
         })
       ]
     })
