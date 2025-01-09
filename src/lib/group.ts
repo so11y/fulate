@@ -123,7 +123,6 @@ class Column extends Group {
           rect: childRect
         });
       }
-      console.log(1);
 
       for (let index = 0; index < rows.length; index++) {
         const currentRow = rows[index];
@@ -171,7 +170,8 @@ class Column extends Group {
         rowElements.push(row);
       }
       this.children = rowElements;
-      return Constraint.from(selfRect.width, totalHeight);
+      this.constraint = Constraint.from(selfRect.width, totalHeight);
+      return this.constraint;
     }
 
     const cols: Array<{
@@ -224,8 +224,8 @@ class Column extends Group {
       },
       expandedChildren.length ? childConstraint.height : 0
     );
-    totalHeight += rectHight;
-    return Constraint.from(selfRect.width, totalHeight);
+    this.constraint = Constraint.from(selfRect.width, rectHight);
+    return this.constraint;
   }
 }
 
@@ -290,10 +290,10 @@ class Row extends Group {
     const newConstraint = Constraint.from(rect.width, rect.height);
 
     if (this.width === undefined) {
-      this.width = newConstraint.width;
+      this.constraint.width = rect.width;
     }
     if (this.height === undefined) {
-      this.height = newConstraint.height;
+      this.constraint.height = rect.height;
     }
 
     return newConstraint;

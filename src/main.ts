@@ -5,16 +5,16 @@ import { Padding } from "./lib/padding";
 import { Expanded } from "./lib/expanded";
 import { Size } from "./lib/size";
 
+const dev0 = new Element({
+  width: 20,
+  height: 10,
+  backgroundColor: "red"
+});
 const div = new Element({
   width: 50,
+  // height: 30,
   backgroundColor: "pink",
-  children: [
-    new Element({
-      width: 20,
-      height: 30,
-      backgroundColor: "red"
-    })
-  ]
+  children: [dev0]
 });
 
 const div2 = new Element({
@@ -45,19 +45,14 @@ const div5 = new Expanded({
 const group = new Group({
   flexDirection: "row",
   flexWrap: "wrap",
-  children: [
-    div,
-    div2,
-    div3,
-    div4
-    // div5
-  ]
+  children: [div, div2, div3, div4, div5]
 });
 
 const root = new Root({
   el: document.getElementById("canvas") as HTMLCanvasElement,
   width: 500,
   height: 500,
+  animationSwitch: true,
   children: [
     new Group({
       flexDirection: "column",
@@ -77,12 +72,15 @@ const root = new Root({
           backgroundColor: "red"
         })
       ]
-    }),
+    })
   ]
 });
 
 setTimeout(() => {
-  group.appendChild(div5);
+  dev0.setAttributes({
+    height: 30
+  });
+  // group.appendChild(div5);
 }, 1000);
 
 root.render();

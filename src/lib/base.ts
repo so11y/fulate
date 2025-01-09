@@ -1,15 +1,16 @@
 import { Root } from "./root";
-import { Padding } from "./padding";
 import { Group } from "./group";
-import { mergeRects } from "./utils/index";
 import { Constraint } from "./utils/constraint";
+import { AnimationController, AnimationType, Tween } from "ac";
+import { omit, pick } from "lodash-es";
 
 export interface Point {
   x: number;
   y: number;
 }
 
-const NEED_LAYOUT_KYE = ["x", "y", "width", "height"];
+const NEED_LAYOUT_KYE = ["width", "height"];
+const NUMBER_KEY = ["width", "height", "x", "y"];
 
 export interface ElementOptions {
   x?: number;
@@ -26,6 +27,7 @@ export class Element {
   root: Root;
   isDirty: boolean = false;
   type = "element";
+  key?: string;
   x: number;
   y: number;
   width: number | undefined;
@@ -53,7 +55,6 @@ export class Element {
   }
 
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
-    const localRect = this.getLocalPoint();
     const parent = this.parent;
     if (parent?.type === "padding") {
       return parentPoint;
@@ -65,25 +66,22 @@ export class Element {
       parent?.type === "column"
     ) {
       const _parent = parent as any as Group;
-      // const sibling = this.previousSibling();
-      // if (sibling) {
-      // const siblingRect = sibling.getLayoutRect();
       if (_parent.flexDirection === "column" || _parent.flexWrap === "wrap") {
         return {
-          x: parentPoint.x + localRect.x,
-          y: parentPoint.y //+ siblingRect.height
+          x: parentPoint.x,
+          y: parentPoint.y
         };
       }
       return {
-        x: parentPoint.x + localRect.x, //+ siblingRect.width,
-        y: parentPoint.y + localRect.y
+        x: parentPoint.x,
+        y: parentPoint.y
       };
       // }
     }
 
     return {
-      x: parentPoint.x + localRect.x,
-      y: parentPoint.y + localRect.y
+      x: parentPoint.x,
+      y: parentPoint.y
     };
   }
 
@@ -98,10 +96,10 @@ export class Element {
     );
   }
 
-  getLocalPoint(): Point {
+  getLocalPoint(point?: Point): Point {
     return {
-      x: this.x,
-      y: this.y
+      x: this.x + (point?.x ?? 0),
+      y: this.y + (point?.y ?? 0)
     };
   }
 
@@ -116,24 +114,58 @@ export class Element {
     return this.parent?.children?.filter((v) => v !== this);
   }
 
-  setAttributes(attrs: any) {
-    this.isDirty = true;
-    const isNeedLayout = NEED_LAYOUT_KYE.some((v) => {
-      return !!this[v];
-    });
-    if (!isNeedLayout) {
-      this.clearDirty();
-    }
-    Object.keys(attrs).forEach((key) => {
+  setAttributes(attrs: ElementOptions) {
+    Object.keys(omit(attrs, NUMBER_KEY)).forEach((key) => {
       this[key] = attrs[key];
     });
+    const numberKeys = pick(attrs, NUMBER_KEY);
+    const tween = new Tween(pick(this, Object.keys(numberKeys)), numberKeys)
+      .animate(this.root.ac)
+      .builder((value) => {
+        // this.isDirty = true;
+        // this.clearDirty();
+        Object.keys(value).forEach((key) => {
+          this[key] = value[key];
+        });
+        this.root.render();
+      });
+    this.root.ac.addEventListener(AnimationType.END, () => tween.destroy(), {
+      once: true
+    });
+    this.root.ac.play();
+    //先不做局部清理了
+    // this.isDirty = true;
+    // const isNeedLayout = NEED_LAYOUT_KYE.some((v) => v in attrs);
+    // if (isNeedLayout) {
+    //   this.clearDirty();
+    // }
+    // Object.keys(omit(attrs, NUMBER_KEY)).forEach((key) => {
+    //   this[key] = attrs[key];
+    // });
+    // const numberKeys = pick(attrs, NUMBER_KEY);
+    // const tween = new Tween(pick(this, Object.keys(numberKeys)), numberKeys)
+    //   .animate(this.ac)
+    //   .builder((value) => {
+    //     this.isDirty = true;
+    //     this.clearDirty();
+    //     Object.keys(value).forEach((key) => {
+    //       this[key] = value[key];
+    //     });
+    //     this.layout();
+    //     this.render();
+    //   });
 
-    if (isNeedLayout) {
-      this.root.render();
-      return;
-    }
-
-    this.render();
+    // if (isNeedLayout) {
+    //   this.root.render();
+    //   return;
+    // }
+    // this.isDirty = true;
+    // const tick = () => {
+    //   tween.destroy();
+    //   this.ac.removeEventListener(AnimationType.END, tick);
+    // };
+    // this.ac.play();
+    // this.ac.addEventListener(AnimationType.END, tick);
   }
 
   appendChild(child: Element) {
@@ -156,11 +188,16 @@ export class Element {
 
   clearDirty() {
     if (this.isDirty) {
-      const point = this.getWordPoint();
+      const selfPoint = this.getLocalPoint(this.getWordPoint());
       const rect = this.getLayoutRect();
       this.isDirty = false;
       this.root.ctx.save();
-      this.root.ctx.clearRect(point.x, point.y, rect.width, rect.height);
+      this.root.ctx.clearRect(
+        selfPoint.x,
+        selfPoint.y,
+        rect.width,
+        rect.height
+      );
       this.root.ctx.restore();
     }
   }
@@ -192,7 +229,7 @@ export class Element {
     return this._layout();
   }
 
-  _layout(): Constraint {
+  protected _layout(): Constraint {
     let rawConstraint = this.getLayoutRect();
     let constraint = rawConstraint.clone();
     if (this.children) {
@@ -217,26 +254,29 @@ export class Element {
         }
       );
       if (this.width === undefined) {
-        this.width = rect.width;
+        this.constraint.width = rect.width;
       }
       if (this.height === undefined) {
-        this.height = rect.height;
+        this.constraint.height = rect.height;
       }
-      return this.getLayoutRect();
+      return this.constraint;
     }
     return constraint;
   }
 
   protected _render() {
     const point = this.getWordPoint();
+    const selfPoint = this.getLocalPoint(point);
     const rect = this.getLayoutRect();
     this.root.ctx.save();
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
-      this.root.ctx.fillRect(point.x, point.y, rect.width, rect.height);
+      this.root.ctx.fillRect(selfPoint.x, selfPoint.y, rect.width, rect.height);
     }
     if (this.children) {
-      let _point = point;
+      //绝对定位的和相对定位的时候不会因为修改了自己的xy
+      //导致界面其他元素的位置发生变化
+      let _point = selfPoint;
       this.children.forEach((child) => {
         const v = child.render(_point);
         if (child.parent?.type === "row" || child.parent?.type === "column") {
