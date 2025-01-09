@@ -65,20 +65,20 @@ export class Element {
       parent?.type === "column"
     ) {
       const _parent = parent as any as Group;
-      const sibling = this.previousSibling();
-      if (sibling) {
-        const siblingRect = sibling.getLayoutRect();
-        if (_parent.flexDirection === "column" || _parent.flexWrap === "wrap") {
-          return {
-            x: parentPoint.x + localRect.x,
-            y: parentPoint.y + siblingRect.height
-          };
-        }
+      // const sibling = this.previousSibling();
+      // if (sibling) {
+      // const siblingRect = sibling.getLayoutRect();
+      if (_parent.flexDirection === "column" || _parent.flexWrap === "wrap") {
         return {
-          x: parentPoint.x + siblingRect.width + localRect.x,
-          y: parentPoint.y + localRect.y
+          x: parentPoint.x + localRect.x,
+          y: parentPoint.y //+ siblingRect.height
         };
       }
+      return {
+        x: parentPoint.x + localRect.x, //+ siblingRect.width,
+        y: parentPoint.y + localRect.y
+      };
+      // }
     }
 
     return {
@@ -239,8 +239,12 @@ export class Element {
       let _point = point;
       this.children.forEach((child) => {
         const v = child.render(_point);
-        if (child.parent?.type === "row") {
-          _point = v;
+        if (child.parent?.type === "row" || child.parent?.type === "column") {
+          const c = child.getLayoutRect();
+          _point = {
+            x: child.parent?.type === "row" ? v.x + c.width : v.x,
+            y: child.parent?.type === "row" ? v.y : v.y + c.height
+          };
         }
       });
     }

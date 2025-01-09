@@ -97,7 +97,14 @@ class Column extends Group {
         childConstraint.subHorizontal(childRect.width);
 
         if (childConstraint.isOverstep) {
-          const constraint = selfRect.clone().subHorizontal(child.width!);
+          const prevHeight = lastRow.children.reduce(
+            (prev, next) => Math.max(prev, next.rect?.height ?? 0),
+            0
+          );
+          const constraint = selfRect.clone().sub({
+            width: child.width!,
+            height: prevHeight
+          });
           rows.push({
             constraint,
             children: [
@@ -116,6 +123,7 @@ class Column extends Group {
           rect: childRect
         });
       }
+      console.log(1);
 
       for (let index = 0; index < rows.length; index++) {
         const currentRow = rows[index];
@@ -123,6 +131,11 @@ class Column extends Group {
         const expandedChildren = currentRow.children
           .filter((v) => v.element.type === "expanded")
           .map((v) => v.element) as Expanded[];
+
+        const rowMAXHeight = currentRow.children.reduce(
+          (prev, child) => Math.max(prev, child.rect?.height ?? 0),
+          0
+        );
 
         if (expandedChildren.length) {
           const quantity = expandedChildren.reduce(
@@ -137,6 +150,7 @@ class Column extends Group {
                   v.flex,
                   quantity
                 );
+                v.constraint.height = rowMAXHeight;
               }
             });
           }
@@ -151,23 +165,9 @@ class Column extends Group {
           return v.element;
         });
         row.children = children;
-        const rect = currentRow.children.reduce(
-          (prev, next) => {
-            const rect = next.rect ?? next.element.getLayoutRect();
-            return {
-              width: prev.width + rect.width,
-              height: Math.max(prev.height, rect.height)
-            };
-          },
-          expandedChildren.length
-            ? childConstraint
-            : {
-                width: 0,
-                height: 0
-              }
-        );
-        row.constraint = Constraint.from(selfRect.width, rect.height);
-        totalHeight += rect.height;
+
+        row.constraint = Constraint.from(selfRect.width, rowMAXHeight);
+        totalHeight = rowMAXHeight;
         rowElements.push(row);
       }
       this.children = rowElements;
@@ -225,7 +225,6 @@ class Column extends Group {
       expandedChildren.length ? childConstraint.height : 0
     );
     totalHeight += rectHight;
-    console.log(1);
     return Constraint.from(selfRect.width, totalHeight);
   }
 }
@@ -246,6 +245,8 @@ class Row extends Group {
   layout() {
     let childConstraint = this.constraint.clone();
     const rects: Array<Constraint> = [];
+
+    let maxHeight = 0;
     for (let i = 0; i < this.children!.length; i++) {
       const child = this.children![i];
       child.parent = this;
@@ -255,6 +256,7 @@ class Row extends Group {
       }
       child.constraint = childConstraint;
       const childRect = child.layout();
+      maxHeight = Math.max(maxHeight, childRect.height);
       rects.push(childRect);
     }
 

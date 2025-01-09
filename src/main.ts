@@ -2,7 +2,6 @@ import { Root } from "./lib/root";
 import { Element } from "./lib/base";
 import { Group } from "./lib/group";
 import { Padding } from "./lib/padding";
-//还需要改造一下Expanded
 import { Expanded } from "./lib/expanded";
 import { Size } from "./lib/size";
 
@@ -12,7 +11,7 @@ const div = new Element({
   children: [
     new Element({
       width: 20,
-      height: 10,
+      height: 30,
       backgroundColor: "red"
     })
   ]
@@ -32,15 +31,26 @@ const div3 = new Element({
 
 const div4 = new Expanded({
   child: new Element({
-    height: 30,
+    // height: 10,
     backgroundColor: "yellow"
+  })
+});
+const div5 = new Expanded({
+  child: new Element({
+    // height: 10,
+    backgroundColor: ""
   })
 });
 
 const group = new Group({
   flexDirection: "row",
   flexWrap: "wrap",
-  children: [div, div2, div3, div4]
+  children: [
+    div, 
+    div2, 
+    div3, 
+    // div4
+  ]
 });
 
 const root = new Root({
@@ -56,7 +66,7 @@ const root = new Root({
           height: 100,
           backgroundColor: "green",
           child: new Padding({
-            padding: [0, 10, 0, 15],
+            padding: [0, 0, 0, 40],
             child: group
           })
         }),
