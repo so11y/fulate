@@ -6,13 +6,12 @@ import { Expanded } from "./lib/expanded";
 import { Size } from "./lib/size";
 
 const dev0 = new Element({
-  width: 20,
+  width: 10,
   height: 10,
   backgroundColor: "red"
 });
 const div = new Element({
   width: 50,
-  // height: 30,
   backgroundColor: "pink",
   children: [dev0]
 });
@@ -45,7 +44,13 @@ const div5 = new Expanded({
 const group = new Group({
   flexDirection: "row",
   flexWrap: "wrap",
-  children: [div, div2, div3, div4, div5]
+  children: [
+    div,
+    div2,
+    div3,
+    div4
+    // div5
+  ]
 });
 
 const root = new Root({
@@ -78,9 +83,10 @@ const root = new Root({
 
 setTimeout(() => {
   dev0.setAttributes({
-    height: 30
+    width: 40,
+    height: 40
   });
-  // group.appendChild(div5);
+  group.appendChild(div5);
 }, 1000);
 
 root.render();
