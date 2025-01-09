@@ -253,13 +253,15 @@ export class Element {
           height: this.height ?? 0
         }
       );
-      if (this.width === undefined) {
-        this.constraint.width = rect.width;
-      }
-      if (this.height === undefined) {
-        this.constraint.height = rect.height;
-      }
-      return this.constraint;
+      const newConstraint = Constraint.from(rect.width, rect.height);
+      this.constraint = newConstraint;
+      // if (this.width === undefined) {
+      //   this.constraint.width = newConstraint.width;
+      // }
+      // if (this.height === undefined) {
+      //   this.constraint.height = newConstraint.height;
+      // }
+      return newConstraint;
     }
     return constraint;
   }

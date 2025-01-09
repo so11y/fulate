@@ -289,12 +289,13 @@ class Row extends Group {
 
     const newConstraint = Constraint.from(rect.width, rect.height);
 
-    if (this.width === undefined) {
-      this.constraint.width = rect.width;
-    }
-    if (this.height === undefined) {
-      this.constraint.height = rect.height;
-    }
+    this.constraint = newConstraint;
+    // if (this.width === undefined) {
+    //   this.constraint.width = rect.width;
+    // }
+    // if (this.height === undefined) {
+    //   this.constraint.height = rect.height;
+    // }
 
     return newConstraint;
   }
