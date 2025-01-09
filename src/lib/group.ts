@@ -20,6 +20,8 @@ export class Group extends Element implements GroupOptions {
     this.display = options.display ?? "none";
     this.flexDirection = options.flexDirection ?? "row";
     this.flexWrap = options.flexWrap ?? "nowrap";
+    this.width = Number.MAX_VALUE;
+    this.height = Number.MAX_VALUE;
     this._options = options;
   }
 
@@ -28,9 +30,7 @@ export class Group extends Element implements GroupOptions {
     super.appendChild(child);
   }
 
-  render(parentPoint: Point, constraint: Constraint) {
-    super.renderBefore(parentPoint, constraint);
-    const point = this.getWordPoint();
+  layout() {
     let child;
     if (this.flexWrap === "wrap" || this.flexDirection === "column") {
       child = new Column(this._options);
@@ -40,11 +40,7 @@ export class Group extends Element implements GroupOptions {
     child.parent = this;
     child.root = this.root;
     this.children = [child];
-    child.render(point, constraint);
-    return {
-      point,
-      constraint
-    };
+    return this._layout();
   }
 }
 
@@ -62,13 +58,7 @@ class Column extends Group {
       children: options.children
     });
   }
-  render(parentPoint: Point, constraint: Constraint) {
-    /**
-     * 感觉这边要效用子元素的layout然后判断是不是放不下在换行
-     * 虽然感觉大差不差
-     *  */
-    super.renderBefore(parentPoint, constraint);
-    const point = this.getWordPoint();
+  layout() {
     const selfRect = this.getLayoutRect();
     const rowElements: Row[] = [];
 
@@ -77,7 +67,10 @@ class Column extends Group {
     if (this.flexWrap === "wrap") {
       const rows: Array<{
         constraint: Constraint;
-        children: Array<Element>;
+        children: Array<{
+          element: Element;
+          rect: Constraint;
+        }>;
       }> = [
         {
           constraint: childConstraint,
@@ -88,35 +81,48 @@ class Column extends Group {
       for (let i = 0; i < this.children!.length; i++) {
         const lastRow = last(rows);
         const child = this.children![i];
-
+        child.parent = this;
+        child.root = this.root;
         if (child.type === "expanded") {
-          lastRow.children.push(child);
+          lastRow.children.push({
+            element: child
+          });
           continue;
         }
 
         child.constraint = childConstraint;
-        const childRect = child.getLayoutRect();
+        const childRect = child.layout();
         childConstraint.subHorizontal(childRect.width);
 
         if (childConstraint.isOverstep) {
-          const constraint = selfRect.clone().subHorizontal(child.width);
+          const constraint = selfRect.clone().subHorizontal(child.width!);
           rows.push({
             constraint,
-            children: [child]
+            children: [
+              {
+                element: child,
+                rect: childRect
+              }
+            ]
           });
           childConstraint = constraint;
           continue;
         }
 
-        lastRow.children.push(child);
+        lastRow.children.push({
+          element: child,
+          rect: childRect
+        });
       }
 
+      console.log(1);
+      let totalHeight = 0;
       for (let index = 0; index < rows.length; index++) {
         const currentRow = rows[index];
 
-        const expandedChildren = currentRow.children.filter(
-          (v) => v.type === "expanded"
-        ) as Expanded[];
+        const expandedChildren = currentRow.children
+          .filter((v) => v.element.type === "expanded")
+          .map((v) => v.element) as Expanded[];
 
         if (expandedChildren.length) {
           const quantity = expandedChildren.reduce(
@@ -136,43 +142,45 @@ class Column extends Group {
           }
         }
 
-        const row = new Row({
-          children: currentRow.children
-        });
+        const row = new Row();
         row.parent = this;
         row.root = this.root;
+        const children = currentRow.children.map((v) => {
+          v.element.parent = row;
+          v.element.root = this.root;
+          return v.element;
+        });
+        row.children = children;
+        const rect = currentRow.children.reduce(
+          (prev, next) => {
+            const rect = next.rect ?? next.element.getLayoutRect();
+            return {
+              width: prev.width + rect.width,
+              height: Math.max(prev.height, rect.height)
+            };
+          },
+          expandedChildren.length
+            ? childConstraint
+            : {
+                width: 0,
+                height: 0
+              }
+        );
+        row.constraint = Constraint.from(selfRect.width, rect.height);
+        totalHeight += rect.height;
         rowElements.push(row);
       }
 
       this.children = rowElements;
-      const c = constraint.clone();
-      const { height } = rowElements.reduce(
-        (prev, child) => {
-          const v = child.render(prev.point, prev.constraint);
-          return {
-            point: v.point,
-            constraint: constraint.subVertical(v.constraint.height),
-            height: Math.max(prev.height, v.constraint.height)
-          };
-        },
-        {
-          point,
-          constraint: c,
-          height: 0
-        }
-      );
-      this.height = height;
+      return Constraint.from(selfRect.width, totalHeight);
     }
-    return {
-      point,
-      constraint
-    };
+    return selfRect;
   }
 }
 
 class Row extends Group {
   type = "row";
-  constructor(options: GroupOptions) {
+  constructor(options: GroupOptions = {}) {
     super({
       x: options.x,
       y: options.y,
@@ -181,39 +189,31 @@ class Row extends Group {
       flexDirection: "row",
       flexWrap: options.flexWrap ?? "nowrap",
       display: "flex",
-      children: options.children
+      children: options.children ?? []
     });
   }
 
-  render(parentPoint: Point, constraint: Constraint) {
-    super.renderBefore(parentPoint, constraint);
-    const point = this.getWordPoint();
-
-    let childConstraint = constraint.clone();
-    childConstraint.height = 0;
-
+  layout() {
+    let childConstraint = this.constraint.clone();
+    const rects: Array<Constraint> = [];
     for (let i = 0; i < this.children!.length; i++) {
       const child = this.children![i];
-
+      child.parent = this;
+      child.root = this.root;
       if (child.type === "expanded") {
         continue;
       }
-
       child.constraint = childConstraint;
-      const childRect = child.getLayoutRect();
-      childConstraint.subHorizontal(childRect.width);
-      childConstraint.setMaxHeight(childRect.height);
+      const childRect = child.layout();
+      rects.push(childRect);
     }
-
-    constraint.subHorizontal(childConstraint.width);
-    constraint.height = childConstraint.height;
-    this.height = constraint.height;
 
     const expandedChildren = this.children!.filter(
       (v) => v.type === "expanded" && (v as Expanded).flex
     ) as Expanded[];
 
     if (expandedChildren.length && childConstraint.width) {
+      rects.push(childConstraint);
       const quantity = expandedChildren.reduce(
         (prev, child) => prev + child.flex,
         0
@@ -224,13 +224,26 @@ class Row extends Group {
         });
       }
     }
-    this.children!.reduce((prev, child) => child.render(prev.point), {
-      point
-    });
+    const rect = rects.reduce(
+      (prev, next) => ({
+        width: prev.width + next.width,
+        height: Math.max(prev.height, next.height)
+      }),
+      {
+        width: 0,
+        height: 0
+      }
+    );
 
-    return {
-      point,
-      constraint
-    };
+    const newConstraint = Constraint.from(rect.width, rect.height);
+
+    if (this.width === undefined) {
+      this.width = newConstraint.width;
+    }
+    if (this.height === undefined) {
+      this.height = newConstraint.height;
+    }
+
+    return newConstraint;
   }
 }

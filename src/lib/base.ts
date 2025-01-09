@@ -28,8 +28,8 @@ export class Element {
   type = "element";
   x: number;
   y: number;
-  width: number;
-  height: number;
+  width: number | undefined;
+  height: number | undefined;
   backgroundColor: string | undefined;
   // position: string = "static";
   children: Element[] | undefined;
@@ -41,8 +41,8 @@ export class Element {
   constructor(option: ElementOptions) {
     this.x = option.x ?? 0;
     this.y = option.y ?? 0;
-    this.width = option.width ?? Number.MAX_VALUE;
-    this.height = option.height ?? Number.MAX_VALUE;
+    this.width = option.width ?? undefined;
+    this.height = option.height ?? undefined;
     this.backgroundColor = option.backgroundColor;
     // this.position = option.position ?? "static";
     this.children = option.children;
@@ -88,10 +88,13 @@ export class Element {
   }
 
   getLayoutRect() {
-    const rect = this.constraint.small(this.width, this.height);
     return Constraint.from(
-      this.width !== Number.MAX_VALUE ? this.width : rect.width,
-      this.height !== Number.MAX_VALUE ? this.height : rect.height
+      this.width === undefined || this.width === Number.MAX_VALUE
+        ? this.constraint.width
+        : this.width,
+      this.height === undefined || this.height === Number.MAX_VALUE
+        ? this.constraint.height
+        : this.height
     );
   }
 
@@ -162,58 +165,87 @@ export class Element {
     }
   }
 
-  render(
-    parentPoint: Point = this.parentOrSiblingPoint,
-    constraint: Constraint = this.constraint
-  ) {
-    return this.renderBefore(parentPoint, constraint)._render();
+  render(parentPoint: Point = this.parentOrSiblingPoint) {
+    return this.renderBefore(parentPoint)._render();
   }
 
-  renderBeforeAndRender(parentPoint: Point, constraint: Constraint) {
-    return this.renderBefore(parentPoint, constraint)._render();
+  renderBeforeAndRender(parentPoint: Point) {
+    return this.renderBefore(parentPoint)._render();
   }
 
-  renderBefore(parentPoint: Point, constraint: Constraint) {
+  renderBefore(parentPoint: Point) {
     this.parentOrSiblingPoint = parentPoint;
-    this.constraint = constraint.clone();
     if (this.children) {
       this.children.map((child) => {
         child.root = this.root;
         child.parent = this;
+        if (!child.constraint) {
+          child.constraint = this.constraint.clone();
+        }
         return child;
       });
     }
     return this;
   }
 
+  layout() {
+    return this._layout();
+  }
+
+  _layout(): Constraint {
+    let rawConstraint = this.getLayoutRect();
+    let constraint = rawConstraint.clone();
+    if (this.children) {
+      const rects = this.children!.map((child) => {
+        child.constraint = constraint.clone();
+        child.parent = this;
+        child.root = this.root;
+        const v = child.layout();
+        if (child.parent?.type === "row") {
+          constraint = constraint.subHorizontal(v.width);
+        }
+        return v;
+      });
+      const rect = rects.reduce(
+        (prev, next) => ({
+          width: Math.max(prev.width, next.width),
+          height: Math.max(prev.height, next.height)
+        }),
+        {
+          width: this.width ?? 0,
+          height: this.height ?? 0
+        }
+      );
+      if (this.width === undefined) {
+        this.width = rect.width;
+      }
+      if (this.height === undefined) {
+        this.height = rect.height;
+      }
+      return this.getLayoutRect();
+    }
+    return constraint;
+  }
+
   protected _render() {
     const point = this.getWordPoint();
-    let constraint = this.getLayoutRect();
+    const rect = this.getLayoutRect();
     this.root.ctx.save();
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
-      this.root.ctx.fillRect(
-        point.x,
-        point.y,
-        constraint.width,
-        constraint.height
-      );
+      this.root.ctx.fillRect(point.x, point.y, rect.width, rect.height);
     }
     if (this.children) {
       let _point = point;
       this.children.forEach((child) => {
-        const v = child.render(_point, constraint);
+        const v = child.render(_point);
         if (child.parent?.type === "row") {
-          constraint = constraint.subHorizontal(v.constraint.width);
-          _point = v.point;
+          _point = v;
         }
       });
     }
     this.root.ctx.restore();
 
-    return {
-      point,
-      constraint
-    };
+    return point;
   }
 }

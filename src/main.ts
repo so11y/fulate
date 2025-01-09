@@ -8,8 +8,14 @@ import { Size } from "./lib/size";
 
 const div = new Element({
   width: 50,
-  height: 30,
-  backgroundColor: "red"
+  backgroundColor: "pink",
+  children: [
+    new Element({
+      width: 20,
+      height: 10,
+      backgroundColor: "red"
+    })
+  ]
 });
 
 const div2 = new Element({
@@ -19,7 +25,7 @@ const div2 = new Element({
 });
 
 const div3 = new Element({
-  width: 55,
+  width: 50,
   height: 30,
   backgroundColor: "black"
 });
@@ -30,8 +36,7 @@ const div4 = new Expanded({
     backgroundColor: "yellow"
   })
 });
-//因为下面设置了padding
-//所以要把宽度放到外面去
+
 const group = new Group({
   display: "flex",
   flexDirection: "row",
@@ -49,7 +54,7 @@ const root = new Root({
       height: 100,
       backgroundColor: "green",
       child: new Padding({
-        padding: [0, 0, 0, 30],
+        padding: [0, 0, 0, 0],
         child: group
       })
     })

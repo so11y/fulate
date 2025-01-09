@@ -15,7 +15,6 @@ export class Root extends Element {
   constructor(options: RootOptions) {
     super(options);
     this.root = this;
-    this.width;
     this.el = options.el;
     this.el.width = options.width;
     this.el.height = options.height;
@@ -23,13 +22,11 @@ export class Root extends Element {
   }
   render() {
     const point = this.getLocalPoint();
-    const constraint = new Constraint(this.width, this.height);
+    this.constraint = new Constraint(this.width!, this.height!);
     this.isDirty = true;
-    super.render(point, constraint.clone());
+    super.layout();
+    super.render(point);
     this.isDirty = false;
-    return {
-      point,
-      constraint
-    };
+    return point;
   }
 }

@@ -26,8 +26,4 @@ export class Expanded extends Element implements ExpandedOptions {
   getLayoutRect() {
     return this.constraint;
   }
-
-  render(parentPoint) {
-    return this.renderBefore(parentPoint, this.constraint)._render();
-  }
 }
