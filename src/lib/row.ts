@@ -1,5 +1,5 @@
 import { Expanded } from "./expanded";
-import { Constraint } from "./utils/constraint";
+import { Constraint, Size } from "./utils/constraint";
 import { Element, ElementOptions } from "./base";
 
 export interface RowOptions extends ElementOptions {
@@ -12,7 +12,7 @@ export class Row extends Element implements RowOptions {
 
   layout() {
     let childConstraint = this.constraint.clone();
-    const sizes: Array<Constraint> = [];
+    const sizes: Array<Size> = [];
 
     let maxHeight = 0;
     for (let i = 0; i < this.children!.length; i++) {
@@ -55,10 +55,8 @@ export class Row extends Element implements RowOptions {
       }
     );
 
-    const newConstraint = Constraint.from(rect.width, rect.height);
+    this.size = new Size(rect.width, rect.height);
 
-    this.constraint = newConstraint;
-
-    return newConstraint;
+    return this.size;
   }
 }

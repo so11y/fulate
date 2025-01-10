@@ -72,8 +72,7 @@ const root = new Root({
           height: 100,
           backgroundColor: "green",
           child: new Padding({
-            padding: [0, 0, 20, 40],
-            backgroundColor: "blue",
+            padding: [0, 0, 20, 30],
             child: group
           })
         })
@@ -87,7 +86,7 @@ setTimeout(() => {
     width: 40,
     height: 40
   });
-  // group.appendChild(div5);
+  group.appendChild(div5);
 }, 1000);
 
 root.render();

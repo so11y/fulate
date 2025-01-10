@@ -1,6 +1,6 @@
 import { Root } from "./root";
 import { Group } from "./group";
-import { Constraint } from "./utils/constraint";
+import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
 
@@ -39,6 +39,7 @@ export class Element {
 
   declare parentOrSiblingPoint: Point;
   declare constraint: Constraint;
+  declare size: Size;
 
   constructor(option?: ElementOptions) {
     if (option) {
@@ -60,15 +61,11 @@ export class Element {
     return parentPoint;
   }
 
-  getLayoutRect() {
-    return Constraint.from(
-      this.width === undefined || this.width === Number.MAX_VALUE
-        ? this.constraint.width
-        : this.width,
-      this.height === undefined || this.height === Number.MAX_VALUE
-        ? this.constraint.height
-        : this.height
-    );
+  getLayoutSize() {
+    return this.constraint.compareSize({
+      width: this.width,
+      height: this.height
+    });
   }
 
   getLocalPoint(point?: Point): Point {
@@ -164,7 +161,7 @@ export class Element {
   clearDirty() {
     if (this.isDirty) {
       const selfPoint = this.getLocalPoint(this.getWordPoint());
-      const rect = this.getLayoutRect();
+      const rect = this.getLayoutSize();
       this.isDirty = false;
       this.root.ctx.save();
       this.root.ctx.clearRect(
@@ -197,9 +194,9 @@ export class Element {
     return this._layout();
   }
 
-  protected _layout(): Constraint {
-    let rawConstraint = this.getLayoutRect();
-    let constraint = rawConstraint.clone();
+  protected _layout(): Size {
+    let size = this.getLayoutSize();
+    let constraint = Constraint.loose(size.width, size.height);
     if (this.children) {
       const rects = this.children!.map((child) => {
         child.constraint = constraint.clone();
@@ -212,22 +209,18 @@ export class Element {
           width: Math.max(prev.width, next.width),
           height: Math.max(prev.height, next.height)
         }),
-        {
-          width: this.width ?? 0,
-          height: this.height ?? 0
-        }
+        new Size(this.width, this.height)
       );
-      const newConstraint = Constraint.from(rect.width, rect.height);
-      this.constraint = newConstraint;
-      return newConstraint;
+      this.size = new Size(rect.width, rect.height);
+      return this.size;
     }
-    return constraint;
+    return size;
   }
 
   protected _render() {
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
-    const rect = this.getLayoutRect();
+    const rect = this.getLayoutSize();
     this.root.ctx.save();
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
@@ -240,7 +233,7 @@ export class Element {
       this.children.forEach((child) => {
         const v = child.render(_point);
         if (child.parent?.type === "row" || child.parent?.type === "column") {
-          const c = child.getLayoutRect();
+          const c = child.getLayoutSize();
           _point = {
             x: child.parent?.type === "row" ? v.x + c.width : v.x,
             y: child.parent?.type === "row" ? v.y : v.y + c.height

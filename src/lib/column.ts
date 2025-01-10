@@ -18,7 +18,7 @@ export class Column extends Element implements ColumnOptions {
     this.flexWrap = options.flexWrap ?? "nowrap";
   }
   layout() {
-    const selfRect = this.getLayoutRect();
+    const selfRect = this.getLayoutSize();
     let childConstraint = selfRect.clone();
     let totalHeight = 0;
     if (this.flexWrap === "wrap") {
@@ -172,10 +172,10 @@ export class Column extends Element implements ColumnOptions {
     }
 
     const rectHight = cols.reduce((prev, next) => {
-      const rect = next.size ?? next.child.getLayoutRect();
+      const rect = next.size ?? next.child.getLayoutSize();
       return prev + rect.height;
     }, 0);
-    this.constraint = Constraint.from(selfRect.width, rectHight);
+    this.constraint = Constraint.loose(selfRect.width, rectHight);
     return this.constraint;
   }
 }

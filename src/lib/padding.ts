@@ -1,8 +1,7 @@
-import { Element, ElementOptions } from "./base";
+import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 
-interface PaddingOptions
-  extends Omit<ElementOptions, "children" | "x" | "y" | "width" | "height"> {
+interface PaddingOptions {
   padding?: number | [number, number, number, number];
   child: Element;
 }
@@ -14,7 +13,6 @@ export class Padding extends Element implements PaddingOptions {
 
   constructor(options: PaddingOptions) {
     super({
-      ...options,
       children: [options.child]
     });
     this.padding = Array.isArray(options.padding)
@@ -33,15 +31,15 @@ export class Padding extends Element implements PaddingOptions {
     };
   }
 
-  layout() {
-    const [top, right, bottom, left] = this.padding!;
-    const rect = this.getLayoutRect();
-    const gap = {
-      width: left + right,
-      height: top + bottom
-    };
-    this.children![0].constraint = rect.sub(gap);
-    const childRect = this.children![0].layout();
-    return new Constraint(childRect.width + left, rect.height + top);
-  }
+  // layout() {
+  //   const [top, right, bottom, left] = this.padding!;
+  //   const rect = this.getLayoutSize();
+  //   const gap = {
+  //     width: left + right,
+  //     height: top + bottom
+  //   };
+  //   this.children![0].constraint = rect.sub(gap);
+  //   const childRect = this.children![0].layout();
+  //   return Constraint.loose(childRect.width + left, rect.height + top);
+  // }
 }
