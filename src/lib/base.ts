@@ -94,7 +94,18 @@ export class Element {
       this[key] = attrs[key];
     });
     const numberKeys = pick(attrs, NUMBER_KEY);
-    const tween = new Tween(pick(this, Object.keys(numberKeys)), numberKeys)
+
+    const size = this.getLayoutRect();
+    const selfStart = {
+      x: this.x,
+      y: this.y,
+      width: size.width,
+      height: size.height
+    };
+    const tween = new Tween(
+      pick(selfStart, Object.keys(numberKeys)),
+      numberKeys
+    )
       .animate(this.root.ac)
       .builder((value) => {
         // this.isDirty = true;
@@ -108,6 +119,7 @@ export class Element {
       once: true
     });
     this.root.ac.play();
+
     //先不做局部清理了
     // this.isDirty = true;
     // const isNeedLayout = NEED_LAYOUT_KYE.some((v) => v in attrs);

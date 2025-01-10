@@ -91,10 +91,11 @@ const root = new Root({
 });
 
 setTimeout(() => {
-  // dev0.setAttributes({
-  //   width: 40,
-  //   height: 40
-  // });
+  console.log(2222);
+  div.setAttributes({
+    width: 40,
+    height: 40
+  });
   // group.appendChild(div5);
 }, 1000);
 
