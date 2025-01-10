@@ -33,7 +33,7 @@ export class Root extends Element {
     const point = this.getLocalPoint();
     this.constraint = new Constraint(this.width!, this.height!);
     this.isDirty = true;
-    super.layout();
+    super._layout();
     super.render(point);
     this.isDirty = false;
     return point;

@@ -1,4 +1,4 @@
-import { Element, ElementOptions, Point } from "./base";
+import { Element, ElementOptions } from "./base";
 import { Constraint } from "./utils/constraint";
 
 interface PaddingOptions

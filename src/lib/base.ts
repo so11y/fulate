@@ -28,11 +28,11 @@ export class Element {
   isDirty: boolean = false;
   type = "element";
   key?: string;
-  x: number;
-  y: number;
-  width: number | undefined;
-  height: number | undefined;
-  backgroundColor: string | undefined;
+  x = 0;
+  y = 0;
+  width: number | undefined = undefined;
+  height: number | undefined = undefined;
+  backgroundColor?: string;
   // position: string = "static";
   children: Element[] | undefined;
   parent?: Element;
@@ -40,14 +40,16 @@ export class Element {
   declare parentOrSiblingPoint: Point;
   declare constraint: Constraint;
 
-  constructor(option: ElementOptions) {
-    this.x = option.x ?? 0;
-    this.y = option.y ?? 0;
-    this.width = option.width ?? undefined;
-    this.height = option.height ?? undefined;
-    this.backgroundColor = option.backgroundColor;
-    // this.position = option.position ?? "static";
-    this.children = option.children;
+  constructor(option?: ElementOptions) {
+    if (option) {
+      this.x = option.x ?? 0;
+      this.y = option.y ?? 0;
+      this.width = option.width ?? undefined;
+      this.height = option.height ?? undefined;
+      this.backgroundColor = option?.backgroundColor;
+      // this.position = option.position ?? "static";
+      this.children = option.children;
+    }
   }
 
   get isContainer(): boolean {
@@ -55,34 +57,7 @@ export class Element {
   }
 
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
-    const parent = this.parent;
-    if (parent?.type === "padding") {
-      return parentPoint;
-    }
-
-    if (
-      parent?.type === "group" ||
-      parent?.type === "row" ||
-      parent?.type === "column"
-    ) {
-      const _parent = parent as any as Group;
-      if (_parent.flexDirection === "column" || _parent.flexWrap === "wrap") {
-        return {
-          x: parentPoint.x,
-          y: parentPoint.y
-        };
-      }
-      return {
-        x: parentPoint.x,
-        y: parentPoint.y
-      };
-      // }
-    }
-
-    return {
-      x: parentPoint.x,
-      y: parentPoint.y
-    };
+    return parentPoint;
   }
 
   getLayoutRect() {
@@ -206,19 +181,12 @@ export class Element {
     return this.renderBefore(parentPoint)._render();
   }
 
-  renderBeforeAndRender(parentPoint: Point) {
-    return this.renderBefore(parentPoint)._render();
-  }
-
   renderBefore(parentPoint: Point) {
     this.parentOrSiblingPoint = parentPoint;
     if (this.children) {
       this.children.map((child) => {
         child.root = this.root;
         child.parent = this;
-        if (!child.constraint) {
-          child.constraint = this.constraint.clone();
-        }
         return child;
       });
     }
@@ -237,11 +205,7 @@ export class Element {
         child.constraint = constraint.clone();
         child.parent = this;
         child.root = this.root;
-        const v = child.layout();
-        if (child.parent?.type === "row") {
-          constraint = constraint.subHorizontal(v.width);
-        }
-        return v;
+        return child.layout();
       });
       const rect = rects.reduce(
         (prev, next) => ({
@@ -255,12 +219,6 @@ export class Element {
       );
       const newConstraint = Constraint.from(rect.width, rect.height);
       this.constraint = newConstraint;
-      // if (this.width === undefined) {
-      //   this.constraint.width = newConstraint.width;
-      // }
-      // if (this.height === undefined) {
-      //   this.constraint.height = newConstraint.height;
-      // }
       return newConstraint;
     }
     return constraint;

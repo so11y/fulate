@@ -33,11 +33,6 @@ export class Constraint<T extends Record<"width" | "height", number> = any> {
     return this.clone();
   }
 
-  setMaxHeight(height: number) {
-    this.height = Math.max(height, this.height);
-    return this.clone();
-  }
-
   ratioWidth(flex: number, count: number) {
     return Constraint.from(
       Math.max((this.width / count) * flex, 0),

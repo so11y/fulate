@@ -8,7 +8,7 @@ import { Size } from "./lib/size";
 const dev0 = new Element({
   width: 10,
   height: 10,
-  backgroundColor: "red"
+  backgroundColor: "black"
 });
 const div = new Element({
   width: 50,
@@ -42,12 +42,12 @@ const div5 = new Expanded({
 });
 
 const group = new Group({
-  flexDirection: "row",
-  flexWrap: "wrap",
+  flexDirection: "column",
+  backgroundColor: "blue",
   children: [
     div,
-    div2,
-    div3,
+    // div2,
+    // div3,
     div4
     // div5
   ]
@@ -72,7 +72,8 @@ const root = new Root({
           height: 100,
           backgroundColor: "green",
           child: new Padding({
-            padding: [0, 0, 0, 40],
+            padding: [0, 0, 20, 40],
+            backgroundColor: "blue",
             child: group
           })
         })
@@ -86,7 +87,7 @@ setTimeout(() => {
     width: 40,
     height: 40
   });
-  group.appendChild(div5);
+  // group.appendChild(div5);
 }, 1000);
 
 root.render();

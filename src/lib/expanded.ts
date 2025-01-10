@@ -15,8 +15,6 @@ export class Expanded extends Element implements ExpandedOptions {
   constructor(options: ExpandedOptions) {
     super({
       ...options,
-      width: 0,
-      height: 0,
       children: [options.child]
     });
     this.flex = options.flex ?? 1;
