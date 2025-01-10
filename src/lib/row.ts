@@ -11,6 +11,7 @@ export class Row extends Element implements RowOptions {
   type = "row";
 
   layout() {
+    console.log(this);
     let childConstraint = this.constraint.clone();
     const sizes: Array<Constraint> = [];
 
@@ -24,6 +25,7 @@ export class Row extends Element implements RowOptions {
       }
       child.constraint = childConstraint;
       const size = child.layout();
+      childConstraint.subHorizontal(size.width);
       maxHeight = Math.max(maxHeight, size.height);
       sizes.push(size);
     }
@@ -32,7 +34,7 @@ export class Row extends Element implements RowOptions {
       (v) => v.type === "expanded" && (v as Expanded).flex
     ) as Expanded[];
 
-    if (expandedChildren.length && childConstraint.width) {
+    if (expandedChildren.length) {
       sizes.push(childConstraint);
       const quantity = expandedChildren.reduce(
         (prev, child) => prev + child.flex,
@@ -41,6 +43,7 @@ export class Row extends Element implements RowOptions {
       if (quantity > 0) {
         expandedChildren.forEach((v) => {
           v.constraint = childConstraint.ratioWidth(v.flex, quantity);
+          v.layout();
         });
       }
     }

@@ -1,8 +1,7 @@
-import { Element, ElementOptions } from "./base";
+import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 
-interface PaddingOptions
-  extends Omit<ElementOptions, "children" | "x" | "y" | "width" | "height"> {
+interface PaddingOptions {
   padding?: number | [number, number, number, number];
   child: Element;
 }

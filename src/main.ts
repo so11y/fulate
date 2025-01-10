@@ -12,8 +12,8 @@ const dev0 = new Element({
 });
 const div = new Element({
   width: 50,
-  backgroundColor: "pink",
-  children: [dev0]
+  backgroundColor: "pink"
+  // children: [dev0]
 });
 
 const div2 = new Element({
@@ -42,7 +42,7 @@ const div5 = new Expanded({
 });
 
 const group = new Group({
-  flexDirection: "column",
+  // flexDirection: "column",
   backgroundColor: "blue",
   children: [
     div,
@@ -59,34 +59,42 @@ const root = new Root({
   height: 500,
   animationSwitch: true,
   children: [
-    new Group({
-      flexDirection: "column",
-      children: [
-        new Size({
-          width: 20,
-          height: 20,
-          backgroundColor: "red"
-        }),
-        new Size({
-          width: 100,
-          height: 100,
-          backgroundColor: "green",
-          child: new Padding({
-            padding: [0, 0, 20, 40],
-            backgroundColor: "blue",
-            child: group
-          })
-        })
-      ]
+    new Size({
+      width: 100,
+      height: 100,
+      backgroundColor: "green",
+      child: new Padding({
+        padding: [0, 0, 0, 40],
+        child: group
+      })
     })
+    // new Group({
+    //   flexDirection: "column",
+    //   children: [
+    //     // new Size({
+    //     //   width: 20,
+    //     //   height: 20,
+    //     //   backgroundColor: "red"
+    //     // }),
+    //     new Size({
+    //       width: 100,
+    //       height: 100,
+    //       backgroundColor: "green",
+    //       child: new Padding({
+    //         padding: [0, 0, 20, 40],
+    //         child: group
+    //       })
+    //     })
+    //   ]
+    // })
   ]
 });
 
 setTimeout(() => {
-  dev0.setAttributes({
-    width: 40,
-    height: 40
-  });
+  // dev0.setAttributes({
+  //   width: 40,
+  //   height: 40
+  // });
   // group.appendChild(div5);
 }, 1000);
 
