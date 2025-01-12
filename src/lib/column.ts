@@ -103,7 +103,7 @@ export class Column extends Element implements ColumnOptions {
           if (quantity > 0) {
             expandedChildren.forEach((v) => {
               const constraint = currentRow.constraint.ratioWidth(v.flex, quantity);
-              v.constraint.maxHeight = rowMAXHeight;
+              constraint.maxHeight = rowMAXHeight;
               //现在不知道这里需要不需要记录，好像是不需要
               v.layout(constraint);
             });
