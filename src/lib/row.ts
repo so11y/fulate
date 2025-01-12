@@ -1,5 +1,5 @@
 import { Expanded } from "./expanded";
-import { Constraint } from "./utils/constraint";
+import { Constraint, Size } from "./utils/constraint";
 import { Element, ElementOptions } from "./base";
 
 export interface RowOptions extends ElementOptions {
@@ -10,10 +10,12 @@ export interface RowOptions extends ElementOptions {
 export class Row extends Element implements RowOptions {
   type = "row";
 
-  layout() {
-    console.log(this);
-    let childConstraint = this.constraint.clone();
-    const sizes: Array<Constraint> = [];
+  layout(constraint: Constraint) {
+
+    const selfConstraint = constraint.extend(this);
+    let childConstraint = selfConstraint.clone();
+
+    const sizes: Array<Size> = [];
 
     let maxHeight = 0;
     for (let i = 0; i < this.children!.length; i++) {
@@ -23,9 +25,8 @@ export class Row extends Element implements RowOptions {
       if (child.type === "expanded") {
         continue;
       }
-      child.constraint = childConstraint;
-      const size = child.layout();
-      childConstraint.subHorizontal(size.width);
+      const size = child.layout(childConstraint);
+      childConstraint = childConstraint.subHorizontal(size.width);
       maxHeight = Math.max(maxHeight, size.height);
       sizes.push(size);
     }
@@ -35,18 +36,17 @@ export class Row extends Element implements RowOptions {
     ) as Expanded[];
 
     if (expandedChildren.length) {
-      sizes.push(childConstraint);
       const quantity = expandedChildren.reduce(
         (prev, child) => prev + child.flex,
         0
       );
       if (quantity > 0) {
         expandedChildren.forEach((v) => {
-          v.constraint = childConstraint.ratioWidth(v.flex, quantity);
-          v.layout();
+          v.layout(childConstraint.ratioWidth(v.flex, quantity));
         });
       }
     }
+
     const rect = sizes.reduce(
       (prev, next) => ({
         width: prev.width + next.width,
@@ -58,10 +58,10 @@ export class Row extends Element implements RowOptions {
       }
     );
 
-    const newConstraint = Constraint.from(rect.width, rect.height);
+    this.size = selfConstraint.compareSize(
+      rect
+    );
 
-    this.constraint = newConstraint;
-
-    return newConstraint;
+    return this.size;
   }
 }

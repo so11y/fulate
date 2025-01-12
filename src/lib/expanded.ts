@@ -1,5 +1,5 @@
 import { Element, ElementOptions } from "./base";
-import { Constraint } from "./utils/constraint";
+import { Constraint, Size } from "./utils/constraint";
 
 interface ExpandedOptions
   extends Omit<ElementOptions, "children" | "x" | "y" | "width" | "height"> {
@@ -18,10 +18,7 @@ export class Expanded extends Element implements ExpandedOptions {
       children: [options.child]
     });
     this.flex = options.flex ?? 1;
-    this.constraint = new Constraint(0, 0);
+    this.size = new Size(0, 0);
   }
 
-  getLayoutRect() {
-    return this.constraint;
-  }
 }

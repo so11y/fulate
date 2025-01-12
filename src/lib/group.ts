@@ -1,6 +1,7 @@
 import { Element, ElementOptions } from "./base";
 import { Column, ColumnOptions } from "./column";
 import { Row, RowOptions } from "./row";
+import { Constraint } from "./utils/constraint";
 
 export type GroupOptions = ColumnOptions | RowOptions;
 
@@ -17,7 +18,7 @@ export class Group extends Element implements ElementOptions {
     super.appendChild(child);
   }
 
-  layout() {
+  layout(constraint: Constraint) {
     let child;
     if (
       this._options.flexWrap == "wrap" ||
@@ -30,6 +31,6 @@ export class Group extends Element implements ElementOptions {
     child.parent = this;
     child.root = this.root;
     this.children = [child];
-    return super._layout();
+    return super._layout(constraint);
   }
 }

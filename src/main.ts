@@ -61,11 +61,12 @@ const root = new Root({
   children: [
     new Size({
       width: 100,
-      height: 100,
+      maxHeight: 100,
       backgroundColor: "green",
-      child: new Padding({
-        padding: [0, 0, 0, 40],
-        child: group
+      child: new Size({
+        minWidth: 50,
+        height: 110,
+        backgroundColor: "red",
       })
     })
     // new Group({
@@ -91,11 +92,10 @@ const root = new Root({
 });
 
 setTimeout(() => {
-  console.log(2222);
-  div.setAttributes({
-    width: 40,
-    height: 40
-  });
+  // dev0.setAttributes({
+  //   width: 40,
+  //   height: 40
+  // });
   // group.appendChild(div5);
 }, 1000);
 

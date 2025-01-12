@@ -2,7 +2,7 @@ import { ElementOptions, Element } from "./base";
 import { Expanded } from "./expanded";
 import { GroupOptions } from "./group";
 import { Row } from "./row";
-import { Constraint } from "./utils/constraint";
+import { Constraint, Size } from "./utils/constraint";
 import { last } from "lodash-es";
 
 export interface ColumnOptions extends ElementOptions {
@@ -17,9 +17,11 @@ export class Column extends Element implements ColumnOptions {
     //@ts-ignore
     this.flexWrap = options.flexWrap ?? "nowrap";
   }
-  layout() {
-    const selfRect = this.getLayoutRect();
-    let childConstraint = selfRect.clone();
+  layout(constraint: Constraint) {
+
+    const selfConstraint = constraint.extend(this);
+    let childConstraint = selfConstraint.clone();
+
     let totalHeight = 0;
     if (this.flexWrap === "wrap") {
       const rowElements: Element[] = [];
@@ -27,14 +29,14 @@ export class Column extends Element implements ColumnOptions {
         constraint: Constraint;
         children: Array<{
           child: Element;
-          size: Constraint;
+          size: Size;
         }>;
       }> = [
-        {
-          constraint: childConstraint,
-          children: []
-        }
-      ];
+          {
+            constraint: childConstraint,
+            children: []
+          }
+        ];
       for (let i = 0; i < this.children!.length; i++) {
         const lastRow = last(rows);
         const child = this.children![i];
@@ -47,18 +49,17 @@ export class Column extends Element implements ColumnOptions {
           continue;
         }
 
-        child.constraint = childConstraint;
-        const size = child.layout();
+        const size = child.layout(childConstraint);
         childConstraint.subHorizontal(size.width);
 
         if (childConstraint.isOverstep) {
           const prevHeight = lastRow.children.reduce(
-            (prev, next) => Math.max(prev, next.rect?.height ?? 0),
+            (prev, next) => Math.max(prev, next.size?.height ?? 0),
             0
           );
-          const constraint = selfRect.clone().sub({
-            width: child.width!,
-            height: prevHeight
+          const constraint = selfConstraint.clone().sub({
+            maxWidth: child.width!,
+            maxHeight: prevHeight
           });
           rows.push({
             constraint,
@@ -101,10 +102,10 @@ export class Column extends Element implements ColumnOptions {
 
           if (quantity > 0) {
             expandedChildren.forEach((v) => {
-              v.constraint = currentRow.constraint.ratioWidth(v.flex, quantity);
-              v.constraint.height = rowMAXHeight;
+              const constraint = currentRow.constraint.ratioWidth(v.flex, quantity);
+              constraint.maxHeight = rowMAXHeight;
               //现在不知道这里需要不需要记录，好像是不需要
-              v.layout();
+              v.layout(constraint);
             });
           }
         }
@@ -118,19 +119,18 @@ export class Column extends Element implements ColumnOptions {
           return v.child;
         });
         row.children = children;
-
-        row.constraint = Constraint.from(selfRect.width, rowMAXHeight);
+        row.size = new Size(selfConstraint.maxWidth, rowMAXHeight);
         totalHeight += rowMAXHeight;
         rowElements.push(row);
       }
       this.children = rowElements;
-      this.constraint = Constraint.from(selfRect.width, totalHeight);
-      return this.constraint;
+      this.size = new Size(selfConstraint.maxWidth, totalHeight);
+      return this.size;
     }
 
     const cols: Array<{
       child: Element;
-      size?: Constraint;
+      size?: Size;
     }> = [];
 
     for (let i = 0; i < this.children!.length; i++) {
@@ -143,8 +143,7 @@ export class Column extends Element implements ColumnOptions {
         });
         continue;
       }
-      child.constraint = childConstraint;
-      const size = child.layout();
+      const size = child.layout(childConstraint);
       childConstraint.subVertical(size.height);
       cols.push({
         child,
@@ -164,18 +163,23 @@ export class Column extends Element implements ColumnOptions {
 
       if (quantity > 0) {
         expandedChildren.forEach((v) => {
-          v.constraint = childConstraint.ratioHeight(v.flex, quantity);
+          const rect = childConstraint.ratioHeight(v.flex, quantity);
           //现在不知道这里需要不需要记录，好像是不需要
-          v.layout();
+          v.layout(rect);
         });
       }
     }
 
     const rectHight = cols.reduce((prev, next) => {
-      const rect = next.size ?? next.child.getLayoutRect();
+      const rect = next.child.size;
       return prev + rect.height;
     }, 0);
-    this.constraint = Constraint.from(selfRect.width, rectHight);
-    return this.constraint;
+    this.size = selfConstraint.compareSize(
+      {
+        width: selfConstraint.maxWidth,
+        height: rectHight
+      }
+    );
+    return this.size;
   }
 }
