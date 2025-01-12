@@ -126,7 +126,7 @@ export class Constraint<T extends ConstraintSize = any> {
   compareSize<G extends Partial<{ width: number; height: number }>>(
     v: G,
   ): Size {
-    const size = new Size(this.minWidth, this.minHeight);
+    const size = new Size();
 
     if (v.width) {
       size.width = Math.min(Math.max(v.width, this.minWidth), this.maxWidth ?? Number.MAX_VALUE);

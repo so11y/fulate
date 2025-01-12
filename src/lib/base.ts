@@ -225,10 +225,8 @@ export class Element {
         }),
         new Size(this.width, this.height)
       );
-
       this.size = selfConstraint.compareSize(rect)
     } else {
-      console.log(1);
       this.size = selfConstraint.compareSize(this)
     }
     return this.size;
