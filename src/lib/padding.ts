@@ -1,5 +1,5 @@
 import { Element } from "./base";
-import { Constraint } from "./utils/constraint";
+import { Constraint, Size } from "./utils/constraint";
 
 interface PaddingOptions {
   padding?: number | [number, number, number, number];
@@ -18,8 +18,8 @@ export class Padding extends Element implements PaddingOptions {
     this.padding = Array.isArray(options.padding)
       ? options.padding
       : options.padding === undefined
-      ? [0, 0, 0, 0]
-      : [options.padding, options.padding, options.padding, options.padding];
+        ? [0, 0, 0, 0]
+        : [options.padding, options.padding, options.padding, options.padding];
   }
 
   getWordPoint() {
@@ -30,16 +30,12 @@ export class Padding extends Element implements PaddingOptions {
       y: rect.y + top
     };
   }
+  layout(constraint: Constraint): Size {
+    const [top, right, bottom, left] = this.padding!;
+    const selfConstraint = constraint.subHorizontal(left + right).subVertical(top + bottom)
+    const size = this.children![0].layout(selfConstraint);
+    this.size = size
+    return size
+  }
 
-  // layout() {
-  //   const [top, right, bottom, left] = this.padding!;
-  //   const rect = this.getLayoutSize();
-  //   const gap = {
-  //     width: left + right,
-  //     height: top + bottom
-  //   };
-  //   this.children![0].constraint = rect.sub(gap);
-  //   const childRect = this.children![0].layout();
-  //   return Constraint.loose(childRect.width + left, rect.height + top);
-  // }
 }

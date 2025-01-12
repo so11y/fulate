@@ -11,7 +11,7 @@ export class Constraint<T extends ConstraintSize = any> {
     public maxWidth: number,
     public minHeight: number,
     public maxHeight: number
-  ) {}
+  ) { }
 
   // 静态工厂方法
   static from(
@@ -59,23 +59,23 @@ export class Constraint<T extends ConstraintSize = any> {
 
   // 减去另一个 Constraint 的值
   sub(c: T) {
-    this._subMinWidth(c.minWidth);
-    this._subMaxWidth(c.maxWidth);
-    this._subMinHeight(c.minHeight);
-    this._subMaxHeight(c.maxHeight);
+    this._subMinWidth(c.minWidth ?? 0);
+    this._subMaxWidth(c.maxWidth ?? 0);
+    this._subMinHeight(c.minHeight ?? 0);
+    this._subMaxHeight(c.maxHeight ?? 0);
     return this.clone();
   }
 
   // 减去水平方向的宽度
-  subHorizontal(minWidth: number, maxWidth = 0) {
-    this._subMinWidth(minWidth);
+  subHorizontal(maxWidth = 0) {
+    // this._subMinWidth(minWidth);
     this._subMaxWidth(maxWidth);
     return this.clone();
   }
 
   // 减去垂直方向的高度
-  subVertical(minHeight: number, maxHeight = 0) {
-    this._subMinHeight(minHeight);
+  subVertical(maxHeight = 0) {
+    // this._subMinHeight(minHeight);
     this._subMaxHeight(maxHeight);
     return this.clone();
   }
@@ -100,25 +100,50 @@ export class Constraint<T extends ConstraintSize = any> {
     );
   }
 
+  extend<G extends Partial<{
+    minWidth: number;
+    maxWidth: number;
+    minHeight: number;
+    maxHeight: number;
+    width: number; height: number
+  }>>(v: G) {
+    const k = {
+      minWidth: v.minWidth ?? this.minWidth,
+      maxWidth: v.width ?? v.maxWidth ?? this.maxWidth,
+      minHeight: v.minHeight ?? this.minHeight,
+      maxHeight: v.height ?? v.maxHeight ?? this.maxHeight,
+    };
+
+    return Constraint.from(
+      k.minWidth,
+      k.maxWidth,
+      k.minHeight,
+      k.maxHeight
+    );
+  }
+
+
   compareSize<G extends Partial<{ width: number; height: number }>>(
-    v: G
+    v: G,
   ): Size {
-    const size = new Size();
+    const size = new Size(this.minWidth, this.minHeight);
 
     if (v.width) {
-      size.width = Math.max(v.width, this.minWidth);
+      size.width = Math.min(Math.max(v.width, this.minWidth), this.maxWidth ?? Number.MAX_VALUE);
     }
 
     if (v.height) {
-      size.height = Math.max(v.height, this.minWidth);
+      size.height = Math.min(
+        Math.max(v.height, this.minWidth), this.maxHeight ?? Number.MAX_VALUE
+      );
     }
 
     if (v.width === undefined || v.width === Number.MAX_VALUE) {
-      size.width = this.maxHeight;
+      size.width = this.minWidth ?? this.maxWidth;
     }
 
     if (v.height === undefined || v.height === Number.MAX_VALUE) {
-      size.height = this.maxHeight;
+      size.height = this.minHeight ?? this.maxHeight;
     }
 
     return size;

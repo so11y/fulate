@@ -17,6 +17,10 @@ export interface ElementOptions {
   y?: number;
   width?: number;
   height?: number;
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
+  maxHeight?: number;
   // position?: "static" | "absolute" | "relative";
   // margin?: number | Array<number>
   backgroundColor?: string;
@@ -32,6 +36,10 @@ export class Element {
   y = 0;
   width: number | undefined = undefined;
   height: number | undefined = undefined;
+  maxWidth?: number;
+  maxHeight?: number;
+  minWidth?: number;
+  minHeight?: number;
   backgroundColor?: string;
   // position: string = "static";
   children: Element[] | undefined;
@@ -47,6 +55,10 @@ export class Element {
       this.y = option.y ?? 0;
       this.width = option.width ?? undefined;
       this.height = option.height ?? undefined;
+      this.maxWidth = option.maxWidth ?? undefined;
+      this.maxHeight = option.maxHeight ?? undefined;
+      this.minWidth = option.minWidth ?? undefined;
+      this.minHeight = option.minHeight ?? undefined;
       this.backgroundColor = option?.backgroundColor;
       // this.position = option.position ?? "static";
       this.children = option.children;
@@ -161,7 +173,7 @@ export class Element {
   clearDirty() {
     if (this.isDirty) {
       const selfPoint = this.getLocalPoint(this.getWordPoint());
-      const rect = this.getLayoutSize();
+      const rect = this.size;
       this.isDirty = false;
       this.root.ctx.save();
       this.root.ctx.clearRect(
@@ -190,19 +202,21 @@ export class Element {
     return this;
   }
 
-  layout() {
-    return this._layout();
+  layout(constraint: Constraint) {
+    return this._layout(constraint);
   }
 
-  protected _layout(): Size {
-    let size = this.getLayoutSize();
-    let constraint = Constraint.loose(size.width, size.height);
-    if (this.children) {
+  getForSizeConstraint(size: Size) {
+    return Constraint.loose(size.width, size.height);
+  }
+
+  protected _layout(constraint: Constraint): Size {
+    const selfConstraint = constraint.extend(this);
+    if (this.children?.length) {
       const rects = this.children!.map((child) => {
-        child.constraint = constraint.clone();
         child.parent = this;
         child.root = this.root;
-        return child.layout();
+        return child.layout(selfConstraint.clone());
       });
       const rect = rects.reduce(
         (prev, next) => ({
@@ -211,29 +225,32 @@ export class Element {
         }),
         new Size(this.width, this.height)
       );
-      this.size = new Size(rect.width, rect.height);
-      return this.size;
+
+      this.size = selfConstraint.compareSize(rect)
+    } else {
+      console.log(1);
+      this.size = selfConstraint.compareSize(this)
     }
-    return size;
+    return this.size;
   }
 
   protected _render() {
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
-    const rect = this.getLayoutSize();
+    const size = this.size;
     this.root.ctx.save();
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
-      this.root.ctx.fillRect(selfPoint.x, selfPoint.y, rect.width, rect.height);
+      this.root.ctx.fillRect(selfPoint.x, selfPoint.y, size.width, size.height);
     }
-    if (this.children) {
+    if (this.children?.length) {
       //绝对定位的和相对定位的时候不会因为修改了自己的xy
       //导致界面其他元素的位置发生变化
       let _point = selfPoint;
       this.children.forEach((child) => {
         const v = child.render(_point);
         if (child.parent?.type === "row" || child.parent?.type === "column") {
-          const c = child.getLayoutSize();
+          const c = child.size;
           _point = {
             x: child.parent?.type === "row" ? v.x + c.width : v.x,
             y: child.parent?.type === "row" ? v.y : v.y + c.height

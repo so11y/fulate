@@ -59,34 +59,25 @@ const root = new Root({
   height: 500,
   animationSwitch: true,
   children: [
-    new Group({
-      flexDirection: "column",
-      children: [
-        new Size({
-          width: 20,
-          height: 20,
-          backgroundColor: "red"
-        }),
-        new Size({
-          width: 100,
-          height: 100,
-          backgroundColor: "green",
-          child: new Padding({
-            padding: [0, 0, 20, 30],
-            child: group
-          })
-        })
-      ]
+    new Size({
+      width: 100,
+      maxHeight: 100,
+      backgroundColor: "green",
+      child: new Size({
+        minWidth: 50,
+        height: 110,
+        backgroundColor: "red",
+      })
     })
   ]
 });
 
 setTimeout(() => {
-  dev0.setAttributes({
-    width: 40,
-    height: 40
-  });
-  group.appendChild(div5);
+  // dev0.setAttributes({
+  //   width: 40,
+  //   height: 40
+  // });
+  // group.appendChild(div5);
 }, 1000);
 
 root.render();

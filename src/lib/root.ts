@@ -31,9 +31,8 @@ export class Root extends Element {
   render() {
     this.ctx.clearRect(0, 0, this.width!, this.height!);
     const point = this.getLocalPoint();
-    this.constraint = Constraint.loose(this.width!, this.height!);
     this.isDirty = true;
-    super._layout();
+    super._layout(Constraint.loose(this.width!, this.height!));
     super.render(point);
     this.isDirty = false;
     return point;
