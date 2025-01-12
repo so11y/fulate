@@ -46,7 +46,6 @@ export class Element {
   parent?: Element;
 
   declare parentOrSiblingPoint: Point;
-  declare constraint: Constraint;
   declare size: Size;
 
   constructor(option?: ElementOptions) {
@@ -71,13 +70,6 @@ export class Element {
 
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
     return parentPoint;
-  }
-
-  getLayoutSize() {
-    return this.constraint.compareSize({
-      width: this.width,
-      height: this.height
-    });
   }
 
   getLocalPoint(point?: Point): Point {

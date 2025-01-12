@@ -18,11 +18,7 @@ export class Expanded extends Element implements ExpandedOptions {
       children: [options.child]
     });
     this.flex = options.flex ?? 1;
-    this.constraint = Constraint.loose(0, 0);
     this.size = new Size(0, 0);
   }
 
-  getLayoutSize() {
-    return this.size;
-  }
 }
