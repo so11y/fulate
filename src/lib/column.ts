@@ -42,6 +42,7 @@ export class Column extends Element implements ColumnOptions {
         child.parent = this;
         child.root = this.root;
         if (child.type === "expanded") {
+          childConstraint.subHorizontal((child as Expanded).flexBasis);
           lastRow.children.push({
             child
           });
@@ -49,9 +50,12 @@ export class Column extends Element implements ColumnOptions {
         }
 
         const size = child.layout(childConstraint);
+
+        const prevWidth = childConstraint.maxWidth;
         childConstraint.subHorizontal(size.width);
 
         if (childConstraint.isOverstep) {
+          childConstraint.maxWidth = prevWidth;
           const prevHeight = lastRow.children.reduce(
             (prev, next) => Math.max(prev, next.size?.height ?? 0),
             0
@@ -79,16 +83,15 @@ export class Column extends Element implements ColumnOptions {
         });
       }
 
+      console.log(1);
       for (let index = 0; index < rows.length; index++) {
         const currentRow = rows[index];
 
         const expandedChildren = currentRow.children
-          .filter(
-            (v) => v.child.type === "expanded" && (v.child as Expanded).flex
-          )
+          .filter((v) => v.child.type === "expanded")
           .map((v) => v.child) as Expanded[];
 
-        const rowMAXHeight = currentRow.children.reduce(
+        let rowMAXHeight = currentRow.children.reduce(
           (prev, child) => Math.max(prev, child.size?.height ?? 0),
           0
         );
@@ -98,18 +101,16 @@ export class Column extends Element implements ColumnOptions {
             (prev, child) => prev + child.flex,
             0
           );
-
-          if (quantity > 0) {
-            expandedChildren.forEach((v) => {
-              const constraint = currentRow.constraint.ratioWidth(
-                v.flex,
-                quantity
-              );
-              constraint.maxHeight = rowMAXHeight;
-              //现在不知道这里需要不需要记录，好像是不需要
-              v.layout(constraint);
-            });
-          }
+          expandedChildren.forEach((v) => {
+            const constraint = currentRow.constraint.ratioWidth(
+              v.flex,
+              quantity
+            );
+            constraint.maxWidth = constraint.maxWidth + v.flexBasis;
+            constraint.maxHeight = rowMAXHeight;
+            const size = v.layout(constraint);
+            rowMAXHeight = Math.max(rowMAXHeight, size.height);
+          });
         }
 
         const row = new Row();
@@ -179,7 +180,6 @@ export class Column extends Element implements ColumnOptions {
       const rect = next.child.size;
       return prev + rect.height;
     }, 0);
-    console.log(1);
     this.size = selfConstraint.compareSize({
       width: selfConstraint.maxWidth,
       height: rectHight

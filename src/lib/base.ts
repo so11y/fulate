@@ -3,6 +3,7 @@ import { Group } from "./group";
 import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
+import { Margin } from "./margin";
 
 export interface Point {
   x: number;
@@ -230,7 +231,9 @@ export class Element {
           } as Size),
         new Size(this.width, this.height)
       );
-      this.size = selfConstraint.compareSize(rect);
+
+      this.size = rect;
+      // this.size = selfConstraint.compareSize(rect);
     } else {
       this.size = selfConstraint.compareSize(this);
     }

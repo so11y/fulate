@@ -4,6 +4,7 @@ import { Group } from "./lib/group";
 import { Padding } from "./lib/padding";
 import { Expanded } from "./lib/expanded";
 import { Div } from "./lib/div";
+import { Margin } from "./lib/margin";
 
 const dev0 = new Div({
   width: 10,
@@ -30,10 +31,14 @@ const div3 = new Div({
 });
 
 const div4 = new Expanded({
+  flexBasis: 50,
+  flex: 0,
   child: new Div({
+    height: 50,
     backgroundColor: "yellow"
   })
 });
+
 const div5 = new Div({
   children: [
     new Div({
@@ -45,27 +50,30 @@ const div5 = new Div({
 
 const group = new Group({
   // flexDirection: "column",
+  flexWrap: "wrap",
   backgroundColor: "blue",
   children: [
-    div,
+    // div,
     // div2,
     // div3,
     div4,
-    new Expanded({
-      child: new Div({
-        backgroundColor: "red"
-      })
+    new Div({
+      width: 60,
+      height: 20,
+      backgroundColor: "black"
     })
     // new Expanded({
-    //   child: new Padding({
-    //     padding: [0, 0, 0, 40],
-    //     child: new Element({
-    //       width: Number.MAX_VALUE,
-    //       height: Number.MAX_VALUE,
-    //       backgroundColor: "red"
+    //   child: new Margin({
+    //     margin: [0, 0, 0, 0],
+    //     child: new Padding({
+    //       padding: [0, 0, 0, 0],
+    //       child: new Div({
+    //         height: Number.MAX_VALUE,
+    //         backgroundColor: "red"
+    //       })
     //     })
     //   })
-    // }),
+    // })
     // new Expanded({
     //   child: new Padding({
     //     padding: [0, 40, 0,0],
@@ -122,14 +130,5 @@ const root = new Root({
     // })
   ]
 });
-
-setTimeout(() => {
-  console.log(2222);
-  // div.setAttributes({
-  //   width: 40,
-  //   height: 40
-  // });
-  // group.appendChild(div5);
-}, 1000);
 
 root.render();

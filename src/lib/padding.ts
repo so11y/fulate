@@ -3,17 +3,17 @@ import { Constraint, Size } from "./utils/constraint";
 
 interface PaddingOptions {
   padding?: number | [number, number, number, number];
-  child: Element;
+  child?: Element;
 }
 
 export class Padding extends Element implements PaddingOptions {
   type = "padding";
   padding: [number, number, number, number];
-  child: Element;
+  child?: Element;
 
   constructor(options: PaddingOptions) {
     super({
-      children: [options.child]
+      children: options.child ? [options.child] : undefined
     });
     this.padding = Array.isArray(options.padding)
       ? options.padding
@@ -30,13 +30,16 @@ export class Padding extends Element implements PaddingOptions {
       y: rect.y + top
     };
   }
-  
+
   layout(constraint: Constraint): Size {
     const [top, right, bottom, left] = this.padding!;
     const selfConstraint = constraint
       .subHorizontal(left + right)
       .subVertical(top + bottom);
-    const childSize = this.children![0].layout(selfConstraint);
+    let childSize = new Size(0, 0);
+    if (this.children) {
+      childSize = this.children![0].layout(selfConstraint);
+    }
     const selfSize = childSize.add(new Size(left + right, top + bottom));
     this.size = selfSize;
     return selfSize;

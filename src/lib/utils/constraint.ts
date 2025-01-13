@@ -82,7 +82,7 @@ export class Constraint<T extends ConstraintSize = any> {
   ratioWidth(flex: number, count: number) {
     return Constraint.from(
       this.minWidth,
-      Math.max((this.maxWidth / count) * flex, 0),
+      count === 0 ? 0 : Math.max((this.maxWidth / count) * flex, 0),
       this.minHeight,
       this.maxHeight
     );
@@ -94,7 +94,7 @@ export class Constraint<T extends ConstraintSize = any> {
       this.minWidth,
       this.maxWidth,
       this.minHeight,
-      Math.max((this.maxHeight / count) * flex, 0)
+      count === 0 ? 0 : Math.max((this.maxHeight / count) * flex, 0)
     );
   }
 
