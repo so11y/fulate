@@ -1,9 +1,8 @@
 import { Expanded } from "./expanded";
 import { Constraint, Size } from "./utils/constraint";
 import { Element, ElementOptions, Point } from "./base";
-import { Div } from "./div";
 
-export interface RowOptions extends ElementOptions {
+export interface RowOptions extends Omit<ElementOptions, "width" | "height"> {
   justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
   alignItems?: "flex-start" | "flex-end" | "center";
   flexDirection?: "row";
@@ -63,13 +62,11 @@ export class Row extends Element implements RowOptions {
         maxHeight = Math.max(maxHeight, size.height);
       });
     }
-
-    if (this.parent?.type === "group") {
-      this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
-    } else {
+    if (this.parent?.type === "column") {
       this.size = new Size(selfConstraint.maxWidth, maxHeight);
+    } else {
+      this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
     }
-
     return this.size;
   }
 
@@ -104,11 +101,11 @@ export class Row extends Element implements RowOptions {
       this.children.forEach((child, index) => {
         switch (this.alignItems) {
           case "center": {
-            child.y = _point.y + (size.height - child.size.height) / 2;
+            child.y = (size.height - child.size.height) / 2;
             break;
           }
           case "flex-end": {
-            child.y = _point.y + size.height - child.size.height;
+            child.y = size.height - child.size.height;
             break;
           }
         }

@@ -12,7 +12,7 @@ interface RowTree {
   }>;
 }
 
-export interface ColumnOptions extends ElementOptions {
+export interface ColumnOptions extends Omit<ElementOptions, "width" | "height"> {
   flexDirection?: "column";
   justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
   alignItems?: "flex-start" | "flex-end" | "center";

@@ -14,6 +14,7 @@ const NEED_LAYOUT_KYE = ["width", "height"];
 const NUMBER_KEY = ["width", "height", "x", "y"];
 
 export interface ElementOptions {
+  key?: string;
   x?: number;
   y?: number;
   width?: number;
@@ -23,6 +24,7 @@ export interface ElementOptions {
   maxWidth?: number;
   maxHeight?: number;
   radius?: number | [number, number, number, number];
+  overflow?: "hidden" | "visible";
   // position?: "static" | "absolute" | "relative";
   // margin?: number | Array<number>
   backgroundColor?: string;
@@ -44,6 +46,7 @@ export class Element {
   minWidth?: number;
   minHeight?: number;
   backgroundColor?: string;
+  overflow?: "hidden" | "visible";
   // position: string = "static";
   children: Element[] | undefined;
   parent?: Element;
@@ -65,6 +68,8 @@ export class Element {
       this.minHeight = option.minHeight ?? undefined;
       this.backgroundColor = option?.backgroundColor;
       this.radius = option.radius ?? 0;
+      this.overflow = option.overflow ?? "visible";
+      this.key = option.key;
       // this.position = option.position ?? "static";
       this.children = option.children;
     }
@@ -230,13 +235,12 @@ export class Element {
       });
       const rect = rects.reduce(
         (prev, next) =>
-          ({
-            width: Math.max(prev.width, next.width),
-            height: Math.max(prev.height, next.height)
-          } as Size),
+        ({
+          width: Math.max(prev.width, next.width),
+          height: Math.max(prev.height, next.height)
+        } as Size),
         new Size(this.width, this.height)
       );
-
       //允许子元素突破自己的尺寸
       this.size = this.isBreak ? rect : selfConstraint.compareSize(rect);
     } else {
@@ -272,6 +276,9 @@ export class Element {
         this.radius
       );
       this.root.ctx.fill();
+    }
+    if (this.overflow === "hidden") {
+      this.root.ctx.clip();
     }
   }
 }
