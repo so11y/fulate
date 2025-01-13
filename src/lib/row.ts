@@ -44,7 +44,7 @@ export class Row extends Element implements RowOptions {
           if (maxHeight) {
             constraint.minHeight = maxHeight;
           }
-          constraint.minWidth = constraint.maxWidth;
+          // constraint.minWidth = constraint.maxWidth;
           const size = v.layout(constraint);
           maxHeight = Math.max(maxHeight, size.height);
         });

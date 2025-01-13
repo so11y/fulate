@@ -18,7 +18,6 @@ export class Column extends Element implements ColumnOptions {
     this.flexWrap = options.flexWrap ?? "nowrap";
   }
   layout(constraint: Constraint) {
-  
     const selfConstraint = constraint.extend(this);
     let childConstraint = selfConstraint.clone();
 
@@ -32,11 +31,11 @@ export class Column extends Element implements ColumnOptions {
           size: Size;
         }>;
       }> = [
-          {
-            constraint: childConstraint,
-            children: []
-          }
-        ];
+        {
+          constraint: childConstraint,
+          children: []
+        }
+      ];
       for (let i = 0; i < this.children!.length; i++) {
         const lastRow = last(rows);
         const child = this.children![i];
@@ -102,7 +101,10 @@ export class Column extends Element implements ColumnOptions {
 
           if (quantity > 0) {
             expandedChildren.forEach((v) => {
-              const constraint = currentRow.constraint.ratioWidth(v.flex, quantity);
+              const constraint = currentRow.constraint.ratioWidth(
+                v.flex,
+                quantity
+              );
               constraint.maxHeight = rowMAXHeight;
               //现在不知道这里需要不需要记录，好像是不需要
               v.layout(constraint);
@@ -163,9 +165,12 @@ export class Column extends Element implements ColumnOptions {
 
       if (quantity > 0) {
         expandedChildren.forEach((v) => {
-          const rect = childConstraint.ratioHeight(v.flex, quantity);
-          //现在不知道这里需要不需要记录，好像是不需要
-          v.layout(rect);
+          const constraint = childConstraint.ratioHeight(v.flex, quantity);
+          v.layout(constraint);
+          // childConstraint.subVertical(v.size.height);
+          cols.push({
+            child: v
+          });
         });
       }
     }
@@ -174,12 +179,11 @@ export class Column extends Element implements ColumnOptions {
       const rect = next.child.size;
       return prev + rect.height;
     }, 0);
-    this.size = selfConstraint.compareSize(
-      {
-        width: selfConstraint.maxWidth,
-        height: rectHight
-      }
-    );
+    console.log(1);
+    this.size = selfConstraint.compareSize({
+      width: selfConstraint.maxWidth,
+      height: rectHight
+    });
     return this.size;
   }
 }

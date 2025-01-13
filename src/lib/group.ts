@@ -32,6 +32,7 @@ export class Group extends Element implements ElementOptions {
     child.root = this.root;
     this.children = [child];
     const childSize = super._layout(constraint);
+    console.log(constraint);
     this.size = new Size(constraint.maxWidth, childSize.height);
     return this.size;
   }
