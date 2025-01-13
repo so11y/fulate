@@ -119,7 +119,7 @@ export class Column extends Element implements ColumnOptions {
         }
 
         const row = new Row({
-          justifyContent: this.justifyContent
+          justifyContent: this.alignItems
         });
         row.parent = this;
         row.root = this.root;
@@ -240,7 +240,6 @@ export class Column extends Element implements ColumnOptions {
         break;
       }
     }
-    console.log(1);
     if (this.children?.length) {
       let _point = selfPoint;
       const betweenX =

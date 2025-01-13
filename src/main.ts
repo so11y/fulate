@@ -50,70 +50,34 @@ const div5 = new Div({
 });
 
 const group = new Group({
-  flexDirection: "column",
-  // flexWrap: "wrap",
+  // flexDirection: "column",
+  flexWrap: "wrap",
   height: 100,
   backgroundColor: "blue",
-  // flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
+  flexDirection: "row",
+  // justifyContent: "space-between",
+  // alignItems: "center",
   children: [
-    // div,
-    // div2,
-    // div3,
-    // div4,
-    // new Expanded({
-    //   child: new Div({
-    //     height: Number.MAX_VALUE,
-    //   })
-    // }),
     new Div({
       width: 20,
       height: 30,
-      // radius: [0, 0, 0, 0],
       backgroundColor: "red"
     }),
     new Div({
       width: 30,
       height: 20,
-      // radius: [0, 0, 0, 0],
       backgroundColor: "yellow"
     }),
     new Div({
       width: 20,
       height: 20,
-      // radius: [0, 0, 0, 0],
       backgroundColor: "yellow"
+    }),
+    new Div({
+      width: 40,
+      height: 20,
+      backgroundColor: "black"
     })
-    // new Expanded({
-    //   child: new Margin({
-    //     margin: [0, 0, 0, 0],
-    //     child: new Padding({
-    //       padding: [0, 0, 0, 0],
-    //       child: new Div({
-    //         height: Number.MAX_VALUE,
-    //         backgroundColor: "red"
-    //       })
-    //     })
-    //   })
-    // })
-    // new Expanded({
-    //   child: new Padding({
-    //     padding: [0, 40, 0,0],
-    //     child: new Element({
-    //       width: Number.MAX_VALUE,
-    //       height: Number.MAX_VALUE,
-    //       backgroundColor: "yellow"
-    //     })
-    //   })
-    // })
-
-    // new Expanded({
-    //   child: new Element({
-    //     backgroundColor: "purple"
-    //   })
-    // })
-    // div5
   ]
 });
 
