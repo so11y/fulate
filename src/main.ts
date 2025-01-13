@@ -6,6 +6,7 @@ import { Expanded } from "./lib/expanded";
 import { Div } from "./lib/div";
 import { Margin } from "./lib/margin";
 import { Row } from "./lib/row";
+import { Img } from "./lib/img";
 
 const dev0 = new Div({
   width: 10,
@@ -52,12 +53,16 @@ const div5 = new Div({
 const group = new Group({
   // flexDirection: "column",
   flexWrap: "wrap",
-  height: 100,
   backgroundColor: "blue",
   flexDirection: "row",
-  // justifyContent: "space-between",
-  // alignItems: "center",
+  justifyContent: "space-between",
+  alignItems: "center",
   children: [
+    new Img({
+      width: 30,
+      height: 50,
+      src: "http://gips3.baidu.com/it/u=1821127123,1149655687&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280"
+    }),
     new Div({
       width: 20,
       height: 30,
