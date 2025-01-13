@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-    <title>Document</title>
-  </head>
 
-  <body>
-    <!-- <div
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <!-- <div
       style="
         width: 100px;
         height: 100px;
@@ -30,13 +28,57 @@
         "
       ></div>
     </div> -->
-    <!-- <div style="padding-bottom: 10px; box-sizing: border-box">
+  <!-- <div style="padding-bottom: 10px; box-sizing: border-box">
       <div style="width: 100px; height: 100px; background-color: red"></div>
     </div> -->
-    <canvas id="canvas"></canvas>
-    <script
-      type="module"
-      src="./main.ts"
-    ></script>
-  </body>
+  <canvas id="canvas"></canvas>
+  <script type="module" src="./main.ts"></script>
+</body>
+
 </html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <script type="module" src="./main.ts"></script>
+  <script>
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const result = document.getElementById("result");
+
+    // 使用 Path2D 缓存路径
+    const rectPath = new Path2D();
+    rectPath.rect(10, 10, 100, 100);
+
+    ctx.fill(rectPath);
+    const rectPath1 = new Path2D();
+    rectPath1.rect(30, 30, 100, 100);
+    // 绘制路径
+    ctx.fill(rectPath1);
+
+
+    // 监听鼠标移动事件
+    canvas.addEventListener("mousemove", (e) => {
+      // 获取鼠标相对于 Canvas 的坐标
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      console.log(x, y);
+      // 检测点是否在路径中
+      const isInside = ctx.isPointInPath(rectPath, x, y);
+      console.log(x, y, isInside); // 输出坐标和检测结果
+    });
+  </script>
+</body>
+
+</html> -->

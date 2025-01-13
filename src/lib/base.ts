@@ -268,6 +268,8 @@ export class Element {
     this.root.ctx.beginPath();
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
+      // const roundRectPath = new Path2D();
+      // roundRectPath.roundRect(50, 50, 200, 100, 20); // 圆角半径为 20
       this.root.ctx.roundRect(
         point.x,
         point.y,
