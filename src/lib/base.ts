@@ -245,12 +245,8 @@ export class Element {
   protected _render() {
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
-    const size = this.size;
     this.root.ctx.save();
-    if (this.backgroundColor) {
-      this.root.ctx.fillStyle = this.backgroundColor;
-      this.root.ctx.fillRect(selfPoint.x, selfPoint.y, size.width, size.height);
-    }
+    this.draw(selfPoint);
     if (this.children?.length) {
       //绝对定位的和相对定位的时候不会因为修改了自己的xy
       //导致界面其他元素的位置发生变化
@@ -269,5 +265,13 @@ export class Element {
     this.root.ctx.restore();
 
     return point;
+  }
+
+  draw(point: Point) {
+    const size = this.size;
+    if (this.backgroundColor) {
+      this.root.ctx.fillStyle = this.backgroundColor;
+      this.root.ctx.fillRect(point.x, point.y, size.width, size.height);
+    }
   }
 }

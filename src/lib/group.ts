@@ -1,11 +1,11 @@
-import { Element, ElementOptions } from "./base";
+import { Element } from "./base";
 import { Column, ColumnOptions } from "./column";
 import { Row, RowOptions } from "./row";
 import { Constraint, Size } from "./utils/constraint";
 
 export type GroupOptions = ColumnOptions | RowOptions;
 
-export class Group extends Element implements ElementOptions {
+export class Group extends Element {
   type = "group";
   _options: any;
   constructor(options: GroupOptions) {

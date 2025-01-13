@@ -1,6 +1,5 @@
 import { ElementOptions, Element } from "./base";
 import { Expanded } from "./expanded";
-import { GroupOptions } from "./group";
 import { Row } from "./row";
 import { Constraint, Size } from "./utils/constraint";
 import { last } from "lodash-es";

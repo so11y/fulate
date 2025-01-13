@@ -1,14 +1,14 @@
 import { AnimationController } from "ac";
-import { Element, ElementOptions } from "./base";
+import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 
-type _ElementOptions = Omit<ElementOptions, "width" | "height"> &
-  Required<Pick<ElementOptions, "width" | "height">>;
-
-interface RootOptions extends _ElementOptions {
+interface RootOptions {
   animationSwitch?: boolean;
   animationTime?: number;
   el: HTMLCanvasElement;
+  width: number;
+  height: number;
+  children?: Element[];
 }
 
 export class Root extends Element {
