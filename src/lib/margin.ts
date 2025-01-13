@@ -2,13 +2,13 @@ import { Element } from "./base";
 import { Constraint, Size } from "./utils/constraint";
 
 interface MarginOptions {
-  margin?: number | [number, number, number, number];
+  margin?: number | [top: number, right: number, bottom: number, left: number];
   child: Element;
 }
 
 export class Margin extends Element implements MarginOptions {
   type = "margin";
-  margin: [number, number, number, number];
+  margin: [top: number, right: number, bottom: number, left: number];
   child: Element;
 
   constructor(options: MarginOptions) {
@@ -18,8 +18,8 @@ export class Margin extends Element implements MarginOptions {
     this.margin = Array.isArray(options.margin)
       ? options.margin
       : options.margin === undefined
-      ? [0, 0, 0, 0]
-      : [options.margin, options.margin, options.margin, options.margin];
+        ? [0, 0, 0, 0]
+        : [options.margin, options.margin, options.margin, options.margin];
   }
 
   getWordPoint() {
