@@ -7,13 +7,15 @@ import { Size } from "./lib/size";
 
 const dev0 = new Element({
   width: 10,
-  height: 10,
+  height: Number.MAX_VALUE,
   backgroundColor: "black"
 });
+
 const div = new Element({
-  width: 50,
-  backgroundColor: "pink"
-  // children: [dev0]
+  width: 20,
+  height: 20,
+  backgroundColor: "pink",
+  children: [dev0]
 });
 
 const div2 = new Element({
@@ -30,13 +32,13 @@ const div3 = new Element({
 
 const div4 = new Expanded({
   child: new Element({
-    // height: 10,
+    minWidth:60,
     backgroundColor: "yellow"
   })
 });
 const div5 = new Expanded({
   child: new Element({
-    // height: 10,
+    height: 10,
     backgroundColor: "purple"
   })
 });
@@ -48,7 +50,12 @@ const group = new Group({
     div,
     // div2,
     // div3,
-    div4
+    div4,
+    // new Expanded({
+    //   child: new Element({
+    //     backgroundColor: "purple"
+    //   })
+    // })
     // div5
   ]
 });
@@ -61,12 +68,11 @@ const root = new Root({
   children: [
     new Size({
       width: 100,
-      maxHeight: 100,
+      // height: 100,
       backgroundColor: "green",
-      child: new Size({
-        minWidth: 50,
-        height: 110,
-        backgroundColor: "red",
+      child: new Padding({
+        padding: [0, 0, 0, 0],
+        child: group
       })
     })
     // new Group({
@@ -92,7 +98,8 @@ const root = new Root({
 });
 
 setTimeout(() => {
-  // dev0.setAttributes({
+  console.log(2222);
+  // div.setAttributes({
   //   width: 40,
   //   height: 40
   // });

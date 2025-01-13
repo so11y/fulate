@@ -18,7 +18,7 @@ export class Column extends Element implements ColumnOptions {
     this.flexWrap = options.flexWrap ?? "nowrap";
   }
   layout(constraint: Constraint) {
-
+  
     const selfConstraint = constraint.extend(this);
     let childConstraint = selfConstraint.clone();
 

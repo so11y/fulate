@@ -1,8 +1,6 @@
-import { Element, ElementOptions } from "./base";
-import { Constraint, Size } from "./utils/constraint";
+import { Element } from "./base";
 
-interface ExpandedOptions
-  extends Omit<ElementOptions, "children" | "x" | "y" | "width" | "height"> {
+interface ExpandedOptions {
   flex?: number;
   child: Element;
 }
@@ -18,7 +16,5 @@ export class Expanded extends Element implements ExpandedOptions {
       children: [options.child]
     });
     this.flex = options.flex ?? 1;
-    this.size = new Size(0, 0);
   }
-
 }

@@ -96,7 +96,7 @@ export class Element {
     });
     const numberKeys = pick(attrs, NUMBER_KEY);
 
-    const size = this.getLayoutRect();
+    const size = this.size;
     const selfStart = {
       x: this.x,
       y: this.y,
@@ -223,15 +223,16 @@ export class Element {
         return child.layout(selfConstraint.clone());
       });
       const rect = rects.reduce(
-        (prev, next) => ({
-          width: Math.max(prev.width, next.width),
-          height: Math.max(prev.height, next.height)
-        }),
+        (prev, next) =>
+          ({
+            width: Math.max(prev.width, next.width),
+            height: Math.max(prev.height, next.height)
+          } as Size),
         new Size(this.width, this.height)
       );
-      this.size = selfConstraint.compareSize(rect)
+      this.size = selfConstraint.compareSize(rect);
     } else {
-      this.size = selfConstraint.compareSize(this)
+      this.size = selfConstraint.compareSize(this);
     }
     return this.size;
   }

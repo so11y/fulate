@@ -11,10 +11,8 @@ export class Row extends Element implements RowOptions {
   type = "row";
 
   layout(constraint: Constraint) {
-
     const selfConstraint = constraint.extend(this);
     let childConstraint = selfConstraint.clone();
-
     const sizes: Array<Size> = [];
 
     let maxHeight = 0;
@@ -42,7 +40,13 @@ export class Row extends Element implements RowOptions {
       );
       if (quantity > 0) {
         expandedChildren.forEach((v) => {
-          v.layout(childConstraint.ratioWidth(v.flex, quantity));
+          const constraint = childConstraint.ratioWidth(v.flex, quantity);
+          if (maxHeight) {
+            constraint.minHeight = maxHeight;
+          }
+          constraint.minWidth = constraint.maxWidth;
+          const size = v.layout(constraint);
+          maxHeight = Math.max(maxHeight, size.height);
         });
       }
     }
@@ -50,17 +54,15 @@ export class Row extends Element implements RowOptions {
     const rect = sizes.reduce(
       (prev, next) => ({
         width: prev.width + next.width,
-        height: Math.max(prev.height, next.height)
+        height: prev.height
       }),
       {
         width: 0,
-        height: 0
+        height: maxHeight
       }
     );
 
-    this.size = selfConstraint.compareSize(
-      rect
-    );
+    this.size = selfConstraint.compareSize(rect);
 
     return this.size;
   }

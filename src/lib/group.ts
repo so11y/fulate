@@ -1,7 +1,7 @@
 import { Element, ElementOptions } from "./base";
 import { Column, ColumnOptions } from "./column";
 import { Row, RowOptions } from "./row";
-import { Constraint } from "./utils/constraint";
+import { Constraint, Size } from "./utils/constraint";
 
 export type GroupOptions = ColumnOptions | RowOptions;
 
@@ -31,6 +31,8 @@ export class Group extends Element implements ElementOptions {
     child.parent = this;
     child.root = this.root;
     this.children = [child];
-    return super._layout(constraint);
+    const childSize = super._layout(constraint);
+    this.size = new Size(constraint.maxWidth, childSize.height);
+    return this.size;
   }
 }

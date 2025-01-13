@@ -11,9 +11,8 @@ export class Constraint<T extends ConstraintSize = any> {
     public maxWidth: number,
     public minHeight: number,
     public maxHeight: number
-  ) { }
+  ) {}
 
-  // 静态工厂方法
   static from(
     minWidth: number,
     maxWidth: number,
@@ -23,7 +22,6 @@ export class Constraint<T extends ConstraintSize = any> {
     return new Constraint(minWidth, maxWidth, minHeight, maxHeight);
   }
 
-  // 静态工厂方法
   static loose(maxWidth: number, maxHeight: number) {
     return new Constraint(0, maxWidth, 0, maxHeight);
   }
@@ -83,7 +81,7 @@ export class Constraint<T extends ConstraintSize = any> {
   // 根据比例计算宽度
   ratioWidth(flex: number, count: number) {
     return Constraint.from(
-      Math.max((this.minWidth / count) * flex, 0),
+      this.minWidth,
       Math.max((this.maxWidth / count) * flex, 0),
       this.minHeight,
       this.maxHeight
@@ -95,46 +93,53 @@ export class Constraint<T extends ConstraintSize = any> {
     return Constraint.from(
       this.minWidth,
       this.maxWidth,
-      Math.max((this.minHeight / count) * flex, 0),
+      this.minHeight,
       Math.max((this.maxHeight / count) * flex, 0)
     );
   }
 
-  extend<G extends Partial<{
-    minWidth: number;
-    maxWidth: number;
-    minHeight: number;
-    maxHeight: number;
-    width: number; height: number
-  }>>(v: G) {
+  extend<
+    G extends Partial<{
+      minWidth: number;
+      maxWidth: number;
+      minHeight: number;
+      maxHeight: number;
+      width: number;
+      height: number;
+    }>
+  >(v: G) {
     const k = {
-      minWidth: v.minWidth ?? this.minWidth,
+      minWidth:
+        v.width === Number.MAX_VALUE
+          ? this.maxWidth
+          : v.minWidth ?? this.minWidth,
       maxWidth: v.width ?? v.maxWidth ?? this.maxWidth,
-      minHeight: v.minHeight ?? this.minHeight,
-      maxHeight: v.height ?? v.maxHeight ?? this.maxHeight,
+      minHeight:
+        v.height === Number.MAX_VALUE
+          ? this.maxHeight
+          : v.minHeight ?? this.minHeight,
+      maxHeight: v.height ?? v.maxHeight ?? this.maxHeight
     };
 
-    return Constraint.from(
-      k.minWidth,
-      k.maxWidth,
-      k.minHeight,
-      k.maxHeight
-    );
+    return Constraint.from(k.minWidth, k.maxWidth, k.minHeight, k.maxHeight);
   }
 
-
   compareSize<G extends Partial<{ width: number; height: number }>>(
-    v: G,
+    v: G
   ): Size {
     const size = new Size();
 
     if (v.width) {
-      size.width = Math.min(Math.max(v.width, this.minWidth), this.maxWidth ?? Number.MAX_VALUE);
+      size.width = Math.min(
+        Math.max(v.width, this.minWidth),
+        this.maxWidth ?? Number.MAX_VALUE
+      );
     }
 
     if (v.height) {
       size.height = Math.min(
-        Math.max(v.height, this.minWidth), this.maxHeight ?? Number.MAX_VALUE
+        Math.max(v.height, this.minHeight),
+        this.maxHeight ?? Number.MAX_VALUE
       );
     }
 
@@ -184,5 +189,12 @@ export class Size {
   constructor(width?: number | undefined, height?: number | undefined) {
     this.width = width ?? 0;
     this.height = height ?? 0;
+  }
+
+  add(size: Size) {
+    return new Size(
+      this.width + (size.width ?? 0),
+      this.height + (size.height ?? 0)
+    );
   }
 }

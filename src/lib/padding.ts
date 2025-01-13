@@ -18,8 +18,8 @@ export class Padding extends Element implements PaddingOptions {
     this.padding = Array.isArray(options.padding)
       ? options.padding
       : options.padding === undefined
-        ? [0, 0, 0, 0]
-        : [options.padding, options.padding, options.padding, options.padding];
+      ? [0, 0, 0, 0]
+      : [options.padding, options.padding, options.padding, options.padding];
   }
 
   getWordPoint() {
@@ -30,12 +30,15 @@ export class Padding extends Element implements PaddingOptions {
       y: rect.y + top
     };
   }
+  
   layout(constraint: Constraint): Size {
     const [top, right, bottom, left] = this.padding!;
-    const selfConstraint = constraint.subHorizontal(left + right).subVertical(top + bottom)
-    const size = this.children![0].layout(selfConstraint);
-    this.size = size
-    return size
+    const selfConstraint = constraint
+      .subHorizontal(left + right)
+      .subVertical(top + bottom);
+    const childSize = this.children![0].layout(selfConstraint);
+    const selfSize = childSize.add(new Size(left + right, top + bottom));
+    this.size = selfSize;
+    return selfSize;
   }
-
 }
