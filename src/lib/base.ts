@@ -46,6 +46,8 @@ export class Element {
   children: Element[] | undefined;
   parent?: Element;
 
+  isBreak: boolean = false;
+
   declare parentOrSiblingPoint: Point;
   declare size: Size;
 
@@ -232,8 +234,8 @@ export class Element {
         new Size(this.width, this.height)
       );
 
-      this.size = rect;
-      // this.size = selfConstraint.compareSize(rect);
+      //允许子元素突破自己的尺寸
+      this.size = this.isBreak ? rect : selfConstraint.compareSize(rect);
     } else {
       this.size = selfConstraint.compareSize(this);
     }

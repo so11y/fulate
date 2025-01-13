@@ -11,6 +11,7 @@ export class Expanded extends Element implements ExpandedOptions {
   flex: number;
   flexBasis: number;
   child: Element;
+  isBreak = true;
 
   constructor(options: ExpandedOptions) {
     super({
