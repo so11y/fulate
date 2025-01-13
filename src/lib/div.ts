@@ -9,7 +9,7 @@ export class Div extends Element implements DivOptions {
   type = "div";
   child: Element;
 
-  constructor(options: DivOptions) {
+  constructor(options: DivOptions = {}) {
     super({
       ...options,
       width: options.width ?? Number.MAX_VALUE,

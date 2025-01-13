@@ -22,6 +22,7 @@ export interface ElementOptions {
   minHeight?: number;
   maxWidth?: number;
   maxHeight?: number;
+  radius?: number | [number, number, number, number];
   // position?: "static" | "absolute" | "relative";
   // margin?: number | Array<number>
   backgroundColor?: string;
@@ -35,6 +36,7 @@ export class Element {
   key?: string;
   x = 0;
   y = 0;
+  radius: number | [number, number, number, number] = 0;
   width: number | undefined = undefined;
   height: number | undefined = undefined;
   maxWidth?: number;
@@ -62,6 +64,7 @@ export class Element {
       this.minWidth = option.minWidth ?? undefined;
       this.minHeight = option.minHeight ?? undefined;
       this.backgroundColor = option?.backgroundColor;
+      this.radius = option.radius ?? 0;
       // this.position = option.position ?? "static";
       this.children = option.children;
     }
@@ -248,19 +251,8 @@ export class Element {
     this.root.ctx.save();
     this.draw(selfPoint);
     if (this.children?.length) {
-      //绝对定位的和相对定位的时候不会因为修改了自己的xy
-      //导致界面其他元素的位置发生变化
       let _point = selfPoint;
-      this.children.forEach((child) => {
-        const v = child.render(_point);
-        if (child.parent?.type === "row" || child.parent?.type === "column") {
-          const c = child.size;
-          _point = {
-            x: child.parent?.type === "row" ? v.x + c.width : v.x,
-            y: child.parent?.type === "row" ? v.y : v.y + c.height
-          };
-        }
-      });
+      this.children.forEach((child) => child.render(_point));
     }
     this.root.ctx.restore();
 
@@ -269,9 +261,17 @@ export class Element {
 
   draw(point: Point) {
     const size = this.size;
+    this.root.ctx.beginPath();
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
-      this.root.ctx.fillRect(point.x, point.y, size.width, size.height);
+      this.root.ctx.roundRect(
+        point.x,
+        point.y,
+        size.width,
+        size.height,
+        this.radius
+      );
+      this.root.ctx.fill();
     }
   }
 }

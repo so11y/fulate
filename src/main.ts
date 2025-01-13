@@ -5,6 +5,7 @@ import { Padding } from "./lib/padding";
 import { Expanded } from "./lib/expanded";
 import { Div } from "./lib/div";
 import { Margin } from "./lib/margin";
+import { Row } from "./lib/row";
 
 const dev0 = new Div({
   width: 10,
@@ -49,18 +50,40 @@ const div5 = new Div({
 });
 
 const group = new Group({
-  // flexDirection: "column",
-  flexWrap: "wrap",
+  flexDirection: "column",
+  // flexWrap: "wrap",
+  height: 100,
   backgroundColor: "blue",
+  // flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
   children: [
     // div,
     // div2,
     // div3,
-    div4,
+    // div4,
+    // new Expanded({
+    //   child: new Div({
+    //     height: Number.MAX_VALUE,
+    //   })
+    // }),
     new Div({
-      width: 60,
+      width: 20,
+      height: 30,
+      // radius: [0, 0, 0, 0],
+      backgroundColor: "red"
+    }),
+    new Div({
+      width: 30,
       height: 20,
-      backgroundColor: "black"
+      // radius: [0, 0, 0, 0],
+      backgroundColor: "yellow"
+    }),
+    new Div({
+      width: 20,
+      height: 20,
+      // radius: [0, 0, 0, 0],
+      backgroundColor: "yellow"
     })
     // new Expanded({
     //   child: new Margin({

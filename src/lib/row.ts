@@ -1,14 +1,28 @@
 import { Expanded } from "./expanded";
 import { Constraint, Size } from "./utils/constraint";
-import { Element, ElementOptions } from "./base";
+import { Element, ElementOptions, Point } from "./base";
+import { Div } from "./div";
 
 export interface RowOptions extends ElementOptions {
+  justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
+  alignItems?: "flex-start" | "flex-end" | "center";
   flexDirection?: "row";
   flexWrap?: "wrap" | "nowrap";
 }
 
 export class Row extends Element implements RowOptions {
   type = "row";
+  justifyContent?: "flex-start" | "flex-end" | "center" | "space-between" =
+    "flex-start";
+  alignItems?: "flex-start" | "flex-end" | "center" | undefined;
+  constructor(options: RowOptions = {}) {
+    super({
+      ...options,
+      children: options.children ?? []
+    });
+    this.justifyContent = options.justifyContent ?? "flex-start";
+    this.alignItems = options.alignItems ?? "flex-start";
+  }
 
   layout(constraint: Constraint) {
     const selfConstraint = constraint.extend(this);
@@ -16,11 +30,13 @@ export class Row extends Element implements RowOptions {
     const sizes: Array<Size> = [];
 
     let maxHeight = 0;
+
     for (let i = 0; i < this.children!.length; i++) {
       const child = this.children![i];
       child.parent = this;
       child.root = this.root;
       if (child.type === "expanded") {
+        childConstraint.subHorizontal((child as Expanded).flexBasis);
         continue;
       }
       const size = child.layout(childConstraint);
@@ -30,7 +46,7 @@ export class Row extends Element implements RowOptions {
     }
 
     const expandedChildren = this.children!.filter(
-      (v) => v.type === "expanded" && (v as Expanded).flex
+      (v) => v.type === "expanded" //&& (v as Expanded).flex
     ) as Expanded[];
 
     if (expandedChildren.length) {
@@ -38,32 +54,75 @@ export class Row extends Element implements RowOptions {
         (prev, child) => prev + child.flex,
         0
       );
-      if (quantity > 0) {
-        expandedChildren.forEach((v) => {
-          const constraint = childConstraint.ratioWidth(v.flex, quantity);
-          if (maxHeight) {
-            constraint.minHeight = maxHeight;
-          }
-          // constraint.minWidth = constraint.maxWidth;
-          const size = v.layout(constraint);
-          maxHeight = Math.max(maxHeight, size.height);
-        });
-      }
+      expandedChildren.forEach((v) => {
+        const constraint = childConstraint.ratioWidth(v.flex, quantity);
+        if (maxHeight) {
+          constraint.minHeight = maxHeight;
+        }
+        const size = v.layout(constraint);
+        maxHeight = Math.max(maxHeight, size.height);
+      });
     }
 
-    const rect = sizes.reduce(
-      (prev, next) => ({
-        width: prev.width + next.width,
-        height: prev.height
-      }),
-      {
-        width: 0,
-        height: maxHeight
-      }
-    );
-
-    this.size = selfConstraint.compareSize(rect);
+    if (this.parent?.type === "group") {
+      this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
+    } else {
+      this.size = new Size(selfConstraint.maxWidth, maxHeight);
+    }
 
     return this.size;
+  }
+
+  render(parentPoint: Point): Point {
+    this.renderBefore(parentPoint!);
+    const point = this.getWordPoint();
+    const selfPoint = this.getLocalPoint(point);
+
+    this.root.ctx.save();
+    this.draw(selfPoint);
+    const toggleWidth = this.children!.reduce(
+      (prev, next) => prev + next.size.width,
+      0
+    );
+    switch (this.justifyContent) {
+      case "flex-end": {
+        selfPoint.x += this.size.width - toggleWidth;
+        break;
+      }
+      case "center": {
+        const offset = (this.size.width - toggleWidth) / 2;
+        selfPoint.x += offset;
+        break;
+      }
+    }
+    if (this.children?.length) {
+      const size = this.size;
+      let _point = selfPoint;
+      const betweenX =
+        (this.size.width - toggleWidth) / (this.children!.length - 1);
+      let x = 0;
+      this.children.forEach((child, index) => {
+        switch (this.alignItems) {
+          case "center": {
+            child.y = _point.y + (size.height - child.size.height) / 2;
+            break;
+          }
+          case "flex-end": {
+            child.y = _point.y + size.height - child.size.height;
+            break;
+          }
+        }
+        if (this.justifyContent === "space-between") {
+          child.x = index == 0 ? 0 : (x += betweenX);
+        }
+        const v = child.render(_point);
+        _point = {
+          x: v.x + child.size.width,
+          y: v.y
+        };
+      });
+    }
+    this.root.ctx.restore();
+    return point;
   }
 }
