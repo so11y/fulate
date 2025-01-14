@@ -147,9 +147,9 @@ setTimeout(() => {
   // });
 }, 1000);
 
-
+/*
+*/
 // new Group({
-//   height: 80,
 //   children: [
 //     new Container({
 //       width: 50,
@@ -158,7 +158,11 @@ setTimeout(() => {
 //     }),
 //     new Expanded({
 //       child: new Container({
+//         //group没有高度，取当前兄弟中最大高度
+//         //group有高度,取group高度
+//         height: Number.MAX_VALUE,
 //         backgroundColor: "blue"
 //       }),
 //     })
-// ])
+//   ]
+// })
