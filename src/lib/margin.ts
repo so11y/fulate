@@ -15,6 +15,7 @@ export class Margin extends Element implements MarginOptions {
 
   constructor(options: MarginOptions) {
     super({
+      ignoreIndex: options.ignoreIndex,
       children: options.child ? [options.child] : []
     });
     this.margin = Array.isArray(options.margin)

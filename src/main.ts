@@ -109,6 +109,8 @@ const root = new Root({
 root.mounted();
 
 setTimeout(() => {
+
+  console.log(root,'-');
   const junFei = root.getElementByKey("俊飞")!;
 
   junFei.setAttributes({

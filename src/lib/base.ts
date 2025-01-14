@@ -34,7 +34,7 @@ export interface ElementOptions {
 
 export class Element extends EventTarget {
   static index = 0;
-  index = 0;
+  index?;
   root: Root;
   isDirty: boolean = false;
   type = "element";
@@ -58,7 +58,7 @@ export class Element extends EventTarget {
   isMounted = false;
   ac: AnimationController;
   isBreak: boolean = false;
-  ignoreIndex?: boolean
+  ignoreIndex?: boolean;
 
   declare parentOrSiblingPoint: Point;
   declare size: Size;
@@ -80,6 +80,7 @@ export class Element extends EventTarget {
       this.overflow = option.overflow ?? "visible";
       this.translate = option.translate;
       this.rotate = option.rotate;
+      this.ignoreIndex = option.ignoreIndex ?? false;
       // this.position = option.position ?? "static";
       this.children = option.children;
       if (this.ignoreIndex === false) {

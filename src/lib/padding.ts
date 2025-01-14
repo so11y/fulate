@@ -14,6 +14,7 @@ export class Padding extends Element implements PaddingOptions {
 
   constructor(options: PaddingOptions) {
     super({
+      ignoreIndex: options.ignoreIndex,
       children: options.child ? [options.child] : undefined
     });
     this.padding = Array.isArray(options.padding)
