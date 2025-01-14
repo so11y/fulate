@@ -31,7 +31,8 @@ const root = new Root({
               })
             ]
           }),
-          //如果只剩下一个元素，可以不用Expanded,Group会把剩余宽度拉满
+          //其他元素都是已知宽或高
+          //那么最后可以不用Expanded,会把剩余Group宽度高度拉满,Container会把宽度拉满
           new Group({
             flexDirection: "column",
             children: [
