@@ -119,7 +119,6 @@ export class Column extends Element implements ColumnOptions {
         }
 
         const row = new Row({
-          ignoreIndex: true,
           justifyContent: this.alignItems
         });
         row.parent = this;
@@ -156,7 +155,6 @@ export class Column extends Element implements ColumnOptions {
           return v;
       }
       const row = new Row({
-        ignoreIndex: true,
         justifyContent: this.alignItems,
         children: [v]
       });

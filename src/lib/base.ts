@@ -26,15 +26,11 @@ export interface ElementOptions {
   translate?: [x: number, y: number];
   rotate?: number;
   // position?: "static" | "absolute" | "relative";
-  // margin?: number | Array<number>
   backgroundColor?: string;
-  ignoreIndex?: boolean
   children?: Element[];
 }
 
 export class Element extends EventTarget {
-  static index = 0;
-  index?;
   root: Root;
   isDirty: boolean = false;
   type = "element";
@@ -42,8 +38,8 @@ export class Element extends EventTarget {
   x = 0;
   y = 0;
   radius: number | [number, number, number, number] = 0;
-  width: number | undefined = undefined;
-  height: number | undefined = undefined;
+  width: number | undefined;
+  height: number | undefined;
   maxWidth?: number;
   maxHeight?: number;
   minWidth?: number;
@@ -52,13 +48,11 @@ export class Element extends EventTarget {
   overflow?: "hidden" | "visible";
   translate?: [x: number, y: number];
   rotate?: number;
-  // position: string = "static";
   children: Element[] | undefined;
   parent?: Element;
   isMounted = false;
   ac: AnimationController;
   isBreak: boolean = false;
-  ignoreIndex?: boolean;
 
   declare parentOrSiblingPoint: Point;
   declare size: Size;
@@ -80,12 +74,8 @@ export class Element extends EventTarget {
       this.overflow = option.overflow ?? "visible";
       this.translate = option.translate;
       this.rotate = option.rotate;
-      this.ignoreIndex = option.ignoreIndex ?? false;
       // this.position = option.position ?? "static";
       this.children = option.children;
-      if (this.ignoreIndex === false) {
-        this.index = Element.index++;
-      }
     }
   }
 

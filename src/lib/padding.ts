@@ -3,7 +3,6 @@ import { Constraint, Size } from "./utils/constraint";
 export interface PaddingOptions {
   padding?: number | [top: number, right: number, bottom: number, left: number];
   child?: Element;
-  ignoreIndex?: boolean;
   key?: string;
 }
 
@@ -14,7 +13,6 @@ export class Padding extends Element implements PaddingOptions {
 
   constructor(options: PaddingOptions) {
     super({
-      ignoreIndex: options.ignoreIndex,
       children: options.child ? [options.child] : undefined
     });
     this.padding = Array.isArray(options.padding)

@@ -5,7 +5,6 @@ export interface MarginOptions {
   margin?: number | [top: number, right: number, bottom: number, left: number];
   child?: Element;
   key?: string;
-  ignoreIndex?: boolean;
 }
 
 export class Margin extends Element implements MarginOptions {
@@ -15,7 +14,6 @@ export class Margin extends Element implements MarginOptions {
 
   constructor(options: MarginOptions) {
     super({
-      ignoreIndex: options.ignoreIndex,
       children: options.child ? [options.child] : []
     });
     this.margin = Array.isArray(options.margin)
