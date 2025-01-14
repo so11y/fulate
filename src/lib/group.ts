@@ -19,6 +19,7 @@ export class Group extends Element {
   }
 
   layout(constraint: Constraint) {
+    const selfConstraint = constraint.extend(this);
     let child;
     if (
       this._options.flexWrap == "wrap" ||
@@ -32,7 +33,7 @@ export class Group extends Element {
     child.root = this.root;
     this.children = [child];
     const childSize = super._layout(constraint);
-    this.size = new Size(constraint.maxWidth, childSize.height);
+    this.size = new Size(selfConstraint.maxWidth, childSize.height);
     return this.size;
   }
 }

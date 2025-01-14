@@ -1,9 +1,9 @@
 import { Element } from "./base";
 import { Constraint, Size } from "./utils/constraint";
 
-interface MarginOptions {
+export interface MarginOptions {
   margin?: number | [top: number, right: number, bottom: number, left: number];
-  child: Element;
+  child?: Element;
 }
 
 export class Margin extends Element implements MarginOptions {
@@ -13,13 +13,13 @@ export class Margin extends Element implements MarginOptions {
 
   constructor(options: MarginOptions) {
     super({
-      children: [options.child]
+      children: options.child ? [options.child] : []
     });
     this.margin = Array.isArray(options.margin)
       ? options.margin
       : options.margin === undefined
-        ? [0, 0, 0, 0]
-        : [options.margin, options.margin, options.margin, options.margin];
+      ? [0, 0, 0, 0]
+      : [options.margin, options.margin, options.margin, options.margin];
   }
 
   getWordPoint() {
@@ -33,7 +33,7 @@ export class Margin extends Element implements MarginOptions {
 
   layout(constraint: Constraint): Size {
     const [top, right, bottom, left] = this.margin!;
-    const childSize = this.children![0].layout(constraint);
+    const childSize = this.children?.[0]?.layout(constraint) || new Size(0, 0);
     const selfSize = childSize.add(new Size(left + right, top + bottom));
     this.size = selfSize;
     return selfSize;

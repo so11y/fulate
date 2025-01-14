@@ -11,7 +11,7 @@ export class Constraint<T extends ConstraintSize = any> {
     public maxWidth: number,
     public minHeight: number,
     public maxHeight: number
-  ) { }
+  ) {}
 
   static from(
     minWidth: number,
@@ -108,11 +108,14 @@ export class Constraint<T extends ConstraintSize = any> {
       height: number;
     }>
   >(v: G) {
-    const maxHeight = v.height === Number.MAX_VALUE
-      ? this.maxHeight : v.maxHeight ?? v.height ?? this.maxHeight;
-    const maxWidth = v.width === Number.MAX_VALUE
-      ? this.maxWidth
-      : v.maxWidth ?? v.width ?? this.maxWidth;
+    const maxHeight =
+      v.height === Number.MAX_VALUE
+        ? this.maxHeight
+        : v.maxHeight ?? v.height ?? this.maxHeight;
+    const maxWidth =
+      v.width === Number.MAX_VALUE
+        ? this.maxWidth
+        : v.maxWidth ?? v.width ?? this.maxWidth;
     const k = {
       minWidth:
         v.width === Number.MAX_VALUE
@@ -133,6 +136,7 @@ export class Constraint<T extends ConstraintSize = any> {
     v: G
   ): Size {
     const size = new Size();
+
     if (v.width) {
       size.width = Math.min(
         Math.max(v.width, this.minWidth),

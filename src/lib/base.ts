@@ -241,6 +241,7 @@ export class Element {
         } as Size),
         new Size(this.width, this.height)
       );
+      console.log(1);
       //允许子元素突破自己的尺寸
       this.size = this.isBreak ? rect : selfConstraint.compareSize(rect);
     } else {

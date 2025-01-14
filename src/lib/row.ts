@@ -2,7 +2,7 @@ import { Expanded } from "./expanded";
 import { Constraint, Size } from "./utils/constraint";
 import { Element, ElementOptions, Point } from "./base";
 
-export interface RowOptions extends Omit<ElementOptions, "width" | "height"> {
+export interface RowOptions extends ElementOptions {
   justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
   alignItems?: "flex-start" | "flex-end" | "center";
   flexDirection?: "row";
@@ -45,7 +45,7 @@ export class Row extends Element implements RowOptions {
     }
 
     const expandedChildren = this.children!.filter(
-      (v) => v.type === "expanded" //&& (v as Expanded).flex
+      (v) => v.type === "expanded"
     ) as Expanded[];
 
     if (expandedChildren.length) {
@@ -55,9 +55,13 @@ export class Row extends Element implements RowOptions {
       );
       expandedChildren.forEach((v) => {
         const constraint = childConstraint.ratioWidth(v.flex, quantity);
-        if (maxHeight) {
-          constraint.minHeight = maxHeight;
-        }
+        constraint.maxHeight = Math.max(
+          this.height === Number.MAX_VALUE
+            ? selfConstraint.maxHeight
+            : this.height ?? 0,
+          selfConstraint.minHeight,
+          maxHeight
+        );
         const size = v.layout(constraint);
         maxHeight = Math.max(maxHeight, size.height);
       });
