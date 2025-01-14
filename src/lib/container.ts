@@ -22,7 +22,6 @@ export class Container extends Element implements ContainerOptions {
   layout(constraint: Constraint): Size {
     let root: Element | undefined;
     let last: Element | undefined;
-    console.log(1);
     if (this._options.margin) {
       last = root = new Margin({ margin: this._options.margin });
     }
