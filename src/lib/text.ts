@@ -1,7 +1,7 @@
-import { Element, Point } from "./base";
+import { Element, Point, ElementOptions } from "./base";
 import { Constraint, Size } from "./utils/constraint";
 
-export interface TextOptions {
+export interface TextOptions extends ElementOptions {
   text: string;
   color?: string;
   font?: {
@@ -23,7 +23,7 @@ export class Text extends Element implements TextOptions {
   texts: Array<{ text: string; textMetrics: TextMetrics }> = [];
 
   constructor(options: TextOptions) {
-    super();
+    super(options);
     this.text = options.text;
     this.font = options.font;
     this.color = options.color;
@@ -54,13 +54,14 @@ export class Text extends Element implements TextOptions {
   }
 
   draw(point: Point): void {
+    super.draw(point);
     if (this.font) {
       this.root.ctx.font = generateFont(this.root.font, this.font);
     }
     const { color, fontSize, lineHeight } = this.getFontOptions();
     const textHeight = fontSize * lineHeight;
     this.root.ctx.fillStyle = color;
-    let top =  (textHeight - fontSize) / 2;
+    let top = (textHeight - fontSize) / 2;
     this.texts.forEach((v, index) => {
       this.root.ctx.fillText(
         v.text,

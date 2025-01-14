@@ -1,4 +1,4 @@
-import { AnimationController } from "ac";
+import { AnimationController, AnimationType } from "ac";
 import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 import { generateFont, TextOptions } from "./text";
@@ -20,7 +20,7 @@ export class Root extends Element {
   ctx: CanvasRenderingContext2D;
   type = "root";
   ac: AnimationController;
-  keyMap = new Map<string, Element[]>();
+  keyMap = new Map<string, Element>();
   font: Required<RootOptions["font"]>;
   constructor(options: RootOptions) {
     super(options);
@@ -43,9 +43,39 @@ export class Root extends Element {
       weight: options.font?.weight ?? "normal"
     };
   }
+
+  mounted() {
+    this.render();
+    super.mounted();
+  }
+
+  getElementByKey<T = Element>(key: string): T | undefined {
+    return this.keyMap.get(key) as any;
+  }
+
+  nextFrame() {
+    return new Promise((resolve) => {
+      this.ac.addEventListener(
+        AnimationType.END,
+        () => {
+          this.ac.timeLine.progress = 0;
+          resolve(null);
+        },
+        {
+          once: true
+        }
+      );
+      this.ac.timeLine.progress = 1;
+      this.ac.play();
+    });
+  }
+
   render() {
-    this.ctx.clearRect(0, 0, this.width!, this.height!);
     const point = this.getLocalPoint();
+    if (this.isDirty) {
+      return point;
+    }
+    this.ctx.clearRect(0, 0, this.width!, this.height!);
     this.isDirty = true;
     this.ctx.font = generateFont(this.font);
     // this.ctx.textBaseline ="ideographic"

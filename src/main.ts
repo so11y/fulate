@@ -7,6 +7,7 @@ import { Row } from "./lib/row";
 import { CircleImg, Img } from "./lib/img";
 import { Container } from "./lib/container";
 import { Text } from "./lib/text";
+import { AnimationType, ColorTween, Keyframe, Keyframes, Tween } from "ac";
 
 const root = new Root({
   el: document.getElementById("canvas") as HTMLCanvasElement,
@@ -30,8 +31,8 @@ const root = new Root({
             })
           ]
         }),
-        //其他元素都是已知宽或高
-        //那么最后可以不用Expanded,会把剩余Group宽度高度拉满,Container会把宽度拉满
+        // 其他元素都是已知宽或高
+        // 那么最后可以不用Expanded,会把剩余Group宽度高度拉满,Container会把宽度拉满
         new Group({
           flexDirection: "column",
           children: [
@@ -60,10 +61,12 @@ const root = new Root({
                   alignItems: "center",
                   children: [
                     new Container({
+                      key: "俊飞",
                       margin: [0, 10, 0, 0],
                       padding: [0, 4, 0, 4],
                       radius: 4,
                       width: "auto",
+                      rotate: 20,
                       backgroundColor: "red",
                       child: new Text({
                         color: "#fff",
@@ -103,22 +106,31 @@ const root = new Root({
   ]
 });
 
-// const root = new Root({
-//   el: document.getElementById("canvas") as HTMLCanvasElement,
-//   width: 500,
-//   height: 500,
-//   font: {
-//     family: "Microsoft YaHei"
-//   },
-//   animationSwitch: true,
-//   children: [
-//     new Container({
-//       backgroundColor: "#d0cae3",
-//       child: new Text({
-//         text: "hello world"
-//       })
-//     })
-//   ]
-// });
+root.mounted();
 
-root.render();
+setTimeout(() => {
+  const junFei = root.getElementByKey("俊飞")!;
+
+  junFei.setAttributes({
+    rotate: 360
+  });
+
+  // const rotate = (junFei as any)._options.rotate!;
+  // const ac = junFei.animate(1000).ac;
+
+  // new Tween(rotate, 360).animate(ac).builder((value) => {
+  //   (junFei as any)._options.rotate = value;
+  //   root.render();
+  // });
+
+  // ac.addEventListener(AnimationType.END, () => {
+  //   ac.reStart();
+  //   ac.timeLine.progress = 0.99;
+  //   ac.reverse()
+  //   console.log(1);
+  // });
+  // ac.play();
+  // junFei.setAttributes({
+  //   rotate: 360
+  // });
+}, 1000);

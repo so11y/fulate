@@ -15,10 +15,7 @@ export class Row extends Element implements RowOptions {
     "flex-start";
   alignItems?: "flex-start" | "flex-end" | "center" | undefined;
   constructor(options: RowOptions = {}) {
-    super({
-      ...options,
-      children: options.children ?? []
-    });
+    super(options);
     this.justifyContent = options.justifyContent ?? "flex-start";
     this.alignItems = options.alignItems ?? "flex-start";
   }

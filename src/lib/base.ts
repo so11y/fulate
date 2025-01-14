@@ -1,17 +1,15 @@
 import { Root } from "./root";
-import { Group } from "./group";
 import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
-import { Margin } from "./margin";
 
 export interface Point {
   x: number;
   y: number;
 }
 
-const NEED_LAYOUT_KYE = ["width", "height"];
-const NUMBER_KEY = ["width", "height", "x", "y"];
+const NEED_LAYOUT_KYE = ["width", "height", "rotate", "translate"];
+const NUMBER_KEY = ["width", "height", "x", "y", "rotate", "translate"];
 
 export interface ElementOptions {
   key?: string;
@@ -25,13 +23,17 @@ export interface ElementOptions {
   maxHeight?: number;
   radius?: number | [number, number, number, number];
   overflow?: "hidden" | "visible";
+  translate?: [x: number, y: number];
+  rotate?: number;
   // position?: "static" | "absolute" | "relative";
   // margin?: number | Array<number>
   backgroundColor?: string;
   children?: Element[];
 }
 
-export class Element {
+export class Element extends EventTarget {
+  static index = 0;
+  index = 0;
   root: Root;
   isDirty: boolean = false;
   type = "element";
@@ -47,17 +49,22 @@ export class Element {
   minHeight?: number;
   backgroundColor?: string;
   overflow?: "hidden" | "visible";
+  translate?: [x: number, y: number];
+  rotate?: number;
   // position: string = "static";
   children: Element[] | undefined;
   parent?: Element;
-
+  isMounted = false;
+  ac: AnimationController;
   isBreak: boolean = false;
 
   declare parentOrSiblingPoint: Point;
   declare size: Size;
 
   constructor(option?: ElementOptions) {
+    super();
     if (option) {
+      this.key = option.key;
       this.x = option.x ?? 0;
       this.y = option.y ?? 0;
       this.width = option.width ?? undefined;
@@ -69,9 +76,11 @@ export class Element {
       this.backgroundColor = option?.backgroundColor;
       this.radius = option.radius ?? 0;
       this.overflow = option.overflow ?? "visible";
-      this.key = option.key;
+      this.translate = option.translate;
+      this.rotate = option.rotate;
       // this.position = option.position ?? "static";
       this.children = option.children;
+      this.index = Element.index++;
     }
   }
 
@@ -101,36 +110,40 @@ export class Element {
     return this.parent?.children?.filter((v) => v !== this);
   }
 
-  setAttributes(attrs: ElementOptions) {
+  setAttributes(attrs: ElementOptions, sourceTarget?: any) {
+    const target = sourceTarget ?? this;
     Object.keys(omit(attrs, NUMBER_KEY)).forEach((key) => {
-      this[key] = attrs[key];
+      target[key] = attrs[key];
     });
     const numberKeys = pick(attrs, NUMBER_KEY);
 
     const size = this.size;
     const selfStart = {
-      x: this.x,
-      y: this.y,
+      x: target.x,
+      y: target.y,
       width: size.width,
-      height: size.height
+      height: size.height,
+      rotate: target.rotate
     };
+    const ac = this.ac || this.root.ac;
     const tween = new Tween(
       pick(selfStart, Object.keys(numberKeys)),
       numberKeys
     )
-      .animate(this.root.ac)
+      .animate(ac)
       .builder((value) => {
         // this.isDirty = true;
         // this.clearDirty();
         Object.keys(value).forEach((key) => {
-          this[key] = value[key];
+          target[key] = value[key];
         });
         this.root.render();
       });
-    this.root.ac.addEventListener(AnimationType.END, () => tween.destroy(), {
+
+    ac.addEventListener(AnimationType.END, () => tween.destroy(), {
       once: true
     });
-    this.root.ac.play();
+    ac.play();
 
     //先不做局部清理了
     // this.isDirty = true;
@@ -175,12 +188,14 @@ export class Element {
     child.root = this.root;
     this.children.push(child);
     this.root.render();
+    child.mounted();
   }
 
   removeChild(child: Element) {
     if (!this.children) {
       return;
     }
+    child.unmounted();
     this.children = this.children.filter((c) => c !== child);
     this.root.render();
   }
@@ -200,26 +215,6 @@ export class Element {
       this.root.ctx.restore();
     }
   }
-
-  render(parentPoint: Point = this.parentOrSiblingPoint) {
-    return this.renderBefore(parentPoint)._render();
-  }
-
-  renderBefore(parentPoint: Point) {
-    this.parentOrSiblingPoint = parentPoint;
-    if (this.children) {
-      this.children.map((child) => {
-        child.root = this.root;
-        child.parent = this;
-        return child;
-      });
-    }
-    return this;
-  }
-
-  // layout(constraint: Constraint) {
-  //   return this._layout(constraint);
-  // }
 
   getForSizeConstraint(size: Size) {
     return Constraint.loose(size.width, size.height);
@@ -249,6 +244,22 @@ export class Element {
     return this.size;
   }
 
+  render(parentPoint: Point = this.parentOrSiblingPoint) {
+    return this.renderBefore(parentPoint)._render();
+  }
+
+  renderBefore(parentPoint: Point) {
+    this.parentOrSiblingPoint = parentPoint;
+    if (this.children) {
+      this.children.map((child) => {
+        child.root = this.root;
+        child.parent = this;
+        return child;
+      });
+    }
+    return this;
+  }
+
   protected _render() {
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
@@ -256,7 +267,9 @@ export class Element {
     this.draw(selfPoint);
     if (this.children?.length) {
       let _point = selfPoint;
-      this.children.forEach((child) => child.render(_point));
+      this.children.forEach((child) => {
+        child.render(_point);
+      });
     }
     this.root.ctx.restore();
 
@@ -266,6 +279,17 @@ export class Element {
   draw(point: Point) {
     const size = this.size;
     this.root.ctx.beginPath();
+    if (this.translate) {
+      const [tx, ty] = this.translate;
+      this.root.ctx.translate(tx, ty);
+    }
+    if (this.rotate) {
+      const centerX = point.x + size.width / 2;
+      const centerY = point.y + size.height / 2;
+      this.root.ctx.translate(centerX, centerY);
+      this.root.ctx.rotate(this.rotate * (Math.PI / 180));
+      this.root.ctx.translate(-centerX, -centerY);
+    }
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
       // const roundRectPath = new Path2D();
@@ -279,8 +303,39 @@ export class Element {
       );
       this.root.ctx.fill();
     }
+
     if (this.overflow === "hidden") {
       this.root.ctx.clip();
+    }
+  }
+
+  animate(duration: number) {
+    if (!this.ac) {
+      this.ac = new AnimationController(duration);
+    } else {
+      this.ac.duration = duration;
+    }
+    return this;
+  }
+
+  mounted() {
+    if (!this.isMounted) {
+      if (this.key) {
+        this.root.keyMap.set(this.key, this);
+      }
+    }
+    if (this.children?.length) {
+      this.children.forEach((child) => child.mounted());
+    }
+    this.isMounted = true;
+  }
+
+  unmounted() {
+    if (this.key) {
+      this.root.keyMap.delete(this.key);
+    }
+    if (this.children?.length) {
+      this.children.forEach((child) => child.unmounted());
     }
   }
 }
