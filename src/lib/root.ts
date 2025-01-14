@@ -21,6 +21,7 @@ export class Root extends Element {
   type = "root";
   ac: AnimationController;
   keyMap = new Map<string, Element>();
+  quickSet = new Set<Element>();
   font: Required<RootOptions["font"]>;
   constructor(options: RootOptions) {
     super(options);
@@ -47,6 +48,11 @@ export class Root extends Element {
   mounted() {
     this.render();
     super.mounted();
+    this.el.addEventListener("click",()=>{
+      this.quickSet.forEach(v=>{
+
+      })
+    })
   }
 
   getElementByKey<T = Element>(key: string): T | undefined {

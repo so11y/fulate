@@ -121,6 +121,7 @@ export class Column extends Element implements ColumnOptions {
         const row = new Row({
           justifyContent: this.alignItems
         });
+        row.isInternal = true;
         row.parent = this;
         row.root = this.root;
         const children = currentRow.children.map((v) => {
@@ -158,6 +159,7 @@ export class Column extends Element implements ColumnOptions {
         justifyContent: this.alignItems,
         children: [v]
       });
+      row.isInternal = true;
       row.parent = this;
       row.root = this.root;
       v.parent = row;

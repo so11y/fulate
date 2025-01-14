@@ -2,6 +2,7 @@ import { Root } from "./root";
 import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
+import { EventManage } from "./utils/eventMeager";
 
 export interface Point {
   x: number;
@@ -31,6 +32,7 @@ export interface ElementOptions {
 }
 
 export class Element extends EventTarget {
+  eventMeager = new EventManage(this);
   root: Root;
   isDirty: boolean = false;
   type = "element";
@@ -53,7 +55,11 @@ export class Element extends EventTarget {
   isMounted = false;
   ac: AnimationController;
   isBreak: boolean = false;
-
+  //如果是container这种内部嵌套的组件
+  //因为每次layout会对这些组件进行重建
+  //所以这些组件不算是真实的，将会被标记true
+  //主动代码new出来的才是false
+  isInternal: boolean = false
   declare parentOrSiblingPoint: Point;
   declare size: Size;
 
@@ -314,10 +320,12 @@ export class Element extends EventTarget {
   }
 
   mounted() {
-    if (!this.isMounted) {
+    if (!this.isMounted && !this.isInternal) {
       if (this.key) {
         this.root.keyMap.set(this.key, this);
       }
+      this.root.quickSet.add(this)
+      this.eventMeager.mounted()
     }
     if (this.children?.length) {
       this.children.forEach((child) => child.mounted());
@@ -325,10 +333,17 @@ export class Element extends EventTarget {
     this.isMounted = true;
   }
 
+
+  click = () => {
+    this.eventMeager.notify("click")
+  }
+
   unmounted() {
     if (this.key) {
       this.root.keyMap.delete(this.key);
     }
+    this.eventMeager.unmounted()
+    this.root.quickSet.delete(this)
     if (this.children?.length) {
       this.children.forEach((child) => child.unmounted());
     }

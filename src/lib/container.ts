@@ -40,10 +40,12 @@ export class Container extends Element implements ContainerOptions {
       last = root = new Margin({
         margin: this._options.margin
       });
+      last.isInternal = true;
     }
 
     const div = new Element(this._options as ElementOptions);
     div.key = undefined;
+    div.isInternal = true;
     div.width =
       this._options.width === "auto"
         ? undefined
@@ -60,6 +62,7 @@ export class Container extends Element implements ContainerOptions {
       const padding = new Padding({
         padding: this._options.padding
       });
+      padding.isInternal = true;
       if (last) {
         last.children = [padding];
         last = padding;
@@ -67,7 +70,6 @@ export class Container extends Element implements ContainerOptions {
         root = padding;
       }
     }
-
     // 处理 child
     if (this._options.child) {
       if (last) {

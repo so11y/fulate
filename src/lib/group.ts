@@ -29,6 +29,7 @@ export class Group extends Element {
     } else {
       child = new Row(this._options);
     }
+    child.isInternal = true;
     child.parent = this;
     child.root = this.root;
     this.children = [child];
