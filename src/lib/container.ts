@@ -1,11 +1,15 @@
 import { Element, ElementOptions } from "./base";
-import { Div } from "./div";
 import { Margin, MarginOptions } from "./margin";
 import { Padding, PaddingOptions } from "./padding";
 import { Constraint, Size } from "./utils/constraint";
 
 interface ContainerOptions
-  extends Omit<ElementOptions & PaddingOptions & MarginOptions, "x" | "y"> {}
+  extends Omit<
+    ElementOptions & PaddingOptions & MarginOptions,
+    "x" | "y" | "width"
+  > {
+  width?: "auto" | number;
+}
 
 export class Container extends Element implements ContainerOptions {
   type = "Container";
@@ -13,20 +17,24 @@ export class Container extends Element implements ContainerOptions {
   _options: ContainerOptions;
 
   constructor(options: ContainerOptions) {
-    super({
-      width: options.width ?? Number.MAX_VALUE,
-      children: options.child === undefined ? [] : [options.child]
-    });
+    super();
     this._options = options;
   }
   layout(constraint: Constraint): Size {
+    const selfConstraint = constraint.extend(this);
     let root: Element | undefined;
     let last: Element | undefined;
     if (this._options.margin) {
       last = root = new Margin({ margin: this._options.margin });
     }
 
-    const div = new Div(this._options);
+    const div = new Element({
+      ...this._options,
+      width:
+        this._options.width === "auto"
+          ? undefined
+          : this._options.width ?? Number.MAX_VALUE
+    });
     if (last) {
       last.children = [div];
       last = div;
@@ -53,7 +61,8 @@ export class Container extends Element implements ContainerOptions {
     root!.parent = this;
     root!.root = this.root;
     this.children = [root!];
-    this.size = root?.layout(constraint) ?? new Size(0, 0);
+    this.size = root?.layout(selfConstraint) ?? new Size(0, 0);
+    console.log(1);
     return this.size;
   }
 }

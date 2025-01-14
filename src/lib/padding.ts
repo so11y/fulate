@@ -37,7 +37,7 @@ export class Padding extends Element implements PaddingOptions {
       .subVertical(top + bottom);
     let childSize = new Size(0, 0);
     if (this.children) {
-      childSize = this.children![0].layout(selfConstraint);
+      childSize = super.layout(selfConstraint); //this.children![0].layout(selfConstraint);
     }
     const selfSize = childSize.add(new Size(left + right, top + bottom));
     this.size = selfSize;

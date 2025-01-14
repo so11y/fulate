@@ -217,15 +217,15 @@ export class Element {
     return this;
   }
 
-  layout(constraint: Constraint) {
-    return this._layout(constraint);
-  }
+  // layout(constraint: Constraint) {
+  //   return this._layout(constraint);
+  // }
 
   getForSizeConstraint(size: Size) {
     return Constraint.loose(size.width, size.height);
   }
 
-  protected _layout(constraint: Constraint): Size {
+  layout(constraint: Constraint): Size {
     const selfConstraint = constraint.extend(this);
     if (this.children?.length) {
       const rects = this.children!.map((child) => {
@@ -235,13 +235,12 @@ export class Element {
       });
       const rect = rects.reduce(
         (prev, next) =>
-        ({
-          width: Math.max(prev.width, next.width),
-          height: Math.max(prev.height, next.height)
-        } as Size),
+          ({
+            width: Math.max(prev.width, next.width),
+            height: Math.max(prev.height, next.height)
+          } as Size),
         new Size(this.width, this.height)
       );
-      console.log(1);
       //允许子元素突破自己的尺寸
       this.size = this.isBreak ? rect : selfConstraint.compareSize(rect);
     } else {

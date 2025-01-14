@@ -2,11 +2,11 @@ import { Root } from "./lib/root";
 import { Group } from "./lib/group";
 import { Padding } from "./lib/padding";
 import { Expanded } from "./lib/expanded";
-import { Div } from "./lib/div";
 import { Margin } from "./lib/margin";
 import { Row } from "./lib/row";
 import { CircleImg, Img } from "./lib/img";
 import { Container } from "./lib/container";
+import { Text } from "./lib/text";
 
 const root = new Root({
   el: document.getElementById("canvas") as HTMLCanvasElement,
@@ -36,9 +36,20 @@ const root = new Root({
           flexDirection: "column",
           children: [
             new Expanded({
-              child: new Div({
-                height: Number.MAX_VALUE,
-                backgroundColor: "red"
+              child: new Container({
+                padding: [0, 10, 0, 10],
+                backgroundColor: "red",
+                child: new Group({
+                  alignItems: "center",
+                  children: [
+                    new Text({
+                      font: {
+                        weight: "bold"
+                      },
+                      text: "hook哥还是牛的"
+                    })
+                  ]
+                })
               })
             }),
             new Expanded({
@@ -50,24 +61,36 @@ const root = new Root({
                   children: [
                     new Container({
                       margin: [0, 10, 0, 0],
-                      width: 40,
-                      height: 20,
+                      padding: [0, 4, 0, 4],
                       radius: 4,
-                      backgroundColor: "red"
+                      width: "auto",
+                      backgroundColor: "red",
+                      child: new Text({
+                        color: "#fff",
+                        text: "hello"
+                      })
                     }),
                     new Container({
                       margin: [0, 10, 0, 0],
-                      width: 40,
-                      height: 20,
+                      padding: [0, 4, 0, 4],
                       radius: 4,
-                      backgroundColor: "blue"
+                      width: "auto",
+                      backgroundColor: "red",
+                      child: new Text({
+                        color: "#fff",
+                        text: "俊飞"
+                      })
                     }),
                     new Container({
                       margin: [0, 10, 0, 0],
-                      width: 40,
-                      height: 20,
+                      padding: [0, 4, 0, 4],
                       radius: 4,
-                      backgroundColor: "yellow"
+                      width: "auto",
+                      backgroundColor: "red",
+                      child: new Text({
+                        color: "#fff",
+                        text: "hook"
+                      })
                     })
                   ]
                 })
@@ -79,5 +102,23 @@ const root = new Root({
     })
   ]
 });
+
+// const root = new Root({
+//   el: document.getElementById("canvas") as HTMLCanvasElement,
+//   width: 500,
+//   height: 500,
+//   font: {
+//     family: "Microsoft YaHei"
+//   },
+//   animationSwitch: true,
+//   children: [
+//     new Container({
+//       backgroundColor: "#d0cae3",
+//       child: new Text({
+//         text: "hello world"
+//       })
+//     })
+//   ]
+// });
 
 root.render();

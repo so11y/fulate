@@ -33,7 +33,10 @@ export class Margin extends Element implements MarginOptions {
 
   layout(constraint: Constraint): Size {
     const [top, right, bottom, left] = this.margin!;
-    const childSize = this.children?.[0]?.layout(constraint) || new Size(0, 0);
+    let childSize = new Size(0, 0);
+    if (this.children) {
+      childSize = super.layout(constraint);
+    }
     const selfSize = childSize.add(new Size(left + right, top + bottom));
     this.size = selfSize;
     return selfSize;

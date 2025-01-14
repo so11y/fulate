@@ -32,7 +32,7 @@ export class Group extends Element {
     child.parent = this;
     child.root = this.root;
     this.children = [child];
-    const childSize = super._layout(constraint);
+    const childSize = super.layout(constraint);
     this.size = new Size(selfConstraint.maxWidth, childSize.height);
     return this.size;
   }

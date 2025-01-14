@@ -117,15 +117,10 @@ export class Constraint<T extends ConstraintSize = any> {
         ? this.maxWidth
         : v.maxWidth ?? v.width ?? this.maxWidth;
     const k = {
-      minWidth:
-        v.width === Number.MAX_VALUE
-          ? this.maxWidth
-          : v.minWidth ?? this.minWidth,
+      minWidth: v.width === Number.MAX_VALUE ? this.maxWidth : v.minWidth ?? 0,
       maxWidth,
       minHeight:
-        v.height === Number.MAX_VALUE
-          ? this.maxHeight
-          : v.minHeight ?? this.minHeight,
+        v.height === Number.MAX_VALUE ? this.maxHeight : v.minHeight ?? 0,
       maxHeight
     };
 
@@ -151,10 +146,10 @@ export class Constraint<T extends ConstraintSize = any> {
       );
     }
 
+    //
     if (v.width === undefined || v.width === Number.MAX_VALUE) {
       size.width = this.minWidth ?? this.maxWidth;
     }
-
     if (v.height === undefined || v.height === Number.MAX_VALUE) {
       size.height = this.minHeight ?? this.maxHeight;
     }
