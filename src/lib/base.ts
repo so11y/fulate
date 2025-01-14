@@ -28,6 +28,7 @@ export interface ElementOptions {
   // position?: "static" | "absolute" | "relative";
   // margin?: number | Array<number>
   backgroundColor?: string;
+  ignoreIndex?: boolean
   children?: Element[];
 }
 
@@ -57,6 +58,7 @@ export class Element extends EventTarget {
   isMounted = false;
   ac: AnimationController;
   isBreak: boolean = false;
+  ignoreIndex?: boolean
 
   declare parentOrSiblingPoint: Point;
   declare size: Size;
@@ -80,7 +82,9 @@ export class Element extends EventTarget {
       this.rotate = option.rotate;
       // this.position = option.position ?? "static";
       this.children = option.children;
-      this.index = Element.index++;
+      if (this.ignoreIndex === false) {
+        this.index = Element.index++;
+      }
     }
   }
 
@@ -230,10 +234,10 @@ export class Element extends EventTarget {
       });
       const rect = rects.reduce(
         (prev, next) =>
-          ({
-            width: Math.max(prev.width, next.width),
-            height: Math.max(prev.height, next.height)
-          } as Size),
+        ({
+          width: Math.max(prev.width, next.width),
+          height: Math.max(prev.height, next.height)
+        } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸

@@ -3,6 +3,8 @@ import { Constraint, Size } from "./utils/constraint";
 export interface PaddingOptions {
   padding?: number | [top: number, right: number, bottom: number, left: number];
   child?: Element;
+  ignoreIndex?: boolean;
+  key?: string;
 }
 
 export class Padding extends Element implements PaddingOptions {
@@ -17,8 +19,8 @@ export class Padding extends Element implements PaddingOptions {
     this.padding = Array.isArray(options.padding)
       ? options.padding
       : options.padding === undefined
-      ? [0, 0, 0, 0]
-      : [options.padding, options.padding, options.padding, options.padding];
+        ? [0, 0, 0, 0]
+        : [options.padding, options.padding, options.padding, options.padding];
   }
 
   getWordPoint() {

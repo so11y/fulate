@@ -11,6 +11,7 @@ export class Group extends Element {
   constructor(options: GroupOptions) {
     super(options);
     this._options = options;
+    this._options.ignoreIndex = true;
   }
 
   appendChild(child: Element): void {

@@ -21,6 +21,7 @@ export class Container extends Element implements ContainerOptions {
       key: options.key
     });
     this._options = options;
+    this._options.ignoreIndex = true
   }
 
   appendChild(child: Element): void {
@@ -37,7 +38,10 @@ export class Container extends Element implements ContainerOptions {
     let root: Element | undefined;
     let last: Element | undefined;
     if (this._options.margin) {
-      last = root = new Margin({ margin: this._options.margin });
+      last = root = new Margin({
+        ignoreIndex: true,
+        margin: this._options.margin
+      });
     }
 
     const div = new Element(this._options as ElementOptions);
@@ -55,7 +59,10 @@ export class Container extends Element implements ContainerOptions {
     }
 
     if (this._options.padding) {
-      const padding = new Padding({ padding: this._options.padding });
+      const padding = new Padding({
+        ignoreIndex: true,
+        padding: this._options.padding
+      });
       if (last) {
         last.children = [padding];
         last = padding;

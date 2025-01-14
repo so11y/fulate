@@ -4,6 +4,8 @@ import { Constraint, Size } from "./utils/constraint";
 export interface MarginOptions {
   margin?: number | [top: number, right: number, bottom: number, left: number];
   child?: Element;
+  key?: string;
+  ignoreIndex?: boolean;
 }
 
 export class Margin extends Element implements MarginOptions {
@@ -18,8 +20,8 @@ export class Margin extends Element implements MarginOptions {
     this.margin = Array.isArray(options.margin)
       ? options.margin
       : options.margin === undefined
-      ? [0, 0, 0, 0]
-      : [options.margin, options.margin, options.margin, options.margin];
+        ? [0, 0, 0, 0]
+        : [options.margin, options.margin, options.margin, options.margin];
   }
 
   getWordPoint() {
