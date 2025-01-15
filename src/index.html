@@ -13,7 +13,46 @@
 </body>
 
 </html>
+<!-- getRotatedBounds(): { x: number; y: number }[] {
+  const size = this.size;
+  const rotation = this.rotate; // 旋转角度（0~360 度）
 
+  // 获取元素的全局坐标
+  const point = this.getWordPoint();
+  const selfPoint = this.getLocalPoint(point);
+
+  // 计算旋转中心（元素的中心点）
+  const centerX = selfPoint.x + size.width / 2;
+  const centerY = selfPoint.y + size.height / 2;
+
+  // 将角度转换为弧度
+  const radians = (rotation * Math.PI) / 180;
+
+  // 计算旋转角度的余弦和正弦
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  // 未旋转时的四个角坐标
+  const corners = [
+    { x: selfPoint.x, y: selfPoint.y }, // 左上角
+    { x: selfPoint.x + size.width, y: selfPoint.y }, // 右上角
+    { x: selfPoint.x + size.width, y: selfPoint.y + size.height }, // 右下角
+    { x: selfPoint.x, y: selfPoint.y + size.height }, // 左下角
+  ];
+
+  // 计算旋转后的四个角坐标
+  const rotatedCorners = corners.map((corner) => {
+    const translatedX = corner.x - centerX;
+    const translatedY = corner.y - centerY;
+
+    const rotatedX = centerX + translatedX * cos - translatedY * sin;
+    const rotatedY = centerY + translatedX * sin + translatedY * cos;
+
+    return { x: rotatedX, y: rotatedY };
+  });
+
+  return rotatedCorners;
+} -->
 <!-- <!DOCTYPE html>
 <html lang="en">
 
