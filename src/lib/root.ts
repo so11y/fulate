@@ -63,10 +63,7 @@ export class Root extends Element {
       if (hasLockPoint === false) {
         this.currentElement = undefined
         for (const element of this.quickElements) {
-          const boxBound = element.getAABBound()
-          const inX = offsetX >= boxBound.x && offsetX <= boxBound.x1;
-          const inY = offsetY >= boxBound.y && offsetY <= boxBound.y1;
-          if (inX && inY) {
+          if (element.hasPointHint(offsetX, offsetY)) {
             this.currentElement = element
             break
           }

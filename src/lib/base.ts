@@ -284,6 +284,10 @@ export class Element extends EventTarget {
       const [tx, ty] = this.translate;
       this.root.ctx.translate(tx, ty);
     }
+    //这里旋转不能再这里，应为子节点判断的话也会影响父级
+    //比如父级旋转了，但是子节点没有旋转，虽然界面上看起来是旋转了，但是事件的碰撞是不准的
+    //或者考虑其他，但是问题是，比如框选一个组的时候，如果父级旋转了，但是子节点没有旋转
+    //解开组的时候那么不是子节点又都回到没有旋转了
     if (this.rotate) {
       const centerX = point.x + size.width / 2;
       const centerY = point.y + size.height / 2;
@@ -354,6 +358,33 @@ export class Element extends EventTarget {
       x1: selfPoint.x + size.width,
       y1: selfPoint.y + size.height
     };
+  }
+
+  hasPointHint(x: number, y: number, rotate = this.rotate) {
+    if (rotate && rotate !== 360) {
+      const size = this.size;
+      const point = this.getWordPoint();
+      const selfPoint = this.getLocalPoint(point);
+      const centerX = selfPoint.x + size.width / 2;
+      const centerY = selfPoint.y + size.height / 2;
+      const translatedX = x - centerX;
+      const translatedY = y - centerY;
+      const radians = (rotate * Math.PI) / 180;
+      const cos = Math.cos(-radians);
+      const sin = Math.sin(-radians);
+      const localX = translatedX * cos - translatedY * sin;
+      const localY = translatedX * sin + translatedY * cos;
+      return (
+        localX >= -size.width / 2 &&
+        localX <= size.width / 2 &&
+        localY >= -size.height / 2 &&
+        localY <= size.height / 2
+      );
+    }
+    const boxBound = this.getAABBound()
+    const inX = x >= boxBound.x && x <= boxBound.x1;
+    const inY = y >= boxBound.y && y <= boxBound.y1;
+    return inX && inY
   }
 
   unmounted() {

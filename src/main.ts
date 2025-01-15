@@ -66,7 +66,7 @@ const root = new Root({
                       padding: [0, 4, 0, 4],
                       radius: 4,
                       width: "auto",
-                      rotate: 20,
+                      // rotate: 20,
                       backgroundColor: "red",
                       key: "俊飞盒子",
                       child: new Text({
