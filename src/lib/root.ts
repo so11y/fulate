@@ -97,6 +97,7 @@ export class Root extends Element {
 
     const notify = (e: PointerEvent | MouseEvent, eventName: string) => {
       if (!this.currentElement) {
+        hasLockPoint = false
         return
       }
       if (eventName === "contextmenu") {
