@@ -25,9 +25,17 @@ export class Group extends Element {
       this._options.flexWrap == "wrap" ||
       this._options.flexDirection === "column"
     ) {
-      child = new Column(this._options);
+      child = new Column({
+        justifyContent: this._options.justifyContent,
+        alignItems: this._options.alignItems,
+        children: this._options.children
+      });
     } else {
-      child = new Row(this._options);
+      child = new Row({
+        justifyContent: this._options.justifyContent,
+        alignItems: this._options.alignItems,
+        children: this._options.children
+      });
     }
     child.isInternal = true;
     child.parent = this;
