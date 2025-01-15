@@ -51,6 +51,7 @@ export class Root extends Element {
     super.mounted();
     this.eventMeager.hasUserEvent = true;
     const rect = this.el.getBoundingClientRect();
+    const abortController = new AbortController();
 
     document.addEventListener("pointermove", (e) => {
       this.currentElement = undefined
@@ -69,12 +70,21 @@ export class Root extends Element {
         return
       }
       notify(e, "pointermove")
+    }, {
+      signal: abortController.signal
     })
-
-    document.addEventListener("click", (e) => notify(e, "click"))
-    document.addEventListener("pointerdown", (e) => notify(e, "pointerdown"))
-    document.addEventListener("pointerup", (e) => notify(e, "pointerup"))
-    document.addEventListener("contextmenu", (e) => notify(e, "contextmenu"))
+    document.addEventListener("click", (e) => notify(e, "click"), {
+      signal: abortController.signal
+    })
+    document.addEventListener("pointerdown", (e) => notify(e, "pointerdown"), {
+      signal: abortController.signal
+    })
+    document.addEventListener("pointerup", (e) => notify(e, "pointerup"), {
+      signal: abortController.signal
+    })
+    document.addEventListener("contextmenu", (e) => notify(e, "contextmenu"), {
+      signal: abortController.signal
+    })
 
 
     const notify = (e: MouseEvent, eventName: string) => {
@@ -91,6 +101,13 @@ export class Root extends Element {
           buttons: e.buttons
         })
       }
+    }
+
+    this.unmounted = () => {
+      abortController.abort()
+      super.unmounted()
+      this.keyMap.clear()
+      this.quickElements.clear()
     }
   }
 
