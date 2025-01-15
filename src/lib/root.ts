@@ -99,7 +99,6 @@ export class Root extends Element {
       if (!this.currentElement) {
         return
       }
-
       if (eventName === "contextmenu") {
         e.preventDefault()
       }
@@ -110,14 +109,12 @@ export class Root extends Element {
       }
       const offsetX = e.clientX - rect.x;
       const offsetY = e.clientY - rect.y;
-      if (this.currentElement) {
-        this.currentElement.eventMeager.notify(eventName, {
-          target: this.currentElement,
-          x: offsetX,
-          y: offsetY,
-          buttons: e.buttons
-        })
-      }
+      this.currentElement.eventMeager.notify(eventName, {
+        target: this.currentElement,
+        x: offsetX,
+        y: offsetY,
+        buttons: e.buttons
+      })
     }
 
     this.unmounted = () => {
