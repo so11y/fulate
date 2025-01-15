@@ -96,6 +96,10 @@ export class Root extends Element {
 
 
     const notify = (e: PointerEvent | MouseEvent, eventName: string) => {
+      if (!this.currentElement) {
+        return
+      }
+
       if (eventName === "contextmenu") {
         e.preventDefault()
       }
