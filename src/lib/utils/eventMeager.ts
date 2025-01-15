@@ -1,5 +1,7 @@
 import type { Element } from "../base"
 
+
+export type EventName = "pointermove" | "click" | "pointerdown" | "pointerup" | "contextmenu"
 export type CanvasPointEvent = (evt: (Event & { detail: CanvasPoint })) => void
 
 export interface CanvasPoint {

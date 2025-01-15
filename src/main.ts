@@ -117,6 +117,9 @@ const junFeiBox = root.getElementByKey("俊飞盒子")!;
 junFeiBox.addEventListener("click", (e) => {
   console.log(e.detail, 2);
 })
+junFeiBox.addEventListener("pointermove", (e) => {
+  console.log(e.detail, 2);
+})
 
 
 // junFei.addEventListener("click", (e) => {

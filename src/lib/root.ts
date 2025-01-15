@@ -53,22 +53,30 @@ export class Root extends Element {
     const rect = this.el.getBoundingClientRect();
     const abortController = new AbortController();
 
+    //为了如果鼠标按下那么即便鼠标已经移动出canvas之外
+    //也能继续触发的这个元素的事件
+    let hasLockPoint = false
+
     document.addEventListener("pointermove", (e) => {
-      this.currentElement = undefined
-      for (const element of this.quickElements) {
-        const offsetX = e.clientX - rect.x;
-        const offsetY = e.clientY - rect.y;
-        const boxBound = element.getAABBound()
-        const inX = offsetX >= boxBound.x && offsetX <= boxBound.x1;
-        const inY = offsetY >= boxBound.y && offsetY <= boxBound.y1;
-        if (inX && inY) {
-          this.currentElement = element
-          break
+      const offsetX = e.clientX - rect.x;
+      const offsetY = e.clientY - rect.y;
+      if (hasLockPoint === false) {
+        this.currentElement = undefined
+        for (const element of this.quickElements) {
+          const boxBound = element.getAABBound()
+          const inX = offsetX >= boxBound.x && offsetX <= boxBound.x1;
+          const inY = offsetY >= boxBound.y && offsetY <= boxBound.y1;
+          if (inX && inY) {
+            this.currentElement = element
+            break
+          }
         }
       }
+
       if (!this.currentElement) {
         return
       }
+
       notify(e, "pointermove")
     }, {
       signal: abortController.signal
@@ -87,9 +95,14 @@ export class Root extends Element {
     })
 
 
-    const notify = (e: MouseEvent, eventName: string) => {
+    const notify = (e: PointerEvent | MouseEvent, eventName: string) => {
       if (eventName === "contextmenu") {
         e.preventDefault()
+      }
+      if (eventName === "pointerdown") {
+        hasLockPoint = true
+      } else if (eventName === "pointerup") {
+        hasLockPoint = false
       }
       const offsetX = e.clientX - rect.x;
       const offsetY = e.clientY - rect.y;

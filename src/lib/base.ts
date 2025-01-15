@@ -2,7 +2,7 @@ import { Root } from "./root";
 import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
-import { EventManage, CanvasPointEvent } from "./utils/eventMeager";
+import { EventManage, CanvasPointEvent, EventName } from "./utils/eventMeager";
 
 export interface Point {
   x: number;
@@ -334,7 +334,7 @@ export class Element extends EventTarget {
   }
 
   //@ts-ignore
-  addEventListener(type: string, callback: CanvasPointEvent, options?: AddEventListenerOptions | boolean): void {
+  addEventListener(type: EventName, callback: CanvasPointEvent, options?: AddEventListenerOptions | boolean): void {
     this.eventMeager.hasUserEvent = true;
     //@ts-ignore
     super.addEventListener(type, callback, options)
