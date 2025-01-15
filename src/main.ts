@@ -111,58 +111,21 @@ const root = new Root({
 
 root.mounted();
 
-setTimeout(() => {
 
-  const junFeiBox = root.getElementByKey("俊飞盒子")!;
+const junFeiBox = root.getElementByKey("俊飞盒子")!;
+// const junFei = root.getElementByKey("俊飞")!;
+junFeiBox.addEventListener("click", (e) => {
+  console.log(e.detail, 2);
+})
 
-  junFeiBox.addEventListener("click", (e) => {
-    console.log(e, junFeiBox);
-  })
 
-  const junFei = root.getElementByKey("俊飞")!;
-
-  junFeiBox.setAttributes({
-    rotate: 360
-  });
-
-  junFei.click()
-
-  // const rotate = (junFei as any)._options.rotate!;
-  // const ac = junFei.animate(1000).ac;
-
-  // new Tween(rotate, 360).animate(ac).builder((value) => {
-  //   (junFei as any)._options.rotate = value;
-  //   root.render();
-  // });
-
-  // ac.addEventListener(AnimationType.END, () => {
-  //   ac.reStart();
-  //   ac.timeLine.progress = 0.99;
-  //   ac.reverse()
-  //   console.log(1);
-  // });
-  // ac.play();
-  // junFei.setAttributes({
-  //   rotate: 360
-  // });
-}, 1000);
-
-/*
-*/
-// new Group({
-//   children: [
-//     new Container({
-//       width: 50,
-//       height: 50,
-//       backgroundColor: "red"
-//     }),
-//     new Expanded({
-//       child: new Container({
-//         //group没有高度，取当前兄弟中最大高度
-//         //group有高度,取group高度
-//         height: Number.MAX_VALUE,
-//         backgroundColor: "blue"
-//       }),
-//     })
-//   ]
+// junFei.addEventListener("click", (e) => {
+//   e.stopPropagation()
+//   console.log(e.detail, 1);
 // })
+
+// junFeiBox.setAttributes({
+//   rotate: 360
+// });
+
+// junFei.click()

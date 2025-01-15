@@ -2,7 +2,7 @@ import { Root } from "./root";
 import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
-import { EventManage } from "./utils/eventMeager";
+import { EventManage, CanvasPointEvent } from "./utils/eventMeager";
 
 export interface Point {
   x: number;
@@ -320,30 +320,50 @@ export class Element extends EventTarget {
   }
 
   mounted() {
+    if (this.children?.length) {
+      this.children.forEach((child) => child.mounted());
+    }
     if (!this.isMounted && !this.isInternal) {
       if (this.key) {
         this.root.keyMap.set(this.key, this);
       }
-      this.root.quickSet.add(this)
+      this.root.quickElements.add(this)
       this.eventMeager.mounted()
-    }
-    if (this.children?.length) {
-      this.children.forEach((child) => child.mounted());
     }
     this.isMounted = true;
   }
 
+  //@ts-ignore
+  addEventListener(type: string, callback: CanvasPointEvent, options?: AddEventListenerOptions | boolean): void {
+    this.eventMeager.hasUserEvent = true;
+    //@ts-ignore
+    super.addEventListener(type, callback, options)
+  }
 
   click = () => {
     this.eventMeager.notify("click")
+  }
+
+  getAABBound() {
+    const point = this.getWordPoint();
+    const selfPoint = this.getLocalPoint(point);
+    const size = this.size;
+    return {
+      x: selfPoint.x,
+      y: selfPoint.y,
+      x1: selfPoint.x + size.width,
+      y1: selfPoint.y + size.height
+    };
   }
 
   unmounted() {
     if (this.key) {
       this.root.keyMap.delete(this.key);
     }
+    this.root.quickElements.delete(this)
+    this.parent = undefined
+    this.isMounted = false
     this.eventMeager.unmounted()
-    this.root.quickSet.delete(this)
     if (this.children?.length) {
       this.children.forEach((child) => child.unmounted());
     }

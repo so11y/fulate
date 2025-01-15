@@ -1,30 +1,44 @@
 import type { Element } from "../base"
 
-interface MousePoint {
-  clientX: number
-  clientY: number
+export type CanvasPointEvent = (evt: (Event & { detail: CanvasPoint })) => void
+
+export interface CanvasPoint {
+  target: Element
+  x: number
+  y: number
+  buttons: number
 }
 
 
 export class EventManage extends EventTarget {
+  hasUserEvent = false
   constructor(private target: Element) {
     super()
   }
 
-  notify(eventName: string, event?: MousePoint) {
+  notify(eventName: string, event?: CanvasPoint) {
     let parent = this.target.parent
-    const clickEvent = new CustomEvent(eventName, {
+    const customEvent = new CustomEvent(eventName, {
       detail: {
-        target: this.target,
-        clientX: event?.clientX ?? 0,
-        clientY: event?.clientY ?? 0,
+        target: event?.target ?? this.target,
+        x: event?.x ?? 0,
+        y: event?.y ?? 0,
+        buttons: event?.buttons ?? 0,
       },
     })
-    this.target.dispatchEvent(clickEvent)
-    if (clickEvent.cancelBubble) {
+    if (this.hasUserEvent) {
+      this.target.dispatchEvent(customEvent)
+      if (customEvent.cancelBubble) {
+        return
+      }
+    }
+    if (!parent) {
       return
     }
-    while (parent?.isInternal) {
+    while (
+      (parent!.isInternal || parent!.eventMeager.hasUserEvent === false) &&
+      parent !== this.target.root
+    ) {
       parent = parent?.parent
     }
     if (parent) {
