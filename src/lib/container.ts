@@ -18,6 +18,9 @@ export class Container extends Element {
 
   constructor(options: ContainerOptions) {
     super({
+      translateX: options.translateX,
+      translateY: options.translateY,
+      rotate: options.rotate,
       key: options.key,
       margin: options.margin
     });
@@ -34,15 +37,8 @@ export class Container extends Element {
   }
 
   layout(constraint: Constraint): Size {
-    // const selfConstraint = constraint.extend(this);
     let root: Element | undefined;
     let last: Element | undefined;
-    // if (this._options.margin) {
-    //   last = root = new Margin({
-    //     margin: this._options.margin
-    //   });
-    //   last.isInternal = true;
-    // }
 
     const div = new Element({
       width:
@@ -56,7 +52,6 @@ export class Container extends Element {
       maxWidth: this._options.maxWidth,
       backgroundColor: this._options.backgroundColor,
       radius: this._options.radius,
-      rotate: this._options.rotate
     });
     div.isInternal = true;
 

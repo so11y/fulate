@@ -27,9 +27,12 @@ export class Img extends Element {
     this.withImage.then(() => {
       this.root.ctx.save();
       this.root.ctx.beginPath();
+      const localMatrix = this.provideLocalMatrix();
+      const x = point.x + localMatrix.translateX
+      const y = point.y + localMatrix.translateY
       this.root.ctx.roundRect(
-        point.x,
-        point.y,
+        x,
+        y,
         this.size.width,
         this.size.height,
         this.radius
@@ -44,8 +47,8 @@ export class Img extends Element {
       ); // 计算缩放比例
       const scaledWidth = imgWidth * scale;
       const scaledHeight = imgHeight * scale;
-      const offsetX = (scaledWidth - this.size.width) / 2 - point.x;
-      const offsetY = (scaledHeight - this.size.height) / 2 - point.y;
+      const offsetX = (scaledWidth - this.size.width) / 2 - x;
+      const offsetY = (scaledHeight - this.size.height) / 2 - y;
       this.root.ctx.drawImage(
         this.image,
         -offsetX,
@@ -65,11 +68,14 @@ export class CircleImg extends Img {
     const diameter = this.size.width;
     const radius = this.size.width / 2;
     this.withImage.then(() => {
+      const localMatrix = this.provideLocalMatrix();
+      const x = point.x + localMatrix.translateX
+      const y = point.y + localMatrix.translateY
       this.root.ctx.save();
       this.root.ctx.beginPath();
       this.root.ctx.arc(
-        radius + point.x,
-        radius + point.y,
+        radius + x,
+        radius + y,
         radius,
         0,
         2 * Math.PI
@@ -80,8 +86,8 @@ export class CircleImg extends Img {
       const scale = Math.max(diameter / imgWidth, diameter / imgHeight); // 计算缩放比例
       const scaledWidth = imgWidth * scale;
       const scaledHeight = imgHeight * scale;
-      const offsetX = (scaledWidth - diameter) / 2 - point.x;
-      const offsetY = (scaledHeight - diameter) / 2 - point.y;
+      const offsetX = (scaledWidth - diameter) / 2 - x;
+      const offsetY = (scaledHeight - diameter) / 2 - y;
       this.root.ctx.drawImage(
         this.image,
         -offsetX,

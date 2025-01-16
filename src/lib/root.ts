@@ -47,6 +47,7 @@ export class Root extends Element {
   }
 
   mounted() {
+    this.root = this
     this.render();
     super.mounted();
     this.eventMeager.hasUserEvent = true;

@@ -15,7 +15,6 @@ const root = new Root({
   height: 500,
   animationSwitch: true,
   children: [
-
     new Group({
       height: 80,
       children: [
@@ -26,6 +25,7 @@ const root = new Root({
           width: 60,
           children: [
             new CircleImg({
+              backgroundColor:"blue",
               src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
               width: 50,
               height: 50
@@ -66,7 +66,7 @@ const root = new Root({
                       padding: [0, 4, 0, 4],
                       radius: 4,
                       width: "auto",
-                      // rotate: 20,
+                      rotate: 90,
                       backgroundColor: "red",
                       key: "俊飞盒子",
                       child: new Text({

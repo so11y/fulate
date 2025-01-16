@@ -30,7 +30,8 @@ export interface ElementOptions {
   maxHeight?: number;
   radius?: number | [number, number, number, number];
   overflow?: "hidden" | "visible";
-  translate?: [x: number, y: number];
+  translateX?: number;
+  translateY?: number;
   rotate?: number;
   // position?: "static" | "absolute" | "relative";
   backgroundColor?: string;
@@ -43,27 +44,28 @@ export class Element extends EventTarget {
   root: Root;
   isDirty: boolean = false;
   type = "element";
-  key?: string;
   x = 0;
   y = 0;
   radius: number | [number, number, number, number] = 0;
+  translateX: number;
+  translateY: number;
+  rotate: number;
   margin: {
     top: number;
     right: number;
     bottom: number;
     left: number;
   };
-  width: number | undefined;
-  height: number | undefined;
+  width?: number;
+  height?: number;
+  key?: string;
   maxWidth?: number;
   maxHeight?: number;
   minWidth?: number;
   minHeight?: number;
   backgroundColor?: string;
   overflow?: "hidden" | "visible";
-  translate?: [x: number, y: number];
-  rotate?: number;
-  children: Element[] | undefined;
+  children?: Element[];
   parent?: Element;
   isMounted = false;
   ac: AnimationController;
@@ -75,6 +77,11 @@ export class Element extends EventTarget {
   isInternal: boolean = false;
   declare parentOrSiblingPoint: Point;
   declare size: Size;
+  _provideMatrix = {
+    translateX: 0,
+    translateY: 0,
+    rotate: 0
+  }
 
   constructor(option?: ElementOptions) {
     super();
@@ -91,8 +98,9 @@ export class Element extends EventTarget {
       this.backgroundColor = option?.backgroundColor;
       this.radius = option.radius ?? 0;
       this.overflow = option.overflow ?? "visible";
-      this.translate = option.translate;
-      this.rotate = option.rotate;
+      this.translateX = option.translateX ?? 0;
+      this.translateY = option.translateY ?? 0;
+      this.rotate = option.rotate ?? 0;
       // this.position = option.position ?? "static";
       this.children = option.children;
 
@@ -110,6 +118,19 @@ export class Element extends EventTarget {
 
   get isContainer(): boolean {
     return !!this.children;
+  }
+
+  provideLocalMatrix(reset = true) {
+    if (this._provideMatrix && reset !== true) {
+      return this._provideMatrix
+    }
+    const parent = (this.parent || this.root)._provideMatrix;
+    this._provideMatrix = {
+      translateX: this.translateX ? this.translateX + parent.translateX : parent.translateX,
+      translateY: this.translateY ? this.translateY + parent.translateY : parent.translateY,
+      rotate: this.rotate ? this.rotate + parent.rotate : parent.rotate
+    }
+    return this._provideMatrix
   }
 
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
@@ -280,6 +301,7 @@ export class Element extends EventTarget {
 
   renderBefore(parentPoint: Point) {
     this.parentOrSiblingPoint = parentPoint;
+    this.provideLocalMatrix(true)
     if (this.children) {
       this.children.map((child) => {
         child.root = this.root;
@@ -309,17 +331,13 @@ export class Element extends EventTarget {
   draw(point: Point) {
     const size = this.size;
     this.root.ctx.beginPath();
-    if (this.translate) {
-      const [tx, ty] = this.translate;
-      this.root.ctx.translate(tx, ty);
+    const localMatrix = this.provideLocalMatrix();
+    if (this.translateX || this.translateY) {
+      this.root.ctx.translate(this.translateX, this.translateY);
     }
-    //这里旋转不能再这里，应为子节点判断的话也会影响父级
-    //比如父级旋转了，但是子节点没有旋转，虽然界面上看起来是旋转了，但是事件的碰撞是不准的
-    //或者考虑其他，但是问题是，比如框选一个组的时候，如果父级旋转了，但是子节点没有旋转
-    //解开组的时候那么不是子节点又都回到没有旋转了
     if (this.rotate) {
-      const centerX = point.x + size.width / 2;
-      const centerY = point.y + size.height / 2;
+      const centerX = localMatrix.translateX + point.x + size.width / 2;
+      const centerY = localMatrix.translateY + point.y + size.height / 2;
       this.root.ctx.translate(centerX, centerY);
       this.root.ctx.rotate(this.rotate * (Math.PI / 180));
       this.root.ctx.translate(-centerX, -centerY);
@@ -393,8 +411,9 @@ export class Element extends EventTarget {
     };
   }
 
-  hasPointHint(x: number, y: number, rotate = this.rotate) {
-    if (rotate && rotate !== 360) {
+  hasPointHint(x: number, y: number,) {
+    const localMatrix = this.provideLocalMatrix();
+    if (localMatrix.rotate) {
       const size = this.size;
       const point = this.getWordPoint();
       const selfPoint = this.getLocalPoint(point);
@@ -402,7 +421,7 @@ export class Element extends EventTarget {
       const centerY = selfPoint.y + size.height / 2;
       const translatedX = x - centerX;
       const translatedY = y - centerY;
-      const radians = (rotate * Math.PI) / 180;
+      const radians = (localMatrix.rotate * Math.PI) / 180;
       const cos = Math.cos(-radians);
       const sin = Math.sin(-radians);
       const localX = translatedX * cos - translatedY * sin;
