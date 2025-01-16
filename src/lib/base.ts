@@ -100,11 +100,11 @@ export class Element extends EventTarget {
         option.margin === undefined
           ? DEFAULT_MARGIN
           : {
-              top: option.margin[0] ?? 0,
-              right: option.margin[1] ?? 0,
-              bottom: option.margin[2] ?? 0,
-              left: option.margin[3] ?? 0
-            };
+            top: option.margin[0] ?? 0,
+            right: option.margin[1] ?? 0,
+            bottom: option.margin[2] ?? 0,
+            left: option.margin[3] ?? 0
+          };
     }
   }
 
@@ -257,22 +257,21 @@ export class Element extends EventTarget {
       });
       const rect = rects.reduce(
         (prev, next) =>
-          ({
-            width: Math.max(prev.width, next.width),
-            height: Math.max(prev.height, next.height)
-          } as Size),
+        ({
+          width: Math.max(prev.width, next.width),
+          height: Math.max(prev.height, next.height)
+        } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
       this.size = this.isBreak ? rect : selfConstraint.compareSize(rect);
     } else {
       this.size = selfConstraint.compareSize(this);
-      return new Size(
-        this.size.width + this.margin.left + this.margin.right,
-        this.size.height + this.margin.top + this.margin.bottom
-      );
     }
-    return this.size;
+    return new Size(
+      this.size.width + this.margin.left + this.margin.right,
+      this.size.height + this.margin.top + this.margin.bottom
+    );
   }
 
   render(parentPoint: Point = this.parentOrSiblingPoint) {

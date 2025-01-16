@@ -50,18 +50,23 @@ export class Column extends Element {
         if (child.type === "expanded") {
           childConstraint
             .subHorizontal((child as Expanded).flexBasis)
-            // .subHorizontal(child.margin.left + child.margin.right)
-            .clone();
+          // .subHorizontal(child.margin.left + child.margin.right)
           lastRow.children.push({
             child
           });
           continue;
         }
-        const size = child.layout(childConstraint);
+        /**
+         * 创建一个新的约束让这个节点可以在新的约束内发挥
+         * 然后计算返回的尺寸，如果放不下才换行
+         */
+        const newChildConstraint = constraint.clone();
+        newChildConstraint.maxHeight = childConstraint.maxHeight;
+
+        const size = child.layout(newChildConstraint);
 
         const prevWidth = childConstraint.maxWidth;
         childConstraint.subHorizontal(size.width);
-        // .subHorizontal(child.margin.left + child.margin.right);
 
         if (childConstraint.isOverstep) {
           childConstraint.maxWidth = prevWidth;
@@ -70,17 +75,13 @@ export class Column extends Element {
             (prev, next) =>
               Math.max(
                 prev,
-                next.size?.height ??
-                  // +  next.child.margin.top +
-                  //   next.child.margin.bottom
-                  0
+                next.size?.height ?? 0
               ),
             0
           );
 
           const constraint = selfConstraint.clone().sub({
             maxWidth: size.width,
-            // + child.margin.left + child.margin.right
             maxHeight: prevHeight
           });
 
@@ -114,10 +115,7 @@ export class Column extends Element {
           (prev, child) =>
             Math.max(
               prev,
-              child.size?.height ??
-                // + child.child.margin.top +
-                //   child.child.margin.bottom
-                0
+              child.size?.height ?? 0
             ),
           0
         );
@@ -135,7 +133,6 @@ export class Column extends Element {
             rowMaxHeight = Math.max(
               rowMaxHeight,
               size.height
-              // + v.margin.top + v.margin.bottom
             );
           });
         }
@@ -152,13 +149,10 @@ export class Column extends Element {
           return v.child;
         });
         row.children = children;
-        // row.layout(childConstraint);
         row.size = new Size(selfConstraint.maxWidth, rowMaxHeight);
-        // totalHeight += rowMaxHeight;
         rowElements.push(row);
       }
       this.children = rowElements;
-      // this.size = new Size(selfConstraint.maxWidth, totalHeight);
 
       this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
       return this.size;
@@ -196,7 +190,6 @@ export class Column extends Element {
       child.root = this.root;
       if (child.type === "expanded") {
         childConstraint.subVertical((child as Expanded).flexBasis);
-        // .subVertical(child.margin.top + child.margin.bottom);
         cols.push({
           child
         });
@@ -204,7 +197,6 @@ export class Column extends Element {
       }
       const size = child.layout(childConstraint);
       childConstraint.subVertical(size.height);
-      // .subVertical(child.margin.top + child.margin.bottom);
       cols.push({
         child,
         size

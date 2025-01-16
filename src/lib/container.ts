@@ -58,12 +58,7 @@ export class Container extends Element {
       radius: this._options.radius,
       rotate: this._options.rotate
     });
-    // div.key = undefined;
     div.isInternal = true;
-    // div.width =
-    //   this._options.width === "auto"
-    //     ? undefined
-    //     : this._options.width ?? Number.MAX_VALUE;
 
     if (last) {
       last.children = [div];
@@ -95,7 +90,10 @@ export class Container extends Element {
     this.children = [root!];
     this.size = root?.layout(constraint) ?? new Size(0, 0);
 
-    return this.size;
+    return new Size(
+      this.size.width + this.margin.left + this.margin.right,
+      this.size.height + this.margin.top + this.margin.bottom
+    );
   }
 }
 // import { Element, ElementOptions } from "./base";

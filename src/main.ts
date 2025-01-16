@@ -15,6 +15,7 @@ const root = new Root({
   height: 500,
   animationSwitch: true,
   children: [
+
     new Group({
       height: 80,
       children: [
@@ -109,14 +110,14 @@ const root = new Root({
 
 root.mounted();
 
-// const junFeiBox = root.getElementByKey("俊飞盒子")!;
-// // const junFei = root.getElementByKey("俊飞")!;
-// junFeiBox.addEventListener("click", (e) => {
-//   console.log(e.detail, 2);
-// });
-// junFeiBox.addEventListener("pointermove", (e) => {
-//   console.log(e.detail, 2);
-// });
+const junFeiBox = root.getElementByKey("俊飞盒子")!;
+// const junFei = root.getElementByKey("俊飞")!;
+junFeiBox.addEventListener("click", (e) => {
+  console.log(e.detail, 2);
+});
+junFeiBox.addEventListener("pointermove", (e) => {
+  console.log(e.detail, 2);
+});
 
 // junFei.addEventListener("click", (e) => {
 //   e.stopPropagation()

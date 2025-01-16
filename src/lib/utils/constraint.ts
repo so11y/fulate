@@ -167,21 +167,21 @@ export class Constraint<T extends ConstraintSize = any> {
   private _subMaxWidth(_maxWidth: number) {
     const maxWidth = this.maxWidth - _maxWidth;
     this.maxWidth = Math.max(maxWidth, 0);
-    if (maxWidth < 0) this.isOverstep = true;
+    if (maxWidth <= 0) this.isOverstep = true;
   }
 
   // 减去最小高度
   private _subMinHeight(_minHeight: number) {
     const minHeight = this.minHeight - _minHeight;
     this.minHeight = Math.max(minHeight, 0);
-    if (minHeight < 0) this.isOverstep = true;
+    // if (minHeight < 0) this.isOverstep = true;
   }
 
   // 减去最大高度
   private _subMaxHeight(_maxHeight: number) {
     const maxHeight = this.maxHeight - _maxHeight;
     this.maxHeight = Math.max(maxHeight, 0);
-    if (maxHeight < 0) this.isOverstep = true;
+    // if (maxHeight < 0) this.isOverstep = true;
   }
 }
 
