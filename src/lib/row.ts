@@ -9,7 +9,7 @@ export interface RowOptions extends ElementOptions {
   flexWrap?: "wrap" | "nowrap";
 }
 
-export class Row extends Element implements RowOptions {
+export class Row extends Element {
   type = "row";
   justifyContent?: "flex-start" | "flex-end" | "center" | "space-between" =
     "flex-start";
@@ -32,12 +32,21 @@ export class Row extends Element implements RowOptions {
       child.parent = this;
       child.root = this.root;
       if (child.type === "expanded") {
-        childConstraint.subHorizontal((child as Expanded).flexBasis);
+        childConstraint = childConstraint
+          .subHorizontal((child as Expanded).flexBasis)
+          .subHorizontal(child.margin.left + child.margin.right)
+          .clone();
         continue;
       }
       const size = child.layout(childConstraint);
-      childConstraint = childConstraint.subHorizontal(size.width);
-      maxHeight = Math.max(maxHeight, size.height);
+      childConstraint = childConstraint
+        .subHorizontal(size.width)
+        .subHorizontal(child.margin.left + child.margin.right)
+        .clone();
+      maxHeight = Math.max(
+        maxHeight,
+        size.height + child.margin.top + child.margin.bottom
+      );
       sizes.push(size);
     }
 
@@ -60,7 +69,10 @@ export class Row extends Element implements RowOptions {
           maxHeight
         );
         const size = v.layout(constraint);
-        maxHeight = Math.max(maxHeight, size.height);
+        maxHeight = Math.max(
+          maxHeight,
+          size.height + v.margin.top + v.margin.bottom
+        );
       });
     }
     if (this.parent?.type === "column") {
@@ -79,7 +91,8 @@ export class Row extends Element implements RowOptions {
     this.root.ctx.save();
     this.draw(selfPoint);
     const toggleWidth = this.children!.reduce(
-      (prev, next) => prev + next.size.width,
+      (prev, next) =>
+        prev + (next.size.width + next.margin.left + next.margin.right),
       0
     );
     switch (this.justifyContent) {
@@ -115,7 +128,7 @@ export class Row extends Element implements RowOptions {
         }
         const v = child.render(_point);
         _point = {
-          x: v.x + child.size.width,
+          x: v.x + child.size.width + child.margin.right,
           y: v.y
         };
       });

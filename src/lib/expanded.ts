@@ -6,7 +6,7 @@ interface ExpandedOptions {
   flexBasis?: number;
 }
 
-export class Expanded extends Element implements ExpandedOptions {
+export class Expanded extends Element {
   type = "expanded";
   flex: number;
   flexBasis: number;

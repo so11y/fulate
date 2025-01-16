@@ -15,7 +15,7 @@ export interface TextOptions extends ElementOptions {
   };
 }
 
-export class Text extends Element implements TextOptions {
+export class Text extends Element {
   type = "text";
   text: string;
   font: TextOptions["font"];

@@ -6,7 +6,7 @@ export interface PaddingOptions {
   key?: string;
 }
 
-export class Padding extends Element implements PaddingOptions {
+export class Padding extends Element {
   type = "padding";
   padding: [top: number, right: number, bottom: number, left: number];
   child?: Element;
@@ -18,8 +18,8 @@ export class Padding extends Element implements PaddingOptions {
     this.padding = Array.isArray(options.padding)
       ? options.padding
       : options.padding === undefined
-        ? [0, 0, 0, 0]
-        : [options.padding, options.padding, options.padding, options.padding];
+      ? [0, 0, 0, 0]
+      : [options.padding, options.padding, options.padding, options.padding];
   }
 
   getWordPoint() {

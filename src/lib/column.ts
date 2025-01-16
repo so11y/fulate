@@ -18,7 +18,7 @@ export interface ColumnOptions extends ElementOptions {
   alignItems?: "flex-start" | "flex-end" | "center";
 }
 
-export class Column extends Element implements ColumnOptions {
+export class Column extends Element {
   type = "column";
   flexWrap: "wrap" | "nowrap";
   justifyContent: "flex-start" | "flex-end" | "center" | "space-between";
@@ -33,7 +33,6 @@ export class Column extends Element implements ColumnOptions {
   layout(constraint: Constraint) {
     const selfConstraint = constraint.extend(this);
     let childConstraint = selfConstraint.clone();
-
     // let totalHeight = 0;
     if (this.flexWrap === "wrap") {
       const rowElements: Element[] = [];
@@ -49,7 +48,10 @@ export class Column extends Element implements ColumnOptions {
         child.parent = this;
         child.root = this.root;
         if (child.type === "expanded") {
-          childConstraint.subHorizontal((child as Expanded).flexBasis);
+          childConstraint
+            .subHorizontal((child as Expanded).flexBasis)
+            .subHorizontal(child.margin.left + child.margin.right)
+            .clone();
           lastRow.children.push({
             child
           });
@@ -58,18 +60,26 @@ export class Column extends Element implements ColumnOptions {
         const size = child.layout(childConstraint);
 
         const prevWidth = childConstraint.maxWidth;
-        childConstraint.subHorizontal(size.width);
+        childConstraint
+          .subHorizontal(size.width)
+          .subHorizontal(child.margin.left + child.margin.right);
 
         if (childConstraint.isOverstep) {
           childConstraint.maxWidth = prevWidth;
 
           const prevHeight = lastRow.children.reduce(
-            (prev, next) => Math.max(prev, next.size?.height ?? 0),
+            (prev, next) =>
+              Math.max(
+                prev,
+                next.size?.height +
+                  next.child.margin.top +
+                  next.child.margin.bottom ?? 0
+              ),
             0
           );
 
           const constraint = selfConstraint.clone().sub({
-            maxWidth: size.width,
+            maxWidth: size.width + child.margin.left + child.margin.right,
             maxHeight: prevHeight
           });
 
@@ -100,7 +110,13 @@ export class Column extends Element implements ColumnOptions {
           .map((v) => v.child) as Expanded[];
 
         let rowMaxHeight = currentRow.children.reduce(
-          (prev, child) => Math.max(prev, child.size?.height ?? 0),
+          (prev, child) =>
+            Math.max(
+              prev,
+              child.size?.height +
+                child.child.margin.top +
+                child.child.margin.bottom ?? 0
+            ),
           0
         );
 
@@ -114,7 +130,10 @@ export class Column extends Element implements ColumnOptions {
             constraint.maxWidth = constraint.maxWidth + v.flexBasis;
             constraint.maxHeight = rowMaxHeight;
             const size = v.layout(constraint);
-            rowMaxHeight = Math.max(rowMaxHeight, size.height);
+            rowMaxHeight = Math.max(
+              rowMaxHeight,
+              size.height + v.margin.top + v.margin.bottom
+            );
           });
         }
 
@@ -173,14 +192,18 @@ export class Column extends Element implements ColumnOptions {
       child.parent = this;
       child.root = this.root;
       if (child.type === "expanded") {
-        childConstraint.subVertical((child as Expanded).flexBasis);
+        childConstraint
+          .subVertical((child as Expanded).flexBasis)
+          .subVertical(child.margin.top + child.margin.bottom);
         cols.push({
           child
         });
         continue;
       }
       const size = child.layout(childConstraint);
-      childConstraint.subVertical(size.height);
+      childConstraint
+        .subVertical(size.height)
+        .subVertical(child.margin.top + child.margin.bottom);
       cols.push({
         child,
         size
@@ -209,14 +232,6 @@ export class Column extends Element implements ColumnOptions {
 
     this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
 
-    // const rectHight = cols.reduce((prev, next) => {
-    //   const rect = next.child.size;
-    //   return prev + rect.height;
-    // }, 0);
-    // this.size = selfConstraint.compareSize({
-    //   width: selfConstraint.maxWidth,
-    //   height: rectHight
-    // });
     return this.size;
   }
 
@@ -228,7 +243,8 @@ export class Column extends Element implements ColumnOptions {
     this.root.ctx.save();
     this.draw(selfPoint);
     const toggleHeight = this.children!.reduce(
-      (prev, next) => prev + next.size.height,
+      (prev, next) =>
+        prev + (next.size.height + next.margin.top + next.margin.bottom),
       0
     );
     switch (this.justifyContent) {

@@ -26,6 +26,8 @@ export class Group extends Element {
       this._options.flexDirection === "column"
     ) {
       child = new Column({
+        //@ts-ignore
+        flexWrap: this._options.flexWrap,
         justifyContent: this._options.justifyContent,
         alignItems: this._options.alignItems,
         children: this._options.children

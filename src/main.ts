@@ -2,7 +2,6 @@ import { Root } from "./lib/root";
 import { Group } from "./lib/group";
 import { Padding } from "./lib/padding";
 import { Expanded } from "./lib/expanded";
-import { Margin } from "./lib/margin";
 import { Row } from "./lib/row";
 import { CircleImg, Img } from "./lib/img";
 import { Container } from "./lib/container";
@@ -57,12 +56,12 @@ const root = new Root({
             new Expanded({
               child: new Container({
                 backgroundColor: "#c2d8cf",
-                padding: [0, 10, 0, 10],
+                padding: [0, 10, 0, 0],
                 child: new Group({
                   alignItems: "center",
                   children: [
                     new Container({
-                      margin: [0, 10, 0, 0],
+                      margin: [0, 10, 0, 10],
                       padding: [0, 4, 0, 4],
                       radius: 4,
                       width: "auto",
@@ -72,7 +71,7 @@ const root = new Root({
                       child: new Text({
                         color: "#fff",
                         text: "hello",
-                        key: "俊飞",
+                        key: "俊飞"
                       })
                     }),
                     new Container({
@@ -108,19 +107,16 @@ const root = new Root({
   ]
 });
 
-
 root.mounted();
 
-
-const junFeiBox = root.getElementByKey("俊飞盒子")!;
-// const junFei = root.getElementByKey("俊飞")!;
-junFeiBox.addEventListener("click", (e) => {
-  console.log(e.detail, 2);
-})
-junFeiBox.addEventListener("pointermove", (e) => {
-  console.log(e.detail, 2);
-})
-
+// const junFeiBox = root.getElementByKey("俊飞盒子")!;
+// // const junFei = root.getElementByKey("俊飞")!;
+// junFeiBox.addEventListener("click", (e) => {
+//   console.log(e.detail, 2);
+// });
+// junFeiBox.addEventListener("pointermove", (e) => {
+//   console.log(e.detail, 2);
+// });
 
 // junFei.addEventListener("click", (e) => {
 //   e.stopPropagation()

@@ -68,14 +68,15 @@ export class Constraint<T extends ConstraintSize = any> {
   subHorizontal(maxWidth = 0) {
     // this._subMinWidth(minWidth);
     this._subMaxWidth(maxWidth);
-    return this.clone();
+    // return this.clone();
+    return this;
   }
 
   // 减去垂直方向的高度
   subVertical(maxHeight = 0) {
     // this._subMinHeight(minHeight);
     this._subMaxHeight(maxHeight);
-    return this.clone();
+    return this;
   }
 
   // 根据比例计算宽度

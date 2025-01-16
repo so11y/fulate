@@ -1,24 +1,25 @@
 import { Element, ElementOptions } from "./base";
-import { Margin, MarginOptions } from "./margin";
 import { Padding, PaddingOptions } from "./padding";
 import { Constraint, Size } from "./utils/constraint";
 
 interface ContainerOptions
   extends Omit<
-    ElementOptions & PaddingOptions & MarginOptions,
+    ElementOptions & PaddingOptions,
+    // & MarginOptions
     "x" | "y" | "width"
   > {
   width?: "auto" | number;
 }
 
-export class Container extends Element implements ContainerOptions {
+export class Container extends Element {
   type = "Container";
   child: Element;
   _options: ContainerOptions;
 
   constructor(options: ContainerOptions) {
     super({
-      key: options.key
+      key: options.key,
+      margin: options.margin
     });
     this._options = options;
   }
@@ -36,20 +37,33 @@ export class Container extends Element implements ContainerOptions {
     const selfConstraint = constraint.extend(this);
     let root: Element | undefined;
     let last: Element | undefined;
-    if (this._options.margin) {
-      last = root = new Margin({
-        margin: this._options.margin
-      });
-      last.isInternal = true;
-    }
+    // if (this._options.margin) {
+    //   last = root = new Margin({
+    //     margin: this._options.margin
+    //   });
+    //   last.isInternal = true;
+    // }
 
-    const div = new Element(this._options as ElementOptions);
-    div.key = undefined;
+    const div = new Element({
+      width:
+        this._options.width === "auto"
+          ? undefined
+          : this._options.width ?? Number.MAX_VALUE,
+      height: this._options.height,
+      minHeight: this._options.minHeight,
+      maxHeight: this._options.maxHeight,
+      minWidth: this._options.minWidth,
+      maxWidth: this._options.maxWidth,
+      backgroundColor: this._options.backgroundColor,
+      radius: this._options.radius,
+      rotate: this._options.rotate
+    });
+    // div.key = undefined;
     div.isInternal = true;
-    div.width =
-      this._options.width === "auto"
-        ? undefined
-        : this._options.width ?? Number.MAX_VALUE;
+    // div.width =
+    //   this._options.width === "auto"
+    //     ? undefined
+    //     : this._options.width ?? Number.MAX_VALUE;
 
     if (last) {
       last.children = [div];

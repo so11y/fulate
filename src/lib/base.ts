@@ -8,6 +8,12 @@ export interface Point {
   x: number;
   y: number;
 }
+const DEFAULT_MARGIN = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0
+};
 
 const NEED_LAYOUT_KYE = ["width", "height", "rotate", "translate"];
 const NUMBER_KEY = ["width", "height", "x", "y", "rotate", "translate"];
@@ -29,6 +35,7 @@ export interface ElementOptions {
   // position?: "static" | "absolute" | "relative";
   backgroundColor?: string;
   children?: Element[];
+  margin?: [top: number, right: number, bottom: number, left: number];
 }
 
 export class Element extends EventTarget {
@@ -40,6 +47,12 @@ export class Element extends EventTarget {
   x = 0;
   y = 0;
   radius: number | [number, number, number, number] = 0;
+  margin: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
   width: number | undefined;
   height: number | undefined;
   maxWidth?: number;
@@ -59,7 +72,7 @@ export class Element extends EventTarget {
   //因为每次layout会对这些组件进行重建
   //所以这些组件不算是真实的，将会被标记true
   //主动代码new出来的才是false
-  isInternal: boolean = false
+  isInternal: boolean = false;
   declare parentOrSiblingPoint: Point;
   declare size: Size;
 
@@ -82,6 +95,16 @@ export class Element extends EventTarget {
       this.rotate = option.rotate;
       // this.position = option.position ?? "static";
       this.children = option.children;
+
+      this.margin =
+        option.margin === undefined
+          ? DEFAULT_MARGIN
+          : {
+              top: option.margin[0] ?? 0,
+              right: option.margin[1] ?? 0,
+              bottom: option.margin[2] ?? 0,
+              left: option.margin[3] ?? 0
+            };
     }
   }
 
@@ -90,13 +113,16 @@ export class Element extends EventTarget {
   }
 
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
-    return parentPoint;
+    return {
+      x: parentPoint.x + this.margin.left,
+      y: parentPoint.y
+    };
   }
 
   getLocalPoint(point?: Point): Point {
     return {
       x: this.x + (point?.x ?? 0),
-      y: this.y + (point?.y ?? 0)
+      y: this.y + (point?.y ?? 0) + this.margin.top
     };
   }
 
@@ -231,10 +257,10 @@ export class Element extends EventTarget {
       });
       const rect = rects.reduce(
         (prev, next) =>
-        ({
-          width: Math.max(prev.width, next.width),
-          height: Math.max(prev.height, next.height)
-        } as Size),
+          ({
+            width: Math.max(prev.width, next.width),
+            height: Math.max(prev.height, next.height)
+          } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
@@ -331,22 +357,26 @@ export class Element extends EventTarget {
       if (this.key) {
         this.root.keyMap.set(this.key, this);
       }
-      this.root.quickElements.add(this)
-      this.eventMeager.mounted()
+      this.root.quickElements.add(this);
+      this.eventMeager.mounted();
     }
     this.isMounted = true;
   }
 
   //@ts-ignore
-  addEventListener(type: EventName, callback: CanvasPointEvent, options?: AddEventListenerOptions | boolean): void {
+  addEventListener(
+    type: EventName,
+    callback: CanvasPointEvent,
+    options?: AddEventListenerOptions | boolean
+  ): void {
     this.eventMeager.hasUserEvent = true;
     //@ts-ignore
-    super.addEventListener(type, callback, options)
+    super.addEventListener(type, callback, options);
   }
 
   click = () => {
-    this.eventMeager.notify("click")
-  }
+    this.eventMeager.notify("click");
+  };
 
   getAABBound() {
     const point = this.getWordPoint();
@@ -381,20 +411,20 @@ export class Element extends EventTarget {
         localY <= size.height / 2
       );
     }
-    const boxBound = this.getAABBound()
+    const boxBound = this.getAABBound();
     const inX = x >= boxBound.x && x <= boxBound.x1;
     const inY = y >= boxBound.y && y <= boxBound.y1;
-    return inX && inY
+    return inX && inY;
   }
 
   unmounted() {
     if (this.key) {
       this.root.keyMap.delete(this.key);
     }
-    this.root.quickElements.delete(this)
-    this.parent = undefined
-    this.isMounted = false
-    this.eventMeager.unmounted()
+    this.root.quickElements.delete(this);
+    this.parent = undefined;
+    this.isMounted = false;
+    this.eventMeager.unmounted();
     if (this.children?.length) {
       this.children.forEach((child) => child.unmounted());
     }
