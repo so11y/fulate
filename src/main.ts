@@ -119,12 +119,9 @@ junFeiBox.addEventListener("pointermove", (e) => {
   console.log(e.detail, 2);
 });
 
-setTimeout(() => {
-  console.log(2);
-  junFeiBox.setAttributes({
-    rotate: 34
-  });
-}, 1000)
+junFeiBox.setAttributes({
+  rotate: 34
+});
 
 
 // junFei.click()
