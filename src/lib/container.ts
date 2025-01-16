@@ -33,6 +33,7 @@ export class Container extends Element {
   }
 
   setAttributes(attrs: ElementOptions) {
+    super.setAttributes(attrs,);
     super.setAttributes(attrs, this._options);
   }
 

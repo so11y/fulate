@@ -25,7 +25,7 @@ const root = new Root({
           width: 60,
           children: [
             new CircleImg({
-              backgroundColor:"blue",
+              backgroundColor: "blue",
               src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
               width: 50,
               height: 50
@@ -119,13 +119,12 @@ junFeiBox.addEventListener("pointermove", (e) => {
   console.log(e.detail, 2);
 });
 
-// junFei.addEventListener("click", (e) => {
-//   e.stopPropagation()
-//   console.log(e.detail, 1);
-// })
+setTimeout(() => {
+  console.log(2);
+  junFeiBox.setAttributes({
+    rotate: 34
+  });
+}, 1000)
 
-// junFeiBox.setAttributes({
-//   rotate: 360
-// });
 
 // junFei.click()
