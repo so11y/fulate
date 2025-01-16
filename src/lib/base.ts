@@ -267,6 +267,10 @@ export class Element extends EventTarget {
       this.size = this.isBreak ? rect : selfConstraint.compareSize(rect);
     } else {
       this.size = selfConstraint.compareSize(this);
+      return new Size(
+        this.size.width + this.margin.left + this.margin.right,
+        this.size.height + this.margin.top + this.margin.bottom
+      );
     }
     return this.size;
   }

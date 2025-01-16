@@ -34,18 +34,19 @@ export class Row extends Element {
       if (child.type === "expanded") {
         childConstraint = childConstraint
           .subHorizontal((child as Expanded).flexBasis)
-          .subHorizontal(child.margin.left + child.margin.right)
+          // .subHorizontal(child.margin.left + child.margin.right)
           .clone();
         continue;
       }
       const size = child.layout(childConstraint);
       childConstraint = childConstraint
         .subHorizontal(size.width)
-        .subHorizontal(child.margin.left + child.margin.right)
+        // .subHorizontal(child.margin.left + child.margin.right)
         .clone();
       maxHeight = Math.max(
         maxHeight,
-        size.height + child.margin.top + child.margin.bottom
+        size.height
+        // + child.margin.top + child.margin.bottom
       );
       sizes.push(size);
     }
@@ -71,7 +72,8 @@ export class Row extends Element {
         const size = v.layout(constraint);
         maxHeight = Math.max(
           maxHeight,
-          size.height + v.margin.top + v.margin.bottom
+          size.height
+          //  + v.margin.top + v.margin.bottom
         );
       });
     }
@@ -92,7 +94,7 @@ export class Row extends Element {
     this.draw(selfPoint);
     const toggleWidth = this.children!.reduce(
       (prev, next) =>
-        prev + (next.size.width + next.margin.left + next.margin.right),
+        prev + next.size.width + next.margin.left + next.margin.right,
       0
     );
     switch (this.justifyContent) {

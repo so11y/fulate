@@ -110,18 +110,17 @@ export class Constraint<T extends ConstraintSize = any> {
     }>
   >(v: G) {
     const maxHeight =
-      v.height === Number.MAX_VALUE
+      v.maxHeight ??
+      (v.height === Number.MAX_VALUE
         ? this.maxHeight
-        : v.maxHeight ?? v.height ?? this.maxHeight;
+        : v.height ?? this.maxHeight);
     const maxWidth =
-      v.width === Number.MAX_VALUE
-        ? this.maxWidth
-        : v.maxWidth ?? v.width ?? this.maxWidth;
+      v.maxWidth ??
+      (v.width === Number.MAX_VALUE ? this.maxWidth : v.width ?? this.maxWidth);
     const k = {
-      minWidth: v.width === Number.MAX_VALUE ? this.maxWidth : v.minWidth ?? 0,
+      minWidth: v.minWidth ?? this.minWidth ?? 0,
       maxWidth,
-      minHeight:
-        v.height === Number.MAX_VALUE ? this.maxHeight : v.minHeight ?? 0,
+      minHeight: v.minHeight ?? this.minHeight ?? 0,
       maxHeight
     };
 
@@ -147,12 +146,11 @@ export class Constraint<T extends ConstraintSize = any> {
       );
     }
 
-    //
     if (v.width === undefined || v.width === Number.MAX_VALUE) {
-      size.width = this.minWidth ?? this.maxWidth;
+      size.width = Math.max(this.minWidth, this.maxWidth);
     }
     if (v.height === undefined || v.height === Number.MAX_VALUE) {
-      size.height = this.minHeight ?? this.maxHeight;
+      size.height = Math.max(this.minHeight, this.maxHeight);
     }
 
     return size;

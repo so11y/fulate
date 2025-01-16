@@ -34,7 +34,7 @@ export class Container extends Element {
   }
 
   layout(constraint: Constraint): Size {
-    const selfConstraint = constraint.extend(this);
+    // const selfConstraint = constraint.extend(this);
     let root: Element | undefined;
     let last: Element | undefined;
     // if (this._options.margin) {
@@ -93,7 +93,8 @@ export class Container extends Element {
     root!.parent = this;
     root!.root = this.root;
     this.children = [root!];
-    this.size = root?.layout(selfConstraint) ?? new Size(0, 0);
+    this.size = root?.layout(constraint) ?? new Size(0, 0);
+
     return this.size;
   }
 }
