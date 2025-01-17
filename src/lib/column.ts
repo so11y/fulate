@@ -1,6 +1,7 @@
 import { ElementOptions, Element, Point } from "./base";
 import { Expanded } from "./expanded";
 import { Row } from "./row";
+import { TypeFn } from "./types";
 import { Constraint, Size } from "./utils/constraint";
 import { last } from "lodash-es";
 
@@ -293,4 +294,15 @@ export class Column extends Element {
     this.root.ctx.restore();
     return point;
   }
+}
+
+
+export const column: TypeFn<ColumnOptions, Row> = (option) => {
+  return new Column(option)
+};
+
+column.hFull = function (options: ColumnOptions) {
+  const g = column(options)
+  g.height = Number.MAX_VALUE
+  return g
 }

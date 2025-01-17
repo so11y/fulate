@@ -3,6 +3,7 @@ import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
+import { TypeFn } from "./types";
 
 export interface Point {
   x: number;
@@ -454,6 +455,13 @@ export class Element extends EventTarget {
   }
 }
 
-export function element(option?: ElementOptions) {
+
+export const element: TypeFn<ElementOptions, Element> = (option?: ElementOptions) => {
   return new Element(option)
+};
+
+element.hFull = function (options: ElementOptions) {
+  const g = element(options)
+  g.height = Number.MAX_VALUE
+  return g
 }

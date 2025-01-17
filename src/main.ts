@@ -101,18 +101,18 @@ const root = Root({
 
 root.mounted();
 
-// const junFeiBox = root.getElementByKey("俊飞盒子")!;
-// // const junFei = root.getElementByKey("俊飞")!;
-// junFeiBox.addEventListener("click", (e) => {
-//   console.log(e.detail, 2);
-// });
-// junFeiBox.addEventListener("pointermove", (e) => {
-//   console.log(e.detail, 2);
-// });
+const junFeiBox = root.getElementByKey("俊飞盒子")!;
+// const junFei = root.getElementByKey("俊飞")!;
+junFeiBox.addEventListener("click", (e) => {
+  console.log(e.detail, 2);
+});
+junFeiBox.addEventListener("pointermove", (e) => {
+  console.log(e.detail, 2);
+});
 
-// junFeiBox.setAttributes({
-//   rotate: 34
-// });
+junFeiBox.setAttributes({
+  rotate: 34
+});
 
 
 // junFei.click()

@@ -1,4 +1,5 @@
 import { Element, ElementOptions, Point } from "./base";
+import { TypeFn } from "./types";
 
 interface ImgOptions extends Omit<ElementOptions, "x" | "y"> {
   src: string;
@@ -61,8 +62,14 @@ export class Img extends Element {
   }
 }
 
-export function img(options: ImgOptions) {
-  return new Img(options)
+export const img: TypeFn<ImgOptions, Img> = (option) => {
+  return new Img(option)
+};
+
+img.hFull = function (options: ImgOptions) {
+  const g = img(options)
+  g.height = Number.MAX_VALUE
+  return g
 }
 
 export class CircleImg extends Img {
@@ -104,6 +111,12 @@ export class CircleImg extends Img {
   }
 }
 
-export function circleImg(options: ImgOptions) {
-  return new CircleImg(options)
+export const circleImg: TypeFn<ImgOptions, Img> = (option) => {
+  return new CircleImg(option)
+};
+
+circleImg.hFull = function (options: ImgOptions) {
+  const g = circleImg(options)
+  g.height = Number.MAX_VALUE
+  return g
 }

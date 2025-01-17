@@ -1,6 +1,7 @@
 import { Expanded } from "./expanded";
 import { Constraint, Size } from "./utils/constraint";
 import { Element, ElementOptions, Point } from "./base";
+import { TypeFn } from "./types";
 
 export interface RowOptions extends ElementOptions {
   justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
@@ -76,7 +77,6 @@ export class Row extends Element {
       width: this.width ?? selfConstraint.maxWidth,
       height: this.height ?? maxHeight
     })
-    // this.parent?.fullHeight ? selfConstraint.maxHeight :
 
     return this.size;
   }
@@ -136,6 +136,13 @@ export class Row extends Element {
   }
 }
 
-export function row(options: RowOptions = {}) {
-  return new Row(options)
+
+export const row: TypeFn<RowOptions, Row> = (option) => {
+  return new Row(option)
+};
+
+row.hFull = function (options: RowOptions) {
+  const g = row(options)
+  g.height = Number.MAX_VALUE
+  return g
 }

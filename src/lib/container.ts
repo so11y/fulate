@@ -1,5 +1,6 @@
 import { Element, ElementOptions } from "./base";
 import { Padding, PaddingOptions } from "./padding";
+import { TypeFn } from "./types";
 
 interface ContainerOptions
   extends Omit<
@@ -10,7 +11,7 @@ interface ContainerOptions
 }
 
 
-export function container(options: ContainerOptions): Element {
+export const container: TypeFn<ContainerOptions, Element> = (options: ContainerOptions) => {
   let root: Element | undefined;
   let last: Element | undefined;
 
@@ -48,4 +49,10 @@ export function container(options: ContainerOptions): Element {
     }
   }
   return root as any
+}
+
+container.hFull = function (options: ContainerOptions) {
+  const g = container(options)
+  g.height = Number.MAX_VALUE
+  return g
 }
