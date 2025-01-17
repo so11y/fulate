@@ -50,7 +50,7 @@ export class Root extends Element {
     this.root = this
     this.render();
     super.mounted();
-    this.eventMeager.hasUserEvent = true;
+    this.eventManage.hasUserEvent = true;
     const rect = this.el.getBoundingClientRect();
     const abortController = new AbortController();
 
@@ -108,7 +108,7 @@ export class Root extends Element {
       }
       const offsetX = e.clientX - rect.x;
       const offsetY = e.clientY - rect.y;
-      this.currentElement.eventMeager.notify(eventName, {
+      this.currentElement.eventManage.notify(eventName, {
         target: this.currentElement,
         x: offsetX,
         y: offsetY,

@@ -2,7 +2,7 @@ import { Root } from "./root";
 import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
-import { EventManage, CanvasPointEvent, EventName } from "./utils/eventMeager";
+import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 
 export interface Point {
   x: number;
@@ -40,7 +40,7 @@ export interface ElementOptions {
 }
 
 export class Element extends EventTarget {
-  eventMeager = new EventManage(this);
+  eventManage = new EventManage(this);
   root: Root;
   isDirty: boolean = false;
   type = "element";
@@ -379,7 +379,7 @@ export class Element extends EventTarget {
         this.root.keyMap.set(this.key, this);
       }
       this.root.quickElements.add(this);
-      this.eventMeager.mounted();
+      this.eventManage.mounted();
     }
     this.isMounted = true;
   }
@@ -390,13 +390,13 @@ export class Element extends EventTarget {
     callback: CanvasPointEvent,
     options?: AddEventListenerOptions | boolean
   ): void {
-    this.eventMeager.hasUserEvent = true;
+    this.eventManage.hasUserEvent = true;
     //@ts-ignore
     super.addEventListener(type, callback, options);
   }
 
   click = () => {
-    this.eventMeager.notify("click");
+    this.eventManage.notify("click");
   };
 
   getAABBound() {
@@ -446,7 +446,7 @@ export class Element extends EventTarget {
     this.root.quickElements.delete(this);
     this.parent = undefined;
     this.isMounted = false;
-    this.eventMeager.unmounted();
+    this.eventManage.unmounted();
     if (this.children?.length) {
       this.children.forEach((child) => child.unmounted());
     }

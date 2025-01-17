@@ -38,13 +38,13 @@ export class EventManage extends EventTarget {
       return
     }
     while (
-      (parent!.isInternal || parent!.eventMeager.hasUserEvent === false) &&
+      (parent!.isInternal || parent!.eventManage.hasUserEvent === false) &&
       parent !== this.target.root
     ) {
       parent = parent?.parent
     }
     if (parent) {
-      parent.eventMeager.notify(eventName, event)
+      parent.eventManage.notify(eventName, event)
     }
   }
   //还不知道是不是要改成setimeout来简单切一下
