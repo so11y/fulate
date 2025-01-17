@@ -61,6 +61,10 @@ export class Img extends Element {
   }
 }
 
+export function img(options: ImgOptions) {
+  return new Img(options)
+}
+
 export class CircleImg extends Img {
   type = "img";
 
@@ -98,4 +102,8 @@ export class CircleImg extends Img {
       this.root.ctx.restore();
     });
   }
+}
+
+export function circleImg(options: ImgOptions) {
+  return new CircleImg(options)
 }

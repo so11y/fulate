@@ -14,6 +14,7 @@ interface RowTree {
 
 export interface ColumnOptions extends ElementOptions {
   flexDirection?: "column";
+  flexWrap?: "wrap" | "nowrap";
   justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
   alignItems?: "flex-start" | "flex-end" | "center";
 }
@@ -33,7 +34,6 @@ export class Column extends Element {
   layout(constraint: Constraint) {
     const selfConstraint = constraint.extend(this);
     let childConstraint = selfConstraint.clone();
-    // let totalHeight = 0;
     if (this.flexWrap === "wrap") {
       const rowElements: Element[] = [];
       const rows: Array<RowTree> = [
@@ -73,7 +73,7 @@ export class Column extends Element {
          * 创建一个新的约束让这个节点可以在新的约束内发挥
          * 然后计算返回的尺寸，如果放不下才换行
          */
-        const newChildConstraint = constraint.clone();
+        const newChildConstraint = selfConstraint.clone();
         newChildConstraint.maxHeight = childConstraint.maxHeight;
 
         const size = child.layout(newChildConstraint);
@@ -140,7 +140,7 @@ export class Column extends Element {
           );
           expandedChildren.forEach((v) => {
             let constraint = currentRow.constraint.ratioWidth(v.flex, quantity);
-            constraint.maxWidth = constraint.maxWidth + v.flexBasis;
+            // constraint.maxWidth = constraint.maxWidth + v.flexBasis;
             constraint.maxHeight = rowMaxHeight;
             const size = v.layout(constraint);
             rowMaxHeight = Math.max(
@@ -167,7 +167,15 @@ export class Column extends Element {
       }
       this.children = rowElements;
 
-      this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
+      this.size = selfConstraint.compareSize({
+        width: this.width ?? selfConstraint.maxWidth,
+        height: this.height ?? this.children.reduce(
+          (prev, child) =>
+            prev +
+            (child.size?.height ?? 0),
+          0
+        )
+      })
       return this.size;
     }
 
@@ -196,7 +204,7 @@ export class Column extends Element {
       return row;
     });
     this.children = children;
-
+    let maxHeight = 0;
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
       child.parent = this;
@@ -209,6 +217,7 @@ export class Column extends Element {
         continue;
       }
       const size = child.layout(childConstraint);
+      maxHeight += size.height
       childConstraint.subVertical(size.height);
       cols.push({
         child,
@@ -220,6 +229,7 @@ export class Column extends Element {
       .filter((v) => v.child.type === "expanded")
       .map((v) => v.child) as Expanded[];
 
+    let expandedHeight = 0
     if (expandedChildren.length) {
       const quantity = expandedChildren.reduce(
         (prev, child) => prev + child.flex,
@@ -228,15 +238,15 @@ export class Column extends Element {
 
       expandedChildren.forEach((v) => {
         const constraint = childConstraint.ratioHeight(v.flex, quantity);
-        constraint.maxHeight = constraint.maxHeight + v.flexBasis;
-        v.layout(constraint);
-        cols.push({
-          child: v
-        });
+        const size = v.layout(constraint);
+        maxHeight += size.height
       });
     }
 
-    this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
+    this.size = selfConstraint.compareSize({
+      width: this.width ?? selfConstraint.maxWidth,
+      height: this.height ?? maxHeight
+    })
 
     return this.size;
   }

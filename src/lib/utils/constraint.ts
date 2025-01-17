@@ -11,7 +11,7 @@ export class Constraint<T extends ConstraintSize = any> {
     public maxWidth: number,
     public minHeight: number,
     public maxHeight: number
-  ) {}
+  ) { }
 
   static from(
     minWidth: number,
@@ -108,7 +108,7 @@ export class Constraint<T extends ConstraintSize = any> {
       width: number;
       height: number;
     }>
-  >(v: G) {
+  >(v: G = {} as G) {
     const maxHeight =
       v.maxHeight ??
       (v.height === Number.MAX_VALUE
@@ -123,8 +123,7 @@ export class Constraint<T extends ConstraintSize = any> {
       minHeight: v.minHeight ?? this.minHeight ?? 0,
       maxHeight
     };
-
-    return Constraint.from(k.minWidth, k.maxWidth, k.minHeight, k.maxHeight);
+    return Constraint.from(k.minWidth, k.maxWidth, k.minHeight, k.maxHeight)
   }
 
   compareSize<G extends Partial<{ width: number; height: number }>>(

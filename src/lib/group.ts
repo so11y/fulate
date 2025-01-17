@@ -1,50 +1,26 @@
-import { Element } from "./base";
 import { Column, ColumnOptions } from "./column";
 import { Row, RowOptions } from "./row";
-import { Constraint, Size } from "./utils/constraint";
+import { Element } from "./base"
 
 export type GroupOptions = ColumnOptions | RowOptions;
 
-export class Group extends Element {
-  type = "group";
-  _options: any;
-  constructor(options: GroupOptions) {
-    super(options);
-    this._options = options;
-  }
+interface GroupType {
+  (options: GroupOptions): Element;
+  hFull(options: GroupOptions): Element;
+}
 
-  appendChild(child: Element): void {
-    this.children = this._options.children;
-    super.appendChild(child);
+export const group: GroupType = (options: GroupOptions) => {
+  if (
+    options.flexWrap == "wrap" ||
+    options.flexDirection === "column"
+  ) {
+    return new Column(options as any);
   }
+  return new Row(options as any);
+}
 
-  layout(constraint: Constraint) {
-    const selfConstraint = constraint.extend(this);
-    let child;
-    if (
-      this._options.flexWrap == "wrap" ||
-      this._options.flexDirection === "column"
-    ) {
-      child = new Column({
-        //@ts-ignore
-        flexWrap: this._options.flexWrap,
-        justifyContent: this._options.justifyContent,
-        alignItems: this._options.alignItems,
-        children: this._options.children
-      });
-    } else {
-      child = new Row({
-        justifyContent: this._options.justifyContent,
-        alignItems: this._options.alignItems,
-        children: this._options.children
-      });
-    }
-    child.isInternal = true;
-    child.parent = this;
-    child.root = this.root;
-    this.children = [child];
-    const childSize = super.layout(constraint);
-    this.size = new Size(selfConstraint.maxWidth, childSize.height);
-    return this.size;
-  }
+group.hFull = function (options: GroupOptions) {
+  const g = group(options)
+  g.height = Number.MAX_VALUE
+  return g
 }

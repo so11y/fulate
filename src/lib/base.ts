@@ -69,7 +69,7 @@ export class Element extends EventTarget {
   parent?: Element;
   isMounted = false;
   ac: AnimationController;
-  isBreak: boolean = false;
+  // isBreak: boolean = false;
   //如果是container这种内部嵌套的组件
   //因为每次layout会对这些组件进行重建
   //所以这些组件不算是真实的，将会被标记true
@@ -268,13 +268,13 @@ export class Element extends EventTarget {
     return Constraint.loose(size.width, size.height);
   }
 
-  layout(constraint: Constraint): Size {
+  layout(constraint: Constraint, isBreak = false): Size {
     const selfConstraint = constraint.extend(this);
     if (this.children?.length) {
       const rects = this.children!.map((child) => {
         child.parent = this;
         child.root = this.root;
-        return child.layout(selfConstraint.clone());
+        return child.layout(selfConstraint);
       });
       const rect = rects.reduce(
         (prev, next) =>
@@ -285,7 +285,8 @@ export class Element extends EventTarget {
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
-      this.size = this.isBreak ? rect : selfConstraint.compareSize(rect);
+      this.size = isBreak ? rect : selfConstraint.compareSize(rect);
+      // this.size = selfConstraint.compareSize(rect);
     } else {
       this.size = selfConstraint.compareSize(this);
     }
@@ -451,4 +452,8 @@ export class Element extends EventTarget {
       this.children.forEach((child) => child.unmounted());
     }
   }
+}
+
+export function element(option?: ElementOptions) {
+  return new Element(option)
 }

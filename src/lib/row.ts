@@ -34,19 +34,14 @@ export class Row extends Element {
       if (child.type === "expanded") {
         childConstraint = childConstraint
           .subHorizontal((child as Expanded).flexBasis)
-          // .subHorizontal(child.margin.left + child.margin.right)
-          .clone();
         continue;
       }
       const size = child.layout(childConstraint);
       childConstraint = childConstraint
         .subHorizontal(size.width)
-        // .subHorizontal(child.margin.left + child.margin.right)
-        .clone();
       maxHeight = Math.max(
         maxHeight,
         size.height
-        // + child.margin.top + child.margin.bottom
       );
       sizes.push(size);
     }
@@ -73,15 +68,16 @@ export class Row extends Element {
         maxHeight = Math.max(
           maxHeight,
           size.height
-          //  + v.margin.top + v.margin.bottom
         );
       });
     }
-    if (this.parent?.type === "column") {
-      this.size = new Size(selfConstraint.maxWidth, maxHeight);
-    } else {
-      this.size = new Size(selfConstraint.maxWidth, selfConstraint.maxHeight);
-    }
+
+    this.size = selfConstraint.compareSize({
+      width: this.width ?? selfConstraint.maxWidth,
+      height: this.height ?? maxHeight
+    })
+    // this.parent?.fullHeight ? selfConstraint.maxHeight :
+
     return this.size;
   }
 
@@ -138,4 +134,8 @@ export class Row extends Element {
     this.root.ctx.restore();
     return point;
   }
+}
+
+export function row(options: RowOptions = {}) {
+  return new Row(options)
 }

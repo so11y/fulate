@@ -160,3 +160,7 @@ export class Root extends Element {
     return point;
   }
 }
+
+export function root(options: RootOptions){
+  return new Root(options)
+}

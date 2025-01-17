@@ -80,6 +80,10 @@ export class Text extends Element {
   }
 }
 
+export function text(options: TextOptions) {
+  return new Text(options)
+}
+
 export function generateFont(
   rootFont: TextOptions["font"],
   selfFont?: TextOptions["font"]
