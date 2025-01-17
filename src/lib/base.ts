@@ -298,7 +298,20 @@ export class Element extends EventTarget {
   }
 
   render(parentPoint: Point = this.parentOrSiblingPoint) {
-    return this.renderBefore(parentPoint)._render();
+    this.renderBefore(parentPoint)
+    const point = this.getWordPoint();
+    const selfPoint = this.getLocalPoint(point);
+    this.root.ctx.save();
+    this.draw(selfPoint);
+    if (this.children?.length) {
+      let _point = selfPoint;
+      this.children.forEach((child) => {
+        child.render(_point);
+      });
+    }
+    this.root.ctx.restore();
+
+    return point;
   }
 
   renderBefore(parentPoint: Point) {
@@ -314,21 +327,6 @@ export class Element extends EventTarget {
     return this;
   }
 
-  protected _render() {
-    const point = this.getWordPoint();
-    const selfPoint = this.getLocalPoint(point);
-    this.root.ctx.save();
-    this.draw(selfPoint);
-    if (this.children?.length) {
-      let _point = selfPoint;
-      this.children.forEach((child) => {
-        child.render(_point);
-      });
-    }
-    this.root.ctx.restore();
-
-    return point;
-  }
 
   draw(point: Point) {
     const size = this.size;
