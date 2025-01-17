@@ -167,7 +167,7 @@ export class Constraint<T extends ConstraintSize = any> {
   private _subMaxWidth(_maxWidth: number) {
     const maxWidth = this.maxWidth - _maxWidth;
     this.maxWidth = Math.max(maxWidth, 0);
-    if (maxWidth <= 0) this.isOverstep = true;
+    if (maxWidth < 0) this.isOverstep = true;
   }
 
   // 减去最小高度

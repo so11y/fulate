@@ -8,7 +8,7 @@ interface RowTree {
   constraint: Constraint;
   children: Array<{
     child: Element;
-    size: Size;
+    size?: Size;
   }>;
 }
 
@@ -50,10 +50,23 @@ export class Column extends Element {
         if (child.type === "expanded") {
           childConstraint
             .subHorizontal((child as Expanded).flexBasis)
-          // .subHorizontal(child.margin.left + child.margin.right)
-          lastRow.children.push({
-            child
-          });
+          if (childConstraint.isOverstep) {
+            childConstraint = selfConstraint.clone().subHorizontal(
+              (child as Expanded).flexBasis
+            );
+            rows.push({
+              constraint: childConstraint,
+              children: [
+                {
+                  child
+                }
+              ]
+            });
+          } else {
+            lastRow.children.push({
+              child
+            });
+          }
           continue;
         }
         /**
@@ -112,7 +125,7 @@ export class Column extends Element {
           .map((v) => v.child) as Expanded[];
 
         let rowMaxHeight = currentRow.children.reduce(
-          (prev, child) =>
+          (prev, { child }) =>
             Math.max(
               prev,
               child.size?.height ?? 0
