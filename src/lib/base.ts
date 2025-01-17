@@ -159,7 +159,7 @@ export class Element extends EventTarget {
     return this.parent?.children?.filter((v) => v !== this);
   }
 
-  setAttributes(attrs: ElementOptions, sourceTarget?: any) {
+  setAttributes<T = ElementOptions>(attrs: T, sourceTarget?: any) {
     const target = sourceTarget ?? this;
     Object.keys(omit(attrs, NUMBER_KEY)).forEach((key) => {
       target[key] = attrs[key];

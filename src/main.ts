@@ -1,4 +1,5 @@
 import { Element, CircleImg, Container, Expanded, Group, Root, Text } from "./lib";
+import { TextOptions } from "./lib/text";
 
 const root = Root({
   el: document.getElementById("canvas") as HTMLCanvasElement,
@@ -8,7 +9,6 @@ const root = Root({
   children: [
     Group({
       height: 80,
-      backgroundColor: "black",
       children: [
         Group.hFull({
           justifyContent: "center",
@@ -62,7 +62,7 @@ const root = Root({
                       key: "俊飞盒子",
                       child: Text({
                         color: "#fff",
-                        text: "hello",
+                        text: "可以点我的",
                         key: "俊飞"
                       })
                     }),
@@ -102,16 +102,21 @@ const root = Root({
 root.mounted();
 
 const junFeiBox = root.getElementByKey("俊飞盒子")!;
-// const junFei = root.getElementByKey("俊飞")!;
+const junFei = root.getElementByKey("俊飞")!;
+
+
 junFeiBox.addEventListener("click", (e) => {
-  console.log(e.detail, 2);
+  junFei.setAttributes<TextOptions>({
+    text: "叫你点就点？"
+  });
 });
+
 junFeiBox.addEventListener("pointermove", (e) => {
-  console.log(e.detail, 2);
+  console.log(e.detail);
 });
 
 junFeiBox.setAttributes({
-  rotate: 34
+  rotate: 0,
 });
 
 

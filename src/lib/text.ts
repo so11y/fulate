@@ -2,7 +2,7 @@ import { Element, Point, ElementOptions } from "./base";
 import { Constraint, Size } from "./utils/constraint";
 
 export interface TextOptions extends ElementOptions {
-  text: string;
+  text?: string;
   color?: string;
   font?: {
     style?: string;
@@ -24,7 +24,7 @@ export class Text extends Element {
 
   constructor(options: TextOptions) {
     super(options);
-    this.text = options.text;
+    this.text = options.text ?? "";
     this.font = options.font;
     this.color = options.color;
   }
