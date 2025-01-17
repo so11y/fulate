@@ -287,7 +287,6 @@ export class Element extends EventTarget {
       );
       //允许子元素突破自己的尺寸
       this.size = isBreak ? rect : selfConstraint.compareSize(rect);
-      // this.size = selfConstraint.compareSize(rect);
     } else {
       this.size = selfConstraint.compareSize(this);
     }
@@ -305,9 +304,7 @@ export class Element extends EventTarget {
     this.draw(selfPoint);
     if (this.children?.length) {
       let _point = selfPoint;
-      this.children.forEach((child) => {
-        child.render(_point);
-      });
+      this.children.forEach((child) => child.render(_point));
     }
     this.root.ctx.restore();
 
@@ -317,13 +314,6 @@ export class Element extends EventTarget {
   renderBefore(parentPoint: Point) {
     this.parentOrSiblingPoint = parentPoint;
     this.provideLocalMatrix(true)
-    if (this.children) {
-      this.children.map((child) => {
-        child.root = this.root;
-        child.parent = this;
-        return child;
-      });
-    }
     return this;
   }
 
@@ -359,15 +349,6 @@ export class Element extends EventTarget {
     if (this.overflow === "hidden") {
       this.root.ctx.clip();
     }
-  }
-
-  animate(duration: number) {
-    if (!this.ac) {
-      this.ac = new AnimationController(duration);
-    } else {
-      this.ac.duration = duration;
-    }
-    return this;
   }
 
   mounted() {
