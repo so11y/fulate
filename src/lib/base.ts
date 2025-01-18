@@ -4,6 +4,7 @@ import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
+import { CalcMargin } from "./utils/calc";
 
 export interface Point {
   x: number;
@@ -16,14 +17,14 @@ const DEFAULT_MARGIN = {
   left: 0
 };
 
-const NEED_LAYOUT_KYE = ["width", "height", "rotate", "translate"];
+const NEED_LAYOUT_KYE = ["width", "height", "x", "y", "rotate", "translate"];
 const NUMBER_KEY = ["width", "height", "x", "y", "rotate", "translate"];
 
 export interface ElementOptions {
   key?: string;
   x?: number;
   y?: number;
-  width?: number;
+  width?: number | "auto";
   height?: number;
   minWidth?: number;
   minHeight?: number;
@@ -78,10 +79,11 @@ export class Element extends EventTarget {
   isInternal: boolean = false;
   declare parentOrSiblingPoint: Point;
   declare size: Size;
-  _provideMatrix = {
+  _provideLocalCtx = {
     translateX: 0,
     translateY: 0,
-    rotate: 0
+    rotate: 0,
+    backgroundColor: undefined as undefined | string
   }
 
   constructor(option?: ElementOptions) {
@@ -90,7 +92,7 @@ export class Element extends EventTarget {
       this.key = option.key;
       this.x = option.x ?? 0;
       this.y = option.y ?? 0;
-      this.width = option.width ?? undefined;
+      this.width = option.width === "auto" ? undefined : option.width ?? Number.MAX_VALUE;
       this.height = option.height ?? undefined;
       this.maxWidth = option.maxWidth ?? undefined;
       this.maxHeight = option.maxHeight ?? undefined;
@@ -121,17 +123,18 @@ export class Element extends EventTarget {
     return !!this.children;
   }
 
-  provideLocalMatrix(reset = true) {
-    if (this._provideMatrix && reset !== true) {
-      return this._provideMatrix
+  provideLocalCtx(reset = true) {
+    if (this._provideLocalCtx && reset !== true) {
+      return this._provideLocalCtx
     }
-    const parent = (this.parent || this.root)._provideMatrix;
-    this._provideMatrix = {
+    const parent = (this.parent || this.root)._provideLocalCtx;
+    this._provideLocalCtx = {
       translateX: this.translateX ? this.translateX + parent.translateX : parent.translateX,
       translateY: this.translateY ? this.translateY + parent.translateY : parent.translateY,
-      rotate: this.rotate ? this.rotate + parent.rotate : parent.rotate
+      rotate: this.rotate ? this.rotate + parent.rotate : parent.rotate,
+      backgroundColor: this.backgroundColor || parent.backgroundColor
     }
-    return this._provideMatrix
+    return this._provideLocalCtx
   }
 
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
@@ -253,14 +256,24 @@ export class Element extends EventTarget {
     if (this.isDirty) {
       const selfPoint = this.getLocalPoint(this.getWordPoint());
       const rect = this.size;
+      const localCtx = this.provideLocalCtx();
       this.isDirty = false;
       this.root.ctx.save();
       this.root.ctx.clearRect(
-        selfPoint.x,
-        selfPoint.y,
+        selfPoint.x + localCtx.translateX,
+        selfPoint.y + localCtx.translateY,
         rect.width,
         rect.height
       );
+      if (localCtx.backgroundColor && !this.backgroundColor) {
+        this.root.ctx.fillStyle = localCtx.backgroundColor
+        this.root.ctx.fillRect(
+          selfPoint.x + localCtx.translateX,
+          selfPoint.y + localCtx.translateY,
+          rect.width,
+          rect.height
+        )
+      }
       this.root.ctx.restore();
     }
   }
@@ -290,10 +303,8 @@ export class Element extends EventTarget {
     } else {
       this.size = selfConstraint.compareSize(this);
     }
-    return new Size(
-      this.size.width + this.margin.left + this.margin.right,
-      this.size.height + this.margin.top + this.margin.bottom
-    );
+
+    return CalcMargin(this)
   }
 
   render(parentPoint: Point = this.parentOrSiblingPoint) {
@@ -313,7 +324,7 @@ export class Element extends EventTarget {
 
   renderBefore(parentPoint: Point) {
     this.parentOrSiblingPoint = parentPoint;
-    this.provideLocalMatrix(true)
+    this.provideLocalCtx(true)
     return this;
   }
 
@@ -321,13 +332,13 @@ export class Element extends EventTarget {
   draw(point: Point) {
     const size = this.size;
     this.root.ctx.beginPath();
-    const localMatrix = this.provideLocalMatrix();
+    const localCtx = this.provideLocalCtx();
     if (this.translateX || this.translateY) {
       this.root.ctx.translate(this.translateX, this.translateY);
     }
     if (this.rotate) {
-      const centerX = localMatrix.translateX + point.x + size.width / 2;
-      const centerY = localMatrix.translateY + point.y + size.height / 2;
+      const centerX = localCtx.translateX + point.x + size.width / 2;
+      const centerY = localCtx.translateY + point.y + size.height / 2;
       this.root.ctx.translate(centerX, centerY);
       this.root.ctx.rotate(this.rotate * (Math.PI / 180));
       this.root.ctx.translate(-centerX, -centerY);
@@ -398,7 +409,7 @@ export class Element extends EventTarget {
   }
 
   hasPointHint(x: number, y: number,) {
-    const localMatrix = this.provideLocalMatrix();
+    const localMatrix = this.provideLocalCtx();
     if (localMatrix.rotate) {
       const size = this.size;
       const point = this.getWordPoint();

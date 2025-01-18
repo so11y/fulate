@@ -2,19 +2,20 @@ import { Expanded } from "./expanded";
 import { Constraint, Size } from "./utils/constraint";
 import { Element, ElementOptions, Point } from "./base";
 import { TypeFn } from "./types";
+import { CalcMargin } from "./utils/calc";
+import { AlignItems, JustifyContent } from "./types/flex";
 
 export interface RowOptions extends ElementOptions {
-  justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
-  alignItems?: "flex-start" | "flex-end" | "center";
+  justifyContent?: JustifyContent;
+  alignItems?: AlignItems;
   flexDirection?: "row";
   flexWrap?: "wrap" | "nowrap";
 }
 
 export class Row extends Element {
   type = "row";
-  justifyContent?: "flex-start" | "flex-end" | "center" | "space-between" =
-    "flex-start";
-  alignItems?: "flex-start" | "flex-end" | "center" | undefined;
+  justifyContent?: JustifyContent
+  alignItems?: AlignItems
   constructor(options: RowOptions = {}) {
     super(options);
     this.justifyContent = options.justifyContent ?? "flex-start";
@@ -78,7 +79,7 @@ export class Row extends Element {
       height: this.height ?? maxHeight
     })
 
-    return this.size;
+    return CalcMargin(this);
   }
 
   render(parentPoint: Point): Point {

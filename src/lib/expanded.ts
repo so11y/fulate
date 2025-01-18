@@ -13,7 +13,6 @@ export class Expanded extends Element {
   flex: number;
   flexBasis: number;
   child: Element;
-  isBreak = true;
 
   constructor(options: ExpandedOptions) {
     super({

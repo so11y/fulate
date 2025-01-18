@@ -2,6 +2,8 @@ import { ElementOptions, Element, Point } from "./base";
 import { Expanded } from "./expanded";
 import { Row } from "./row";
 import { TypeFn } from "./types";
+import { AlignItems, JustifyContent } from "./types/flex";
+import { CalcMargin } from "./utils/calc";
 import { Constraint, Size } from "./utils/constraint";
 import { last } from "lodash-es";
 
@@ -16,18 +18,17 @@ interface RowTree {
 export interface ColumnOptions extends ElementOptions {
   flexDirection?: "column";
   flexWrap?: "wrap" | "nowrap";
-  justifyContent?: "flex-start" | "flex-end" | "center" | "space-between";
-  alignItems?: "flex-start" | "flex-end" | "center";
+  justifyContent?: JustifyContent;
+  alignItems?: AlignItems;
 }
 
 export class Column extends Element {
   type = "column";
   flexWrap: "wrap" | "nowrap";
-  justifyContent: "flex-start" | "flex-end" | "center" | "space-between";
-  alignItems?: "flex-start" | "flex-end" | "center" | undefined;
+  justifyContent: JustifyContent;
+  alignItems?: AlignItems;
   constructor(options: ColumnOptions) {
     super(options);
-    //@ts-ignore
     this.flexWrap = options.flexWrap ?? "nowrap";
     this.justifyContent = options.justifyContent ?? "flex-start";
     this.alignItems = options.alignItems ?? "flex-start";
@@ -177,7 +178,7 @@ export class Column extends Element {
           0
         )
       })
-      return this.size;
+      return CalcMargin(this);
     }
 
     const cols: Array<{
@@ -249,7 +250,7 @@ export class Column extends Element {
       height: this.height ?? maxHeight
     })
 
-    return this.size;
+    return CalcMargin(this);
   }
 
   render(parentPoint: Point): Point {

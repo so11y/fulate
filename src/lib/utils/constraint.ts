@@ -145,11 +145,11 @@ export class Constraint<T extends ConstraintSize = any> {
       );
     }
 
-    if (v.width === undefined || v.width === Number.MAX_VALUE) {
+    if (v.width === Number.MAX_VALUE) {
       size.width = Math.max(this.minWidth, this.maxWidth);
     }
     //v.height === undefined ||
-    if ( v.height === Number.MAX_VALUE) {
+    if (v.height === Number.MAX_VALUE) {
       size.height = Math.max(this.minHeight, this.maxHeight);
     }
 

@@ -28,7 +28,7 @@ export class Img extends Element {
     this.withImage.then(() => {
       this.root.ctx.save();
       this.root.ctx.beginPath();
-      const localMatrix = this.provideLocalMatrix();
+      const localMatrix = this.provideLocalCtx();
       const x = point.x + localMatrix.translateX
       const y = point.y + localMatrix.translateY
       this.root.ctx.roundRect(
@@ -79,7 +79,7 @@ export class CircleImg extends Img {
     const diameter = this.size.width;
     const radius = this.size.width / 2;
     this.withImage.then(() => {
-      const localMatrix = this.provideLocalMatrix();
+      const localMatrix = this.provideLocalCtx();
       const x = point.x + localMatrix.translateX
       const y = point.y + localMatrix.translateY
       this.root.ctx.save();

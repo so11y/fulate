@@ -2,26 +2,13 @@ import { Element, ElementOptions } from "./base";
 import { Padding, PaddingOptions } from "./padding";
 import { TypeFn } from "./types";
 
-interface ContainerOptions
-  extends Omit<
-    ElementOptions & PaddingOptions,
-    "x" | "y" | "width"
-  > {
-  width?: "auto" | number;
-}
-
+type ContainerOptions = ElementOptions & PaddingOptions
 
 export const container: TypeFn<ContainerOptions, Element> = (options: ContainerOptions) => {
   let root: Element | undefined;
   let last: Element | undefined;
 
-  const div = new Element({
-    ...options,
-    width:
-      options.width === "auto"
-        ? undefined
-        : options.width ?? Number.MAX_VALUE,
-  });
+  const div = new Element(options);
 
   if (last) {
     last.children = [div];
@@ -42,7 +29,6 @@ export const container: TypeFn<ContainerOptions, Element> = (options: ContainerO
       root = padding;
     }
   }
-  // 处理 child
   if (options.child) {
     if (last) {
       last.children = [options.child];
