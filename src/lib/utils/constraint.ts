@@ -148,7 +148,8 @@ export class Constraint<T extends ConstraintSize = any> {
     if (v.width === undefined || v.width === Number.MAX_VALUE) {
       size.width = Math.max(this.minWidth, this.maxWidth);
     }
-    if (v.height === undefined || v.height === Number.MAX_VALUE) {
+    //v.height === undefined ||
+    if ( v.height === Number.MAX_VALUE) {
       size.height = Math.max(this.minHeight, this.maxHeight);
     }
 

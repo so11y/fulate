@@ -377,7 +377,12 @@ export class Element extends EventTarget {
   }
 
   click = () => {
-    this.eventManage.notify("click");
+    this.eventManage.notify("click", {
+      target: this,
+      x: 0,
+      y: 0,
+      buttons: 0
+    });
   };
 
   getAABBound() {

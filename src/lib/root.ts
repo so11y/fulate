@@ -61,6 +61,7 @@ export class Root extends Element {
     document.addEventListener("pointermove", (e) => {
       const offsetX = e.clientX - rect.x;
       const offsetY = e.clientY - rect.y;
+      const prevElement = this.currentElement
       if (hasLockPoint === false) {
         this.currentElement = undefined
         for (const element of this.quickElements) {
@@ -73,6 +74,11 @@ export class Root extends Element {
 
       if (!this.currentElement) {
         return
+      }
+
+      if (this.currentElement !== prevElement) {
+        notify(e, "mouseleave", prevElement)
+        notify(e, "mouseenter")
       }
 
       notify(e, "pointermove")
@@ -93,8 +99,8 @@ export class Root extends Element {
     })
 
 
-    const notify = (e: PointerEvent | MouseEvent, eventName: string) => {
-      if (!this.currentElement) {
+    const notify = (e: PointerEvent | MouseEvent, eventName: string, el = this.currentElement) => {
+      if (!el) {
         hasLockPoint = false
         return
       }
@@ -108,8 +114,8 @@ export class Root extends Element {
       }
       const offsetX = e.clientX - rect.x;
       const offsetY = e.clientY - rect.y;
-      this.currentElement.eventManage.notify(eventName, {
-        target: this.currentElement,
+      el.eventManage.notify(eventName, {
+        target: el,
         x: offsetX,
         y: offsetY,
         buttons: e.buttons
@@ -161,6 +167,6 @@ export class Root extends Element {
   }
 }
 
-export function root(options: RootOptions){
+export function root(options: RootOptions) {
   return new Root(options)
 }
