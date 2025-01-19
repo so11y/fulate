@@ -2,6 +2,8 @@ import { AnimationController, AnimationType } from "ac";
 import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 import { generateFont, TextOptions } from "./text";
+import { isOverlap, isOverlapAndNotAdjacent, isPartiallyIntersecting, mergeOverlappingRects } from "./utils/calc";
+import { debounce } from "lodash-es"
 
 interface RootOptions {
   animationSwitch?: boolean;
@@ -9,6 +11,8 @@ interface RootOptions {
   el: HTMLCanvasElement;
   width: number;
   height: number;
+  useDirtyRect?: boolean;
+  dirtyDebug?: boolean;
   children?: Element[];
   font?: TextOptions["font"] & {
     color?: string;
@@ -22,8 +26,11 @@ export class Root extends Element {
   ac: AnimationController;
   keyMap = new Map<string, Element>();
   quickElements: Set<Element> = new Set();
+  dirtys: Set<Element> = new Set()
   font: Required<RootOptions["font"]>;
   currentElement?: Element;
+  useDirtyRect: boolean
+  dirtyDebugRoot?: Root;
   constructor(options: RootOptions) {
     super(options);
     this.root = this;
@@ -31,6 +38,7 @@ export class Root extends Element {
     this.el.width = options.width;
     this.el.height = options.height;
     this.ctx = this.el.getContext("2d")!;
+    this.useDirtyRect = options.useDirtyRect ?? false
     this.ac = new AnimationController(
       options.animationSwitch ? options.animationTime ?? 300 : 0
     );
@@ -44,6 +52,24 @@ export class Root extends Element {
       color: options.font?.color ?? "black",
       weight: options.font?.weight ?? "normal"
     };
+
+    if (this.useDirtyRect && options.dirtyDebug) {
+      const dirtyCanvas = document.createElement("canvas") as HTMLCanvasElement
+      const rect = this.el.getBoundingClientRect();
+      dirtyCanvas.style.cssText = `
+        position:absolute;
+        top:${rect.top}px;
+        left:${rect.left}px;
+        pointer-events: none;
+      `
+      this.el.parentElement?.append(dirtyCanvas)
+      this.dirtyDebugRoot = new Root({
+        el: dirtyCanvas,
+        width: options.width,
+        height: options.height
+      })
+      this.dirtyDebugRoot.mounted()
+    }
   }
 
   mounted() {
@@ -85,6 +111,7 @@ export class Root extends Element {
     }, {
       signal: abortController.signal
     })
+
     document.addEventListener("click", (e) => notify(e, "click"), {
       signal: abortController.signal
     })
@@ -165,6 +192,70 @@ export class Root extends Element {
     this.isDirty = false;
     return point;
   }
+
+  //就脏节点开始重绘制
+  dirtyRender = debounce(() => {
+    const dirtys = Array.from(this.dirtys);
+    this.dirtys.clear()
+    const aabbs = dirtys.map(v => v.getBoundingBox())
+    const mergeDirtyAABB = mergeOverlappingRects(aabbs)
+    const needRerender: Set<Element> = new Set()
+    function walk(el: Element) {
+      if (el.parent) {
+        let parent: Element | undefined = el.parent;
+        const aabb = parent.getBoundingBox()
+        const provide = parent.provideLocalCtx()
+        if (provide.backgroundColor) {
+          needRerender.add(parent)
+          return
+        }
+        while (parent) {
+          if (mergeDirtyAABB.some(v => isPartiallyIntersecting(aabb, v))) {
+            needRerender.add(parent)
+            return
+          }
+          parent = parent?.parent;
+        }
+      }
+      const aabb = el.getBoundingBox()
+      if (!el.isDirty && mergeDirtyAABB.some((v) => isOverlap(v, aabb))) {
+        needRerender.add(el)
+      }
+      const siblings = el.getSiblings()
+      if (siblings?.length) {
+        siblings.forEach(v => {
+          const aabb = v.getBoundingBox()
+          if (!v.isDirty && mergeDirtyAABB.some((vv) => isOverlapAndNotAdjacent(vv, aabb))) {
+            needRerender.add(v)
+          }
+        })
+      }
+    }
+    dirtys.forEach(walk)
+    if (this.dirtyDebugRoot) {
+      this.dirtyDebugRoot.children = Array.from(needRerender).map(v => {
+        const point = v.getLocalPoint(v.getWordPoint())
+        return new Element({
+          x: point.x,
+          y: point.y,
+          width: v.size.width,
+          height: v.size.height,
+          backgroundColor: 'rgba(128, 0, 128, 0.5)'
+        })
+      })
+      this.dirtyDebugRoot.render()
+    }
+    needRerender.forEach(v => {
+      v.isDirty = true;
+      v.render()
+    })
+    if (this.dirtyDebugRoot) {
+      setTimeout(() => {
+        this.dirtyDebugRoot!.children = []
+        this.dirtyDebugRoot!.render()
+      }, 300)
+    }
+  })
 }
 
 export function root(options: RootOptions) {

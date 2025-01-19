@@ -8,6 +8,8 @@ const root = Root({
   width: 500,
   height: 500,
   animationSwitch: true,
+  useDirtyRect: true,
+  dirtyDebug: true,
   children: [
     Group({
       height: 80,
@@ -101,20 +103,22 @@ root.mounted();
 const junFeiBox = root.getElementByKey("俊飞盒子")!;
 const junFei = root.getElementByKey("俊飞")!;
 
+root.addEventListener("click", (e) => {
+  e.detail.target.setAttributes();
+})
 
 junFeiBox.addEventListener("click", (e) => {
+  e.stopPropagation();
   junFei.setAttributes<TextOptions>({
     text: "叫你点就点？"
   });
+
 });
 
 junFeiBox.addEventListener("pointermove", (e) => {
-  console.log(e.detail);
+  // console.log(e.detail);
 });
 
-// junFeiBox.setAttributes({
-//   rotate: 0,
-// });
 
 
 // junFei.click()

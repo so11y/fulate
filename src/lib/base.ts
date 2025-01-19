@@ -4,15 +4,18 @@ import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
-import { CalcAABB, } from "./utils/calc";
+import { CalcAABB, calcRotateCorners, quickAABB, } from "./utils/calc";
 
 export interface Point {
   x: number;
   y: number;
 }
 
-const NEED_LAYOUT_KYE = ["width", "height", "x", "y", "rotate", "translate"];
-const NUMBER_KEY = ["width", "height", "x", "y", "rotate", "translate"];
+const NEED_LAYOUT_KYE = ["width", "height", "text"];
+const NUMBER_KEY = [
+  "width", "height",
+  "x", "y", "rotate", "translateX", "translateY"
+];
 
 export interface ElementOptions {
   key?: string;
@@ -47,22 +50,22 @@ export class Element extends EventTarget {
   x = 0;
   y = 0;
   radius: number | [number, number, number, number] = 0;
-  translateX: number;
-  translateY: number;
-  rotate: number;
-  margin: {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
+  translateX = 0;
+  translateY = 0;
+  rotate = 0;
+  margin = {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   };
-  padding: {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
+  padding = {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0
   };
-  display: "block" | "inline"
+  display: "block" | "inline" = "block"
   width?: number;
   height?: number;
   key?: string;
@@ -71,7 +74,7 @@ export class Element extends EventTarget {
   minWidth?: number;
   minHeight?: number;
   backgroundColor?: string;
-  overflow?: "hidden" | "visible";
+  overflow: "hidden" | "visible" = "visible";
   children?: Element[];
   parent?: Element;
   isMounted = false;
@@ -94,62 +97,68 @@ export class Element extends EventTarget {
 
   constructor(option?: ElementOptions) {
     super();
-    if (option) {
-      this.key = option.key;
-      this.width = option.width;
-      this.height = option.height;
-      this.maxWidth = option.maxWidth;
-      this.maxHeight = option.maxHeight;
-      this.minWidth = option.minWidth;
-      this.minHeight = option.minHeight;
-      this.backgroundColor = option.backgroundColor;
-      this.x = option.x ?? 0;
-      this.y = option.y ?? 0;
-      this.display = option.display ?? "block";
-      this.radius = option.radius ?? 0;
-      this.overflow = option.overflow ?? "visible";
-      this.translateX = option.translateX ?? 0;
-      this.translateY = option.translateY ?? 0;
-      this.rotate = option.rotate ?? 0;
-      // this.position = option.position ?? "static";
-
-      if (option.child) {
-        this.children = [option.child]
-      } else {
-        this.children = option.children;
-      }
-
-      this.margin = {
-        top: option.margin?.[0] ?? 0,
-        right: option.margin?.[1] ?? 0,
-        bottom: option.margin?.[2] ?? 0,
-        left: option.margin?.[3] ?? 0
-      }
-
-      this.padding = {
-        top: option.padding?.[0] ?? 0,
-        right: option.padding?.[1] ?? 0,
-        bottom: option.padding?.[2] ?? 0,
-        left: option.padding?.[3] ?? 0
-      };
+    this.setOption(option)
+    if (option?.child) {
+      this.children = [option.child]
+    } else if (option?.children) {
+      this.children = option.children;
     }
   }
 
-  get isContainer(): boolean {
-    return !!this.children;
+  setOption(option?: ElementOptions) {
+    if (option) {
+      this.key = option.key ?? this.key;
+      this.width = option.width ?? this.width;
+      this.height = option.height ?? this.height;
+      this.maxWidth = option.maxWidth ?? this.maxWidth;
+      this.maxHeight = option.maxHeight ?? this.maxHeight;
+      this.minWidth = option.minWidth ?? this.minWidth;
+      this.minHeight = option.minHeight ?? this.minHeight;
+      this.backgroundColor = option.backgroundColor ?? this.backgroundColor;
+      this.x = option.x ?? this.x;
+      this.y = option.y ?? this.y;
+      this.display = option.display ?? this.display;
+      this.radius = option.radius ?? this.radius;
+      this.overflow = option.overflow ?? this.overflow;
+      this.translateX = option.translateX ?? this.translateX;
+      this.translateY = option.translateY ?? this.translateY;
+      this.rotate = option.rotate ?? this.rotate;
+      // this.position = option.position ?? "static";
+
+      this.margin = option.margin ? {
+        top: option.margin[0],
+        right: option.margin[1],
+        bottom: option.margin[2],
+        left: option.margin[3]
+      } : this.margin
+
+      this.padding = option.padding ? {
+        top: option.padding[0],
+        right: option.padding[1],
+        bottom: option.padding[2],
+        left: option.padding[3]
+      } : this.padding
+    }
   }
 
   provideLocalCtx(reset = true) {
     if (this._provideLocalCtx && reset !== true) {
       return this._provideLocalCtx
     }
-    const parent = (this.parent || this.root)._provideLocalCtx;
-    this._provideLocalCtx = {
-      translateX: this.translateX ? this.translateX + parent.translateX : parent.translateX,
-      translateY: this.translateY ? this.translateY + parent.translateY : parent.translateY,
-      rotate: this.rotate ? this.rotate + parent.rotate : parent.rotate,
-      backgroundColor: this.backgroundColor || parent.backgroundColor
-    }
+    const parentLocalCtx = (this.parent || this.root)._provideLocalCtx;
+    this._provideLocalCtx = Object.create({
+      backgroundColor: parentLocalCtx.backgroundColor ?? this.backgroundColor
+    })
+    this._provideLocalCtx.translateX = this.translateX ? this.translateX + parentLocalCtx.translateX : parentLocalCtx.translateX;
+    this._provideLocalCtx.translateY = this.translateY ? this.translateY + parentLocalCtx.translateY : parentLocalCtx.translateY;
+    this._provideLocalCtx.rotate = this.rotate ? this.rotate + parentLocalCtx.rotate : parentLocalCtx.rotate;
+
+    // this._provideLocalCtx = {
+    //   backgroundColor: this.backgroundColor ?? parent.backgroundColor,
+    //   translateX: this.translateX ? this.translateX + parent.translateX : parent.translateX,
+    //   translateY: this.translateY ? this.translateY + parent.translateY : parent.translateY,
+    //   rotate: this.rotate ? this.rotate + parent.rotate : parent.rotate,
+    // }
     return this._provideLocalCtx
   }
 
@@ -168,7 +177,7 @@ export class Element extends EventTarget {
   }
 
   previousSibling() {
-    if (this.parent?.isContainer) {
+    if (this.parent?.children) {
       const index = this.parent.children?.findIndex((c) => c === this)!;
       return this.parent.children?.[index - 1];
     }
@@ -178,13 +187,17 @@ export class Element extends EventTarget {
     return this.parent?.children?.filter((v) => v !== this);
   }
 
-  setAttributes<T extends ElementOptions>(attrs: T, sourceTarget?: any) {
-    const target = sourceTarget ?? this;
-    Object.keys(omit(attrs, NUMBER_KEY)).forEach((key) => {
-      target[key] = attrs[key];
-    });
+  setAttributes<T extends ElementOptions>(attrs?: T,) {
+    if (!attrs) {
+      if (this.root.useDirtyRect && this.root.dirtyDebugRoot) {
+        this.root.dirtys.add(this)
+        this.root.dirtyRender()
+      }
+      return
+    }
+    const target = this
+    this.setOption(attrs)
     const numberKeys = pick(attrs, NUMBER_KEY);
-
     const size = this.size;
     const selfStart = {
       x: target.x,
@@ -193,59 +206,32 @@ export class Element extends EventTarget {
       height: size.height,
       rotate: target.rotate
     };
+    const isLayout = Object.keys(pick(attrs, NEED_LAYOUT_KYE)).length
+    const acKeys = Object.keys(numberKeys);
+    if (!acKeys.length && isLayout) {
+      this.root.render()
+      return
+    }
     const ac = this.ac || this.root.ac;
     const tween = new Tween(
-      pick(selfStart, Object.keys(numberKeys)),
+      pick(selfStart, acKeys),
       numberKeys
     )
       .animate(ac)
       .builder((value) => {
-        // this.isDirty = true;
-        // this.clearDirty();
-        Object.keys(value).forEach((key) => {
-          target[key] = value[key];
-        });
-        this.root.render();
+        this.setOption(value)
+        if (isLayout || !this.root.useDirtyRect) {
+          this.root.render()
+        } else {
+          this.root.dirtys.add(this)
+          this.root.dirtyRender()
+        }
       });
 
     ac.addEventListener(AnimationType.END, () => tween.destroy(), {
       once: true
     });
     ac.play();
-
-    //先不做局部清理了
-    // this.isDirty = true;
-    // const isNeedLayout = NEED_LAYOUT_KYE.some((v) => v in attrs);
-    // if (isNeedLayout) {
-    //   this.clearDirty();
-    // }
-    // Object.keys(omit(attrs, NUMBER_KEY)).forEach((key) => {
-    //   this[key] = attrs[key];
-    // });
-    // const numberKeys = pick(attrs, NUMBER_KEY);
-    // const tween = new Tween(pick(this, Object.keys(numberKeys)), numberKeys)
-    //   .animate(this.ac)
-    //   .builder((value) => {
-    //     this.isDirty = true;
-    //     this.clearDirty();
-    //     Object.keys(value).forEach((key) => {
-    //       this[key] = value[key];
-    //     });
-    //     this.layout();
-    //     this.render();
-    //   });
-
-    // if (isNeedLayout) {
-    //   this.root.render();
-    //   return;
-    // }
-    // this.isDirty = true;
-    // const tick = () => {
-    //   tween.destroy();
-    //   this.ac.removeEventListener(AnimationType.END, tick);
-    // };
-    // this.ac.play();
-    // this.ac.addEventListener(AnimationType.END, tick);
   }
 
   appendChild(child: Element) {
@@ -281,8 +267,9 @@ export class Element extends EventTarget {
         rect.width,
         rect.height
       );
-      if (localCtx.backgroundColor && !this.backgroundColor) {
-        this.root.ctx.fillStyle = localCtx.backgroundColor
+      const backgroundColor = this.parent?.provideLocalCtx().backgroundColor
+      if (backgroundColor) {
+        this.root.ctx.fillStyle = backgroundColor
         this.root.ctx.fillRect(
           selfPoint.x + localCtx.translateX,
           selfPoint.y + localCtx.translateY,
@@ -328,6 +315,7 @@ export class Element extends EventTarget {
     this.renderBefore(parentPoint)
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
+    this.clearDirty()
     this.root.ctx.save();
     this.draw(selfPoint);
     if (this.children?.length) {
@@ -353,6 +341,7 @@ export class Element extends EventTarget {
   }
 
   draw(point: Point) {
+    this.clearDirty()
     const size = this.size;
     this.root.ctx.beginPath();
     const localCtx = this.provideLocalCtx();
@@ -419,15 +408,29 @@ export class Element extends EventTarget {
     });
   };
 
-  getAABBound() {
-    const point = this.getWordPoint();
-    const selfPoint = this.getLocalPoint(point);
-    const size = this.size;
+  getBoundingBox() {
+    const localMatrix = this.provideLocalCtx();
+    if (!localMatrix.rotate) {
+      return quickAABB(this)
+    }
+
+    //计算旋转之后的包围盒
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    calcRotateCorners(this).forEach((corner) => {
+      if (corner.x < minX) minX = corner.x;
+      if (corner.y < minY) minY = corner.y;
+      if (corner.x > maxX) maxX = corner.x;
+      if (corner.y > maxY) maxY = corner.y;
+    });
+
     return {
-      x: selfPoint.x,
-      y: selfPoint.y,
-      x1: selfPoint.x + size.width,
-      y1: selfPoint.y + size.height
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
     };
   }
 
@@ -453,9 +456,9 @@ export class Element extends EventTarget {
         localY <= size.height / 2
       );
     }
-    const boxBound = this.getAABBound();
-    const inX = x >= boxBound.x && x <= boxBound.x1;
-    const inY = y >= boxBound.y && y <= boxBound.y1;
+    const boxBound = quickAABB(this)
+    const inX = x >= boxBound.x && x <= boxBound.width;
+    const inY = y >= boxBound.y && y <= boxBound.height;
     return inX && inY;
   }
 

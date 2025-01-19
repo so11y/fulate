@@ -22,11 +22,11 @@ export class Text extends Element {
   color?: string;
   texts: Array<{ text: string; textMetrics: TextMetrics }> = [];
 
-  constructor(options: TextOptions) {
-    super(options);
-    this.text = options.text ?? "";
-    this.font = options.font;
-    this.color = options.color;
+  setOption(option: TextOptions): void {
+    super.setOption(option)
+    this.text = option.text ?? this.text ?? "";
+    this.font = option.font ?? this.font;
+    this.color = option.color ?? this.color;
   }
 
   layout(constraint: Constraint): Size {
@@ -81,10 +81,7 @@ export class Text extends Element {
 }
 
 export function text(options: TextOptions) {
-  return new Text({
-    ...options,
-    // width: "auto"
-  })
+  return new Text(options)
 }
 
 export function generateFont(

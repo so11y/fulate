@@ -250,7 +250,7 @@ export class Column extends Element {
     return CalcAABB(this);
   }
 
-  render(parentPoint: Point): Point {
+  render(parentPoint = this.parentOrSiblingPoint): Point {
     this.renderBefore(parentPoint!);
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
