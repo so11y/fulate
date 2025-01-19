@@ -15,10 +15,7 @@ export class Expanded extends Element {
   child: Element;
 
   constructor(options: ExpandedOptions) {
-    super({
-      ...options,
-      children: options.child ? [options.child] : undefined
-    });
+    super(options);
     this.flex = options.flex ?? 1;
     this.flexBasis = options.flexBasis ?? 0;
   }

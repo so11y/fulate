@@ -142,7 +142,6 @@ export class Column extends Element {
           );
           expandedChildren.forEach((v) => {
             let constraint = currentRow.constraint.ratioWidth(v.flex, quantity);
-            // constraint.maxWidth = constraint.maxWidth + v.flexBasis;
             constraint.maxHeight = rowMaxHeight;
             const size = v.layout(constraint);
             rowMaxHeight = Math.max(
@@ -186,13 +185,6 @@ export class Column extends Element {
     }> = [];
 
     const children = this.children!.map((v) => {
-      switch (v.type) {
-        case "expanded":
-        case "column":
-        case "row":
-        case "group":
-          return v;
-      }
       const row = new Row({
         justifyContent: this.alignItems,
         children: [v]
@@ -208,8 +200,6 @@ export class Column extends Element {
     let maxHeight = 0;
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      child.parent = this;
-      child.root = this.root;
       if (child.type === "expanded") {
         childConstraint.subVertical((child as Expanded).flexBasis);
         cols.push({
@@ -247,7 +237,6 @@ export class Column extends Element {
       height: this.height ?? maxHeight
     }, this)
 
-    console.log(1);
 
     return CalcAABB(this);
   }
