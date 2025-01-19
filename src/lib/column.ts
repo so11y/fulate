@@ -3,7 +3,7 @@ import { Expanded } from "./expanded";
 import { Row } from "./row";
 import { TypeFn } from "./types";
 import { AlignItems, JustifyContent } from "./types/flex";
-import { CalcMargin } from "./utils/calc";
+import { CalcAABB } from "./utils/calc";
 import { Constraint, Size } from "./utils/constraint";
 import { last } from "lodash-es";
 
@@ -35,7 +35,7 @@ export class Column extends Element {
   }
   layout(constraint: Constraint) {
     const selfConstraint = constraint.extend(this);
-    let childConstraint = selfConstraint.clone();
+    let childConstraint = selfConstraint.getChildConstraint(this);
     if (this.flexWrap === "wrap") {
       const rowElements: Element[] = [];
       const rows: Array<RowTree> = [
@@ -75,7 +75,7 @@ export class Column extends Element {
          * 创建一个新的约束让这个节点可以在新的约束内发挥
          * 然后计算返回的尺寸，如果放不下才换行
          */
-        const newChildConstraint = selfConstraint.clone();
+        const newChildConstraint = selfConstraint.getChildConstraint(this);
         newChildConstraint.maxHeight = childConstraint.maxHeight;
 
         const size = child.layout(newChildConstraint);
@@ -95,7 +95,7 @@ export class Column extends Element {
             0
           );
 
-          const constraint = selfConstraint.clone().sub({
+          const constraint = selfConstraint.getChildConstraint(this).sub({
             maxWidth: size.width,
             maxHeight: prevHeight
           });
@@ -170,15 +170,14 @@ export class Column extends Element {
       this.children = rowElements;
 
       this.size = selfConstraint.compareSize({
-        width: this.width ?? selfConstraint.maxWidth,
         height: this.height ?? this.children.reduce(
           (prev, child) =>
             prev +
             (child.size?.height ?? 0),
           0
         )
-      })
-      return CalcMargin(this);
+      }, this)
+      return CalcAABB(this);
     }
 
     const cols: Array<{
@@ -231,7 +230,6 @@ export class Column extends Element {
       .filter((v) => v.child.type === "expanded")
       .map((v) => v.child) as Expanded[];
 
-    let expandedHeight = 0
     if (expandedChildren.length) {
       const quantity = expandedChildren.reduce(
         (prev, child) => prev + child.flex,
@@ -246,18 +244,19 @@ export class Column extends Element {
     }
 
     this.size = selfConstraint.compareSize({
-      width: this.width ?? selfConstraint.maxWidth,
       height: this.height ?? maxHeight
-    })
+    }, this)
 
-    return CalcMargin(this);
+    console.log(1);
+
+    return CalcAABB(this);
   }
 
   render(parentPoint: Point): Point {
     this.renderBefore(parentPoint!);
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
-
+    const childPoint = this.getPaddingPoint(selfPoint);
     this.root.ctx.save();
     this.draw(selfPoint);
     const toggleHeight = this.children!.reduce(
@@ -267,17 +266,17 @@ export class Column extends Element {
     );
     switch (this.justifyContent) {
       case "flex-end": {
-        selfPoint.y += this.size.height - toggleHeight;
+        childPoint.y += this.size.height - toggleHeight;
         break;
       }
       case "center": {
         const offset = (this.size.height - toggleHeight) / 2;
-        selfPoint.y += offset;
+        childPoint.y += offset;
         break;
       }
     }
     if (this.children?.length) {
-      let _point = selfPoint;
+      let _point = childPoint;
       const betweenX =
         (this.size.height - toggleHeight) / (this.children!.length - 1);
       let y = 0;

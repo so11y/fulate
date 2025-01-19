@@ -47,9 +47,9 @@ export class Text extends Element {
     );
 
     this.size = selfConstraint.compareSize({
-      ...size,
+      width: size.width,
       height: size.height * lineHeight
-    });
+    }, this);
     return this.size;
   }
 
@@ -81,7 +81,10 @@ export class Text extends Element {
 }
 
 export function text(options: TextOptions) {
-  return new Text(options)
+  return new Text({
+    ...options,
+    // width: "auto"
+  })
 }
 
 export function generateFont(

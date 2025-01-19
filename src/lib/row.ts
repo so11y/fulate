@@ -2,7 +2,7 @@ import { Expanded } from "./expanded";
 import { Constraint, Size } from "./utils/constraint";
 import { Element, ElementOptions, Point } from "./base";
 import { TypeFn } from "./types";
-import { CalcMargin } from "./utils/calc";
+import { CalcAABB } from "./utils/calc";
 import { AlignItems, JustifyContent } from "./types/flex";
 
 export interface RowOptions extends ElementOptions {
@@ -24,7 +24,7 @@ export class Row extends Element {
 
   layout(constraint: Constraint) {
     const selfConstraint = constraint.extend(this);
-    let childConstraint = selfConstraint.clone();
+    let childConstraint = selfConstraint.getChildConstraint(this);
     const sizes: Array<Size> = [];
 
     let maxHeight = 0;
@@ -75,17 +75,17 @@ export class Row extends Element {
     }
 
     this.size = selfConstraint.compareSize({
-      width: this.width ?? selfConstraint.maxWidth,
       height: this.height ?? maxHeight
-    })
+    }, this)
 
-    return CalcMargin(this);
+    return CalcAABB(this);
   }
 
   render(parentPoint: Point): Point {
     this.renderBefore(parentPoint!);
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
+    const childPoint = this.getPaddingPoint(selfPoint);
 
     this.root.ctx.save();
     this.draw(selfPoint);
@@ -96,18 +96,18 @@ export class Row extends Element {
     );
     switch (this.justifyContent) {
       case "flex-end": {
-        selfPoint.x += this.size.width - toggleWidth;
+        childPoint.x += this.size.width - toggleWidth;
         break;
       }
       case "center": {
         const offset = (this.size.width - toggleWidth) / 2;
-        selfPoint.x += offset;
+        childPoint.x += offset;
         break;
       }
     }
     if (this.children?.length) {
       const size = this.size;
-      let _point = selfPoint;
+      let _point = childPoint;
       const betweenX =
         (this.size.width - toggleWidth) / (this.children!.length - 1);
       let x = 0;

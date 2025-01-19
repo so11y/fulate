@@ -1,3 +1,5 @@
+import { type Element } from "../base"
+
 type ConstraintSize = Record<
   "minWidth" | "maxWidth" | "minHeight" | "maxHeight",
   number
@@ -126,26 +128,34 @@ export class Constraint<T extends ConstraintSize = any> {
     return Constraint.from(k.minWidth, k.maxWidth, k.minHeight, k.maxHeight)
   }
 
+  getChildConstraint(v: Element) {
+    const childConstraint = this.clone();
+    childConstraint.subHorizontal(v.padding.left + v.padding.right)
+    childConstraint.subVertical(v.padding.top + v.padding.bottom)
+    return childConstraint
+  }
+
   compareSize<G extends Partial<{ width: number; height: number }>>(
-    v: G
+    v: G,
+    e: Pick<Element, "display" | "padding">
   ): Size {
     const size = new Size();
 
     if (v.width) {
       size.width = Math.min(
-        Math.max(v.width, this.minWidth),
+        Math.max(v.width + e.padding.left + e.padding.right, this.minWidth),
         this.maxWidth ?? Number.MAX_VALUE
       );
     }
 
     if (v.height) {
       size.height = Math.min(
-        Math.max(v.height, this.minHeight),
+        Math.max(v.height + e.padding.top + e.padding.bottom, this.minHeight),
         this.maxHeight ?? Number.MAX_VALUE
       );
     }
 
-    if (v.width === Number.MAX_VALUE) {
+    if ((v.width === undefined && e.display === "block") || v.width === Number.MAX_VALUE) {
       size.width = Math.max(this.minWidth, this.maxWidth);
     }
     //v.height === undefined ||
@@ -193,7 +203,7 @@ export class Size {
     this.height = height ?? 0;
   }
 
-  add(size: Size) {
+  add<T extends { width?: number, height?: number }>(size: T) {
     return new Size(
       this.width + (size.width ?? 0),
       this.height + (size.height ?? 0)

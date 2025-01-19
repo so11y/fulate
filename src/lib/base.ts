@@ -4,18 +4,12 @@ import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
-import { CalcMargin } from "./utils/calc";
+import { CalcAABB, } from "./utils/calc";
 
 export interface Point {
   x: number;
   y: number;
 }
-const DEFAULT_MARGIN = {
-  top: 0,
-  right: 0,
-  bottom: 0,
-  left: 0
-};
 
 const NEED_LAYOUT_KYE = ["width", "height", "x", "y", "rotate", "translate"];
 const NUMBER_KEY = ["width", "height", "x", "y", "rotate", "translate"];
@@ -24,7 +18,9 @@ export interface ElementOptions {
   key?: string;
   x?: number;
   y?: number;
-  width?: number | "auto";
+  display?: "block" | "inline"
+  boxSizing?: "border-box" | "content-box"
+  width?: number;
   height?: number;
   minWidth?: number;
   minHeight?: number;
@@ -38,7 +34,9 @@ export interface ElementOptions {
   // position?: "static" | "absolute" | "relative";
   backgroundColor?: string;
   children?: Element[];
+  child?: Element
   margin?: [top: number, right: number, bottom: number, left: number];
+  padding?: [top: number, right: number, bottom: number, left: number];
 }
 
 export class Element extends EventTarget {
@@ -58,6 +56,13 @@ export class Element extends EventTarget {
     bottom: number;
     left: number;
   };
+  padding: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+  display: "block" | "inline"
   width?: number;
   height?: number;
   key?: string;
@@ -70,6 +75,7 @@ export class Element extends EventTarget {
   children?: Element[];
   parent?: Element;
   isMounted = false;
+  widthAuto = false
   ac: AnimationController;
   // isBreak: boolean = false;
   //如果是container这种内部嵌套的组件
@@ -90,32 +96,42 @@ export class Element extends EventTarget {
     super();
     if (option) {
       this.key = option.key;
+      this.width = option.width;
+      this.height = option.height;
+      this.maxWidth = option.maxWidth;
+      this.maxHeight = option.maxHeight;
+      this.minWidth = option.minWidth;
+      this.minHeight = option.minHeight;
+      this.backgroundColor = option.backgroundColor;
       this.x = option.x ?? 0;
       this.y = option.y ?? 0;
-      this.width = option.width === "auto" ? undefined : option.width ?? Number.MAX_VALUE;
-      this.height = option.height ?? undefined;
-      this.maxWidth = option.maxWidth ?? undefined;
-      this.maxHeight = option.maxHeight ?? undefined;
-      this.minWidth = option.minWidth ?? undefined;
-      this.minHeight = option.minHeight ?? undefined;
-      this.backgroundColor = option?.backgroundColor;
+      this.display = option.display ?? "block";
       this.radius = option.radius ?? 0;
       this.overflow = option.overflow ?? "visible";
       this.translateX = option.translateX ?? 0;
       this.translateY = option.translateY ?? 0;
       this.rotate = option.rotate ?? 0;
       // this.position = option.position ?? "static";
-      this.children = option.children;
 
-      this.margin =
-        option.margin === undefined
-          ? DEFAULT_MARGIN
-          : {
-            top: option.margin[0] ?? 0,
-            right: option.margin[1] ?? 0,
-            bottom: option.margin[2] ?? 0,
-            left: option.margin[3] ?? 0
-          };
+      if (option.child) {
+        this.children = [option.child]
+      } else {
+        this.children = option.children;
+      }
+
+      this.margin = {
+        top: option.margin?.[0] ?? 0,
+        right: option.margin?.[1] ?? 0,
+        bottom: option.margin?.[2] ?? 0,
+        left: option.margin?.[3] ?? 0
+      }
+
+      this.padding = {
+        top: option.padding?.[0] ?? 0,
+        right: option.padding?.[1] ?? 0,
+        bottom: option.padding?.[2] ?? 0,
+        left: option.padding?.[3] ?? 0
+      };
     }
   }
 
@@ -162,7 +178,7 @@ export class Element extends EventTarget {
     return this.parent?.children?.filter((v) => v !== this);
   }
 
-  setAttributes<T = ElementOptions>(attrs: T, sourceTarget?: any) {
+  setAttributes<T extends ElementOptions>(attrs: T, sourceTarget?: any) {
     const target = sourceTarget ?? this;
     Object.keys(omit(attrs, NUMBER_KEY)).forEach((key) => {
       target[key] = attrs[key];
@@ -284,11 +300,12 @@ export class Element extends EventTarget {
 
   layout(constraint: Constraint, isBreak = false): Size {
     const selfConstraint = constraint.extend(this);
+    const childConstraint = selfConstraint.getChildConstraint(this)
     if (this.children?.length) {
       const rects = this.children!.map((child) => {
         child.parent = this;
         child.root = this.root;
-        return child.layout(selfConstraint);
+        return child.layout(childConstraint);
       });
       const rect = rects.reduce(
         (prev, next) =>
@@ -299,12 +316,12 @@ export class Element extends EventTarget {
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
-      this.size = isBreak ? rect : selfConstraint.compareSize(rect);
+      this.size = isBreak ? rect : selfConstraint.compareSize(rect, this);
     } else {
-      this.size = selfConstraint.compareSize(this);
+      this.size = selfConstraint.compareSize(this, this);
     }
 
-    return CalcMargin(this)
+    return CalcAABB(this)
   }
 
   render(parentPoint: Point = this.parentOrSiblingPoint) {
@@ -314,12 +331,19 @@ export class Element extends EventTarget {
     this.root.ctx.save();
     this.draw(selfPoint);
     if (this.children?.length) {
-      let _point = selfPoint;
-      this.children.forEach((child) => child.render(_point));
+      let childPoint = this.getPaddingPoint(selfPoint);
+      this.children.forEach((child) => child.render(childPoint));
     }
     this.root.ctx.restore();
 
     return point;
+  }
+
+  getPaddingPoint(p: Point) {
+    return {
+      x: p.x + this.padding.left,
+      y: p.y + this.padding.top
+    };
   }
 
   renderBefore(parentPoint: Point) {
@@ -327,7 +351,6 @@ export class Element extends EventTarget {
     this.provideLocalCtx(true)
     return this;
   }
-
 
   draw(point: Point) {
     const size = this.size;
