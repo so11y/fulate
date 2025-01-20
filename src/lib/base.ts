@@ -4,7 +4,7 @@ import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
-import { CalcAABB, calcRotateCorners, quickAABB, } from "./utils/calc";
+import { CalcAABB, calcRotateCorners, quickAABB } from "./utils/calc";
 
 export interface Point {
   x: number;
@@ -13,16 +13,21 @@ export interface Point {
 
 const NEED_LAYOUT_KYE = ["width", "height", "text"];
 const NUMBER_KEY = [
-  "width", "height",
-  "x", "y", "rotate", "translateX", "translateY"
+  "width",
+  "height",
+  "x",
+  "y",
+  "rotate",
+  "translateX",
+  "translateY"
 ];
 
 export interface ElementOptions {
   key?: string;
   x?: number;
   y?: number;
-  display?: "block" | "inline"
-  boxSizing?: "border-box" | "content-box"
+  display?: "block" | "inline";
+  boxSizing?: "border-box" | "content-box";
   width?: number;
   height?: number;
   minWidth?: number;
@@ -37,7 +42,7 @@ export interface ElementOptions {
   // position?: "static" | "absolute" | "relative";
   backgroundColor?: string;
   children?: Element[];
-  child?: Element
+  child?: Element;
   margin?: [top: number, right: number, bottom: number, left: number];
   padding?: [top: number, right: number, bottom: number, left: number];
 }
@@ -57,7 +62,7 @@ export class Element extends EventTarget {
     top: 0,
     right: 0,
     bottom: 0,
-    left: 0,
+    left: 0
   };
   padding = {
     top: 0,
@@ -65,7 +70,7 @@ export class Element extends EventTarget {
     bottom: 0,
     left: 0
   };
-  display: "block" | "inline" = "block"
+  display: "block" | "inline" = "block";
   width?: number;
   height?: number;
   key?: string;
@@ -78,7 +83,7 @@ export class Element extends EventTarget {
   children?: Element[];
   parent?: Element;
   isMounted = false;
-  widthAuto = false
+  widthAuto = false;
   ac: AnimationController;
   // isBreak: boolean = false;
   //如果是container这种内部嵌套的组件
@@ -93,13 +98,13 @@ export class Element extends EventTarget {
     translateY: 0,
     rotate: 0,
     backgroundColor: undefined as undefined | string
-  }
+  };
 
   constructor(option?: ElementOptions) {
     super();
-    this.setOption(option)
+    this.setOption(option);
     if (option?.child) {
-      this.children = [option.child]
+      this.children = [option.child];
     } else if (option?.children) {
       this.children = option.children;
     }
@@ -125,33 +130,43 @@ export class Element extends EventTarget {
       this.rotate = option.rotate ?? this.rotate;
       // this.position = option.position ?? "static";
 
-      this.margin = option.margin ? {
-        top: option.margin[0],
-        right: option.margin[1],
-        bottom: option.margin[2],
-        left: option.margin[3]
-      } : this.margin
+      this.margin = option.margin
+        ? {
+            top: option.margin[0],
+            right: option.margin[1],
+            bottom: option.margin[2],
+            left: option.margin[3]
+          }
+        : this.margin;
 
-      this.padding = option.padding ? {
-        top: option.padding[0],
-        right: option.padding[1],
-        bottom: option.padding[2],
-        left: option.padding[3]
-      } : this.padding
+      this.padding = option.padding
+        ? {
+            top: option.padding[0],
+            right: option.padding[1],
+            bottom: option.padding[2],
+            left: option.padding[3]
+          }
+        : this.padding;
     }
   }
 
   provideLocalCtx(reset = true) {
     if (this._provideLocalCtx && reset !== true) {
-      return this._provideLocalCtx
+      return this._provideLocalCtx;
     }
     const parentLocalCtx = (this.parent || this.root)._provideLocalCtx;
     this._provideLocalCtx = Object.create({
       backgroundColor: parentLocalCtx.backgroundColor ?? this.backgroundColor
-    })
-    this._provideLocalCtx.translateX = this.translateX ? this.translateX + parentLocalCtx.translateX : parentLocalCtx.translateX;
-    this._provideLocalCtx.translateY = this.translateY ? this.translateY + parentLocalCtx.translateY : parentLocalCtx.translateY;
-    this._provideLocalCtx.rotate = this.rotate ? this.rotate + parentLocalCtx.rotate : parentLocalCtx.rotate;
+    });
+    this._provideLocalCtx.translateX = this.translateX
+      ? this.translateX + parentLocalCtx.translateX
+      : parentLocalCtx.translateX;
+    this._provideLocalCtx.translateY = this.translateY
+      ? this.translateY + parentLocalCtx.translateY
+      : parentLocalCtx.translateY;
+    this._provideLocalCtx.rotate = this.rotate
+      ? this.rotate + parentLocalCtx.rotate
+      : parentLocalCtx.rotate;
 
     // this._provideLocalCtx = {
     //   backgroundColor: this.backgroundColor ?? parent.backgroundColor,
@@ -159,7 +174,7 @@ export class Element extends EventTarget {
     //   translateY: this.translateY ? this.translateY + parent.translateY : parent.translateY,
     //   rotate: this.rotate ? this.rotate + parent.rotate : parent.rotate,
     // }
-    return this._provideLocalCtx
+    return this._provideLocalCtx;
   }
 
   getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
@@ -187,16 +202,17 @@ export class Element extends EventTarget {
     return this.parent?.children?.filter((v) => v !== this);
   }
 
-  setAttributes<T extends ElementOptions>(attrs?: T,) {
+  setAttributes<T extends ElementOptions>(attrs?: T) {
     if (!attrs) {
       if (this.root.useDirtyRect && this.root.dirtyDebugRoot) {
-        this.root.dirtys.add(this)
-        this.root.dirtyRender()
+        this.root.dirtys.add(this);
+        this.root.dirtyRender();
       }
-      return
+      return;
     }
-    const target = this
-    this.setOption(attrs)
+    const target = this;
+    const notAnimateKeys = omit(attrs, NUMBER_KEY);
+    this.setOption(notAnimateKeys);
     const numberKeys = pick(attrs, NUMBER_KEY);
     const size = this.size;
     const selfStart = {
@@ -206,25 +222,22 @@ export class Element extends EventTarget {
       height: size.height,
       rotate: target.rotate
     };
-    const isLayout = Object.keys(pick(attrs, NEED_LAYOUT_KYE)).length
+    const isLayout = Object.keys(pick(attrs, NEED_LAYOUT_KYE)).length;
     const acKeys = Object.keys(numberKeys);
     if (!acKeys.length && isLayout) {
-      this.root.render()
-      return
+      this.root.render();
+      return;
     }
     const ac = this.ac || this.root.ac;
-    const tween = new Tween(
-      pick(selfStart, acKeys),
-      numberKeys
-    )
+    const tween = new Tween(pick(selfStart, acKeys), numberKeys)
       .animate(ac)
       .builder((value) => {
-        this.setOption(value)
+        this.setOption(value);
         if (isLayout || !this.root.useDirtyRect) {
-          this.root.render()
+          this.root.render();
         } else {
-          this.root.dirtys.add(this)
-          this.root.dirtyRender()
+          this.root.dirtys.add(this);
+          this.root.dirtyRender();
         }
       });
 
@@ -267,15 +280,15 @@ export class Element extends EventTarget {
         rect.width,
         rect.height
       );
-      const backgroundColor = this.parent?.provideLocalCtx().backgroundColor
+      const backgroundColor = this.parent?.provideLocalCtx().backgroundColor;
       if (backgroundColor) {
-        this.root.ctx.fillStyle = backgroundColor
+        this.root.ctx.fillStyle = backgroundColor;
         this.root.ctx.fillRect(
           selfPoint.x + localCtx.translateX,
           selfPoint.y + localCtx.translateY,
           rect.width,
           rect.height
-        )
+        );
       }
       this.root.ctx.restore();
     }
@@ -287,7 +300,7 @@ export class Element extends EventTarget {
 
   layout(constraint: Constraint, isBreak = false): Size {
     const selfConstraint = constraint.extend(this);
-    const childConstraint = selfConstraint.getChildConstraint(this)
+    const childConstraint = selfConstraint.getChildConstraint(this);
     if (this.children?.length) {
       const rects = this.children!.map((child) => {
         child.parent = this;
@@ -296,10 +309,10 @@ export class Element extends EventTarget {
       });
       const rect = rects.reduce(
         (prev, next) =>
-        ({
-          width: Math.max(prev.width, next.width),
-          height: Math.max(prev.height, next.height)
-        } as Size),
+          ({
+            width: Math.max(prev.width, next.width),
+            height: Math.max(prev.height, next.height)
+          } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
@@ -308,14 +321,14 @@ export class Element extends EventTarget {
       this.size = selfConstraint.compareSize(this, this);
     }
 
-    return CalcAABB(this)
+    return CalcAABB(this);
   }
 
   render(parentPoint: Point = this.parentOrSiblingPoint) {
-    this.renderBefore(parentPoint)
+    this.renderBefore(parentPoint);
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
-    this.clearDirty()
+    this.clearDirty();
     this.root.ctx.save();
     this.draw(selfPoint);
     if (this.children?.length) {
@@ -336,12 +349,12 @@ export class Element extends EventTarget {
 
   renderBefore(parentPoint: Point) {
     this.parentOrSiblingPoint = parentPoint;
-    this.provideLocalCtx(true)
+    this.provideLocalCtx(true);
     return this;
   }
 
   draw(point: Point) {
-    this.clearDirty()
+    this.clearDirty();
     const size = this.size;
     this.root.ctx.beginPath();
     const localCtx = this.provideLocalCtx();
@@ -411,7 +424,7 @@ export class Element extends EventTarget {
   getBoundingBox() {
     const localMatrix = this.provideLocalCtx();
     if (!localMatrix.rotate) {
-      return quickAABB(this)
+      return quickAABB(this);
     }
 
     //计算旋转之后的包围盒
@@ -430,11 +443,11 @@ export class Element extends EventTarget {
       x: minX,
       y: minY,
       width: maxX - minX,
-      height: maxY - minY,
+      height: maxY - minY
     };
   }
 
-  hasPointHint(x: number, y: number,) {
+  hasPointHint(x: number, y: number) {
     const localMatrix = this.provideLocalCtx();
     if (localMatrix.rotate) {
       const size = this.size;
@@ -456,7 +469,7 @@ export class Element extends EventTarget {
         localY <= size.height / 2
       );
     }
-    const boxBound = quickAABB(this)
+    const boxBound = quickAABB(this);
     const inX = x >= boxBound.x && x <= boxBound.width;
     const inY = y >= boxBound.y && y <= boxBound.height;
     return inX && inY;
@@ -476,13 +489,14 @@ export class Element extends EventTarget {
   }
 }
 
-
-export const element: TypeFn<ElementOptions, Element> = (option?: ElementOptions) => {
-  return new Element(option)
+export const element: TypeFn<ElementOptions, Element> = (
+  option?: ElementOptions
+) => {
+  return new Element(option);
 };
 
 element.hFull = function (options: ElementOptions) {
-  const g = element(options)
-  g.height = Number.MAX_VALUE
-  return g
-}
+  const g = element(options);
+  g.height = Number.MAX_VALUE;
+  return g;
+};

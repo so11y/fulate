@@ -2,8 +2,13 @@ import { AnimationController, AnimationType } from "ac";
 import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 import { generateFont, TextOptions } from "./text";
-import { isOverlap, isOverlapAndNotAdjacent, isPartiallyIntersecting, mergeOverlappingRects } from "./utils/calc";
-import { debounce } from "lodash-es"
+import {
+  isOverlap,
+  isOverlapAndNotAdjacent,
+  isPartiallyIntersecting,
+  mergeOverlappingRects
+} from "./utils/calc";
+import { debounce } from "lodash-es";
 
 interface RootOptions {
   animationSwitch?: boolean;
@@ -26,10 +31,10 @@ export class Root extends Element {
   ac: AnimationController;
   keyMap = new Map<string, Element>();
   quickElements: Set<Element> = new Set();
-  dirtys: Set<Element> = new Set()
+  dirtys: Set<Element> = new Set();
   font: Required<RootOptions["font"]>;
   currentElement?: Element;
-  useDirtyRect: boolean
+  useDirtyRect: boolean;
   dirtyDebugRoot?: Root;
   constructor(options: RootOptions) {
     super(options);
@@ -38,7 +43,7 @@ export class Root extends Element {
     this.el.width = options.width;
     this.el.height = options.height;
     this.ctx = this.el.getContext("2d")!;
-    this.useDirtyRect = options.useDirtyRect ?? false
+    this.useDirtyRect = options.useDirtyRect ?? false;
     this.ac = new AnimationController(
       options.animationSwitch ? options.animationTime ?? 300 : 0
     );
@@ -54,26 +59,26 @@ export class Root extends Element {
     };
 
     if (this.useDirtyRect && options.dirtyDebug) {
-      const dirtyCanvas = document.createElement("canvas") as HTMLCanvasElement
+      const dirtyCanvas = document.createElement("canvas") as HTMLCanvasElement;
       const rect = this.el.getBoundingClientRect();
       dirtyCanvas.style.cssText = `
         position:absolute;
         top:${rect.top}px;
         left:${rect.left}px;
         pointer-events: none;
-      `
-      this.el.parentElement?.append(dirtyCanvas)
+      `;
+      this.el.parentElement?.append(dirtyCanvas);
       this.dirtyDebugRoot = new Root({
         el: dirtyCanvas,
         width: options.width,
         height: options.height
-      })
-      this.dirtyDebugRoot.mounted()
+      });
+      this.dirtyDebugRoot.mounted();
     }
   }
 
   mounted() {
-    this.root = this
+    this.root = this;
     this.render();
     super.mounted();
     this.eventManage.hasUserEvent = true;
@@ -82,62 +87,69 @@ export class Root extends Element {
 
     //为了如果鼠标按下那么即便鼠标已经移动出canvas之外
     //也能继续触发的这个元素的事件
-    let hasLockPoint = false
+    let hasLockPoint = false;
 
-    document.addEventListener("pointermove", (e) => {
-      const offsetX = e.clientX - rect.x;
-      const offsetY = e.clientY - rect.y;
-      const prevElement = this.currentElement
-      if (hasLockPoint === false) {
-        this.currentElement = undefined
-        for (const element of this.quickElements) {
-          if (element.hasPointHint(offsetX, offsetY)) {
-            this.currentElement = element
-            break
+    document.addEventListener(
+      "pointermove",
+      (e) => {
+        const offsetX = e.clientX - rect.x;
+        const offsetY = e.clientY - rect.y;
+        const prevElement = this.currentElement;
+        if (hasLockPoint === false) {
+          this.currentElement = undefined;
+          for (const element of this.quickElements) {
+            if (element.hasPointHint(offsetX, offsetY)) {
+              this.currentElement = element;
+              break;
+            }
           }
         }
-      }
 
-      if (!this.currentElement) {
-        return
-      }
+        if (!this.currentElement) {
+          return;
+        }
 
-      if (this.currentElement !== prevElement) {
-        notify(e, "mouseleave", prevElement)
-        notify(e, "mouseenter")
-      }
+        if (this.currentElement !== prevElement) {
+          notify(e, "mouseleave", prevElement);
+          notify(e, "mouseenter");
+        }
 
-      notify(e, "pointermove")
-    }, {
-      signal: abortController.signal
-    })
+        notify(e, "pointermove");
+      },
+      {
+        signal: abortController.signal
+      }
+    );
 
     document.addEventListener("click", (e) => notify(e, "click"), {
       signal: abortController.signal
-    })
+    });
     document.addEventListener("pointerdown", (e) => notify(e, "pointerdown"), {
       signal: abortController.signal
-    })
+    });
     document.addEventListener("pointerup", (e) => notify(e, "pointerup"), {
       signal: abortController.signal
-    })
+    });
     document.addEventListener("contextmenu", (e) => notify(e, "contextmenu"), {
       signal: abortController.signal
-    })
+    });
 
-
-    const notify = (e: PointerEvent | MouseEvent, eventName: string, el = this.currentElement) => {
+    const notify = (
+      e: PointerEvent | MouseEvent,
+      eventName: string,
+      el = this.currentElement
+    ) => {
       if (!el) {
-        hasLockPoint = false
-        return
+        hasLockPoint = false;
+        return;
       }
       if (eventName === "contextmenu") {
-        e.preventDefault()
+        e.preventDefault();
       }
       if (eventName === "pointerdown") {
-        hasLockPoint = true
+        hasLockPoint = true;
       } else if (eventName === "pointerup") {
-        hasLockPoint = false
+        hasLockPoint = false;
       }
       const offsetX = e.clientX - rect.x;
       const offsetY = e.clientY - rect.y;
@@ -146,15 +158,15 @@ export class Root extends Element {
         x: offsetX,
         y: offsetY,
         buttons: e.buttons
-      })
-    }
+      });
+    };
 
     this.unmounted = () => {
-      abortController.abort()
-      super.unmounted()
-      this.keyMap.clear()
-      this.quickElements.clear()
-    }
+      abortController.abort();
+      super.unmounted();
+      this.keyMap.clear();
+      this.quickElements.clear();
+    };
   }
 
   getElementByKey<T = Element>(key: string): T | undefined {
@@ -196,68 +208,90 @@ export class Root extends Element {
   //就脏节点开始重绘制
   dirtyRender = debounce(() => {
     const dirtys = Array.from(this.dirtys);
-    this.dirtys.clear()
-    const aabbs = dirtys.map(v => v.getBoundingBox())
-    const mergeDirtyAABB = mergeOverlappingRects(aabbs)
-    const needRerender: Set<Element> = new Set()
+    this.dirtys.clear();
+    const aabbs = dirtys.map((v) => v.getBoundingBox());
+    const mergeDirtyAABB = mergeOverlappingRects(aabbs);
+    const needRerender: Set<Element> = new Set();
     function walk(el: Element) {
       if (el.parent) {
         let parent: Element | undefined = el.parent;
-        const aabb = parent.getBoundingBox()
-        const provide = parent.provideLocalCtx()
+        const aabb = parent.getBoundingBox();
+        const provide = parent.provideLocalCtx();
         if (provide.backgroundColor) {
-          needRerender.add(parent)
-          return
+          needRerender.add(parent);
+          return;
         }
         while (parent) {
-          if (mergeDirtyAABB.some(v => isPartiallyIntersecting(aabb, v))) {
-            needRerender.add(parent)
-            return
+          if (mergeDirtyAABB.some((v) => isPartiallyIntersecting(aabb, v))) {
+            needRerender.add(parent);
+            return;
           }
           parent = parent?.parent;
         }
       }
-      const aabb = el.getBoundingBox()
-      if (!el.isDirty && mergeDirtyAABB.some((v) => isOverlap(v, aabb))) {
-        needRerender.add(el)
-      }
-      const siblings = el.getSiblings()
-      if (siblings?.length) {
-        siblings.forEach(v => {
-          const aabb = v.getBoundingBox()
-          if (!v.isDirty && mergeDirtyAABB.some((vv) => isOverlapAndNotAdjacent(vv, aabb))) {
-            needRerender.add(v)
+      if (el.parent?.children) {
+        const children = el.parent?.children;
+        for (let index = 0; index < children.length; index++) {
+          const element = children[index];
+          const aabb = element.getBoundingBox();
+          const isCurrent = element === el;
+          const isDirty = element.isDirty;
+          if (
+            isCurrent &&
+            !isDirty &&
+            mergeDirtyAABB.some((v) => isOverlap(v, aabb))
+          ) {
+            needRerender.add(element);
+          } else if (
+            !isDirty &&
+            mergeDirtyAABB.some((v) => isOverlapAndNotAdjacent(v, aabb))
+          ) {
+            needRerender.add(element);
           }
-        })
+        }
       }
+      // const siblings = el.getSiblings();
+      // if (siblings?.length) {
+      //   siblings.forEach((v) => {
+      //     const aabb = v.getBoundingBox();
+      //     if (
+      //       !v.isDirty &&
+      //       mergeDirtyAABB.some((vv) => isOverlapAndNotAdjacent(vv, aabb))
+      //     ) {
+      //       needRerender.add(v);
+      //     }
+      //   });
+      // }
     }
-    dirtys.forEach(walk)
+    dirtys.forEach(walk);
     if (this.dirtyDebugRoot) {
-      this.dirtyDebugRoot.children = Array.from(needRerender).map(v => {
-        const point = v.getLocalPoint(v.getWordPoint())
+      this.dirtyDebugRoot.children = Array.from(needRerender).map((v) => {
+        const point = v.getLocalPoint(v.getWordPoint());
         return new Element({
           x: point.x,
           y: point.y,
           width: v.size.width,
           height: v.size.height,
-          backgroundColor: 'rgba(128, 0, 128, 0.5)'
-        })
-      })
-      this.dirtyDebugRoot.render()
+          backgroundColor: "rgba(128, 0, 128, 0.5)"
+        });
+      });
+      this.dirtyDebugRoot.render();
     }
-    needRerender.forEach(v => {
-      v.isDirty = true;
-      v.render()
-    })
+    needRerender.forEach((v) => {
+      if (v.type !== "root") {
+        v.isDirty = true;
+      }
+      v.render();
+    });
     if (this.dirtyDebugRoot) {
       setTimeout(() => {
-        this.dirtyDebugRoot!.children = []
-        this.dirtyDebugRoot!.render()
-      }, 300)
+        this.dirtyDebugRoot!.children = [];
+        this.dirtyDebugRoot!.render();
+      }, 300);
     }
-  })
+  });
 }
 
 export function root(options: RootOptions) {
-  return new Root(options)
+  return new Root(options);
 }
