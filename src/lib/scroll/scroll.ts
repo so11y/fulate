@@ -9,7 +9,7 @@ interface ScrollOptions extends Omit<ElementOptions, "child"> {
   overflowY?: "scroll" | "none";
   overflowX?: "scroll" | "none";
 }
-
+//TODO 后面把滚动条单独到一个离屏canvas里
 export class Scroll extends Element {
   type = "scroll";
   overflowY: ScrollOptions["overflowY"];
