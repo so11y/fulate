@@ -130,15 +130,25 @@ export class Root extends Element {
     document.addEventListener("pointerup", (e) => notify(e, "pointerup"), {
       signal: abortController.signal
     });
+
     document.addEventListener("contextmenu", (e) => notify(e, "contextmenu"), {
       signal: abortController.signal
     });
 
+    document.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      notify(e, "wheel")
+    }, {
+      signal: abortController.signal,
+      passive: false
+    });
+
     const notify = (
-      e: PointerEvent | MouseEvent,
+      e: PointerEvent | MouseEvent | WheelEvent,
       eventName: string,
       el = this.currentElement
     ) => {
+
       if (!el) {
         hasLockPoint = false;
         return;
@@ -157,7 +167,9 @@ export class Root extends Element {
         target: el,
         x: offsetX,
         y: offsetY,
-        buttons: e.buttons
+        buttons: e.buttons,
+        deltaY: (e as WheelEvent).deltaY ?? 0,
+        deltaX: (e as WheelEvent).deltaX ?? 0,
       });
     };
 
@@ -207,6 +219,7 @@ export class Root extends Element {
 
   //就脏节点开始重绘制
   dirtyRender = debounce(() => {
+    //TODO 这里getBoundingBox要改为相对视口的也就是要减去滚动条的,不然脏矩形判断不对
     if (this.dirtys.has(this)) {
       this.dirtys.clear();
       super.render();
@@ -223,10 +236,6 @@ export class Root extends Element {
         let parent: Element | undefined = el.parent;
         const aabb = parent.getBoundingBox();
         const provide = parent.provideLocalCtx();
-        if (provide.backgroundColor) {
-          needRerender.add(parent);
-          return;
-        }
         while (parent) {
           if (mergeDirtyAABB.some((v) => isPartiallyIntersecting(aabb, v))) {
             mergeDirtyAABB.push(aabb);
@@ -234,6 +243,10 @@ export class Root extends Element {
             return;
           }
           parent = parent?.parent;
+        }
+        if (provide.backgroundColor) {
+          needRerender.add(el.parent);
+          return;
         }
       }
       if (el.parent?.children) {

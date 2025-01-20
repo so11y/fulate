@@ -97,6 +97,7 @@ export class Element extends EventTarget {
     translateX: 0,
     translateY: 0,
     rotate: 0,
+    overflowHideEl: undefined as Element | undefined,
     backgroundColor: undefined as undefined | string
   };
 
@@ -132,20 +133,20 @@ export class Element extends EventTarget {
 
       this.margin = option.margin
         ? {
-            top: option.margin[0],
-            right: option.margin[1],
-            bottom: option.margin[2],
-            left: option.margin[3]
-          }
+          top: option.margin[0],
+          right: option.margin[1],
+          bottom: option.margin[2],
+          left: option.margin[3]
+        }
         : this.margin;
 
       this.padding = option.padding
         ? {
-            top: option.padding[0],
-            right: option.padding[1],
-            bottom: option.padding[2],
-            left: option.padding[3]
-          }
+          top: option.padding[0],
+          right: option.padding[1],
+          bottom: option.padding[2],
+          left: option.padding[3]
+        }
         : this.padding;
     }
   }
@@ -155,25 +156,25 @@ export class Element extends EventTarget {
       return this._provideLocalCtx;
     }
     const parentLocalCtx = (this.parent || this.root)._provideLocalCtx;
-    this._provideLocalCtx = Object.create({
-      backgroundColor: parentLocalCtx.backgroundColor ?? this.backgroundColor
-    });
-    this._provideLocalCtx.translateX = this.translateX
-      ? this.translateX + parentLocalCtx.translateX
-      : parentLocalCtx.translateX;
-    this._provideLocalCtx.translateY = this.translateY
-      ? this.translateY + parentLocalCtx.translateY
-      : parentLocalCtx.translateY;
-    this._provideLocalCtx.rotate = this.rotate
-      ? this.rotate + parentLocalCtx.rotate
-      : parentLocalCtx.rotate;
-
-    // this._provideLocalCtx = {
-    //   backgroundColor: this.backgroundColor ?? parent.backgroundColor,
-    //   translateX: this.translateX ? this.translateX + parent.translateX : parent.translateX,
-    //   translateY: this.translateY ? this.translateY + parent.translateY : parent.translateY,
-    //   rotate: this.rotate ? this.rotate + parent.rotate : parent.rotate,
-    // }
+    // this._provideLocalCtx = Object.create({
+    //   backgroundColor: parentLocalCtx.backgroundColor ?? this.backgroundColor
+    // });
+    // this._provideLocalCtx.translateX = this.translateX
+    //   ? this.translateX + parentLocalCtx.translateX
+    //   : parentLocalCtx.translateX;
+    // this._provideLocalCtx.translateY = this.translateY
+    //   ? this.translateY + parentLocalCtx.translateY
+    //   : parentLocalCtx.translateY;
+    // this._provideLocalCtx.rotate = this.rotate
+    //   ? this.rotate + parentLocalCtx.rotate
+    //   : parentLocalCtx.rotate;
+    this._provideLocalCtx = {
+      overflowHideEl: parentLocalCtx.overflowHideEl ?? (this.overflow === "hidden" ? this : undefined),
+      backgroundColor: this.backgroundColor ?? parentLocalCtx.backgroundColor,
+      translateX: this.translateX ? this.translateX + parentLocalCtx.translateX : parentLocalCtx.translateX,
+      translateY: this.translateY ? this.translateY + parentLocalCtx.translateY : parentLocalCtx.translateY,
+      rotate: this.rotate ? this.rotate + parentLocalCtx.rotate : parentLocalCtx.rotate,
+    }
     return this._provideLocalCtx;
   }
 
@@ -318,10 +319,10 @@ export class Element extends EventTarget {
       });
       const rect = rects.reduce(
         (prev, next) =>
-          ({
-            width: Math.max(prev.width, next.width),
-            height: Math.max(prev.height, next.height)
-          } as Size),
+        ({
+          width: Math.max(prev.width, next.width),
+          height: Math.max(prev.height, next.height)
+        } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
@@ -378,6 +379,8 @@ export class Element extends EventTarget {
     }
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
+    }
+    if (this.backgroundColor || this.overflow === "hidden") {
       // const roundRectPath = new Path2D();
       // roundRectPath.roundRect(50, 50, 200, 100, 20); // 圆角半径为 20
       this.root.ctx.roundRect(
@@ -387,6 +390,8 @@ export class Element extends EventTarget {
         size.height,
         this.radius
       );
+    }
+    if (this.backgroundColor) {
       this.root.ctx.fill();
     }
 
@@ -397,7 +402,11 @@ export class Element extends EventTarget {
 
   mounted() {
     if (this.children?.length) {
-      this.children.forEach((child) => child.mounted());
+      const length = this.children.length - 1
+      for (let i = length; i >= 0; i--) {
+        const child = this.children[i]
+        child.mounted()
+      }
     }
     if (!this.isMounted && !this.isInternal) {
       if (this.key) {
@@ -408,26 +417,6 @@ export class Element extends EventTarget {
     }
     this.isMounted = true;
   }
-
-  //@ts-ignore
-  addEventListener(
-    type: EventName,
-    callback: CanvasPointEvent,
-    options?: AddEventListenerOptions | boolean
-  ): void {
-    this.eventManage.hasUserEvent = true;
-    //@ts-ignore
-    super.addEventListener(type, callback, options);
-  }
-
-  click = () => {
-    this.eventManage.notify("click", {
-      target: this,
-      x: 0,
-      y: 0,
-      buttons: 0
-    });
-  };
 
   getBoundingBox() {
     const localMatrix = this.provideLocalCtx();
@@ -495,6 +484,37 @@ export class Element extends EventTarget {
       this.children.forEach((child) => child.unmounted());
     }
   }
+
+  //@ts-ignore
+  addEventListener(
+    type: EventName,
+    callback: CanvasPointEvent,
+    options?: AddEventListenerOptions | boolean
+  ): void {
+    this.eventManage.hasUserEvent = true;
+    //@ts-ignore
+    super.addEventListener(type, callback, options);
+  }
+
+  //@ts-ignore
+  removeEventListener(
+    type: EventName,
+    callback: CanvasPointEvent,
+    options?: AddEventListenerOptions | boolean
+  ): void {
+    //@ts-ignore
+    super.removeEventListener(type, callback, options);
+  }
+
+  click = () => {
+    this.eventManage.notify("click", {
+      target: this,
+      x: 0,
+      y: 0,
+      buttons: 0
+    });
+  };
+
 }
 
 export const element: TypeFn<ElementOptions, Element> = (

@@ -1,8 +1,8 @@
 <div align="center">
   <h1>fulate</h1>
+  <center>这是一个基于 Canvas 的 UI 渲染项目</center>
 </div>
 
-#### 这是一个基于 Canvas 的 UI 渲染项目，支持动态创建和操作元素，包括矩形、文本、图片等。项目使用了脏矩形优化技术，以提高渲染性能。
 
 ### 功能特性
 

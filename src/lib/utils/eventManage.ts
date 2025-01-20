@@ -1,14 +1,17 @@
 import type { Element } from "../base"
 
+export type UserCanvasEvent = Event & { detail: CanvasPoint }
 
-export type EventName = "pointermove" | "click" | "pointerdown" | "pointerup" | "contextmenu" | "mouseenter" | "mouseleave"
-export type CanvasPointEvent = (evt: (Event & { detail: CanvasPoint })) => void
+export type EventName = "pointermove" | "click" | "pointerdown" | "pointerup" | "contextmenu" | "mouseenter" | "mouseleave" | "wheel"
+export type CanvasPointEvent = (evt: (UserCanvasEvent)) => void
 
 export interface CanvasPoint {
   target: Element
   x: number
   y: number
-  buttons: number
+  buttons: number,
+  deltaY?: number,
+  deltaX?: number,
 }
 
 
@@ -43,6 +46,8 @@ export class EventManage extends EventTarget {
         x: event?.x ?? 0,
         y: event?.y ?? 0,
         buttons: event?.buttons ?? 0,
+        deltaY: event?.deltaY ?? 0,
+        deltaX: event?.deltaX ?? 0,
       },
     })
     if (this.hasUserEvent) {

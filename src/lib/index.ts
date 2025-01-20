@@ -5,6 +5,7 @@ import { row } from "./row";
 import { circleImg, img } from "./img";
 import { root } from "./root"
 import { element } from "./base"
+import { scroll } from "./scroll/scroll"
 
 export {
   text as Text,
@@ -15,4 +16,5 @@ export {
   img as Img,
   root as Root,
   element as Element,
+  scroll as Scroll,
 }

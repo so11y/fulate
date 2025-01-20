@@ -3,8 +3,8 @@
     "dev": "vite"
   },
   "devDependencies": {
-    "vite": "^6.0.7",
+    "ac": "https://github.com/so11y/ac.git",
     "lodash-es": "^4.17.21",
-    "ac": "https://github.com/so11y/ac.git"
+    "vite": "^6.0.7"
   }
 }
