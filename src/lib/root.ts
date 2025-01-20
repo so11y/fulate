@@ -207,6 +207,12 @@ export class Root extends Element {
 
   //就脏节点开始重绘制
   dirtyRender = debounce(() => {
+    if (this.dirtys.has(this)) {
+      this.dirtys.clear();
+      super.render();
+      return;
+    }
+    console.time("dirtyRectMerger");
     const dirtys = Array.from(this.dirtys);
     this.dirtys.clear();
     const aabbs = dirtys.map((v) => v.getBoundingBox());
@@ -223,6 +229,7 @@ export class Root extends Element {
         }
         while (parent) {
           if (mergeDirtyAABB.some((v) => isPartiallyIntersecting(aabb, v))) {
+            mergeDirtyAABB.push(aabb);
             needRerender.add(parent);
             return;
           }
@@ -234,7 +241,7 @@ export class Root extends Element {
         for (let index = 0; index < children.length; index++) {
           const element = children[index];
           const isDirty = element.isDirty;
-          if (!isDirty || needRerender.has(element)) {
+          if (isDirty || needRerender.has(element)) {
             continue;
           }
           const isCurrent = element === el;
@@ -244,12 +251,23 @@ export class Root extends Element {
           } else if (
             mergeDirtyAABB.some((v) => isOverlapAndNotAdjacent(v, aabb))
           ) {
+            mergeDirtyAABB.push(aabb);
             needRerender.add(element);
           }
         }
       }
     }
     dirtys.forEach(walk);
+    console.log(mergeDirtyAABB, needRerender);
+    console.timeEnd("dirtyRectMerger");
+
+    if (needRerender.has(this)) {
+      needRerender.clear();
+      needRerender.add(this);
+    }
+
+    // const mergeDirtyAABB1 = mergeOverlappingRects(mergeDirtyAABB);
+    // console.log(mergeDirtyAABB1, "--");
     if (this.dirtyDebugRoot) {
       this.dirtyDebugRoot.children = Array.from(needRerender).map((v) => {
         const point = v.getLocalPoint(v.getWordPoint());
@@ -263,10 +281,9 @@ export class Root extends Element {
       });
       this.dirtyDebugRoot.render();
     }
+
     needRerender.forEach((v) => {
-      if (v.type !== "root") {
-        v.isDirty = true;
-      }
+      v.isDirty = true;
       v.render();
     });
     if (this.dirtyDebugRoot) {

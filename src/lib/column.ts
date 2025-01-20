@@ -50,12 +50,11 @@ export class Column extends Element {
         child.parent = this;
         child.root = this.root;
         if (child.type === "expanded") {
-          childConstraint
-            .subHorizontal((child as Expanded).flexBasis)
+          childConstraint.subHorizontal((child as Expanded).flexBasis);
           if (childConstraint.isOverstep) {
-            childConstraint = selfConstraint.clone().subHorizontal(
-              (child as Expanded).flexBasis
-            );
+            childConstraint = selfConstraint
+              .clone()
+              .subHorizontal((child as Expanded).flexBasis);
             rows.push({
               constraint: childConstraint,
               children: [
@@ -87,11 +86,7 @@ export class Column extends Element {
           childConstraint.maxWidth = prevWidth;
 
           const prevHeight = lastRow.children.reduce(
-            (prev, next) =>
-              Math.max(
-                prev,
-                next.size?.height ?? 0
-              ),
+            (prev, next) => Math.max(prev, next.size?.height ?? 0),
             0
           );
 
@@ -127,11 +122,7 @@ export class Column extends Element {
           .map((v) => v.child) as Expanded[];
 
         let rowMaxHeight = currentRow.children.reduce(
-          (prev, { child }) =>
-            Math.max(
-              prev,
-              child.size?.height ?? 0
-            ),
+          (prev, { size }) => Math.max(prev, size?.height ?? 0),
           0
         );
 
@@ -142,13 +133,9 @@ export class Column extends Element {
           );
           expandedChildren.forEach((v) => {
             let constraint = currentRow.constraint.ratioWidth(v.flex, quantity);
-            // constraint.maxWidth = constraint.maxWidth + v.flexBasis;
             constraint.maxHeight = rowMaxHeight;
             const size = v.layout(constraint);
-            rowMaxHeight = Math.max(
-              rowMaxHeight,
-              size.height
-            );
+            rowMaxHeight = Math.max(rowMaxHeight, size.height);
           });
         }
 
@@ -169,14 +156,17 @@ export class Column extends Element {
       }
       this.children = rowElements;
 
-      this.size = selfConstraint.compareSize({
-        height: this.height ?? this.children.reduce(
-          (prev, child) =>
-            prev +
-            (child.size?.height ?? 0),
-          0
-        )
-      }, this)
+      this.size = selfConstraint.compareSize(
+        {
+          height:
+            this.height ??
+            this.children.reduce(
+              (prev, child) => prev + (child.size?.height ?? 0),
+              0
+            )
+        },
+        this
+      );
       return CalcAABB(this);
     }
 
@@ -217,7 +207,7 @@ export class Column extends Element {
         continue;
       }
       const size = child.layout(childConstraint);
-      maxHeight += size.height
+      maxHeight += size.height;
       childConstraint.subVertical(size.height);
       cols.push({
         child,
@@ -238,14 +228,16 @@ export class Column extends Element {
       expandedChildren.forEach((v) => {
         const constraint = childConstraint.ratioHeight(v.flex, quantity);
         const size = v.layout(constraint);
-        maxHeight += size.height
+        maxHeight += size.height;
       });
     }
 
-    this.size = selfConstraint.compareSize({
-      height: this.height ?? maxHeight
-    }, this)
-
+    this.size = selfConstraint.compareSize(
+      {
+        height: this.height ?? maxHeight
+      },
+      this
+    );
 
     return CalcAABB(this);
   }
@@ -284,8 +276,8 @@ export class Column extends Element {
         }
         const v = child.render(_point);
         _point = {
-          x: v.x,
-          y: v.y + child.size.height
+          x: childPoint.x,
+          y: v.y + child.size.height + child.margin.bottom + child.margin.top
         };
       });
     }
@@ -294,13 +286,12 @@ export class Column extends Element {
   }
 }
 
-
 export const column: TypeFn<ColumnOptions, Row> = (option) => {
-  return new Column(option)
+  return new Column(option);
 };
 
 column.hFull = function (options: ColumnOptions) {
-  const g = column(options)
-  g.height = Number.MAX_VALUE
-  return g
-}
+  const g = column(options);
+  g.height = Number.MAX_VALUE;
+  return g;
+};

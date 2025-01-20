@@ -2,6 +2,13 @@ import { Element } from "../base";
 import { Rect } from "../types";
 import { Size } from "./constraint";
 
+export function calcMarinWidth(el: Element) {
+  return el.size.width + el.margin.left + el.margin.right;
+}
+export function calcMarinHeight(height: number, el: Element) {
+  return height + el.margin.top + el.margin.bottom;
+}
+
 export function CalcAABB(el: Element) {
   return new Size(
     el.size.width + el.margin.left + el.margin.right,
@@ -11,7 +18,7 @@ export function CalcAABB(el: Element) {
 
 export function quickAABB(el: Element) {
   const localMatrix = el.provideLocalCtx();
-  const point = el.getWordPoint()
+  const point = el.getWordPoint();
   const selfPoint = el.getLocalPoint(point);
   const x = selfPoint.x + localMatrix.translateX;
   const y = selfPoint.y + localMatrix.translateY;
@@ -19,17 +26,16 @@ export function quickAABB(el: Element) {
   return {
     x,
     y,
-    width: x + size.width,
-    height: y + size.height
+    width: size.width, //x + size.width,
+    height: size.height // y + size.height
   };
 }
-
 
 //计算旋转后的四个角坐标
 export function calcRotateCorners(el: Element) {
   const size = el.size;
   const localMatrix = el.provideLocalCtx();
-  const point = el.getWordPoint()
+  const point = el.getWordPoint();
   const selfPoint = el.getLocalPoint(point);
   // 计算旋转中心（元素的中心点）
   const centerX = selfPoint.x + localMatrix.translateX + size.width / 2;
@@ -46,7 +52,7 @@ export function calcRotateCorners(el: Element) {
     { x: selfPoint.x, y: selfPoint.y }, // 左上角
     { x: selfPoint.x + size.width, y: selfPoint.y }, // 右上角
     { x: selfPoint.x + size.width, y: selfPoint.y + size.height }, // 右下角
-    { x: selfPoint.x, y: selfPoint.y + size.height }, // 左下角
+    { x: selfPoint.x, y: selfPoint.y + size.height } // 左下角
   ];
 
   // 计算旋转后的四个角坐标
@@ -90,7 +96,7 @@ function mergeTwoRects(rect1: Rect, rect2: Rect) {
     x: minX,
     y: minY,
     width: maxX - minX,
-    height: maxY - minY,
+    height: maxY - minY
   };
 }
 

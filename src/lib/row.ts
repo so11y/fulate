@@ -14,8 +14,8 @@ export interface RowOptions extends ElementOptions {
 
 export class Row extends Element {
   type = "row";
-  justifyContent?: JustifyContent
-  alignItems?: AlignItems
+  justifyContent?: JustifyContent;
+  alignItems?: AlignItems;
   constructor(options: RowOptions = {}) {
     super(options);
     this.justifyContent = options.justifyContent ?? "flex-start";
@@ -34,17 +34,14 @@ export class Row extends Element {
       child.parent = this;
       child.root = this.root;
       if (child.type === "expanded") {
-        childConstraint = childConstraint
-          .subHorizontal((child as Expanded).flexBasis)
+        childConstraint = childConstraint.subHorizontal(
+          (child as Expanded).flexBasis
+        );
         continue;
       }
       const size = child.layout(childConstraint);
-      childConstraint = childConstraint
-        .subHorizontal(size.width)
-      maxHeight = Math.max(
-        maxHeight,
-        size.height
-      );
+      childConstraint = childConstraint.subHorizontal(size.width);
+      maxHeight = Math.max(maxHeight, size.height);
       sizes.push(size);
     }
 
@@ -67,16 +64,15 @@ export class Row extends Element {
           maxHeight
         );
         const size = v.layout(constraint);
-        maxHeight = Math.max(
-          maxHeight,
-          size.height
-        );
+        maxHeight = Math.max(maxHeight, size.height);
       });
     }
-
-    this.size = selfConstraint.compareSize({
-      height: this.height ?? maxHeight
-    }, this)
+    this.size = selfConstraint.compareSize(
+      {
+        height: this.height ?? maxHeight
+      },
+      this
+    );
 
     return CalcAABB(this);
   }
@@ -128,7 +124,7 @@ export class Row extends Element {
         const v = child.render(_point);
         _point = {
           x: v.x + child.size.width + child.margin.right,
-          y: v.y
+          y: childPoint.y
         };
       });
     }
@@ -137,13 +133,12 @@ export class Row extends Element {
   }
 }
 
-
 export const row: TypeFn<RowOptions, Row> = (option) => {
-  return new Row(option)
+  return new Row(option);
 };
 
 row.hFull = function (options: RowOptions) {
-  const g = row(options)
-  g.height = Number.MAX_VALUE
-  return g
-}
+  const g = row(options);
+  g.height = Number.MAX_VALUE;
+  return g;
+};

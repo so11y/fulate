@@ -213,7 +213,22 @@ export class Element extends EventTarget {
     const target = this;
     const notAnimateKeys = omit(attrs, NUMBER_KEY);
     this.setOption(notAnimateKeys);
+    const isLayout = Object.keys(pick(attrs, NEED_LAYOUT_KYE)).length;
     const numberKeys = pick(attrs, NUMBER_KEY);
+    const acKeys = Object.keys(numberKeys);
+
+    const notAnimateAndNotLayout = !acKeys.length && !isLayout;
+
+    if (this.root.useDirtyRect && notAnimateAndNotLayout) {
+      this.root.dirtys.add(this);
+      this.root.dirtyRender();
+      return;
+    }
+    if (notAnimateAndNotLayout) {
+      this.root.render();
+      return;
+    }
+
     const size = this.size;
     const selfStart = {
       x: target.x,
@@ -222,12 +237,6 @@ export class Element extends EventTarget {
       height: size.height,
       rotate: target.rotate
     };
-    const isLayout = Object.keys(pick(attrs, NEED_LAYOUT_KYE)).length;
-    const acKeys = Object.keys(numberKeys);
-    if (!acKeys.length && isLayout) {
-      this.root.render();
-      return;
-    }
     const ac = this.ac || this.root.ac;
     const tween = new Tween(pick(selfStart, acKeys), numberKeys)
       .animate(ac)
@@ -320,7 +329,6 @@ export class Element extends EventTarget {
     } else {
       this.size = selfConstraint.compareSize(this, this);
     }
-
     return CalcAABB(this);
   }
 
@@ -470,8 +478,8 @@ export class Element extends EventTarget {
       );
     }
     const boxBound = quickAABB(this);
-    const inX = x >= boxBound.x && x <= boxBound.width;
-    const inY = y >= boxBound.y && y <= boxBound.height;
+    const inX = x >= boxBound.x && x <= boxBound.width + boxBound.x;
+    const inY = y >= boxBound.y && y <= boxBound.height + boxBound.y;
     return inX && inY;
   }
 
