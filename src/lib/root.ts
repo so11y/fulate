@@ -233,12 +233,12 @@ export class Root extends Element {
         const children = el.parent?.children;
         for (let index = 0; index < children.length; index++) {
           const element = children[index];
-          const aabb = element.getBoundingBox();
-          const isCurrent = element === el;
           const isDirty = element.isDirty;
           if (!isDirty || needRerender.has(element)) {
             continue;
           }
+          const isCurrent = element === el;
+          const aabb = element.getBoundingBox();
           if (isCurrent && mergeDirtyAABB.some((v) => isOverlap(v, aabb))) {
             needRerender.add(element);
           } else if (
