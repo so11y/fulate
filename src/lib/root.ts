@@ -236,32 +236,18 @@ export class Root extends Element {
           const aabb = element.getBoundingBox();
           const isCurrent = element === el;
           const isDirty = element.isDirty;
-          if (
-            isCurrent &&
-            !isDirty &&
-            mergeDirtyAABB.some((v) => isOverlap(v, aabb))
-          ) {
+          if (!isDirty || needRerender.has(element)) {
+            continue;
+          }
+          if (isCurrent && mergeDirtyAABB.some((v) => isOverlap(v, aabb))) {
             needRerender.add(element);
           } else if (
-            !isDirty &&
             mergeDirtyAABB.some((v) => isOverlapAndNotAdjacent(v, aabb))
           ) {
             needRerender.add(element);
           }
         }
       }
-      // const siblings = el.getSiblings();
-      // if (siblings?.length) {
-      //   siblings.forEach((v) => {
-      //     const aabb = v.getBoundingBox();
-      //     if (
-      //       !v.isDirty &&
-      //       mergeDirtyAABB.some((vv) => isOverlapAndNotAdjacent(vv, aabb))
-      //     ) {
-      //       needRerender.add(v);
-      //     }
-      //   });
-      // }
     }
     dirtys.forEach(walk);
     if (this.dirtyDebugRoot) {
