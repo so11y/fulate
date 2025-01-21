@@ -11,6 +11,8 @@ import {
 } from "./lib";
 import { TextOptions } from "./lib/text";
 
+//TODO图层实现直接和root大小一致，直接叠加上去，
+//不会有影响,不给图层独立设置颜色即可
 const root = Root({
   el: document.getElementById("canvas") as HTMLCanvasElement,
   width: 500,

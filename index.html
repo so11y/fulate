@@ -8,34 +8,37 @@
 </head>
 
 <body>
-  <!-- <canvas id="canvas"></canvas>
+  <canvas id="canvas"></canvas>
   <script type="module">
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = 300;
     canvas.height = 300;
 
+    ctx.fillStyle = "blue";
+    ctx.fillRect(0, 0, 50, 50);
+
     const offsetCanvas = document.createElement("canvas")
-    offsetCanvas.width = 150;
-    offsetCanvas.height = 150;
+    offsetCanvas.width = 300;
+    offsetCanvas.height = 300;
     // const offsetCanvas = new OffscreenCanvas(150, 150);
     const offerCtx = offsetCanvas.getContext("2d");
 
     offerCtx.fillStyle = "blue";
-    offerCtx.fillRect(0, 0, 150, 150);
+    offerCtx.fillRect(50, 0, 150, 150);
 
-    ctx.drawImage(offsetCanvas, 50, 50)
-
-
-
-  </script> -->
+    ctx.drawImage(offsetCanvas, 0, 0)
 
 
+
+  </script>
+
+  <!--
   <canvas id="canvas"></canvas>
     <script
       type="module"
       src="./src/main.ts"
-    ></script>
+    ></script> -->
 </body>
 
 </html>
