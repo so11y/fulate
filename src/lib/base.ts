@@ -5,6 +5,7 @@ import { omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
 import { CalcAABB, calcRotateCorners, quickAABB } from "./utils/calc";
+import { Scroll } from "./scroll/scroll";
 
 export interface Point {
   x: number;
@@ -98,7 +99,8 @@ export class Element extends EventTarget {
     translateY: 0,
     rotate: 0,
     overflowHideEl: undefined as Element | undefined,
-    backgroundColor: undefined as undefined | string
+    scrollEl: undefined as Element | undefined,
+    backgroundColorEl: undefined as Element | undefined
   };
 
   constructor(option?: ElementOptions) {
@@ -169,10 +171,13 @@ export class Element extends EventTarget {
     //   ? this.rotate + parentLocalCtx.rotate
     //   : parentLocalCtx.rotate;
     this._provideLocalCtx = {
+      scrollEl: parentLocalCtx.scrollEl,
       overflowHideEl:
         parentLocalCtx.overflowHideEl ??
         (this.overflow === "hidden" ? this : undefined),
-      backgroundColor: this.backgroundColor ?? parentLocalCtx.backgroundColor,
+      backgroundColorEl: this.backgroundColor
+        ? this
+        : parentLocalCtx.backgroundColorEl,
       translateX: this.translateX
         ? this.translateX + parentLocalCtx.translateX
         : parentLocalCtx.translateX,
@@ -298,9 +303,10 @@ export class Element extends EventTarget {
         rect.width,
         rect.height
       );
-      const backgroundColor = this.parent?.provideLocalCtx().backgroundColor;
-      if (backgroundColor) {
-        this.root.ctx.fillStyle = backgroundColor;
+      const backgroundColorEl =
+        this.parent?.provideLocalCtx().backgroundColorEl;
+      if (backgroundColorEl?.backgroundColor) {
+        this.root.ctx.fillStyle = backgroundColorEl?.backgroundColor;
         this.root.ctx.fillRect(
           selfPoint.x + localCtx.translateX,
           selfPoint.y + localCtx.translateY,
@@ -341,7 +347,7 @@ export class Element extends EventTarget {
     this.renderBefore(parentPoint);
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
-    this.clearDirty();
+    // this.clearDirty();
     this.root.ctx.save();
     this.draw(selfPoint);
     if (this.children?.length) {
@@ -474,6 +480,23 @@ export class Element extends EventTarget {
     const inX = x >= boxBound.x && x <= boxBound.width + boxBound.x;
     const inY = y >= boxBound.y && y <= boxBound.height + boxBound.y;
     return inX && inY;
+  }
+
+  hasInView() {
+    const localMatrix = this.provideLocalCtx();
+    const scrollEl = localMatrix.scrollEl as Scroll;
+    if (scrollEl) {
+      const boxBound = quickAABB(this);
+      const scrollBox = scrollEl.getBoundingBox();
+      const inX =
+        boxBound.x < scrollBox.x + scrollBox.width &&
+        boxBound.x + boxBound.width > scrollBox.x;
+      const inY =
+        boxBound.y < scrollBox.y + scrollBox.height &&
+        boxBound.y + boxBound.height > scrollBox.y;
+      return inX && inY;
+    }
+    return true;
   }
 
   unmounted() {

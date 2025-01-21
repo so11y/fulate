@@ -17,8 +17,8 @@ export class ScrollBar extends Element {
       const point = this.getWordPoint();
       const selfPoint = this.getLocalPoint(point);
       const startDownPoint = {
-        x: e.detail.x - selfPoint.x,
-        y: e.detail.y - selfPoint.y
+        x: e.detail.x,
+        y: e.detail.y
       };
       const parent = this.parent! as Scroll;
       const parentSize = this.parent!.size;
@@ -36,12 +36,12 @@ export class ScrollBar extends Element {
       function pointermove(e: UserCanvasEvent) {
         const { x, y } = e.detail;
         const moveX = Math.max(
-          Math.min(startDownPoint.x - x, 0),
-          -maxScrollWidth
+          Math.min(x - startDownPoint.x, maxScrollWidth),
+          0
         );
         const moveY = Math.max(
-          Math.min(startDownPoint.y - y, 0),
-          -maxScrollHeight
+          Math.min(y - startDownPoint.y, maxScrollHeight),
+          0
         );
 
         const contentScrollOffsetY =
@@ -51,12 +51,12 @@ export class ScrollBar extends Element {
 
         this.setOption({
           x: options.direction === "vertical" ? selfPoint.x : moveX,
-          y: options.direction === "vertical" ? -moveY : selfPoint.y
+          y: options.direction === "vertical" ? moveY : selfPoint.y
         });
 
         options.onScroll?.({
-          x: options.direction === "vertical" ? 0 : -contentScrollOffsetX,
-          y: options.direction === "vertical" ? -contentScrollOffsetY : 0
+          x: options.direction === "vertical" ? 0 : contentScrollOffsetX,
+          y: options.direction === "vertical" ? contentScrollOffsetY : 0
         });
       }
     };

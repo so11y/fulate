@@ -121,13 +121,23 @@ export function mergeOverlappingRects(rects: Array<Rect>) {
   return mergedRects;
 }
 
-//A不包含B,但是相交
-export function isPartiallyIntersecting(rect1: Rect, rect2: Rect) {
-  const isRect1ContainsRect2 =
+//A包含B
+export function isContaining(rect1: Rect, rect2: Rect) {
+  return (
     rect1.x <= rect2.x &&
     rect1.y <= rect2.y &&
     rect1.x + rect1.width >= rect2.x + rect2.width &&
-    rect1.y + rect1.height >= rect2.y + rect2.height;
+    rect1.y + rect1.height >= rect2.y + rect2.height
+  );
+}
 
-  return isOverlap(rect1, rect2) && !isRect1ContainsRect2;
+//A不包含B && B不包含A,但是相交
+export function isPartiallyIntersecting(rect1: Rect, rect2: Rect) {
+  // const isRect2ContainsRect1 =
+  //   rect2.x <= rect1.x &&
+  //   rect2.y <= rect1.y &&
+  //   rect2.x + rect2.width >= rect1.x + rect1.width &&
+  //   rect2.y + rect2.height >= rect1.y + rect1.height;
+  //  &&   !isRect2ContainsRect1
+  return isOverlap(rect1, rect2) && !isContaining(rect1, rect2);
 }

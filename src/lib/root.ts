@@ -3,12 +3,14 @@ import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 import { generateFont, TextOptions } from "./text";
 import {
+  isContaining,
   isOverlap,
   isOverlapAndNotAdjacent,
   isPartiallyIntersecting,
   mergeOverlappingRects
 } from "./utils/calc";
 import { debounce } from "lodash-es";
+import { Rect } from "./types";
 
 interface RootOptions {
   animationSwitch?: boolean;
@@ -98,7 +100,7 @@ export class Root extends Element {
         if (hasLockPoint === false) {
           this.currentElement = undefined;
           for (const element of this.quickElements) {
-            if (element.hasPointHint(offsetX, offsetY)) {
+            if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
               this.currentElement = element;
               break;
             }
@@ -233,21 +235,21 @@ export class Root extends Element {
     const aabbs = dirtys.map((v) => v.getBoundingBox());
     const mergeDirtyAABB = mergeOverlappingRects(aabbs);
     const needRerender: Set<Element> = new Set();
-    function walk(el: Element) {
+    function walk(el: Element, dirtyAABB: Array<Rect>) {
       if (el.parent) {
         let parent: Element | undefined = el.parent;
-        const provide = parent.provideLocalCtx();
         while (parent) {
           let aabb = parent.getBoundingBox();
-          if (mergeDirtyAABB.some((v) => isPartiallyIntersecting(aabb, v))) {
-            mergeDirtyAABB.push(aabb);
+          if (dirtyAABB.some((v) => isPartiallyIntersecting(aabb, v))) {
             needRerender.add(parent);
             return;
           }
           parent = parent?.parent;
         }
-        if (provide.backgroundColor) {
-          needRerender.add(el.parent);
+        const provide = el.parent.provideLocalCtx();
+        if (provide.backgroundColorEl || provide.overflowHideEl) {
+          const el = provide.backgroundColorEl || provide.overflowHideEl!;
+          walk(el, [el.getBoundingBox()]);
           return;
         }
       }
@@ -261,19 +263,17 @@ export class Root extends Element {
           }
           const isCurrent = element === el;
           const aabb = element.getBoundingBox();
-          if (isCurrent && mergeDirtyAABB.some((v) => isOverlap(v, aabb))) {
+          if (isCurrent && dirtyAABB.some((v) => isOverlap(v, aabb))) {
             needRerender.add(element);
-          } else if (
-            mergeDirtyAABB.some((v) => isOverlapAndNotAdjacent(v, aabb))
-          ) {
-            mergeDirtyAABB.push(aabb);
+          } else if (dirtyAABB.some((v) => isOverlapAndNotAdjacent(v, aabb))) {
+            dirtyAABB.push(aabb);
             needRerender.add(element);
           }
         }
       }
     }
-    dirtys.forEach(walk);
-    console.log(mergeDirtyAABB, needRerender);
+    dirtys.forEach((v) => walk(v, mergeDirtyAABB.slice(0)));
+    console.log(needRerender);
     console.timeEnd("dirtyRectMerger");
 
     if (needRerender.has(this)) {

@@ -18,6 +18,13 @@ export class Scroll extends Element {
   scrollWidth = 0;
   scrollTop = 0;
   scrollLeft = 0;
+
+  provideLocalCtx(reset?: boolean) {
+    const v = super.provideLocalCtx(reset);
+    v.scrollEl = this;
+    return v;
+  }
+
   constructor(options: ScrollOptions) {
     super(options);
     this.scrollBarCol = new ScrollBar({
@@ -38,6 +45,7 @@ export class Scroll extends Element {
       flexDirection: "column",
       children: options.children
     });
+    this.scrollBody.isInternal = true;
     this.children = [this.scrollBody, this.scrollBarCol];
     this.overflow = "hidden";
     this.overflowY = options.overflowY ?? "scroll";
