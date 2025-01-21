@@ -222,7 +222,6 @@ export class Root extends Element {
 
   //就脏节点开始重绘制
   dirtyRender = debounce(() => {
-    //TODO 这里getBoundingBox要改为相对视口的也就是要减去滚动条的,不然脏矩形判断不对
     if (this.dirtys.has(this)) {
       this.dirtys.clear();
       super.render();
