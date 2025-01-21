@@ -133,20 +133,20 @@ export class Element extends EventTarget {
 
       this.margin = option.margin
         ? {
-          top: option.margin[0],
-          right: option.margin[1],
-          bottom: option.margin[2],
-          left: option.margin[3]
-        }
+            top: option.margin[0],
+            right: option.margin[1],
+            bottom: option.margin[2],
+            left: option.margin[3]
+          }
         : this.margin;
 
       this.padding = option.padding
         ? {
-          top: option.padding[0],
-          right: option.padding[1],
-          bottom: option.padding[2],
-          left: option.padding[3]
-        }
+            top: option.padding[0],
+            right: option.padding[1],
+            bottom: option.padding[2],
+            left: option.padding[3]
+          }
         : this.padding;
     }
   }
@@ -169,12 +169,20 @@ export class Element extends EventTarget {
     //   ? this.rotate + parentLocalCtx.rotate
     //   : parentLocalCtx.rotate;
     this._provideLocalCtx = {
-      overflowHideEl: parentLocalCtx.overflowHideEl ?? (this.overflow === "hidden" ? this : undefined),
+      overflowHideEl:
+        parentLocalCtx.overflowHideEl ??
+        (this.overflow === "hidden" ? this : undefined),
       backgroundColor: this.backgroundColor ?? parentLocalCtx.backgroundColor,
-      translateX: this.translateX ? this.translateX + parentLocalCtx.translateX : parentLocalCtx.translateX,
-      translateY: this.translateY ? this.translateY + parentLocalCtx.translateY : parentLocalCtx.translateY,
-      rotate: this.rotate ? this.rotate + parentLocalCtx.rotate : parentLocalCtx.rotate,
-    }
+      translateX: this.translateX
+        ? this.translateX + parentLocalCtx.translateX
+        : parentLocalCtx.translateX,
+      translateY: this.translateY
+        ? this.translateY + parentLocalCtx.translateY
+        : parentLocalCtx.translateY,
+      rotate: this.rotate
+        ? this.rotate + parentLocalCtx.rotate
+        : parentLocalCtx.rotate
+    };
     return this._provideLocalCtx;
   }
 
@@ -304,10 +312,6 @@ export class Element extends EventTarget {
     }
   }
 
-  getForSizeConstraint(size: Size) {
-    return Constraint.loose(size.width, size.height);
-  }
-
   layout(constraint: Constraint, isBreak = false): Size {
     const selfConstraint = constraint.extend(this);
     const childConstraint = selfConstraint.getChildConstraint(this);
@@ -319,10 +323,10 @@ export class Element extends EventTarget {
       });
       const rect = rects.reduce(
         (prev, next) =>
-        ({
-          width: Math.max(prev.width, next.width),
-          height: Math.max(prev.height, next.height)
-        } as Size),
+          ({
+            width: Math.max(prev.width, next.width),
+            height: Math.max(prev.height, next.height)
+          } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
@@ -402,10 +406,10 @@ export class Element extends EventTarget {
 
   mounted() {
     if (this.children?.length) {
-      const length = this.children.length - 1
+      const length = this.children.length - 1;
       for (let i = length; i >= 0; i--) {
-        const child = this.children[i]
-        child.mounted()
+        const child = this.children[i];
+        child.mounted();
       }
     }
     if (!this.isMounted && !this.isInternal) {
@@ -514,7 +518,6 @@ export class Element extends EventTarget {
       buttons: 0
     });
   };
-
 }
 
 export const element: TypeFn<ElementOptions, Element> = (
