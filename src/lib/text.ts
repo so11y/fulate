@@ -31,7 +31,7 @@ export class Text extends Element {
 
   layout(constraint: Constraint): Size {
     const selfConstraint = constraint.extend(this);
-    this.texts = getWordWraps(this.root.ctx, constraint.maxWidth, this.text);
+    this.texts = getWordWraps(this.layer.ctx, constraint.maxWidth, this.text);
 
     const { fontSize, lineHeight } = this.getFontOptions();
 
@@ -56,14 +56,14 @@ export class Text extends Element {
   draw(point: Point): void {
     super.draw(point);
     if (this.font) {
-      this.root.ctx.font = generateFont(this.root.font, this.font);
+      this.layer.ctx.font = generateFont(this.root.font, this.font);
     }
     const { color, fontSize, lineHeight } = this.getFontOptions();
     const textHeight = fontSize * lineHeight;
-    this.root.ctx.fillStyle = color;
+    this.layer.ctx.fillStyle = color;
     let top = (textHeight - fontSize) / 2;
     this.texts.forEach((v, index) => {
-      this.root.ctx.fillText(
+      this.layer.ctx.fillText(
         v.text,
         point.x,
         textHeight * (index + 1) + point.y - top

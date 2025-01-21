@@ -6,6 +6,7 @@ import { circleImg, img } from "./img";
 import { root } from "./root"
 import { element } from "./base"
 import { scroll } from "./scroll/scroll"
+import { layer } from "./layer"
 
 export {
   text as Text,
@@ -17,4 +18,5 @@ export {
   root as Root,
   element as Element,
   scroll as Scroll,
+  layer as Layer
 }

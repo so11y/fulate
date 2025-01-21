@@ -4,6 +4,7 @@ import { Element, ElementOptions, Point } from "./base";
 import { TypeFn } from "./types";
 import { CalcAABB } from "./utils/calc";
 import { AlignItems, JustifyContent } from "./types/flex";
+import { linkEl } from "./utils/helper";
 
 export interface RowOptions extends ElementOptions {
   justifyContent?: JustifyContent;
@@ -31,8 +32,7 @@ export class Row extends Element {
 
     for (let i = 0; i < this.children!.length; i++) {
       const child = this.children![i];
-      child.parent = this;
-      child.root = this.root;
+      linkEl(child,this)
       if (child.type === "expanded") {
         childConstraint = childConstraint.subHorizontal(
           (child as Expanded).flexBasis
@@ -83,7 +83,7 @@ export class Row extends Element {
     const selfPoint = this.getLocalPoint(point);
     const childPoint = this.getPaddingPoint(selfPoint);
 
-    this.root.ctx.save();
+    this.layer.ctx.save();
     this.draw(selfPoint);
     const toggleWidth = this.children!.reduce(
       (prev, next) =>
@@ -128,7 +128,7 @@ export class Row extends Element {
         };
       });
     }
-    this.root.ctx.restore();
+    this.layer.ctx.restore();
     return point;
   }
 }

@@ -6,6 +6,8 @@ import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
 import { CalcAABB, calcRotateCorners, quickAABB } from "./utils/calc";
 import { Scroll } from "./scroll/scroll";
+import { Layer } from "./layer";
+import { linkEl } from "./utils/helper";
 
 export interface Point {
   x: number;
@@ -83,6 +85,7 @@ export class Element extends EventTarget {
   overflow: "hidden" | "visible" = "visible";
   children?: Element[];
   parent?: Element;
+  layer: Layer
   isMounted = false;
   widthAuto = false;
   ac: AnimationController;
@@ -135,20 +138,20 @@ export class Element extends EventTarget {
 
       this.margin = option.margin
         ? {
-            top: option.margin[0],
-            right: option.margin[1],
-            bottom: option.margin[2],
-            left: option.margin[3]
-          }
+          top: option.margin[0],
+          right: option.margin[1],
+          bottom: option.margin[2],
+          left: option.margin[3]
+        }
         : this.margin;
 
       this.padding = option.padding
         ? {
-            top: option.padding[0],
-            right: option.padding[1],
-            bottom: option.padding[2],
-            left: option.padding[3]
-          }
+          top: option.padding[0],
+          right: option.padding[1],
+          bottom: option.padding[2],
+          left: option.padding[3]
+        }
         : this.padding;
     }
   }
@@ -157,7 +160,7 @@ export class Element extends EventTarget {
     if (this._provideLocalCtx && reset !== true) {
       return this._provideLocalCtx;
     }
-    const parentLocalCtx = (this.parent || this.root)._provideLocalCtx;
+    const parentLocalCtx = (this.parent || this.layer)?._provideLocalCtx || {};
     // this._provideLocalCtx = Object.create({
     //   backgroundColor: parentLocalCtx.backgroundColor ?? this.backgroundColor
     // });
@@ -217,13 +220,13 @@ export class Element extends EventTarget {
   }
 
   setAttributes<T extends ElementOptions>(attrs?: T) {
-    if (!attrs) {
-      if (this.root.useDirtyRect && this.root.dirtyDebugRoot) {
-        this.root.dirtys.add(this);
-        this.root.dirtyRender();
-      }
-      return;
-    }
+    // if (!attrs) {
+    //   if (this.root.useDirtyRect && this.root.dirtyDebugRoot) {
+    //     this.root.dirtys.add(this);
+    //     this.root.dirtyRender();
+    //   }
+    //   return;
+    // }
     const target = this;
     const notAnimateKeys = omit(attrs, NUMBER_KEY);
     this.setOption(notAnimateKeys);
@@ -233,13 +236,13 @@ export class Element extends EventTarget {
 
     const notAnimateAndNotLayout = !acKeys.length && !isLayout;
 
-    if (this.root.useDirtyRect && notAnimateAndNotLayout) {
-      this.root.dirtys.add(this);
-      this.root.dirtyRender();
-      return;
-    }
+    // if (this.root.useDirtyRect && notAnimateAndNotLayout) {
+    //   this.root.dirtys.add(this);
+    //   this.root.dirtyRender();
+    //   return;
+    // }
     if (notAnimateAndNotLayout) {
-      this.root.render();
+      this.layer.render();
       return;
     }
 
@@ -251,17 +254,12 @@ export class Element extends EventTarget {
       height: size.height,
       rotate: target.rotate
     };
-    const ac = this.ac || this.root.ac;
+    const ac = this.ac || this.layer.ac;
     const tween = new Tween(pick(selfStart, acKeys), numberKeys)
       .animate(ac)
       .builder((value) => {
         this.setOption(value);
-        if (isLayout || !this.root.useDirtyRect) {
-          this.root.render();
-        } else {
-          this.root.dirtys.add(this);
-          this.root.dirtyRender();
-        }
+        this.layer.render();
       });
 
     ac.addEventListener(AnimationType.END, () => tween.destroy(), {
@@ -274,10 +272,9 @@ export class Element extends EventTarget {
     if (!this.children) {
       this.children = [];
     }
-    child.parent = this;
-    child.root = this.root;
+    linkEl(child, this)
     this.children.push(child);
-    this.root.render();
+    this.layer.render();
     child.mounted();
   }
 
@@ -287,7 +284,7 @@ export class Element extends EventTarget {
     }
     child.unmounted();
     this.children = this.children.filter((c) => c !== child);
-    this.root.render();
+    this.layer.render();
   }
 
   clearDirty() {
@@ -296,8 +293,8 @@ export class Element extends EventTarget {
       const rect = this.size;
       const localCtx = this.provideLocalCtx();
       this.isDirty = false;
-      this.root.ctx.save();
-      this.root.ctx.clearRect(
+      this.layer.ctx.save();
+      this.layer.ctx.clearRect(
         selfPoint.x + localCtx.translateX,
         selfPoint.y + localCtx.translateY,
         rect.width,
@@ -306,15 +303,15 @@ export class Element extends EventTarget {
       const backgroundColorEl =
         this.parent?.provideLocalCtx().backgroundColorEl;
       if (backgroundColorEl?.backgroundColor) {
-        this.root.ctx.fillStyle = backgroundColorEl?.backgroundColor;
-        this.root.ctx.fillRect(
+        this.layer.ctx.fillStyle = backgroundColorEl?.backgroundColor;
+        this.layer.ctx.fillRect(
           selfPoint.x + localCtx.translateX,
           selfPoint.y + localCtx.translateY,
           rect.width,
           rect.height
         );
       }
-      this.root.ctx.restore();
+      this.layer.ctx.restore();
     }
   }
 
@@ -323,16 +320,15 @@ export class Element extends EventTarget {
     const childConstraint = selfConstraint.getChildConstraint(this);
     if (this.children?.length) {
       const rects = this.children!.map((child) => {
-        child.parent = this;
-        child.root = this.root;
+        linkEl(child, this)
         return child.layout(childConstraint);
       });
       const rect = rects.reduce(
         (prev, next) =>
-          ({
-            width: Math.max(prev.width, next.width),
-            height: Math.max(prev.height, next.height)
-          } as Size),
+        ({
+          width: Math.max(prev.width, next.width),
+          height: Math.max(prev.height, next.height)
+        } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
@@ -348,13 +344,13 @@ export class Element extends EventTarget {
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
     // this.clearDirty();
-    this.root.ctx.save();
+    this.layer.ctx.save();
     this.draw(selfPoint);
     if (this.children?.length) {
       let childPoint = this.getPaddingPoint(selfPoint);
       this.children.forEach((child) => child.render(childPoint));
     }
-    this.root.ctx.restore();
+    this.layer.ctx.restore();
 
     return point;
   }
@@ -375,25 +371,25 @@ export class Element extends EventTarget {
   draw(point: Point) {
     this.clearDirty();
     const size = this.size;
-    this.root.ctx.beginPath();
+    this.layer.ctx.beginPath();
     const localCtx = this.provideLocalCtx();
     if (this.translateX || this.translateY) {
-      this.root.ctx.translate(this.translateX, this.translateY);
+      this.layer.ctx.translate(this.translateX, this.translateY);
     }
     if (this.rotate) {
       const centerX = localCtx.translateX + point.x + size.width / 2;
       const centerY = localCtx.translateY + point.y + size.height / 2;
-      this.root.ctx.translate(centerX, centerY);
-      this.root.ctx.rotate(this.rotate * (Math.PI / 180));
-      this.root.ctx.translate(-centerX, -centerY);
+      this.layer.ctx.translate(centerX, centerY);
+      this.layer.ctx.rotate(this.rotate * (Math.PI / 180));
+      this.layer.ctx.translate(-centerX, -centerY);
     }
     if (this.backgroundColor) {
-      this.root.ctx.fillStyle = this.backgroundColor;
+      this.layer.ctx.fillStyle = this.backgroundColor;
     }
     if (this.backgroundColor || this.overflow === "hidden") {
       // const roundRectPath = new Path2D();
       // roundRectPath.roundRect(50, 50, 200, 100, 20); // 圆角半径为 20
-      this.root.ctx.roundRect(
+      this.layer.ctx.roundRect(
         point.x,
         point.y,
         size.width,
@@ -402,11 +398,11 @@ export class Element extends EventTarget {
       );
     }
     if (this.backgroundColor) {
-      this.root.ctx.fill();
+      this.layer.ctx.fill();
     }
 
     if (this.overflow === "hidden") {
-      this.root.ctx.clip();
+      this.layer.ctx.clip();
     }
   }
 

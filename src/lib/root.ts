@@ -13,8 +13,6 @@ import { debounce } from "lodash-es";
 import { Rect } from "./types";
 
 interface RootOptions {
-  animationSwitch?: boolean;
-  animationTime?: number;
   el: HTMLCanvasElement;
   width: number;
   height: number;
@@ -30,7 +28,6 @@ export class Root extends Element {
   el: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   type = "root";
-  ac: AnimationController;
   keyMap = new Map<string, Element>();
   quickElements: Set<Element> = new Set();
   dirtys: Set<Element> = new Set();
@@ -46,9 +43,6 @@ export class Root extends Element {
     this.el.height = options.height;
     this.ctx = this.el.getContext("2d")!;
     this.useDirtyRect = options.useDirtyRect ?? false;
-    this.ac = new AnimationController(
-      options.animationSwitch ? options.animationTime ?? 300 : 0
-    );
     this.font = {
       style: options.font?.style ?? "normal",
       variant: options.font?.variant ?? "normal",
@@ -60,27 +54,26 @@ export class Root extends Element {
       weight: options.font?.weight ?? "normal"
     };
 
-    if (this.useDirtyRect && options.dirtyDebug) {
-      const dirtyCanvas = document.createElement("canvas") as HTMLCanvasElement;
-      const rect = this.el.getBoundingClientRect();
-      dirtyCanvas.style.cssText = `
-        position:absolute;
-        top:${rect.top}px;
-        left:${rect.left}px;
-        pointer-events: none;
-      `;
-      this.el.parentElement?.append(dirtyCanvas);
-      this.dirtyDebugRoot = new Root({
-        el: dirtyCanvas,
-        width: options.width,
-        height: options.height
-      });
-      this.dirtyDebugRoot.mounted();
-    }
+    // if (this.useDirtyRect && options.dirtyDebug) {
+    //   const dirtyCanvas = document.createElement("canvas") as HTMLCanvasElement;
+    //   const rect = this.el.getBoundingClientRect();
+    //   dirtyCanvas.style.cssText = `
+    //     position:absolute;
+    //     top:${rect.top}px;
+    //     left:${rect.left}px;
+    //     pointer-events: none;
+    //   `;
+    //   this.el.parentElement?.append(dirtyCanvas);
+    //   this.dirtyDebugRoot = new Root({
+    //     el: dirtyCanvas,
+    //     width: options.width,
+    //     height: options.height
+    //   });
+    //   this.dirtyDebugRoot.mounted();
+    // }
   }
 
   mounted() {
-    this.root = this;
     this.render();
     super.mounted();
     this.eventManage.hasUserEvent = true;
@@ -190,22 +183,6 @@ export class Root extends Element {
     return this.keyMap.get(key) as any;
   }
 
-  nextFrame() {
-    return new Promise((resolve) => {
-      this.ac.addEventListener(
-        AnimationType.END,
-        () => {
-          this.ac.timeLine.progress = 0;
-          resolve(null);
-        },
-        {
-          once: true
-        }
-      );
-      this.ac.timeLine.progress = 1;
-      this.ac.play();
-    });
-  }
 
   render() {
     const point = this.getLocalPoint();
@@ -216,8 +193,14 @@ export class Root extends Element {
     this.isDirty = true;
     this.ctx.font = generateFont(this.font);
     // this.ctx.textBaseline ="ideographic"
-    super.layout(Constraint.loose(this.width!, this.height!));
-    super.render(point);
+    this.children?.forEach(v => {
+      v.parent = this;
+      v.root = this
+      v.layout(Constraint.loose(this.width!, this.height!));
+    })
+    this.children?.forEach(v => {
+      v.render(point);
+    })
     this.isDirty = false;
     return point;
   }
@@ -281,8 +264,6 @@ export class Root extends Element {
       needRerender.add(this);
     }
 
-    // const mergeDirtyAABB1 = mergeOverlappingRects(mergeDirtyAABB);
-    // console.log(mergeDirtyAABB1, "--");
     if (this.dirtyDebugRoot) {
       this.dirtyDebugRoot.children = Array.from(needRerender).map((v) => {
         const point = v.getLocalPoint(v.getWordPoint());

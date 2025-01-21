@@ -20,20 +20,20 @@ export class Img extends Element {
     if (this.imageResolve === false) {
       return
     }
-    this.root.ctx.save();
-    this.root.ctx.beginPath();
+    this.layer.ctx.save();
+    this.layer.ctx.beginPath();
     const localMatrix = this.provideLocalCtx();
     const x = point.x + localMatrix.translateX
     const y = point.y + localMatrix.translateY
-    this.root.ctx.roundRect(
+    this.layer.ctx.roundRect(
       x,
       y,
       this.size.width,
       this.size.height,
       this.radius
     );
-    this.root.ctx.fill();
-    this.root.ctx.clip();
+    this.layer.ctx.fill();
+    this.layer.ctx.clip();
     const imgWidth = this.image.width;
     const imgHeight = this.image.height;
     const scale = Math.max(
@@ -44,14 +44,14 @@ export class Img extends Element {
     const scaledHeight = imgHeight * scale;
     const offsetX = (scaledWidth - this.size.width) / 2 - x;
     const offsetY = (scaledHeight - this.size.height) / 2 - y;
-    this.root.ctx.drawImage(
+    this.layer.ctx.drawImage(
       this.image,
       -offsetX,
       -offsetY,
       scaledWidth,
       scaledHeight
     );
-    this.root.ctx.restore();
+    this.layer.ctx.restore();
   }
 
   mounted(): void {
@@ -61,7 +61,9 @@ export class Img extends Element {
     img.src = this.src;
     this.image.onload = () => {
       this.imageResolve = true;
-      const parent = this.parent!.provideLocalCtx().overflowHideEl || this.root
+      const parent = this.parent!.provideLocalCtx().overflowHideEl || this.layer
+
+      console.log(parent,'--');
       parent.render()
     };
   }
@@ -89,16 +91,16 @@ export class CircleImg extends Img {
     const localMatrix = this.provideLocalCtx();
     const x = point.x + localMatrix.translateX
     const y = point.y + localMatrix.translateY
-    this.root.ctx.save();
-    this.root.ctx.beginPath();
-    this.root.ctx.arc(
+    this.layer.ctx.save();
+    this.layer.ctx.beginPath();
+    this.layer.ctx.arc(
       radius + x,
       radius + y,
       radius,
       0,
       2 * Math.PI
     ); // 绘制圆形路径
-    this.root.ctx.clip();
+    this.layer.ctx.clip();
     const imgWidth = this.image.width;
     const imgHeight = this.image.height;
     const scale = Math.max(diameter / imgWidth, diameter / imgHeight); // 计算缩放比例
@@ -106,14 +108,14 @@ export class CircleImg extends Img {
     const scaledHeight = imgHeight * scale;
     const offsetX = (scaledWidth - diameter) / 2 - x;
     const offsetY = (scaledHeight - diameter) / 2 - y;
-    this.root.ctx.drawImage(
+    this.layer.ctx.drawImage(
       this.image,
       -offsetX,
       -offsetY,
       scaledWidth,
       scaledHeight
     );
-    this.root.ctx.restore();
+    this.layer.ctx.restore();
   }
 }
 
