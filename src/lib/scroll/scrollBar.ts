@@ -20,7 +20,7 @@ export class ScrollBar extends Element {
         x: e.detail.x - selfPoint.x,
         y: e.detail.y - selfPoint.y
       };
-      const parent = this.parent! as Scroll
+      const parent = this.parent! as Scroll;
       const parentSize = this.parent!.size;
       const maxScrollHeight = parentSize.height - this.size.height;
       const maxScrollWidth = parentSize.width - this.size.width;
@@ -44,8 +44,10 @@ export class ScrollBar extends Element {
           -maxScrollHeight
         );
 
-        const contentScrollOffsetY = (moveY / maxScrollHeight) * (parentSize.height - parent.scrollHeight);
-        const contentScrollOffsetX = (moveY / maxScrollWidth) * (parentSize.height - parent.scrollWidth);
+        const contentScrollOffsetY =
+          (moveY / maxScrollHeight) * (parentSize.height - parent.scrollHeight);
+        const contentScrollOffsetX =
+          (moveY / maxScrollWidth) * (parentSize.height - parent.scrollWidth);
 
         this.setOption({
           x: options.direction === "vertical" ? selfPoint.x : moveX,
@@ -65,7 +67,7 @@ export class ScrollBar extends Element {
       const parentSize = this.parent!.size;
       let deltaX = e.detail.deltaX ?? 0;
       let deltaY = e.detail.deltaY ?? 0;
-      const parent = this.parent! as Scroll
+      const parent = this.parent! as Scroll;
       const maxScrollWidth = parentSize.width - this.size.width;
       const maxScrollHeight = parentSize.height - this.size.height;
 
@@ -75,8 +77,10 @@ export class ScrollBar extends Element {
       const moveX = Math.max(Math.min(currentX + deltaX, maxScrollWidth), 0);
       const moveY = Math.max(Math.min(currentY + deltaY, maxScrollHeight), 0);
 
-      const contentScrollOffsetY = (moveY / maxScrollHeight) * (parentSize.height - parent.scrollHeight);
-      const contentScrollOffsetX = (moveY / maxScrollWidth) * (parentSize.height - parent.scrollWidth);
+      const contentScrollOffsetY =
+        (moveY / maxScrollHeight) * (parentSize.height - parent.scrollHeight);
+      const contentScrollOffsetX =
+        (moveY / maxScrollWidth) * (parentSize.height - parent.scrollWidth);
 
       this.setOption({
         x: options.direction === "vertical" ? selfPoint.x : moveX,

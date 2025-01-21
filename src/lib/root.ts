@@ -135,20 +135,23 @@ export class Root extends Element {
       signal: abortController.signal
     });
 
-    document.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      notify(e, "wheel")
-    }, {
-      signal: abortController.signal,
-      passive: false
-    });
+    this.el.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        notify(e, "wheel");
+      },
+      {
+        signal: abortController.signal,
+        passive: false
+      }
+    );
 
     const notify = (
       e: PointerEvent | MouseEvent | WheelEvent,
       eventName: string,
       el = this.currentElement
     ) => {
-
       if (!el) {
         hasLockPoint = false;
         return;
@@ -169,7 +172,7 @@ export class Root extends Element {
         y: offsetY,
         buttons: e.buttons,
         deltaY: (e as WheelEvent).deltaY ?? 0,
-        deltaX: (e as WheelEvent).deltaX ?? 0,
+        deltaX: (e as WheelEvent).deltaX ?? 0
       });
     };
 
@@ -234,9 +237,9 @@ export class Root extends Element {
     function walk(el: Element) {
       if (el.parent) {
         let parent: Element | undefined = el.parent;
-        const aabb = parent.getBoundingBox();
         const provide = parent.provideLocalCtx();
         while (parent) {
+          let aabb = parent.getBoundingBox();
           if (mergeDirtyAABB.some((v) => isPartiallyIntersecting(aabb, v))) {
             mergeDirtyAABB.push(aabb);
             needRerender.add(parent);

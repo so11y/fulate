@@ -1,9 +1,7 @@
-
-
 import { group } from "../group";
 import { Element, ElementOptions } from "../base";
 import { Constraint, Size } from "../utils/constraint";
-import { ScrollBar, } from "./scrollBar";
+import { ScrollBar } from "./scrollBar";
 
 interface ScrollOptions extends Omit<ElementOptions, "child"> {
   overflowY?: "scroll" | "none";
@@ -15,9 +13,11 @@ export class Scroll extends Element {
   overflowY: ScrollOptions["overflowY"];
   overflowX: ScrollOptions["overflowX"];
   private scrollBarCol: Element;
-  private scrollBody: Element
-  scrollHeight = 0
-  scrollWidth = 0
+  private scrollBody: Element;
+  scrollHeight = 0;
+  scrollWidth = 0;
+  scrollTop = 0;
+  scrollLeft = 0;
   constructor(options: ScrollOptions) {
     super(options);
     this.scrollBarCol = new ScrollBar({
@@ -27,20 +27,18 @@ export class Scroll extends Element {
       backgroundColor: "rgba(0,0,0,0.2)",
       direction: "vertical",
       onScroll: (x) => {
+        this.scrollTop = x.y;
         this.scrollBody.setOption({
           y: x.y
-        })
-        this.root.render()
+        });
+        this.root.render();
       }
-    })
+    });
     this.scrollBody = group({
       flexDirection: "column",
       children: options.children
-    })
-    this.children = [
-      this.scrollBody,
-      this.scrollBarCol
-    ]
+    });
+    this.children = [this.scrollBody, this.scrollBarCol];
     this.overflow = "hidden";
     this.overflowY = options.overflowY ?? "scroll";
     this.overflowX = options.overflowX ?? "none";
@@ -50,13 +48,13 @@ export class Scroll extends Element {
     const selfConstraint = constraint.extend(this);
     const childConstraint = selfConstraint.getChildConstraint(this);
     if (this.overflowY === "scroll") {
-      childConstraint.maxHeight = Number.MAX_VALUE
+      childConstraint.maxHeight = Number.MAX_VALUE;
     }
     this.scrollBody.parent = this;
     this.scrollBody.root = this.root;
     this.scrollBarCol.parent = this;
     this.scrollBarCol.root = this.root;
-    const bodySize = this.scrollBody.layout(childConstraint)
+    const bodySize = this.scrollBody.layout(childConstraint);
     this.size = selfConstraint.compareSize(
       {
         width: this.width ?? bodySize.width,
@@ -67,23 +65,23 @@ export class Scroll extends Element {
     if (this.overflowY === "scroll") {
       if (bodySize.height > this.size.height) {
         this.scrollBarCol.setOption({
-          x: this.size.width - this.scrollBarCol.width! - 2,//2是右边的间距
+          x: this.size.width - this.scrollBarCol.width! - 2, //2是右边的间距
           height: (this.size.height / bodySize.height) * this.size.height
-        })
-        this.scrollHeight = bodySize.height
+        });
+        this.scrollHeight = bodySize.height;
       } else {
         this.scrollBarCol.setOption({
           height: 0
-        })
+        });
       }
-      this.scrollBarCol.layout(childConstraint)
+      this.scrollBarCol.layout(childConstraint);
     }
-    this.scrollWidth = Math.max(bodySize.width, this.size.width)
-    this.scrollHeight = Math.max(bodySize.height, this.size.height)
-    return this.size
+    this.scrollWidth = Math.max(bodySize.width, this.size.width);
+    this.scrollHeight = Math.max(bodySize.height, this.size.height);
+    return this.size;
   }
 }
 
 export function scroll(options: ScrollOptions) {
-  return new Scroll(options)
+  return new Scroll(options);
 }
