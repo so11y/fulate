@@ -471,18 +471,29 @@ export class Element extends EventTarget {
   hasPointHint(x: number, y: number) {
     const localMatrix = this.provideLocalCtx();
     if (localMatrix.rotate) {
+      //TODO  如果子元素的旋转是由父级控制的，那么在判断鼠标点击是否在子元素范围内时，需要考虑父级的旋转对子元素的影响
       const size = this.size;
       const point = this.getWordPoint();
       const selfPoint = this.getLocalPoint(point);
+
+      // 计算旋转中心
       const centerX = selfPoint.x + size.width / 2;
       const centerY = selfPoint.y + size.height / 2;
+
+      // 将鼠标坐标平移到旋转中心
       const translatedX = x - centerX;
       const translatedY = y - centerY;
+
+      // 计算旋转角度（弧度）
       const radians = (localMatrix.rotate * Math.PI) / 180;
-      const cos = Math.cos(-radians);
-      const sin = Math.sin(-radians);
+
+      // 反向旋转坐标
+      const cos = Math.cos(-radians); // 反向旋转
+      const sin = Math.sin(-radians); // 反向旋转
       const localX = translatedX * cos - translatedY * sin;
       const localY = translatedX * sin + translatedY * cos;
+
+      // 判断坐标是否在矩形范围内
       return (
         localX >= -size.width / 2 &&
         localX <= size.width / 2 &&

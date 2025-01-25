@@ -38,6 +38,7 @@ const root = Root({
       width: 130,
       height: 80,
       backgroundColor: "yellow",
+      key: "333d",
       children: [
         Element({
           width: 30,
@@ -228,10 +229,11 @@ const root = Root({
 // });
 
 root.mounted();
-// const junFei = root.getElementByKey("俊飞")!;
-// junFei.addEventListener("click", (e) => {
-//   e.stopPropagation();
-//   junFei.setAttributes<TextOptions>({
-//     text: "叫你点就点？"
-//   });
-// });
+const junFei = root.getElementByKey("333d")!;
+junFei.addEventListener("click", (e) => {
+  e.stopPropagation();
+  console.log(junFei, "点击了俊飞");
+  // junFei.setAttributes<TextOptions>({
+  //   text: "叫你点就点？"
+  // });
+});
