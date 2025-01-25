@@ -147,7 +147,6 @@ export class Select extends Element {
             this.selectBody.children = [this.bodyControl];
             linkEl(this.bodyControl, this.selectBody);
           }
-          console.log("select:", els);
           this.selectElements = els;
           this.root.render();
           if (!this.bodyControl.isMounted && this.selectElements.length) {
