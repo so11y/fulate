@@ -87,7 +87,7 @@ export function isOverlapAndNotAdjacent(rect1: Rect, rect2: Rect) {
 }
 
 // 合并两个矩形范围
-function mergeTwoRects(rect1: Rect, rect2: Rect) {
+export function mergeTwoRects(rect1: Rect, rect2: Rect) {
   const minX = Math.min(rect1.x, rect2.x);
   const minY = Math.min(rect1.y, rect2.y);
   const maxX = Math.max(rect1.x + rect1.width, rect2.x + rect2.width);
@@ -140,4 +140,21 @@ export function isPartiallyIntersecting(rect1: Rect, rect2: Rect) {
   //   rect2.y + rect2.height >= rect1.y + rect1.height;
   //  &&   !isRect2ContainsRect1
   return isOverlap(rect1, rect2) && !isContaining(rect1, rect2);
+}
+
+//处理宽高可能的负数，然后再计算x,y
+export function calculateElementBounds(rect: Rect) {
+  // 计算左上角坐标
+  const x = rect.width >= 0 ? rect.x : rect.x + rect.width;
+  const y = rect.height >= 0 ? rect.y : rect.y + rect.height;
+
+  const width = Math.abs(rect.width);
+  const height = Math.abs(rect.height);
+
+  return {
+    x,
+    y,
+    width,
+    height
+  };
 }
