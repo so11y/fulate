@@ -7,6 +7,7 @@ interface DragOptions {
   onDragMove?: (point: Point) => void;
   onDragEnd?: (point: Point) => void;
   child?: Element;
+  proxyEl?: Element;
 }
 
 export class Drag extends Element implements DragOptions {
@@ -14,8 +15,10 @@ export class Drag extends Element implements DragOptions {
   onDragStart?: (point: Point) => void;
   onDragMove?: (point: Point) => void;
   onDragEnd?: (point: Point) => void;
+  proxyEl?: Element;
   constructor(options: DragOptions) {
     super(options);
+    this.proxyEl = options.proxyEl;
     this.onDragStart = options.onDragStart;
     this.onDragMove = options.onDragMove;
     this.onDragEnd = options.onDragEnd;
@@ -23,42 +26,46 @@ export class Drag extends Element implements DragOptions {
 
   mounted() {
     super.mounted();
-    this.addEventListener("mouseenter", () => {
-      this.root.el.style.cursor = "pointer";
-    });
-    this.addEventListener("mouseleave", () => {
-      this.root.el.style.cursor = "default";
-    });
+    const el = this.proxyEl || this.children![0];
 
-    this.addEventListener("pointerdown", pointerdown);
-    function pointerdown(e: UserCanvasEvent) {
+    const pointerdown = (e: UserCanvasEvent) => {
       e.stopPropagation();
       const selfPoint = {
-        x: this.x,
-        y: this.y
+        x: el.x,
+        y: el.y
       };
       const startDownPoint = {
         x: e.detail.x,
         y: e.detail.y
       };
-
+      this.onDragStart?.(startDownPoint);
       const pointermove = (e: UserCanvasEvent) => {
         const { x, y } = e.detail;
-        this.setOption({
-          x: x - startDownPoint.x + selfPoint.x,
-          y: y - startDownPoint.y + selfPoint.y
+        const moveX = x - startDownPoint.x;
+        const moveY = y - startDownPoint.y;
+        el.setOption({
+          x: moveX + selfPoint.x,
+          y: moveY + selfPoint.y
         });
+        this.onDragMove?.({ x: moveX, y: moveY });
         this.root.render();
       };
-      this.addEventListener("pointermove", pointermove);
-      this.addEventListener(
+      el.addEventListener("pointermove", pointermove);
+      el.addEventListener(
         "pointerup",
-        () => this.removeEventListener("pointermove", pointermove),
+        () => el.removeEventListener("pointermove", pointermove),
         {
           once: true
         }
       );
-    }
+    };
+    el.addEventListener("mouseenter", () => {
+      this.root.el.style.cursor = "pointer";
+    });
+    el.addEventListener("mouseleave", () => {
+      this.root.el.style.cursor = "default";
+    });
+    el.addEventListener("pointerdown", pointerdown);
   }
 }
 

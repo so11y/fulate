@@ -88,11 +88,11 @@ export class Row extends Element {
     const toggleWidth = this.children!.reduce(
       (prev, next) =>
         prev + next.size.width + next.margin.left + next.margin.right,
-      0
+      this.padding.left + this.padding.right
     );
     switch (this.justifyContent) {
       case "flex-end": {
-        childPoint.x += this.size.width - toggleWidth;
+        childPoint.x += this.size.width - toggleWidth - this.padding.right;
         break;
       }
       case "center": {
@@ -114,7 +114,11 @@ export class Row extends Element {
             break;
           }
           case "flex-end": {
-            child.y = size.height - child.size.height;
+            child.y =
+              size.height -
+              this.padding.top -
+              child.size.height -
+              this.padding.bottom;
             break;
           }
         }

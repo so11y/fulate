@@ -252,7 +252,7 @@ export class Column extends Element {
     const toggleHeight = this.children!.reduce(
       (prev, next) =>
         prev + (next.size.height + next.margin.top + next.margin.bottom),
-      0
+      this.padding.top + this.padding.bottom
     );
     switch (this.justifyContent) {
       case "flex-end": {

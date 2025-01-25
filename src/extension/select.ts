@@ -1,5 +1,5 @@
 import { Drag } from ".";
-import { Element } from "../lib/base";
+import { Element, Point } from "../lib/base";
 import { Rect } from "../lib/types";
 import {
   calculateElementBounds,
@@ -20,9 +20,27 @@ export class Select extends Element {
       backgroundColor: "rgba(0, 0, 0, 0.1)"
     });
     this.selectBody.isInternal = true;
+
+    let selectElementsStartPoint: Array<Point & { element: Element }> = [];
     this.children = [
       Drag({
-        child: this.selectBody
+        proxyEl: this,
+        child: this.selectBody,
+        onDragStart: () => {
+          selectElementsStartPoint = this.selectElements.map((v) => ({
+            x: v.x,
+            y: v.y,
+            element: v
+          }));
+        },
+        onDragMove: (e) => {
+          selectElementsStartPoint.forEach(({ x, y, element }) => {
+            element.setOption({
+              x: e.x + x,
+              y: e.y + y
+            });
+          });
+        }
       })
     ];
   }
@@ -66,7 +84,8 @@ export class Select extends Element {
       this.root.addEventListener(
         "pointerup",
         () => {
-          const els = Array.from(selects);
+          //因为是倒着鼠标碰撞的，所以里面包含了可能的父级,如果存在父级需要把自己过滤
+          const els = Array.from(hasParentIgNoreSelf(selects));
           if (selects.size === 0) {
             setRectSize({
               x: 0,
@@ -85,6 +104,7 @@ export class Select extends Element {
               setRectSize(rect);
             }
           }
+          console.log("select:", els);
           this.selectElements = els;
           this.root.removeEventListener("pointermove", pointermove);
           this.root.render();
@@ -107,6 +127,20 @@ export class Select extends Element {
     };
     this.root.addEventListener("pointerdown", pointerdown);
   }
+}
+
+function hasParentIgNoreSelf(v: Set<Element>) {
+  Array.from(v).forEach((element) => {
+    let parent = element.parent;
+    while (parent) {
+      if (v.has(parent)) {
+        v.delete(element);
+        return true;
+      }
+      parent = parent.parent;
+    }
+  });
+  return v;
 }
 
 export function select() {
