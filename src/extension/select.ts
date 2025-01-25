@@ -1,6 +1,6 @@
 import { Drag } from ".";
 import { Group, Row } from "../lib";
-import { Element, ElementOptions, Point } from "../lib/base";
+import { element, Element, ElementOptions, Point } from "../lib/base";
 import { Rect } from "../lib/types";
 import {
   calculateElementBounds,
@@ -9,7 +9,6 @@ import {
 } from "../lib/utils/calc";
 import { UserCanvasEvent } from "../lib/utils/eventManage";
 import { first } from "lodash-es";
-import { linkEl } from "../lib/utils/helper";
 
 export class Select extends Element {
   type = "select";
@@ -18,7 +17,9 @@ export class Select extends Element {
   bodyControl: Element;
 
   constructor() {
-    super();
+    super({
+      key: "select"
+    });
     this.bodyControl = Group.hFull({
       flexDirection: "column",
       justifyContent: "space-between",
@@ -30,6 +31,10 @@ export class Select extends Element {
             ControlEl({
               cursor: "nw-resize",
               translateX: -5
+            }),
+            ControlEl({
+              cursor: "grabbing",
+              translateY: -30
             }),
             ControlEl({
               cursor: "sw-resize",
@@ -56,7 +61,9 @@ export class Select extends Element {
     this.selectBody = new Element({
       width: 0,
       height: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.1)"
+      overflow: "hidden",
+      backgroundColor: "rgba(0, 0, 0, 0.1)",
+      child: this.bodyControl
     });
     this.selectBody.isInternal = true;
 
@@ -96,6 +103,9 @@ export class Select extends Element {
         x: e.detail.x,
         y: e.detail.y
       };
+      this.setOption({
+        rotate: 0
+      });
       const pointermove = (e: UserCanvasEvent) => {
         const { x, y } = e.detail;
         const rect = {
@@ -145,13 +155,10 @@ export class Select extends Element {
               setRectSize(rect);
             }
             this.selectBody.children = [this.bodyControl];
-            linkEl(this.bodyControl, this.selectBody);
           }
+          this.selectBody.overflow = els.length ? "visible" : "hidden";
           this.selectElements = els;
           this.root.render();
-          if (!this.bodyControl.isMounted && this.selectElements.length) {
-            this.bodyControl.mounted();
-          }
           this.root.removeEventListener("pointermove", pointermove);
         },
         {
@@ -170,6 +177,7 @@ export class Select extends Element {
         height: rect.height + 8
       });
     };
+
     this.root.addEventListener("pointerdown", pointerdown);
   }
 }
@@ -183,9 +191,43 @@ function ControlEl(option: ElementOptions) {
     radius: 5
   });
 
-  el.addEventListener("mouseenter", () => {
-    el.root.el.style.cursor = option.cursor!;
-  });
+  if (option.cursor === "grabbing") {
+    el.addEventListener("pointerdown", (e) => {
+      e.stopPropagation();
+      const select = el.root.getElementByKey("select") as Select;
+      const selectPoint = select.getLocalPoint(select.getWordPoint());
+      const selectSelect = select.selectElements.map((v) => ({
+        element: v,
+        rotate: v.rotate
+      }));
+      el.addEventListener("pointermove", pointermove);
+      el.addEventListener(
+        "pointerup",
+        () => el.removeEventListener("pointermove", pointermove),
+        {
+          once: true
+        }
+      );
+      function pointermove(e: UserCanvasEvent) {
+        const dx = e.detail.x - selectPoint.x - select.size.width / 2;
+        const dy = e.detail.y - selectPoint.y;
+        let angle = Math.atan2(dy, dx) + Math.PI / 2;
+        angle = angle % (2 * Math.PI);
+        if (angle < 0) {
+          angle += 2 * Math.PI;
+        }
+        selectSelect.forEach(({ element, rotate }) => {
+          element.setOption({
+            rotate: rotate + (angle * 180) / Math.PI
+          });
+        });
+        select.setOption({
+          rotate: (angle * 180) / Math.PI
+        });
+        el.root.render();
+      }
+    });
+  }
 
   return el;
 }
