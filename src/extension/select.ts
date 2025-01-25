@@ -198,7 +198,10 @@ function ControlEl(option: ElementOptions) {
       const selectPoint = select.getLocalPoint(select.getWordPoint());
       const selectSelect = select.selectElements.map((v) => ({
         element: v,
-        rotate: v.rotate
+        rotate: v.rotate,
+        center: v.getCenter(),
+        centerOffsetX: (v.centerOffsetX ?? 0),
+        centerOffsetY: (v.centerOffsetY ?? 0)
       }));
       el.addEventListener("pointermove", pointermove);
       el.addEventListener(
@@ -208,6 +211,7 @@ function ControlEl(option: ElementOptions) {
           once: true
         }
       );
+      const selectCenter = select.getCenter()
       function pointermove(e: UserCanvasEvent) {
         const dx = e.detail.x - selectPoint.x - select.size.width / 2;
         const dy = e.detail.y - selectPoint.y;
@@ -216,8 +220,11 @@ function ControlEl(option: ElementOptions) {
         if (angle < 0) {
           angle += 2 * Math.PI;
         }
-        selectSelect.forEach(({ element, rotate }) => {
+        console.log(select.root.ctx.getTransform());
+        selectSelect.forEach(({ center, element, rotate, centerOffsetX, centerOffsetY }) => {
           element.setOption({
+            centerOffsetX: selectCenter.centerX - center.centerX + centerOffsetX,
+            centerOffsetY: selectCenter.centerY - center.centerY + centerOffsetY,
             rotate: rotate + (angle * 180) / Math.PI
           });
         });

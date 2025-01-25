@@ -37,9 +37,10 @@ export function calcRotateCorners(el: Element) {
   const localMatrix = el.provideLocalCtx();
   const point = el.getWordPoint();
   const selfPoint = el.getLocalPoint(point);
+  const { centerX, centerY } = el.getCenter()
   // 计算旋转中心（元素的中心点）
-  const centerX = selfPoint.x + localMatrix.translateX + size.width / 2;
-  const centerY = selfPoint.y + localMatrix.translateY + size.height / 2;
+  // const centerX = selfPoint.x + localMatrix.translateX + size.width / 2;
+  // const centerY = selfPoint.y + localMatrix.translateY + size.height / 2;
   // 将角度转换为弧度
   const radians = (localMatrix.rotate * Math.PI) / 180;
 

@@ -230,9 +230,10 @@ const root = Root({
 
 root.mounted();
 const junFei = root.getElementByKey("333d")!;
-junFei.addEventListener("click", (e) => {
-  e.stopPropagation();
-  console.log(junFei, "点击了俊飞");
+junFei.addEventListener("pointermove", (e) => {
+  // e.stopPropagation();
+  console.log(e.detail.target);
+  // console.log(junFei, "点击了俊飞");
   // junFei.setAttributes<TextOptions>({
   //   text: "叫你点就点？"
   // });
