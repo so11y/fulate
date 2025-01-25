@@ -6,6 +6,7 @@ import { AlignItems, JustifyContent } from "./types/flex";
 import { CalcAABB } from "./utils/calc";
 import { Constraint, Size } from "./utils/constraint";
 import { last } from "lodash-es";
+import { linkEl } from "./utils/helper";
 
 interface RowTree {
   constraint: Constraint;
@@ -47,8 +48,7 @@ export class Column extends Element {
       for (let i = 0; i < this.children!.length; i++) {
         const lastRow = last(rows);
         const child = this.children![i];
-        child.parent = this;
-        child.root = this.root;
+        linkEl(child, this);
         if (child.type === "expanded") {
           childConstraint.subHorizontal((child as Expanded).flexBasis);
           if (childConstraint.isOverstep) {
@@ -143,11 +143,9 @@ export class Column extends Element {
           justifyContent: this.alignItems
         });
         row.isInternal = true;
-        row.parent = this;
-        row.root = this.root;
+        linkEl(row, this);
         const children = currentRow.children.map((v) => {
-          v.child.parent = row;
-          v.child.root = this.root;
+          linkEl(v.child, row);
           return v.child;
         });
         row.children = children;
@@ -187,18 +185,15 @@ export class Column extends Element {
         children: [v]
       });
       row.isInternal = true;
-      row.parent = this;
-      row.root = this.root;
-      v.parent = row;
-      v.root = this.root;
+      linkEl(row, this);
+      linkEl(v, row);
       return row;
     });
     this.children = children;
     let maxHeight = 0;
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      child.parent = this;
-      child.root = this.root;
+      linkEl(child, this);
       if (child.type === "expanded") {
         childConstraint.subVertical((child as Expanded).flexBasis);
         cols.push({

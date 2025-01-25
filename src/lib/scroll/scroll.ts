@@ -2,6 +2,7 @@ import { group } from "../group";
 import { Element, ElementOptions } from "../base";
 import { Constraint, Size } from "../utils/constraint";
 import { ScrollBar } from "./scrollBar";
+import { linkEl } from "../utils/helper";
 
 interface ScrollOptions extends Omit<ElementOptions, "child"> {
   overflowY?: "scroll" | "none";
@@ -58,10 +59,8 @@ export class Scroll extends Element {
     if (this.overflowY === "scroll") {
       childConstraint.maxHeight = Number.MAX_VALUE;
     }
-    this.scrollBody.parent = this;
-    this.scrollBody.root = this.root;
-    this.scrollBarCol.parent = this;
-    this.scrollBarCol.root = this.root;
+    linkEl(this.scrollBody, this);
+    linkEl(this.scrollBarCol, this);
     const bodySize = this.scrollBody.layout(childConstraint);
     this.size = selfConstraint.compareSize(
       {

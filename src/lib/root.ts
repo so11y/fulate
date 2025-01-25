@@ -33,6 +33,7 @@ export class Root extends Element {
   ac: AnimationController;
   keyMap = new Map<string, Element>();
   quickElements: Set<Element> = new Set();
+  cursorElements: Set<Element> = new Set();
   dirtys: Set<Element> = new Set();
   font: Required<RootOptions["font"]>;
   currentElement?: Element;
@@ -91,6 +92,21 @@ export class Root extends Element {
     //也能继续触发的这个元素的事件
     let hasLockPoint = false;
 
+    const calcCursorEls = debounce((offsetX, offsetY) => {
+      let isCursor: Element | undefined = undefined;
+      for (const element of this.cursorElements) {
+        if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
+          isCursor = element;
+          break;
+        }
+      }
+      if (isCursor) {
+        this.el.style.cursor = isCursor.cursor!;
+      } else {
+        this.el.style.cursor = "default";
+      }
+    });
+
     document.addEventListener(
       "pointermove",
       (e) => {
@@ -105,6 +121,7 @@ export class Root extends Element {
               break;
             }
           }
+          calcCursorEls(offsetX, offsetY);
         }
 
         if (!this.currentElement) {

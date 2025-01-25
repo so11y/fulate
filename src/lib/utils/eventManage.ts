@@ -1,45 +1,55 @@
-import type { Element } from "../base"
+import type { Element } from "../base";
 
-export type UserCanvasEvent = Event & { detail: CanvasPoint }
+export type UserCanvasEvent = Event & { detail: CanvasPoint };
 
-export type EventName = "pointermove" | "click" | "pointerdown" | "pointerup" | "contextmenu" | "mouseenter" | "mouseleave" | "wheel"
-export type CanvasPointEvent = (evt: (UserCanvasEvent)) => void
+export type EventName =
+  | "pointermove"
+  | "click"
+  | "pointerdown"
+  | "pointerup"
+  | "contextmenu"
+  | "mouseenter"
+  | "mouseleave"
+  | "wheel";
+export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 
 export interface CanvasPoint {
-  target: Element
-  x: number
-  y: number
-  buttons: number,
-  deltaY?: number,
-  deltaX?: number,
+  target: Element;
+  x: number;
+  y: number;
+  buttons: number;
+  deltaY?: number;
+  deltaX?: number;
 }
 
-
 export class EventManage extends EventTarget {
-  hasUserEvent = false
-  hasMouseEnter = false
+  hasUserEvent = false;
+  hasMouseEnter = false;
   constructor(private target: Element) {
-    super()
+    super();
   }
 
   notify(eventName: string, event: CanvasPoint) {
-
     if (eventName === "mouseenter") {
       if (this.hasMouseEnter) {
-        return
+        return;
       }
-      this.hasMouseEnter = true
+      if (this.target.cursor) {
+        this.target.root.el.style.cursor = this.target.cursor;
+      }
+
+      this.hasMouseEnter = true;
     }
 
     if (eventName === "mouseleave" && this.hasMouseEnter) {
       if (this.target.hasPointHint(event.x, event.y)) {
-        return
+        return;
       }
-      this.hasMouseEnter = false
+      this.target.root.el.style.cursor = "default";
+      this.hasMouseEnter = false;
     }
 
-
-    let parent = this.target.parent
+    let parent = this.target.parent;
     const customEvent = new CustomEvent(eventName, {
       detail: {
         target: event?.target ?? this.target,
@@ -47,35 +57,30 @@ export class EventManage extends EventTarget {
         y: event?.y ?? 0,
         buttons: event?.buttons ?? 0,
         deltaY: event?.deltaY ?? 0,
-        deltaX: event?.deltaX ?? 0,
-      },
-    })
+        deltaX: event?.deltaX ?? 0
+      }
+    });
     if (this.hasUserEvent) {
-      this.target.dispatchEvent(customEvent)
+      this.target.dispatchEvent(customEvent);
       if (customEvent.cancelBubble) {
-        return
+        return;
       }
     }
     if (!parent) {
-      return
+      return;
     }
     while (
       (parent!.isInternal || parent!.eventManage.hasUserEvent === false) &&
       parent !== this.target.root
     ) {
-      parent = parent?.parent
+      parent = parent?.parent;
     }
     if (parent) {
-      parent.eventManage.notify(eventName, event)
+      parent.eventManage.notify(eventName, event);
     }
   }
 
-  mounted() {
+  mounted() {}
 
-  }
-
-
-
-  unmounted() {
-  }
+  unmounted() {}
 }

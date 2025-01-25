@@ -1,5 +1,6 @@
 import { Drag } from ".";
-import { Element, Point } from "../lib/base";
+import { Group, Row } from "../lib";
+import { Element, ElementOptions, Point } from "../lib/base";
 import { Rect } from "../lib/types";
 import {
   calculateElementBounds,
@@ -8,15 +9,53 @@ import {
 } from "../lib/utils/calc";
 import { UserCanvasEvent } from "../lib/utils/eventManage";
 import { first } from "lodash-es";
+import { linkEl } from "../lib/utils/helper";
 
 export class Select extends Element {
   type = "select";
   selectElements: Element[] = [];
   selectBody: Element;
+  bodyControl: Element;
 
   constructor() {
     super();
+    this.bodyControl = Group.hFull({
+      flexDirection: "column",
+      justifyContent: "space-between",
+      children: [
+        Row({
+          justifyContent: "space-between",
+          translateY: -5,
+          children: [
+            ControlEl({
+              cursor: "nw-resize",
+              translateX: -5
+            }),
+            ControlEl({
+              cursor: "sw-resize",
+              translateX: 5
+            })
+          ]
+        }),
+        Row({
+          justifyContent: "space-between",
+          translateY: 5,
+          children: [
+            ControlEl({
+              cursor: "sw-resize",
+              translateX: -5
+            }),
+            ControlEl({
+              cursor: "nw-resize",
+              translateX: 5
+            })
+          ]
+        })
+      ]
+    });
     this.selectBody = new Element({
+      width: 0,
+      height: 0,
       backgroundColor: "rgba(0, 0, 0, 0.1)"
     });
     this.selectBody.isInternal = true;
@@ -50,6 +89,7 @@ export class Select extends Element {
 
     const pointerdown = (e: UserCanvasEvent) => {
       this.selectElements = [];
+      this.selectBody.children = [];
       const selects = new Set<Element>();
       e.stopPropagation();
       const startDownPoint = {
@@ -67,13 +107,14 @@ export class Select extends Element {
         setRectSize(rect);
         const thisRect = calculateElementBounds(rect);
         this.root.quickElements.forEach((element) => {
+          const provideCtx = element.provideLocalCtx();
           const react = element.getBoundingBox();
           if (
             isOverlap(thisRect, react) &&
             element !== this &&
             element.type !== "root" &&
             element.type !== "drag" &&
-            !element.isInternal
+            !provideCtx.isInternal
           ) {
             selects.add(element);
           }
@@ -103,11 +144,16 @@ export class Select extends Element {
               );
               setRectSize(rect);
             }
+            this.selectBody.children = [this.bodyControl];
+            linkEl(this.bodyControl, this.selectBody);
           }
           console.log("select:", els);
           this.selectElements = els;
-          this.root.removeEventListener("pointermove", pointermove);
           this.root.render();
+          if (!this.bodyControl.isMounted && this.selectElements.length) {
+            this.bodyControl.mounted();
+          }
+          this.root.removeEventListener("pointermove", pointermove);
         },
         {
           once: true
@@ -127,6 +173,22 @@ export class Select extends Element {
     };
     this.root.addEventListener("pointerdown", pointerdown);
   }
+}
+
+function ControlEl(option: ElementOptions) {
+  const el = new Element({
+    ...option,
+    width: 10,
+    height: 10,
+    backgroundColor: "#800080",
+    radius: 5
+  });
+
+  el.addEventListener("mouseenter", () => {
+    el.root.el.style.cursor = option.cursor!;
+  });
+
+  return el;
 }
 
 function hasParentIgNoreSelf(v: Set<Element>) {

@@ -18,6 +18,7 @@ export class Drag extends Element implements DragOptions {
   proxyEl?: Element;
   constructor(options: DragOptions) {
     super(options);
+    this.cursor = "pointer";
     this.proxyEl = options.proxyEl;
     this.onDragStart = options.onDragStart;
     this.onDragMove = options.onDragMove;
@@ -59,12 +60,6 @@ export class Drag extends Element implements DragOptions {
         }
       );
     };
-    el.addEventListener("mouseenter", () => {
-      this.root.el.style.cursor = "pointer";
-    });
-    el.addEventListener("mouseleave", () => {
-      this.root.el.style.cursor = "default";
-    });
     el.addEventListener("pointerdown", pointerdown);
   }
 }

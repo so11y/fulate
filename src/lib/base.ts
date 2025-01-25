@@ -6,6 +6,7 @@ import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
 import { CalcAABB, calcRotateCorners, quickAABB } from "./utils/calc";
 import { Scroll } from "./scroll/scroll";
+import { linkEl } from "./utils/helper";
 
 export interface Point {
   x: number;
@@ -46,6 +47,7 @@ export interface ElementOptions {
   child?: Element;
   margin?: [top: number, right: number, bottom: number, left: number];
   padding?: [top: number, right: number, bottom: number, left: number];
+  cursor?: string;
 }
 
 export class Element extends EventTarget {
@@ -85,6 +87,7 @@ export class Element extends EventTarget {
   parent?: Element;
   isMounted = false;
   widthAuto = false;
+  cursor?: string;
   ac: AnimationController;
   // isBreak: boolean = false;
   //如果是container这种内部嵌套的组件
@@ -100,7 +103,8 @@ export class Element extends EventTarget {
     rotate: 0,
     overflowHideEl: undefined as Element | undefined,
     scrollEl: undefined as Element | undefined,
-    backgroundColorEl: undefined as Element | undefined
+    backgroundColorEl: undefined as Element | undefined,
+    isInternal: false
   };
 
   constructor(option?: ElementOptions) {
@@ -131,6 +135,7 @@ export class Element extends EventTarget {
       this.translateX = option.translateX ?? this.translateX;
       this.translateY = option.translateY ?? this.translateY;
       this.rotate = option.rotate ?? this.rotate;
+      this.cursor = option.cursor ?? this.cursor;
       // this.position = option.position ?? "static";
 
       this.margin = option.margin
@@ -186,7 +191,8 @@ export class Element extends EventTarget {
         : parentLocalCtx.translateY,
       rotate: this.rotate
         ? this.rotate + parentLocalCtx.rotate
-        : parentLocalCtx.rotate
+        : parentLocalCtx.rotate,
+      isInternal: this.isInternal || parentLocalCtx.isInternal
     };
     return this._provideLocalCtx;
   }
@@ -274,8 +280,7 @@ export class Element extends EventTarget {
     if (!this.children) {
       this.children = [];
     }
-    child.parent = this;
-    child.root = this.root;
+    linkEl(child, this);
     this.children.push(child);
     this.root.render();
     child.mounted();
@@ -323,8 +328,7 @@ export class Element extends EventTarget {
     const childConstraint = selfConstraint.getChildConstraint(this);
     if (this.children?.length) {
       const rects = this.children!.map((child) => {
-        child.parent = this;
-        child.root = this.root;
+        linkEl(child, this);
         return child.layout(childConstraint);
       });
       const rect = rects.reduce(
@@ -418,13 +422,23 @@ export class Element extends EventTarget {
         child.mounted();
       }
     }
-    if (!this.isMounted && !this.isInternal) {
+    const provideLocalCtx = this.provideLocalCtx();
+    if (!this.isMounted && !provideLocalCtx.isInternal) {
       if (this.key) {
         this.root.keyMap.set(this.key, this);
       }
       this.root.quickElements.add(this);
       this.eventManage.mounted();
     }
+
+    if (!this.isMounted && this.eventManage.hasUserEvent) {
+      this.root.quickElements.add(this);
+    }
+
+    if (!this.isMounted && this.cursor) {
+      this.root.cursorElements.add(this);
+    }
+
     this.isMounted = true;
   }
 
