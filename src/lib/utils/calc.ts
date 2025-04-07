@@ -1,4 +1,4 @@
-import { Element } from "../base";
+import { Element, Point } from "../base";
 import { Rect } from "../types";
 import { Size } from "./constraint";
 
@@ -34,15 +34,15 @@ export function quickAABB(el: Element) {
 //计算旋转后的四个角坐标
 export function calcRotateCorners(el: Element) {
   const size = el.size;
-  const localMatrix = el.provideLocalCtx();
+  // const localMatrix = el.provideLocalCtx();
   const point = el.getWordPoint();
   const selfPoint = el.getLocalPoint(point);
-  const { centerX, centerY } = el.getCenter()
+  const { centerX, centerY } = el.getCenter();
   // 计算旋转中心（元素的中心点）
   // const centerX = selfPoint.x + localMatrix.translateX + size.width / 2;
   // const centerY = selfPoint.y + localMatrix.translateY + size.height / 2;
   // 将角度转换为弧度
-  const radians = (localMatrix.rotate * Math.PI) / 180;
+  const radians = (el.rotate * Math.PI) / 180;
 
   // 计算旋转角度的余弦和正弦
   const cos = Math.cos(radians);
@@ -158,4 +158,14 @@ export function calculateElementBounds(rect: Rect) {
     width,
     height
   };
+}
+
+export function calcRotate(point: Point, rotate?: number) {
+  if (!rotate) {
+    return point;
+  }
+  const rad = (rotate * Math.PI) / 180;
+
+  point.x = point.x * Math.cos(rad) - point.y * Math.sin(rad); // 修正 x
+  point.y = point.x * Math.sin(rad) + point.y * Math.cos(rad); // 修正 y
 }

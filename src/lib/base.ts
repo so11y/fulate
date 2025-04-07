@@ -109,6 +109,7 @@ export class Element extends EventTarget {
     scrollEl: undefined as Element | undefined,
     backgroundColorEl: undefined as Element | undefined,
     isInternal: false,
+    center: undefined as Point | undefined
     // centerOffsetX: undefined as number | undefined,
     // centerOffsetY: undefined as number | undefined
   };
@@ -189,13 +190,15 @@ export class Element extends EventTarget {
       translateY: this.translateY
         ? this.translateY + parentLocalCtx.translateY
         : parentLocalCtx.translateY,
-      rotate: this.rotate
-        ? this.rotate + parentLocalCtx.rotate
-        : parentLocalCtx.rotate,
+      // ? this.rotate + parentLocalCtx.rotate
+      // : parentLocalCtx.rotate,
       // centerOffsetX,
       // centerOffsetY,
       // rotateCenterX: parentLocalCtx.ro
-      isInternal: this.isInternal || parentLocalCtx.isInternal
+      isInternal: this.isInternal || parentLocalCtx.isInternal,
+      center:
+        this._provideLocalCtx.center ?? this.parent?._provideLocalCtx.center,
+      rotate: this.rotate
     };
     return this._provideLocalCtx;
   }
@@ -293,12 +296,16 @@ export class Element extends EventTarget {
     // 计算位置变化量
     const deltaX = newDx - dx;
     const deltaY = newDy - dy;
-
     this.x += deltaX;
     this.y += deltaY;
 
     // 更新旋转角度（累积）
     this.rotate = (this.rotate || 0) + rotate;
+    this._provideLocalCtx.center = {
+      x: center.centerX,
+      y: center.centerY
+    };
+    // this.children?.forEach((child) => child.setRotate(rotate, center));
   }
 
   appendChild(child: Element) {
@@ -379,6 +386,7 @@ export class Element extends EventTarget {
     // this.clearDirty();
     this.root.ctx.save();
     this.draw(selfPoint);
+
     if (this.children?.length) {
       let childPoint = this.getPaddingPoint(selfPoint);
       this.children.forEach((child) => child.render(childPoint));
@@ -402,18 +410,22 @@ export class Element extends EventTarget {
   }
 
   draw(point: Point) {
+    // this.root.ctx.save();
     this.clearDirty();
     const size = this.size;
     this.root.ctx.beginPath();
     if (this.translateX || this.translateY) {
       this.root.ctx.translate(this.translateX, this.translateY);
     }
+    // const local = this.provideLocalCtx();
     if (this.rotate) {
       const centerCenter = this.getCenter();
+      // console.log(this, "---");
       this.root.ctx.translate(centerCenter.centerX, centerCenter.centerY);
       this.root.ctx.rotate((this.rotate * Math.PI) / 180);
       this.root.ctx.translate(-centerCenter.centerX, -centerCenter.centerY);
     }
+
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
     }
@@ -435,6 +447,7 @@ export class Element extends EventTarget {
     if (this.overflow === "hidden") {
       this.root.ctx.clip();
     }
+    // this.root.ctx.restore();
     // this._DOMMatrix = this.root.ctx.getTransform()
   }
 
@@ -494,20 +507,38 @@ export class Element extends EventTarget {
 
   hasPointHint(x: number, y: number) {
     const localMatrix = this.provideLocalCtx();
-    if (localMatrix.rotate) {
+    if (localMatrix.rotate || localMatrix.center) {
       //TODO  如果子元素的旋转是由父级控制的，那么在判断鼠标点击是否在子元素范围内时，需要考虑父级的旋转对子元素的影响
       const size = this.size;
       // const point = this.getWordPoint();
       // const selfPoint = this.getLocalPoint(point);
 
-      const { centerX, centerY } = this.getCenter();
-      // 计算旋转中心
-      // const centerX = selfPoint.x + size.width / 2;
-      // const centerY = selfPoint.y + size.height / 2;
+      let { centerX, centerY } = this.getCenter();
+
+      // if (localMatrix.center) {
+      //   const dx = centerX - localMatrix.center.x;
+      //   const dy = centerY - localMatrix.center.y;
+
+      //   // 计算旋转后的新偏移（不要加回center坐标）
+      //   const rad = (localMatrix.rotate * Math.PI) / 180;
+      //   const newDx = dx * Math.cos(rad) - dy * Math.sin(rad);
+      //   const newDy = dx * Math.sin(rad) + dy * Math.cos(rad);
+
+      //   // 计算位置变化量
+      //   const deltaX = newDx - dx;
+      //   const deltaY = newDy - dy;
+      //   centerX -= deltaX;
+      //   centerY -= deltaY;
+      // }
 
       // 将鼠标坐标平移到旋转中心
-      const translatedX = x - centerX;
-      const translatedY = y - centerY;
+      let translatedX = x - centerX;
+      let translatedY = y - centerY;
+
+      if (localMatrix.center) {
+        translatedX = x - localMatrix.center.x;
+        translatedY = y - localMatrix.center.y;
+      }
 
       // 计算旋转角度（弧度）
       const radians = (localMatrix.rotate * Math.PI) / 180;

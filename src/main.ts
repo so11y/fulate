@@ -19,17 +19,34 @@ const root = Root({
   useDirtyRect: true,
   dirtyDebug: true,
   children: [
-    Element({
-      width: 30,
-      height: 30,
-      backgroundColor: "red"
-    }),
-    Element({
-      x: 30,
+    // Element({
+    //   width: 30,
+    //   height: 30,
+    //   backgroundColor: "red"
+    // }),
+    // Element({
+    //   x: 30,
+    //   width: 100,
+    //   height: 30,
+    //   backgroundColor: "blue"
+    // }),
+    Group({
       width: 100,
-      height: 30,
-      backgroundColor: "blue"
+      children: [
+        Element({
+          width: 30,
+          height: 40,
+          backgroundColor: "red"
+        }),
+        Element({
+          x: 30,
+          width: 30,
+          height: 40,
+          backgroundColor: "red"
+        })
+      ]
     }),
+
     Group({
       y: 40,
       justifyContent: "space-between",
@@ -42,12 +59,8 @@ const root = Root({
       children: [
         Element({
           width: 30,
-          height: 40,
-          backgroundColor: "red"
-        }),
-        Element({
-          width: 30,
           height: 30,
+          cursor: "pointer",
           backgroundColor: "blue"
         }),
         Element({
