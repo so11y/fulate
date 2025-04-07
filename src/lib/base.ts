@@ -41,8 +41,8 @@ export interface ElementOptions {
   translateX?: number;
   translateY?: number;
   rotate?: number;
-  centerOffsetX?: number;
-  centerOffsetY?: number;
+  // centerOffsetX?: number;
+  // centerOffsetY?: number;
   // position?: "static" | "absolute" | "relative";
   backgroundColor?: string;
   children?: Element[];
@@ -83,8 +83,8 @@ export class Element extends EventTarget {
   maxHeight?: number;
   minWidth?: number;
   minHeight?: number;
-  centerOffsetX?: number;
-  centerOffsetY?: number;
+  // centerOffsetX?: number;
+  // centerOffsetY?: number;
   backgroundColor?: string;
   overflow: "hidden" | "visible" = "visible";
   children?: Element[];
@@ -109,8 +109,8 @@ export class Element extends EventTarget {
     scrollEl: undefined as Element | undefined,
     backgroundColorEl: undefined as Element | undefined,
     isInternal: false,
-    centerOffsetX: undefined as number | undefined,
-    centerOffsetY: undefined as number | undefined
+    // centerOffsetX: undefined as number | undefined,
+    // centerOffsetY: undefined as number | undefined
   };
 
   constructor(option?: ElementOptions) {
@@ -141,27 +141,27 @@ export class Element extends EventTarget {
       this.translateX = option.translateX ?? this.translateX;
       this.translateY = option.translateY ?? this.translateY;
       this.rotate = option.rotate ?? this.rotate;
-      this.centerOffsetX = option.centerOffsetX ?? this.centerOffsetX;
-      this.centerOffsetY = option.centerOffsetY ?? this.centerOffsetY;
+      // this.centerOffsetX = option.centerOffsetX ?? this.centerOffsetX;
+      // this.centerOffsetY = option.centerOffsetY ?? this.centerOffsetY;
       this.cursor = option.cursor ?? this.cursor;
       // this.position = option.position ?? "static";
 
       this.margin = option.margin
         ? {
-          top: option.margin[0],
-          right: option.margin[1],
-          bottom: option.margin[2],
-          left: option.margin[3]
-        }
+            top: option.margin[0],
+            right: option.margin[1],
+            bottom: option.margin[2],
+            left: option.margin[3]
+          }
         : this.margin;
 
       this.padding = option.padding
         ? {
-          top: option.padding[0],
-          right: option.padding[1],
-          bottom: option.padding[2],
-          left: option.padding[3]
-        }
+            top: option.padding[0],
+            right: option.padding[1],
+            bottom: option.padding[2],
+            left: option.padding[3]
+          }
         : this.padding;
     }
   }
@@ -172,8 +172,8 @@ export class Element extends EventTarget {
     }
     const parentLocalCtx = (this.parent || this.root)._provideLocalCtx;
 
-    const centerOffsetX = this.centerOffsetX ?? parentLocalCtx.centerOffsetX
-    const centerOffsetY = this.centerOffsetY ?? parentLocalCtx.centerOffsetY
+    // const centerOffsetX = this.centerOffsetX ?? parentLocalCtx.centerOffsetX;
+    // const centerOffsetY = this.centerOffsetY ?? parentLocalCtx.centerOffsetY;
 
     this._provideLocalCtx = {
       scrollEl: parentLocalCtx.scrollEl,
@@ -192,8 +192,8 @@ export class Element extends EventTarget {
       rotate: this.rotate
         ? this.rotate + parentLocalCtx.rotate
         : parentLocalCtx.rotate,
-      centerOffsetX,
-      centerOffsetY,
+      // centerOffsetX,
+      // centerOffsetY,
       // rotateCenterX: parentLocalCtx.ro
       isInternal: this.isInternal || parentLocalCtx.isInternal
     };
@@ -279,6 +279,28 @@ export class Element extends EventTarget {
     ac.play();
   }
 
+  setRotate(rotate: number, center = this.getCenter()) {
+    // 计算当前中心相对于旋转中心的偏移
+    const currentCenter = this.getCenter();
+    const dx = currentCenter.centerX - center.centerX;
+    const dy = currentCenter.centerY - center.centerY;
+
+    // 计算旋转后的新偏移（不要加回center坐标）
+    const rad = (rotate * Math.PI) / 180;
+    const newDx = dx * Math.cos(rad) - dy * Math.sin(rad);
+    const newDy = dx * Math.sin(rad) + dy * Math.cos(rad);
+
+    // 计算位置变化量
+    const deltaX = newDx - dx;
+    const deltaY = newDy - dy;
+
+    this.x += deltaX;
+    this.y += deltaY;
+
+    // 更新旋转角度（累积）
+    this.rotate = (this.rotate || 0) + rotate;
+  }
+
   appendChild(child: Element) {
     if (!this.children) {
       this.children = [];
@@ -336,10 +358,10 @@ export class Element extends EventTarget {
       });
       const rect = rects.reduce(
         (prev, next) =>
-        ({
-          width: Math.max(prev.width, next.width),
-          height: Math.max(prev.height, next.height)
-        } as Size),
+          ({
+            width: Math.max(prev.width, next.width),
+            height: Math.max(prev.height, next.height)
+          } as Size),
         new Size(this.width, this.height)
       );
       //允许子元素突破自己的尺寸
@@ -387,9 +409,9 @@ export class Element extends EventTarget {
       this.root.ctx.translate(this.translateX, this.translateY);
     }
     if (this.rotate) {
-      const centerCenter = this.getCenter()
+      const centerCenter = this.getCenter();
       this.root.ctx.translate(centerCenter.centerX, centerCenter.centerY);
-      this.root.ctx.rotate(this.rotate * (Math.PI / 180));
+      this.root.ctx.rotate((this.rotate * Math.PI) / 180);
       this.root.ctx.translate(-centerCenter.centerX, -centerCenter.centerY);
     }
     if (this.backgroundColor) {
@@ -511,14 +533,14 @@ export class Element extends EventTarget {
   }
 
   getCenter() {
-    const localCtx = this.provideLocalCtx();
     const size = this.size;
+    const localCtx = this.provideLocalCtx();
     const point = this.getWordPoint();
     const selfPoint = this.getLocalPoint(point);
     return {
-      centerX: (localCtx.centerOffsetX ?? 0) + localCtx.translateX + selfPoint.x + size.width / 2,
-      centerY: (localCtx.centerOffsetY ?? 0) + localCtx.translateY + selfPoint.y + size.height / 2,
-    }
+      centerX: localCtx.translateX + selfPoint.x + size.width / 2,
+      centerY: localCtx.translateY + selfPoint.y + size.height / 2
+    };
   }
 
   hasInView() {

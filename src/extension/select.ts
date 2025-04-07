@@ -15,6 +15,7 @@ export class Select extends Element {
   selectElements: Element[] = [];
   selectBody: Element;
   bodyControl: Element;
+  lastRotate = 0;
 
   constructor() {
     super({
@@ -96,6 +97,7 @@ export class Select extends Element {
 
     const pointerdown = (e: UserCanvasEvent) => {
       this.selectElements = [];
+      this.lastRotate = 0;
       this.selectBody.children = [];
       const selects = new Set<Element>();
       e.stopPropagation();
@@ -157,6 +159,12 @@ export class Select extends Element {
             this.selectBody.children = [this.bodyControl];
           }
           this.selectBody.overflow = els.length ? "visible" : "hidden";
+          // this.selectElements.forEach((element) => {
+          //   element.setOption({
+          //     centerOffsetX: 0,
+          //     centerOffsetY: 0
+          //   });
+          // });
           this.selectElements = els;
           this.root.render();
           this.root.removeEventListener("pointermove", pointermove);
@@ -197,11 +205,11 @@ function ControlEl(option: ElementOptions) {
       const select = el.root.getElementByKey("select") as Select;
       const selectPoint = select.getLocalPoint(select.getWordPoint());
       const selectSelect = select.selectElements.map((v) => ({
-        element: v,
-        rotate: v.rotate,
-        center: v.getCenter(),
-        centerOffsetX: (v.centerOffsetX ?? 0),
-        centerOffsetY: (v.centerOffsetY ?? 0)
+        element: v
+        // rotate: v.rotate,
+        // center: v.getCenter(),
+        // centerOffsetX: v.centerOffsetX ?? 0,
+        // centerOffsetY: v.centerOffsetY ?? 0
       }));
       el.addEventListener("pointermove", pointermove);
       el.addEventListener(
@@ -211,26 +219,23 @@ function ControlEl(option: ElementOptions) {
           once: true
         }
       );
-      const selectCenter = select.getCenter()
+      const selectCenter = select.getCenter();
       function pointermove(e: UserCanvasEvent) {
         const dx = e.detail.x - selectPoint.x - select.size.width / 2;
         const dy = e.detail.y - selectPoint.y;
-        let angle = Math.atan2(dy, dx) + Math.PI / 2;
-        angle = angle % (2 * Math.PI);
-        if (angle < 0) {
-          angle += 2 * Math.PI;
-        }
-        console.log(select.root.ctx.getTransform());
-        selectSelect.forEach(({ center, element, rotate, centerOffsetX, centerOffsetY }) => {
-          element.setOption({
-            centerOffsetX: selectCenter.centerX - center.centerX + centerOffsetX,
-            centerOffsetY: selectCenter.centerY - center.centerY + centerOffsetY,
-            rotate: rotate + (angle * 180) / Math.PI
-          });
-        });
-        select.setOption({
-          rotate: (angle * 180) / Math.PI
-        });
+        const angle = (Math.atan2(dy, dx) + Math.PI / 2) % (2 * Math.PI);
+        const rotate = (angle * 180) / Math.PI;
+        selectSelect.forEach(
+          ({
+            //  center,
+            element
+            // centerOffsetX, centerOffsetY
+          }) => {
+            element.setRotate(rotate - select.lastRotate, selectCenter);
+          }
+        );
+        select.setRotate(rotate - select.lastRotate, selectCenter);
+        select.lastRotate = rotate;
         el.root.render();
       }
     });
