@@ -56,6 +56,7 @@ const root = Root({
       height: 80,
       backgroundColor: "yellow",
       key: "333d",
+      // cursor: "move",
       children: [
         Element({
           width: 30,

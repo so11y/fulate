@@ -100,8 +100,8 @@ export class Root extends Element {
           break;
         }
       }
-      if (isCursor) {
-        this.el.style.cursor = isCursor.cursor!;
+      if (isCursor && isCursor.cursor) {
+        this.el.style.cursor = isCursor.cursor;
       } else {
         this.el.style.cursor = "default";
       }

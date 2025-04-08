@@ -173,9 +173,6 @@ export class Element extends EventTarget {
     }
     const parentLocalCtx = (this.parent || this.root)._provideLocalCtx;
 
-    // const centerOffsetX = this.centerOffsetX ?? parentLocalCtx.centerOffsetX;
-    // const centerOffsetY = this.centerOffsetY ?? parentLocalCtx.centerOffsetY;
-
     this._provideLocalCtx = {
       scrollEl: parentLocalCtx.scrollEl,
       overflowHideEl:
@@ -190,15 +187,12 @@ export class Element extends EventTarget {
       translateY: this.translateY
         ? this.translateY + parentLocalCtx.translateY
         : parentLocalCtx.translateY,
-      // ? this.rotate + parentLocalCtx.rotate
-      // : parentLocalCtx.rotate,
-      // centerOffsetX,
-      // centerOffsetY,
-      // rotateCenterX: parentLocalCtx.ro
+      rotate: this.rotate
+        ? this.rotate + parentLocalCtx.rotate
+        : parentLocalCtx.rotate,
       isInternal: this.isInternal || parentLocalCtx.isInternal,
       center:
-        this._provideLocalCtx.center ?? this.parent?._provideLocalCtx.center,
-      rotate: this.rotate
+        this._provideLocalCtx.center ?? this.parent?._provideLocalCtx.center
     };
     return this._provideLocalCtx;
   }
@@ -282,7 +276,7 @@ export class Element extends EventTarget {
     ac.play();
   }
 
-  setRotate(rotate: number, center = this.getCenter()) {
+  setRotate(rotate: number, center = this.getCenter(), isChild = false) {
     // 计算当前中心相对于旋转中心的偏移
     const currentCenter = this.getCenter();
     const dx = currentCenter.centerX - center.centerX;
@@ -296,16 +290,25 @@ export class Element extends EventTarget {
     // 计算位置变化量
     const deltaX = newDx - dx;
     const deltaY = newDy - dy;
-    this.x += deltaX;
-    this.y += deltaY;
 
-    // 更新旋转角度（累积）
-    this.rotate = (this.rotate || 0) + rotate;
-    this._provideLocalCtx.center = {
-      x: center.centerX,
-      y: center.centerY
-    };
-    // this.children?.forEach((child) => child.setRotate(rotate, center));
+    if (isChild) {
+      if (!this._provideLocalCtx.center) {
+        this._provideLocalCtx.center = {
+          x: 0,
+          y: 0
+        };
+      }
+      this._provideLocalCtx.center = {
+        x: deltaX + this._provideLocalCtx.center.x,
+        y: deltaY + this._provideLocalCtx.center.y
+      };
+    } else {
+      this.x += deltaX;
+      this.y += deltaY;
+      this.rotate = (this.rotate || 0) + rotate;
+    }
+
+    this.children?.forEach((child) => child.setRotate(rotate, center, true));
   }
 
   appendChild(child: Element) {
@@ -507,37 +510,18 @@ export class Element extends EventTarget {
 
   hasPointHint(x: number, y: number) {
     const localMatrix = this.provideLocalCtx();
-    if (localMatrix.rotate || localMatrix.center) {
-      //TODO  如果子元素的旋转是由父级控制的，那么在判断鼠标点击是否在子元素范围内时，需要考虑父级的旋转对子元素的影响
+    if (localMatrix.rotate) {
       const size = this.size;
-      // const point = this.getWordPoint();
-      // const selfPoint = this.getLocalPoint(point);
-
-      let { centerX, centerY } = this.getCenter();
-
-      // if (localMatrix.center) {
-      //   const dx = centerX - localMatrix.center.x;
-      //   const dy = centerY - localMatrix.center.y;
-
-      //   // 计算旋转后的新偏移（不要加回center坐标）
-      //   const rad = (localMatrix.rotate * Math.PI) / 180;
-      //   const newDx = dx * Math.cos(rad) - dy * Math.sin(rad);
-      //   const newDy = dx * Math.sin(rad) + dy * Math.cos(rad);
-
-      //   // 计算位置变化量
-      //   const deltaX = newDx - dx;
-      //   const deltaY = newDy - dy;
-      //   centerX -= deltaX;
-      //   centerY -= deltaY;
-      // }
-
+      const childCenter = this.getCenter();
       // 将鼠标坐标平移到旋转中心
-      let translatedX = x - centerX;
-      let translatedY = y - centerY;
+      const translate = {
+        x: x - childCenter.centerX,
+        y: y - childCenter.centerY
+      };
 
       if (localMatrix.center) {
-        translatedX = x - localMatrix.center.x;
-        translatedY = y - localMatrix.center.y;
+        translate.x = translate.x - localMatrix.center.x;
+        translate.y = translate.y - localMatrix.center.y;
       }
 
       // 计算旋转角度（弧度）
@@ -546,8 +530,8 @@ export class Element extends EventTarget {
       // 反向旋转坐标
       const cos = Math.cos(-radians); // 反向旋转
       const sin = Math.sin(-radians); // 反向旋转
-      const localX = translatedX * cos - translatedY * sin;
-      const localY = translatedX * sin + translatedY * cos;
+      const localX = translate.x * cos - translate.y * sin;
+      const localY = translate.x * sin + translate.y * cos;
 
       // 判断坐标是否在矩形范围内
       return (
@@ -577,17 +561,17 @@ export class Element extends EventTarget {
   hasInView() {
     const localMatrix = this.provideLocalCtx();
     const scrollEl = localMatrix.scrollEl as Scroll;
-    if (scrollEl) {
-      const boxBound = quickAABB(this);
-      const scrollBox = scrollEl.getBoundingBox();
-      const inX =
-        boxBound.x < scrollBox.x + scrollBox.width &&
-        boxBound.x + boxBound.width > scrollBox.x;
-      const inY =
-        boxBound.y < scrollBox.y + scrollBox.height &&
-        boxBound.y + boxBound.height > scrollBox.y;
-      return inX && inY;
-    }
+    // if (scrollEl) {
+    //   const boxBound = quickAABB(this);
+    //   const scrollBox = scrollEl.getBoundingBox();
+    //   const inX =
+    //     boxBound.x < scrollBox.x + scrollBox.width &&
+    //     boxBound.x + boxBound.width > scrollBox.x;
+    //   const inY =
+    //     boxBound.y < scrollBox.y + scrollBox.height &&
+    //     boxBound.y + boxBound.height > scrollBox.y;
+    //   return inX && inY;
+    // }
     return true;
   }
 
