@@ -10,6 +10,7 @@ import {
   //  calcRotateCorners, quickAABB
 } from "./utils/calc";
 import { linkEl } from "./utils/helper";
+import { MatrixBase } from "./utils/matrixBase";
 
 export interface Point {
   x: number;
@@ -57,7 +58,7 @@ export interface ElementOptions {
   flexBasis?: number;
 }
 
-export class Element extends EventTarget {
+export class Element extends MatrixBase {
   eventManage = new EventManage(this);
   root: Root;
   isDirty: boolean = true;
@@ -107,13 +108,6 @@ export class Element extends EventTarget {
   //主动代码new出来的才是false
   isInternal: boolean = false;
   declare size: Size;
-  matrixState = {
-    layout: {
-      x: 0,
-      y: 0
-    },
-    matrix: new DOMMatrix()
-  };
 
   constructor(option?: ElementOptions) {
     super();
@@ -165,15 +159,6 @@ export class Element extends EventTarget {
           }
         : this.padding;
     }
-  }
-
-  getWordPoint(): Point {
-    const localPoint = new DOMPoint(this.margin.left, this.margin.top);
-    const globalPoint = localPoint.matrixTransform(this.matrixState.matrix);
-    return {
-      x: globalPoint.x,
-      y: globalPoint.y
-    };
   }
 
   getLocalPoint(): Point {
@@ -266,7 +251,6 @@ export class Element extends EventTarget {
   setRotate(rotate: number, center = this.getLocalCenter()) {
     this.rotate = rotate;
     this.rotateCenter = center;
-    // this.setAttributes({ rotate, x: center.x, y: center.y });
   }
 
   appendChild(child: Element) {
@@ -335,7 +319,7 @@ export class Element extends EventTarget {
         newMatrix.preMultiplySelf(this.parent.matrixState.matrix);
       }
       if (this.rotate) {
-        const center = this.rotateCenter ?? this.getLocalCenter();
+        const center = this.rotateCenter ?? this.getCenter();
         newMatrix
           .translateSelf(center.x, center.y)
           .rotateSelf(0, 0, this.rotate)
@@ -363,6 +347,7 @@ export class Element extends EventTarget {
       this.matrixState.matrix.e,
       this.matrixState.matrix.f
     );
+
     this.root.ctx.beginPath();
 
     if (this.backgroundColor) {
@@ -388,12 +373,12 @@ export class Element extends EventTarget {
     this.root.ctx.restore();
   }
 
-  getPaddingPoint(p: Point) {
-    return {
-      x: p.x + this.padding.left,
-      y: p.y + this.padding.top
-    };
-  }
+  // getPaddingPoint(p: Point) {
+  //   return {
+  //     x: p.x + this.padding.left,
+  //     y: p.y + this.padding.top
+  //   };
+  // }
 
   mounted() {
     if (this.children?.length) {
@@ -490,25 +475,11 @@ export class Element extends EventTarget {
     };
   }
 
-  globalToLocal(x: number, y: number) {
-    const inverseMatrix = this.matrixState.matrix.inverse();
-    const point = new DOMPoint(x, y);
-    const localPoint = point.matrixTransform(inverseMatrix);
-    return { x: localPoint.x, y: localPoint.y };
-  }
-
   setTransform(x: number, y: number) {
     if (x === 0 && y === 0) return;
     this.x += x;
     this.y += y;
     // this.matrixState.matrix.translateSelf(x, y);
-  }
-
-  getCurrentAngle() {
-    return (
-      Math.atan2(this.matrixState.matrix.b, this.matrixState.matrix.a) *
-      (180 / Math.PI)
-    );
   }
 
   extendsMatrix(parentMatrix: Element["matrixState"]) {
