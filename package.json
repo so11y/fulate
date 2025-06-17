@@ -6,5 +6,8 @@
     "ac": "https://github.com/so11y/ac.git",
     "lodash-es": "^4.17.21",
     "vite": "^6.0.7"
+  },
+  "dependencies": {
+    "sprite-flex-layout": "^1.0.7"
   }
 }

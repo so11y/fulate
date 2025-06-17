@@ -16,57 +16,57 @@ export function CalcAABB(el: Element) {
   );
 }
 
-export function quickAABB(el: Element) {
-  const localMatrix = el.provideLocalCtx();
-  const point = el.getWordPoint();
-  const selfPoint = el.getLocalPoint(point);
-  const x = selfPoint.x + localMatrix.translateX;
-  const y = selfPoint.y + localMatrix.translateY;
-  const size = el.size;
-  return {
-    x,
-    y,
-    width: size.width, //x + size.width,
-    height: size.height // y + size.height
-  };
-}
+// export function quickAABB(el: Element) {
+//   const localMatrix = el.provideLocalCtx();
+//   const point = el.getWordPoint();
+//   const selfPoint = el.getLocalPoint(point);
+//   const x = selfPoint.x + localMatrix.translateX;
+//   const y = selfPoint.y + localMatrix.translateY;
+//   const size = el.size;
+//   return {
+//     x,
+//     y,
+//     width: size.width, //x + size.width,
+//     height: size.height // y + size.height
+//   };
+// }
 
 //计算旋转后的四个角坐标
-export function calcRotateCorners(el: Element) {
-  const size = el.size;
-  // const localMatrix = el.provideLocalCtx();
-  const point = el.getWordPoint();
-  const selfPoint = el.getLocalPoint(point);
-  const { centerX, centerY } = el.getCenter();
-  // 计算旋转中心（元素的中心点）
-  // const centerX = selfPoint.x + localMatrix.translateX + size.width / 2;
-  // const centerY = selfPoint.y + localMatrix.translateY + size.height / 2;
-  // 将角度转换为弧度
-  const radians = (el.rotate * Math.PI) / 180;
+// export function calcRotateCorners(el: Element) {
+//   const size = el.size;
+//   // const localMatrix = el.provideLocalCtx();
+//   const point = el.getWordPoint();
+//   const selfPoint = el.getLocalPoint(point);
+//   const { centerX, centerY } = el.getCenter();
+//   // 计算旋转中心（元素的中心点）
+//   // const centerX = selfPoint.x + localMatrix.translateX + size.width / 2;
+//   // const centerY = selfPoint.y + localMatrix.translateY + size.height / 2;
+//   // 将角度转换为弧度
+//   const radians = (el.rotate * Math.PI) / 180;
 
-  // 计算旋转角度的余弦和正弦
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
+//   // 计算旋转角度的余弦和正弦
+//   const cos = Math.cos(radians);
+//   const sin = Math.sin(radians);
 
-  // 未旋转时的四个角坐标
-  const corners = [
-    { x: selfPoint.x, y: selfPoint.y }, // 左上角
-    { x: selfPoint.x + size.width, y: selfPoint.y }, // 右上角
-    { x: selfPoint.x + size.width, y: selfPoint.y + size.height }, // 右下角
-    { x: selfPoint.x, y: selfPoint.y + size.height } // 左下角
-  ];
+//   // 未旋转时的四个角坐标
+//   const corners = [
+//     { x: selfPoint.x, y: selfPoint.y }, // 左上角
+//     { x: selfPoint.x + size.width, y: selfPoint.y }, // 右上角
+//     { x: selfPoint.x + size.width, y: selfPoint.y + size.height }, // 右下角
+//     { x: selfPoint.x, y: selfPoint.y + size.height } // 左下角
+//   ];
 
-  // 计算旋转后的四个角坐标
-  return corners.map((corner) => {
-    const translatedX = corner.x - centerX;
-    const translatedY = corner.y - centerY;
+//   // 计算旋转后的四个角坐标
+//   return corners.map((corner) => {
+//     const translatedX = corner.x - centerX;
+//     const translatedY = corner.y - centerY;
 
-    const rotatedX = centerX + translatedX * cos - translatedY * sin;
-    const rotatedY = centerY + translatedX * sin + translatedY * cos;
+//     const rotatedX = centerX + translatedX * cos - translatedY * sin;
+//     const rotatedY = centerY + translatedX * sin + translatedY * cos;
 
-    return { x: rotatedX, y: rotatedY };
-  });
-}
+//     return { x: rotatedX, y: rotatedY };
+//   });
+// }
 
 //检查是否重叠，相邻
 export function isOverlap(rect1: Rect, rect2: Rect) {

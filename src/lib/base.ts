@@ -4,8 +4,11 @@ import { AnimationController, AnimationType, Tween } from "ac";
 import { omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
-import { CalcAABB, calcRotateCorners, quickAABB } from "./utils/calc";
-import { Scroll } from "./scroll/scroll";
+import { JustifyContent, AlignItems } from "./types/flex";
+import {
+  CalcAABB
+  //  calcRotateCorners, quickAABB
+} from "./utils/calc";
 import { linkEl } from "./utils/helper";
 
 export interface Point {
@@ -50,19 +53,20 @@ export interface ElementOptions {
   margin?: [top: number, right: number, bottom: number, left: number];
   padding?: [top: number, right: number, bottom: number, left: number];
   cursor?: string;
+  flexGrow?: number;
+  flexBasis?: number;
 }
 
 export class Element extends EventTarget {
   eventManage = new EventManage(this);
   root: Root;
-  isDirty: boolean = false;
+  isDirty: boolean = true;
   type = "element";
   x = 0;
   y = 0;
   radius: number | [number, number, number, number] = 0;
-  translateX = 0;
-  translateY = 0;
   rotate = 0;
+  rotateCenter: undefined | Point;
   margin = {
     top: 0,
     right: 0,
@@ -76,6 +80,12 @@ export class Element extends EventTarget {
     left: 0
   };
   display: "block" | "inline" = "block";
+  // justifyContent?: JustifyContent;
+  // alignItems?: AlignItems;
+  // flexDirection?: "row" | "column";
+  flexGrow?: number;
+  // flexShrink: number = 0;
+  flexBasis?: number;
   width?: number;
   height?: number;
   key?: string;
@@ -83,8 +93,6 @@ export class Element extends EventTarget {
   maxHeight?: number;
   minWidth?: number;
   minHeight?: number;
-  // centerOffsetX?: number;
-  // centerOffsetY?: number;
   backgroundColor?: string;
   overflow: "hidden" | "visible" = "visible";
   children?: Element[];
@@ -98,20 +106,13 @@ export class Element extends EventTarget {
   //所以这些组件不算是真实的，将会被标记true
   //主动代码new出来的才是false
   isInternal: boolean = false;
-  declare parentOrSiblingPoint: Point;
   declare size: Size;
-  // _DOMMatrix: DOMMatrix;
-  _provideLocalCtx = {
-    translateX: 0,
-    translateY: 0,
-    rotate: 0,
-    overflowHideEl: undefined as Element | undefined,
-    scrollEl: undefined as Element | undefined,
-    backgroundColorEl: undefined as Element | undefined,
-    isInternal: false,
-    center: undefined as Point | undefined
-    // centerOffsetX: undefined as number | undefined,
-    // centerOffsetY: undefined as number | undefined
+  matrixState = {
+    layout: {
+      x: 0,
+      y: 0
+    },
+    matrix: new DOMMatrix()
   };
 
   constructor(option?: ElementOptions) {
@@ -139,12 +140,11 @@ export class Element extends EventTarget {
       this.display = option.display ?? this.display;
       this.radius = option.radius ?? this.radius;
       this.overflow = option.overflow ?? this.overflow;
-      this.translateX = option.translateX ?? this.translateX;
-      this.translateY = option.translateY ?? this.translateY;
       this.rotate = option.rotate ?? this.rotate;
-      // this.centerOffsetX = option.centerOffsetX ?? this.centerOffsetX;
-      // this.centerOffsetY = option.centerOffsetY ?? this.centerOffsetY;
       this.cursor = option.cursor ?? this.cursor;
+
+      this.flexGrow = option.flexGrow ?? this.flexGrow;
+      this.flexBasis = option.flexBasis ?? this.flexBasis;
       // this.position = option.position ?? "static";
 
       this.margin = option.margin
@@ -167,47 +167,38 @@ export class Element extends EventTarget {
     }
   }
 
-  provideLocalCtx(reset = true) {
-    if (this._provideLocalCtx && reset !== true) {
-      return this._provideLocalCtx;
-    }
-    const parentLocalCtx = (this.parent || this.root)._provideLocalCtx;
-
-    this._provideLocalCtx = {
-      scrollEl: parentLocalCtx.scrollEl,
-      overflowHideEl:
-        parentLocalCtx.overflowHideEl ??
-        (this.overflow === "hidden" ? this : undefined),
-      backgroundColorEl: this.backgroundColor
-        ? this
-        : parentLocalCtx.backgroundColorEl,
-      translateX: this.translateX
-        ? this.translateX + parentLocalCtx.translateX
-        : parentLocalCtx.translateX,
-      translateY: this.translateY
-        ? this.translateY + parentLocalCtx.translateY
-        : parentLocalCtx.translateY,
-      rotate: this.rotate
-        ? this.rotate + parentLocalCtx.rotate
-        : parentLocalCtx.rotate,
-      isInternal: this.isInternal || parentLocalCtx.isInternal,
-      center:
-        this._provideLocalCtx.center ?? this.parent?._provideLocalCtx.center
-    };
-    return this._provideLocalCtx;
-  }
-
-  getWordPoint(parentPoint = this.parentOrSiblingPoint!): Point {
+  getWordPoint(): Point {
+    const localPoint = new DOMPoint(this.margin.left, this.margin.top);
+    const globalPoint = localPoint.matrixTransform(this.matrixState.matrix);
     return {
-      x: parentPoint.x + this.margin.left,
-      y: parentPoint.y
+      x: globalPoint.x,
+      y: globalPoint.y
     };
   }
 
-  getLocalPoint(point?: Point): Point {
+  getLocalPoint(): Point {
+    const { x, y } = this.matrixState.layout;
     return {
-      x: this.x + (point?.x ?? 0),
-      y: this.y + (point?.y ?? 0) + this.margin.top
+      x: this.x + this.margin.left + x,
+      y: this.y + this.margin.top + y
+    };
+  }
+
+  getOutlieSize() {
+    const size = this.size;
+    return {
+      width:
+        size.width +
+        this.margin.left +
+        this.margin.right +
+        this.padding.left +
+        this.padding.right,
+      height:
+        size.height +
+        this.margin.top +
+        this.margin.bottom +
+        this.padding.top +
+        this.padding.bottom
     };
   }
 
@@ -223,92 +214,59 @@ export class Element extends EventTarget {
   }
 
   setAttributes<T extends ElementOptions>(attrs?: T) {
-    if (!attrs) {
-      if (this.root.useDirtyRect && this.root.dirtyDebugRoot) {
-        this.root.dirtys.add(this);
-        this.root.dirtyRender();
-      }
-      return;
-    }
-    const target = this;
-    const notAnimateKeys = omit(attrs, NUMBER_KEY);
-    this.setOption(notAnimateKeys);
-    const isLayout = Object.keys(pick(attrs, NEED_LAYOUT_KYE)).length;
-    const numberKeys = pick(attrs, NUMBER_KEY);
-    const acKeys = Object.keys(numberKeys);
-
-    const notAnimateAndNotLayout = !acKeys.length && !isLayout;
-
-    if (this.root.useDirtyRect && notAnimateAndNotLayout) {
-      this.root.dirtys.add(this);
-      this.root.dirtyRender();
-      return;
-    }
-    if (notAnimateAndNotLayout) {
-      this.root.render();
-      return;
-    }
-
-    const size = this.size;
-    const selfStart = {
-      x: target.x,
-      y: target.y,
-      width: size.width,
-      height: size.height,
-      rotate: target.rotate
-    };
-    const ac = this.ac || this.root.ac;
-    const tween = new Tween(pick(selfStart, acKeys), numberKeys)
-      .animate(ac)
-      .builder((value) => {
-        this.setOption(value);
-        if (isLayout || !this.root.useDirtyRect) {
-          this.root.render();
-        } else {
-          this.root.dirtys.add(this);
-          this.root.dirtyRender();
-        }
-      });
-
-    ac.addEventListener(AnimationType.END, () => tween.destroy(), {
-      once: true
-    });
-    ac.play();
+    // if (!attrs) {
+    //   if (this.root.useDirtyRect && this.root.dirtyDebugRoot) {
+    //     this.root.dirtys.add(this);
+    //     this.root.dirtyRender();
+    //   }
+    //   return;
+    // }
+    // const target = this;
+    // const notAnimateKeys = omit(attrs, NUMBER_KEY);
+    // this.setOption(notAnimateKeys);
+    // const isLayout = Object.keys(pick(attrs, NEED_LAYOUT_KYE)).length;
+    // const numberKeys = pick(attrs, NUMBER_KEY);
+    // const acKeys = Object.keys(numberKeys);
+    // const notAnimateAndNotLayout = !acKeys.length && !isLayout;
+    // // if (this.root.useDirtyRect && notAnimateAndNotLayout) {
+    // //   this.root.dirtys.add(this);
+    // //   // this.root.dirtyRender();
+    // //   return;
+    // // }
+    // if (notAnimateAndNotLayout) {
+    //   this.root.render();
+    //   return;
+    // }
+    // const size = this.size;
+    // const selfStart = {
+    //   x: target.x,
+    //   y: target.y,
+    //   width: size.width,
+    //   height: size.height,
+    //   rotate: target.rotate
+    // };
+    // const ac = this.ac || this.root.ac;
+    // const tween = new Tween(pick(selfStart, acKeys), numberKeys)
+    //   .animate(ac)
+    //   .builder((value) => {
+    //     this.setOption(value);
+    //     if (isLayout || !this.root.useDirtyRect) {
+    //       this.root.render();
+    //     } else {
+    //       this.root.dirtys.add(this);
+    //       this.root.dirtyRender();
+    //     }
+    //   });
+    // ac.addEventListener(AnimationType.END, () => tween.destroy(), {
+    //   once: true
+    // });
+    // ac.play();
   }
 
-  setRotate(rotate: number, center = this.getCenter(), isChild = false) {
-    // 计算当前中心相对于旋转中心的偏移
-    const currentCenter = this.getCenter();
-    const dx = currentCenter.centerX - center.centerX;
-    const dy = currentCenter.centerY - center.centerY;
-
-    // 计算旋转后的新偏移（不要加回center坐标）
-    const rad = (rotate * Math.PI) / 180;
-    const newDx = dx * Math.cos(rad) - dy * Math.sin(rad);
-    const newDy = dx * Math.sin(rad) + dy * Math.cos(rad);
-
-    // 计算位置变化量
-    const deltaX = newDx - dx;
-    const deltaY = newDy - dy;
-
-    if (isChild) {
-      if (!this._provideLocalCtx.center) {
-        this._provideLocalCtx.center = {
-          x: 0,
-          y: 0
-        };
-      }
-      this._provideLocalCtx.center = {
-        x: deltaX + this._provideLocalCtx.center.x,
-        y: deltaY + this._provideLocalCtx.center.y
-      };
-    } else {
-      this.x += deltaX;
-      this.y += deltaY;
-      this.rotate = (this.rotate || 0) + rotate;
-    }
-
-    this.children?.forEach((child) => child.setRotate(rotate, center, true));
+  setRotate(rotate: number, center = this.getLocalCenter()) {
+    this.rotate = rotate;
+    this.rotateCenter = center;
+    // this.setAttributes({ rotate, x: center.x, y: center.y });
   }
 
   appendChild(child: Element) {
@@ -317,7 +275,7 @@ export class Element extends EventTarget {
     }
     linkEl(child, this);
     this.children.push(child);
-    this.root.render();
+    this.root.draw();
     child.mounted();
   }
 
@@ -327,122 +285,96 @@ export class Element extends EventTarget {
     }
     child.unmounted();
     this.children = this.children.filter((c) => c !== child);
-    this.root.render();
+    this.root.draw();
   }
 
   clearDirty() {
     if (this.isDirty) {
-      const selfPoint = this.getLocalPoint(this.getWordPoint());
-      const rect = this.size;
-      const localCtx = this.provideLocalCtx();
       this.isDirty = false;
-      this.root.ctx.save();
-      this.root.ctx.clearRect(
-        selfPoint.x + localCtx.translateX,
-        selfPoint.y + localCtx.translateY,
-        rect.width,
-        rect.height
-      );
-      const backgroundColorEl =
-        this.parent?.provideLocalCtx().backgroundColorEl;
-      if (backgroundColorEl?.backgroundColor) {
-        this.root.ctx.fillStyle = backgroundColorEl?.backgroundColor;
-        this.root.ctx.fillRect(
-          selfPoint.x + localCtx.translateX,
-          selfPoint.y + localCtx.translateY,
-          rect.width,
-          rect.height
-        );
-      }
-      this.root.ctx.restore();
+    }
+  }
+
+  dirtyCache<T>(callback: (...arg: any[]) => T): T | undefined {
+    if (this.isDirty || this.root.isDirty) {
+      return callback();
     }
   }
 
   layout(constraint: Constraint, isBreak = false): Size {
-    const selfConstraint = constraint.extend(this);
-    const childConstraint = selfConstraint.getChildConstraint(this);
-    if (this.children?.length) {
-      const rects = this.children!.map((child) => {
-        linkEl(child, this);
-        return child.layout(childConstraint);
-      });
-      const rect = rects.reduce(
-        (prev, next) =>
-          ({
-            width: Math.max(prev.width, next.width),
-            height: Math.max(prev.height, next.height)
-          } as Size),
-        new Size(this.width, this.height)
-      );
-      //允许子元素突破自己的尺寸
-      this.size = isBreak ? rect : selfConstraint.compareSize(rect, this);
-    } else {
-      this.size = selfConstraint.compareSize(this, this);
-    }
+    this.dirtyCache(() => {
+      const selfConstraint = constraint.extend(this);
+      const childConstraint = selfConstraint.getChildConstraint(this);
+      if (this.children?.length) {
+        const rects = this.children!.map((child) => {
+          linkEl(child, this);
+          return child.layout(childConstraint);
+        });
+        const rect = rects.reduce(
+          (prev, next) =>
+            ({
+              width: Math.max(prev.width, next.width),
+              height: Math.max(prev.height, next.height)
+            } as Size),
+          new Size(this.width, this.height)
+        );
+        //允许子元素突破自己的尺寸
+        this.size = isBreak ? rect : selfConstraint.compareSize(rect, this);
+      } else {
+        this.size = selfConstraint.compareSize(this, this);
+      }
+    });
     return CalcAABB(this);
   }
 
-  render(parentPoint: Point = this.parentOrSiblingPoint) {
-    this.renderBefore(parentPoint);
-    const point = this.getWordPoint();
-    const selfPoint = this.getLocalPoint(point);
-    // this.clearDirty();
+  calcMatrix() {
+    this.dirtyCache(() => {
+      this.clearDirty();
+      const point = this.getLocalPoint();
+      const newMatrix = new DOMMatrix().translate(point.x, point.y);
+      if (this.parent) {
+        newMatrix.preMultiplySelf(this.parent.matrixState.matrix);
+      }
+      if (this.rotate) {
+        const center = this.rotateCenter ?? this.getLocalCenter();
+        newMatrix
+          .translateSelf(center.x, center.y)
+          .rotateSelf(0, 0, this.rotate)
+          .translateSelf(-center.x, -center.y);
+      }
+
+      this.matrixState.matrix = newMatrix;
+
+      if (this.children?.length) {
+        this.children.forEach((child) => child.calcMatrix());
+      }
+    });
+  }
+
+  draw() {
     this.root.ctx.save();
-    this.draw(selfPoint);
 
-    if (this.children?.length) {
-      let childPoint = this.getPaddingPoint(selfPoint);
-      this.children.forEach((child) => child.render(childPoint));
-    }
-    this.root.ctx.restore();
-
-    return point;
-  }
-
-  getPaddingPoint(p: Point) {
-    return {
-      x: p.x + this.padding.left,
-      y: p.y + this.padding.top
-    };
-  }
-
-  renderBefore(parentPoint: Point) {
-    this.parentOrSiblingPoint = parentPoint;
-    this.provideLocalCtx(true);
-    return this;
-  }
-
-  draw(point: Point) {
-    // this.root.ctx.save();
-    this.clearDirty();
     const size = this.size;
+
+    this.root.ctx.setTransform(
+      this.matrixState.matrix.a,
+      this.matrixState.matrix.b,
+      this.matrixState.matrix.c,
+      this.matrixState.matrix.d,
+      this.matrixState.matrix.e,
+      this.matrixState.matrix.f
+    );
     this.root.ctx.beginPath();
-    if (this.translateX || this.translateY) {
-      this.root.ctx.translate(this.translateX, this.translateY);
-    }
-    // const local = this.provideLocalCtx();
-    if (this.rotate) {
-      const centerCenter = this.getCenter();
-      // console.log(this, "---");
-      this.root.ctx.translate(centerCenter.centerX, centerCenter.centerY);
-      this.root.ctx.rotate((this.rotate * Math.PI) / 180);
-      this.root.ctx.translate(-centerCenter.centerX, -centerCenter.centerY);
-    }
 
     if (this.backgroundColor) {
       this.root.ctx.fillStyle = this.backgroundColor;
     }
+
     if (this.backgroundColor || this.overflow === "hidden") {
       // const roundRectPath = new Path2D();
       // roundRectPath.roundRect(50, 50, 200, 100, 20); // 圆角半径为 20
-      this.root.ctx.roundRect(
-        point.x,
-        point.y,
-        size.width,
-        size.height,
-        this.radius
-      );
+      this.root.ctx.roundRect(0, 0, size.width, size.height, this.radius);
     }
+
     if (this.backgroundColor) {
       this.root.ctx.fill();
     }
@@ -450,8 +382,17 @@ export class Element extends EventTarget {
     if (this.overflow === "hidden") {
       this.root.ctx.clip();
     }
-    // this.root.ctx.restore();
-    // this._DOMMatrix = this.root.ctx.getTransform()
+    if (this.children?.length) {
+      this.children.forEach((child) => child.draw());
+    }
+    this.root.ctx.restore();
+  }
+
+  getPaddingPoint(p: Point) {
+    return {
+      x: p.x + this.padding.left,
+      y: p.y + this.padding.top
+    };
   }
 
   mounted() {
@@ -462,8 +403,11 @@ export class Element extends EventTarget {
         child.mounted();
       }
     }
-    const provideLocalCtx = this.provideLocalCtx();
-    if (!this.isMounted && !provideLocalCtx.isInternal) {
+    // const provideLocalCtx = this.provideLocalCtx();
+    if (
+      !this.isMounted
+      // && !provideLocalCtx.isInternal
+    ) {
       if (this.key) {
         this.root.keyMap.set(this.key, this);
       }
@@ -483,84 +427,96 @@ export class Element extends EventTarget {
   }
 
   getBoundingBox() {
-    const localMatrix = this.provideLocalCtx();
-    if (!localMatrix.rotate) {
-      return quickAABB(this);
-    }
+    const { width, height } = this.size;
 
-    //计算旋转之后的包围盒
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    calcRotateCorners(this).forEach((corner) => {
-      if (corner.x < minX) minX = corner.x;
-      if (corner.y < minY) minY = corner.y;
-      if (corner.x > maxX) maxX = corner.x;
-      if (corner.y > maxY) maxY = corner.y;
+    const corners = [
+      new DOMPoint(0, 0), // 左上
+      new DOMPoint(width, 0), // 右上
+      new DOMPoint(width, height), // 右下
+      new DOMPoint(0, height) // 左下
+    ];
+
+    const globalCorners = corners.map((corner) =>
+      corner.matrixTransform(this.matrixState.matrix)
+    );
+
+    // 计算 min/max
+    let minX = Infinity,
+      minY = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity;
+
+    globalCorners.forEach(({ x, y }) => {
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
     });
 
     return {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY
+      x: minX, // 包围盒左上角 x
+      y: minY, // 包围盒左上角 y
+      width: maxX - minX, // 包围盒宽度
+      height: maxY - minY // 包围盒高度
     };
   }
 
   hasPointHint(x: number, y: number) {
-    const localMatrix = this.provideLocalCtx();
-    if (localMatrix.rotate) {
-      const size = this.size;
-      const childCenter = this.getCenter();
-      // 将鼠标坐标平移到旋转中心
-      const translate = {
-        x: x - childCenter.centerX,
-        y: y - childCenter.centerY
-      };
-
-      if (localMatrix.center) {
-        translate.x = translate.x - localMatrix.center.x;
-        translate.y = translate.y - localMatrix.center.y;
-      }
-
-      // 计算旋转角度（弧度）
-      const radians = (localMatrix.rotate * Math.PI) / 180;
-
-      // 反向旋转坐标
-      const cos = Math.cos(-radians); // 反向旋转
-      const sin = Math.sin(-radians); // 反向旋转
-      const localX = translate.x * cos - translate.y * sin;
-      const localY = translate.x * sin + translate.y * cos;
-
-      // 判断坐标是否在矩形范围内
-      return (
-        localX >= -size.width / 2 &&
-        localX <= size.width / 2 &&
-        localY >= -size.height / 2 &&
-        localY <= size.height / 2
-      );
-    }
-    const boxBound = quickAABB(this);
-    const inX = x >= boxBound.x && x <= boxBound.width + boxBound.x;
-    const inY = y >= boxBound.y && y <= boxBound.height + boxBound.y;
-    return inX && inY;
+    const local = this.globalToLocal(x, y);
+    const size = this.size;
+    return (
+      local.x >= 0 &&
+      local.x <= size.width &&
+      local.y >= 0 &&
+      local.y <= size.height
+    );
   }
 
-  getCenter() {
+  getLocalCenter() {
     const size = this.size;
-    const localCtx = this.provideLocalCtx();
-    const point = this.getWordPoint();
-    const selfPoint = this.getLocalPoint(point);
     return {
-      centerX: localCtx.translateX + selfPoint.x + size.width / 2,
-      centerY: localCtx.translateY + selfPoint.y + size.height / 2
+      x: size.width / 2,
+      y: size.height / 2
     };
   }
 
+  getCenter() {
+    const localCenter = this.getLocalCenter();
+    const point = new DOMPoint(localCenter.x, localCenter.y);
+    const transformedPoint = point.matrixTransform(this.matrixState.matrix);
+    return {
+      x: transformedPoint.x,
+      y: transformedPoint.y
+    };
+  }
+
+  globalToLocal(x: number, y: number) {
+    const inverseMatrix = this.matrixState.matrix.inverse();
+    const point = new DOMPoint(x, y);
+    const localPoint = point.matrixTransform(inverseMatrix);
+    return { x: localPoint.x, y: localPoint.y };
+  }
+
+  setTransform(x: number, y: number) {
+    if (x === 0 && y === 0) return;
+    this.x += x;
+    this.y += y;
+    // this.matrixState.matrix.translateSelf(x, y);
+  }
+
+  getCurrentAngle() {
+    return (
+      Math.atan2(this.matrixState.matrix.b, this.matrixState.matrix.a) *
+      (180 / Math.PI)
+    );
+  }
+
+  extendsMatrix(parentMatrix: Element["matrixState"]) {
+    this.matrixState.matrix.preMultiplySelf(parentMatrix.matrix);
+  }
+
   hasInView() {
-    const localMatrix = this.provideLocalCtx();
-    const scrollEl = localMatrix.scrollEl as Scroll;
+    // const scrollEl = localMatrix.scrollEl as Scroll;
     // if (scrollEl) {
     //   const boxBound = quickAABB(this);
     //   const scrollBox = scrollEl.getBoundingBox();

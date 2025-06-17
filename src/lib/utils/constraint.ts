@@ -1,4 +1,4 @@
-import { type Element } from "../base"
+import { type Element } from "../base";
 
 type ConstraintSize = Record<
   "minWidth" | "maxWidth" | "minHeight" | "maxHeight",
@@ -13,7 +13,7 @@ export class Constraint<T extends ConstraintSize = any> {
     public maxWidth: number,
     public minHeight: number,
     public maxHeight: number
-  ) { }
+  ) {}
 
   static from(
     minWidth: number,
@@ -68,21 +68,22 @@ export class Constraint<T extends ConstraintSize = any> {
 
   // 减去水平方向的宽度
   subHorizontal(maxWidth = 0) {
-    // this._subMinWidth(minWidth);
-    this._subMaxWidth(maxWidth);
-    // return this.clone();
-    return this;
+    const newConstraint = this.clone();
+    newConstraint._subMaxWidth(maxWidth);
+    return newConstraint;
   }
 
   // 减去垂直方向的高度
   subVertical(maxHeight = 0) {
-    // this._subMinHeight(minHeight);
-    this._subMaxHeight(maxHeight);
-    return this;
+    const newConstraint = this.clone();
+    newConstraint._subMaxHeight(maxHeight);
+    return newConstraint;
   }
 
   // 根据比例计算宽度
-  ratioWidth(flex: number, count: number) {
+  ratioWidth(flex: number | undefined, count: number, defaultWidth: number) {
+    if (flex === undefined)
+      return Constraint.from(0, defaultWidth, this.minHeight, this.maxHeight);
     return Constraint.from(
       this.minWidth,
       count === 0 ? 0 : Math.max((this.maxWidth / count) * flex, 0),
@@ -92,7 +93,9 @@ export class Constraint<T extends ConstraintSize = any> {
   }
 
   // 根据比例计算高度
-  ratioHeight(flex: number, count: number) {
+  ratioHeight(flex: number | undefined, count: number, defaultHeight: number) {
+    if (flex === undefined)
+      return Constraint.from(this.minWidth, this.maxWidth, 0, defaultHeight);
     return Constraint.from(
       this.minWidth,
       this.maxWidth,
@@ -121,18 +124,17 @@ export class Constraint<T extends ConstraintSize = any> {
       (v.width === Number.MAX_VALUE ? this.maxWidth : v.width ?? this.maxWidth);
     const k = {
       minWidth: v.minWidth ?? this.minWidth ?? 0,
-      maxWidth,
+      maxWidth: maxWidth, // Math.min(maxWidth, this.maxWidth),
       minHeight: v.minHeight ?? this.minHeight ?? 0,
-      maxHeight
+      maxHeight: maxHeight //Math.min(maxHeight, this.maxHeight)
     };
-    return Constraint.from(k.minWidth, k.maxWidth, k.minHeight, k.maxHeight)
+    return Constraint.from(k.minWidth, k.maxWidth, k.minHeight, k.maxHeight);
   }
 
   getChildConstraint(v: Element) {
-    const childConstraint = this.clone();
-    childConstraint.subHorizontal(v.padding.left + v.padding.right)
-    childConstraint.subVertical(v.padding.top + v.padding.bottom)
-    return childConstraint
+    return this.clone()
+      .subHorizontal(v.padding.left + v.padding.right)
+      .subVertical(v.padding.top + v.padding.bottom);
   }
 
   compareSize<G extends Partial<{ width: number; height: number }>>(
@@ -155,7 +157,10 @@ export class Constraint<T extends ConstraintSize = any> {
       );
     }
 
-    if ((v.width === undefined && e.display === "block") || v.width === Number.MAX_VALUE) {
+    if (
+      (v.width === undefined && e.display === "block") ||
+      v.width === Number.MAX_VALUE
+    ) {
       size.width = Math.max(this.minWidth, this.maxWidth);
     }
     //v.height === undefined ||
@@ -203,7 +208,7 @@ export class Size {
     this.height = height ?? 0;
   }
 
-  add<T extends { width?: number, height?: number }>(size: T) {
+  add<T extends { width?: number; height?: number }>(size: T) {
     return new Size(
       this.width + (size.width ?? 0),
       this.height + (size.height ?? 0)
