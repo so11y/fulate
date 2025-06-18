@@ -33,7 +33,7 @@ const root = Root({
       alignItems: "center",
       // padding: [0, 5, 0, 5],
       width: 130,
-      height: 180,
+      // height: 180,
       backgroundColor: "black",
       key: "333d",
       // rotate: 10,
@@ -46,21 +46,16 @@ const root = Root({
           rotate: 40
         }),
         // Element({
-        //   flexBasis: 30,
-        //   height: 40,
-        //   backgroundColor: "blue"
+        //   width: 100,
+        //   height: 30,
+        //   backgroundColor: "yellow"
         // }),
-        Element({
-          width: 100,
-          height: 30,
-          backgroundColor: "yellow"
-        }),
-        Text({
-          key: "xsd",
-          color: "white",
-          text: "可以点我的",
-          rotate: 10
-        }),
+        // Text({
+        //   key: "xsd",
+        //   color: "white",
+        //   text: "可以点我的",
+        //   rotate: 10
+        // }),
         Drag({
           child: CircleImg({
             src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
@@ -123,9 +118,9 @@ setInterval(() => {
 //   console.log(e.detail.target, "1");
 // });
 
-const junFei = root.getElementByKey<TextInterface>("xsd")!;
-junFei.addEventListener("click", (e) => {
-  junFei.setOption({
-    text: "好点"
-  });
-});
+// const junFei = root.getElementByKey<TextInterface>("xsd")!;
+// junFei.addEventListener("click", (e) => {
+//   junFei.setOption({
+//     text: "好点"
+//   });
+// });

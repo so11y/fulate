@@ -28,7 +28,6 @@ export class Drag extends Element implements DragOptions {
   mounted() {
     super.mounted();
     const el = this.proxyEl || this.children![0];
-
     const pointerdown = (e: UserCanvasEvent) => {
       e.stopPropagation();
       const selfPoint = {

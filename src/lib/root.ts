@@ -93,7 +93,9 @@ export class Root extends Element {
   render() {
     const point = this.getLocalPoint();
     this.layerManager.renderStart();
-    super.layout(Constraint.loose(this.width!, this.height!));
+    super.layout(
+      Constraint.loose(this.layerManager.width, this.layerManager.height!)
+    );
     super.calcMatrix();
     super.draw();
     this.layerManager.renderEnd();
