@@ -335,21 +335,13 @@ export class Element extends MatrixBase {
   }
 
   draw() {
-    const ctx = this.root.layerManager.getLayer(this.zIndex).getContext();
-    ctx.save();
-
+    const layer = this.root.layerManager.getLayer(this.zIndex);
+    const ctx = layer.getContext();
     const size = this.size;
 
-    ctx.setTransform(
-      this.matrixState.matrix.a,
-      this.matrixState.matrix.b,
-      this.matrixState.matrix.c,
-      this.matrixState.matrix.d,
-      this.matrixState.matrix.e,
-      this.matrixState.matrix.f
-    );
-
+    ctx.save();
     ctx.beginPath();
+    layer.applyMatrix(this.matrixState.matrix);
 
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;

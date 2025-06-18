@@ -30,6 +30,17 @@ export class Layer {
   destroy() {
     this.manager.getEl().removeChild(this.el);
   }
+
+  applyMatrix(matrix: DOMMatrix) {
+    this.ctx.setTransform(
+      matrix.a,
+      matrix.b,
+      matrix.c,
+      matrix.d,
+      matrix.e,
+      matrix.f
+    );
+  }
 }
 
 export class LayerManager {
