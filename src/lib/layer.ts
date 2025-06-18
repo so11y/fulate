@@ -23,7 +23,6 @@ export class Layer {
   clear() {
     if (this.isDirty) {
       this.ctx.clearRect(0, 0, this.manager.width, this.manager.height);
-      this.isDirty = false;
     }
   }
 
@@ -204,16 +203,24 @@ export class LayerManager {
     this.layers[layerIndex] = layer;
     this.layers.forEach((layer, index) => {
       if (layer) {
-        layer.el.style.zIndex = (index + 1).toString();
+        layer.el.style.zIndex = Math.max(1, index).toString();
       }
     });
     return layer;
   }
 
-  render() {
+  renderStart() {
     this.layers.forEach((layer) => {
       if (layer) {
         layer.clear();
+      }
+    });
+  }
+
+  renderEnd() {
+    this.layers.forEach((layer) => {
+      if (layer) {
+        layer.isDirty = false;
       }
     });
   }

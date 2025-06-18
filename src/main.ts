@@ -1,5 +1,9 @@
+import { text } from "stream/consumers";
 import {
+  CircleImg,
   Element,
+  Img,
+  Text,
   // CircleImg,
   // Expanded,
   // Group,
@@ -9,6 +13,7 @@ import {
   // Scroll
 } from "./lib";
 import { column, Column } from "./lib/column";
+import { Text as TextInterface } from "./lib/text";
 // import { Drag, Select } from "./extension";
 // import { TextOptions } from "./lib/text";
 
@@ -39,21 +44,26 @@ const root = Root({
           key: "333",
           rotate: 40
         }),
-        Element({
-          flexBasis: 30,
-          height: 40,
-          backgroundColor: "blue"
-        }),
+        // Element({
+        //   flexBasis: 30,
+        //   height: 40,
+        //   backgroundColor: "blue"
+        // }),
         Element({
           width: 100,
           height: 30,
           backgroundColor: "yellow"
         }),
-        Element({
+        Text({
+          key: "xsd",
+          color: "white",
+          text: "可以点我的",
+          rotate: 10
+        }),
+        CircleImg({
+          src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
           width: 50,
-          height: 30,
-          backgroundColor: "red",
-          zIndex: 2
+          height: 50
         })
       ]
     })
@@ -101,11 +111,18 @@ setInterval(() => {
 
 // root.mounted();
 
-const junFei = root.getElementByKey("333")!;
-const junFeibox = root.getElementByKey("333d")!;
+// const junFei = root.getElementByKey("333")!;
+// const junFeibox = root.getElementByKey("333d")!;
+// junFei.addEventListener("click", (e) => {
+//   console.log(e.detail.target, "2");
+// });
+// junFeibox.addEventListener("click", (e) => {
+//   console.log(e.detail.target, "1");
+// });
+
+const junFei = root.getElementByKey<TextInterface>("xsd")!;
 junFei.addEventListener("click", (e) => {
-  console.log(e.detail.target, "2");
-});
-junFeibox.addEventListener("click", (e) => {
-  console.log(e.detail.target, "1");
+  junFei.setOption({
+    text: "好点"
+  });
 });

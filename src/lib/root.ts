@@ -1,9 +1,8 @@
 import { AnimationController, AnimationType } from "ac";
 import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
-import { debounce } from "lodash-es";
-import { Rect } from "./types";
 import { LayerManager } from "./layer";
+import { TextOptions } from "./text";
 
 interface RootOptions {
   animationSwitch?: boolean;
@@ -14,22 +13,20 @@ interface RootOptions {
   useDirtyRect?: boolean;
   dirtyDebug?: boolean;
   children?: Element[];
-  // font?: TextOptions["font"] & {
-  //   color?: string;
-  // };
+  font?: TextOptions["font"] & {
+    color?: string;
+  };
 }
 
 export class Root extends Element {
   el: HTMLElement;
-  // ctx: CanvasRenderingContext2D;
   layerManager: LayerManager;
   type = "root";
   ac: AnimationController;
   keyMap = new Map<string, Element>();
   quickElements: Set<Element> = new Set();
   cursorElements: Set<Element> = new Set();
-  // dirtys: Set<Element> = new Set();
-  // font: Required<RootOptions["font"]>;
+  font: Required<RootOptions["font"]>;
   currentElement?: Element;
   useDirtyRect: boolean;
   dirtyDebugRoot?: Root;
@@ -38,38 +35,19 @@ export class Root extends Element {
     this.root = this;
     this.el = options.el;
     this.layerManager = new LayerManager(options.el, this);
-    // this.useDirtyRect = options.useDirtyRect ?? false;
     this.ac = new AnimationController(
       options.animationSwitch ? options.animationTime ?? 300 : 0
     );
-    // this.font = {
-    //   style: options.font?.style ?? "normal",
-    //   variant: options.font?.variant ?? "normal",
-    //   stretch: options.font?.stretch ?? "normal",
-    //   size: options.font?.size ?? 16,
-    //   lineHeight: options.font?.lineHeight ?? 1.2,
-    //   family: options.font?.family ?? "sans-serif",
-    //   color: options.font?.color ?? "black",
-    //   weight: options.font?.weight ?? "normal"
-    // };
-
-    // if (this.useDirtyRect && options.dirtyDebug) {
-    //   const dirtyCanvas = document.createElement("canvas") as HTMLCanvasElement;
-    //   const rect = this.el.getBoundingClientRect();
-    //   dirtyCanvas.style.cssText = `
-    //     position:absolute;
-    //     top:${rect.top}px;
-    //     left:${rect.left}px;
-    //     pointer-events: none;
-    //   `;
-    //   this.el.parentElement?.append(dirtyCanvas);
-    //   this.dirtyDebugRoot = new Root({
-    //     el: dirtyCanvas,
-    //     width: options.width,
-    //     height: options.height
-    //   });
-    //   this.dirtyDebugRoot.mounted();
-    // }
+    this.font = {
+      style: options.font?.style ?? "normal",
+      variant: options.font?.variant ?? "normal",
+      stretch: options.font?.stretch ?? "normal",
+      size: options.font?.size ?? 16,
+      lineHeight: options.font?.lineHeight ?? 1.2,
+      family: options.font?.family ?? "sans-serif",
+      color: options.font?.color ?? "black",
+      weight: options.font?.weight ?? "normal"
+    };
   }
 
   mounted() {
@@ -91,33 +69,34 @@ export class Root extends Element {
     return this.keyMap.get(key) as any;
   }
 
-  nextFrame() {
-    return new Promise((resolve) => {
-      this.ac.addEventListener(
-        AnimationType.END,
-        () => {
-          this.ac.timeLine.progress = 0;
-          resolve(null);
-        },
-        {
-          once: true
-        }
-      );
-      this.ac.timeLine.progress = 1;
-      this.ac.play();
+  nextFrame(callback?: () => void) {
+    return requestAnimationFrame(() => {
+      callback?.();
+      this.render();
     });
+    // return new Promise((resolve) => {
+    //   this.ac.addEventListener(
+    //     AnimationType.END,
+    //     () => {
+    //       this.ac.timeLine.progress = 0;
+    //       resolve(null);
+    //     },
+    //     {
+    //       once: true
+    //     }
+    //   );
+    //   this.ac.timeLine.progress = 1;
+    //   this.ac.play();
+    // });
   }
 
   render() {
     const point = this.getLocalPoint();
-    // this.ctx.clearRect(0, 0, this.width!, this.height!);
-    // this.ctx.font = generateFont(this.font);
-    // this.ctx.textBaseline ="ideographic"
-    this.layerManager.render();
+    this.layerManager.renderStart();
     super.layout(Constraint.loose(this.width!, this.height!));
     super.calcMatrix();
     super.draw();
-    // this.isDirty = false;
+    this.layerManager.renderEnd();
     return point;
   }
 

@@ -46,6 +46,7 @@ export interface ElementOptions {
   translateX?: number;
   translateY?: number;
   rotate?: number;
+  rotateCenter?: undefined | Point;
   // centerOffsetX?: number;
   // centerOffsetY?: number;
   // position?: "static" | "absolute" | "relative";
@@ -142,6 +143,7 @@ export class Element extends MatrixBase {
       this.zIndex = option.zIndex ?? this.zIndex;
       this.flexGrow = option.flexGrow ?? this.flexGrow;
       this.flexBasis = option.flexBasis ?? this.flexBasis;
+      this.rotateCenter = option.rotateCenter ?? this.rotateCenter;
       // this.position = option.position ?? "static";
 
       this.margin = option.margin
@@ -161,6 +163,9 @@ export class Element extends MatrixBase {
             left: option.padding[3]
           }
         : this.padding;
+
+      this.setDirty();
+      this.root?.nextFrame();
     }
   }
 
@@ -254,6 +259,8 @@ export class Element extends MatrixBase {
   setRotate(rotate: number, center = this.getLocalCenter()) {
     this.rotate = rotate;
     this.rotateCenter = center;
+    this.setDirty();
+    this.root.render();
   }
 
   appendChild(child: Element) {
@@ -276,6 +283,7 @@ export class Element extends MatrixBase {
   }
 
   setDirty() {
+    if (this.isMounted === false) return;
     this.root.layerManager.getLayer(this.zIndex).isDirty = true;
   }
 
@@ -332,6 +340,11 @@ export class Element extends MatrixBase {
         this.children.forEach((child) => child.calcMatrix());
       }
     });
+  }
+
+  getLayer() {
+    const layer = this.root.layerManager.getLayer(this.zIndex);
+    return layer;
   }
 
   draw() {
