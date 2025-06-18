@@ -141,8 +141,11 @@ export class Row extends Element {
             preSpace: rows[index].preHeight!
           });
         }
+      } else {
+        this.size = selfConstraint.compareSize(this, this);
       }
     });
+
     return CalcAABB(this);
   }
 }

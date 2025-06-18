@@ -40,6 +40,7 @@ export interface ElementOptions {
   minHeight?: number;
   maxWidth?: number;
   maxHeight?: number;
+  zIndex?: number;
   radius?: number | [number, number, number, number];
   overflow?: "hidden" | "visible";
   translateX?: number;
@@ -61,13 +62,14 @@ export interface ElementOptions {
 export class Element extends MatrixBase {
   eventManage = new EventManage(this);
   root: Root;
-  isDirty: boolean = true;
+  // isDirty: boolean = true;
   type = "element";
   x = 0;
   y = 0;
   radius: number | [number, number, number, number] = 0;
   rotate = 0;
   rotateCenter: undefined | Point;
+  zIndex = 1;
   margin = {
     top: 0,
     right: 0,
@@ -137,6 +139,7 @@ export class Element extends MatrixBase {
       this.rotate = option.rotate ?? this.rotate;
       this.cursor = option.cursor ?? this.cursor;
 
+      this.zIndex = option.zIndex ?? this.zIndex;
       this.flexGrow = option.flexGrow ?? this.flexGrow;
       this.flexBasis = option.flexBasis ?? this.flexBasis;
       // this.position = option.position ?? "static";
@@ -272,14 +275,12 @@ export class Element extends MatrixBase {
     this.root.draw();
   }
 
-  clearDirty() {
-    if (this.isDirty) {
-      this.isDirty = false;
-    }
+  setDirty() {
+    this.root.layerManager.getLayer(this.zIndex).isDirty = true;
   }
 
   dirtyCache<T>(callback: (...arg: any[]) => T): T | undefined {
-    if (this.isDirty || this.root.isDirty) {
+    if (this.root.layerManager.getLayer(this.zIndex).isDirty) {
       return callback();
     }
   }
@@ -312,14 +313,13 @@ export class Element extends MatrixBase {
 
   calcMatrix() {
     this.dirtyCache(() => {
-      this.clearDirty();
       const point = this.getLocalPoint();
       const newMatrix = new DOMMatrix().translate(point.x, point.y);
       if (this.parent) {
         newMatrix.preMultiplySelf(this.parent.matrixState.matrix);
       }
       if (this.rotate) {
-        const center = this.rotateCenter ?? this.getCenter();
+        const center = this.rotateCenter ?? this.getLocalCenter();
         newMatrix
           .translateSelf(center.x, center.y)
           .rotateSelf(0, 0, this.rotate)
@@ -335,11 +335,12 @@ export class Element extends MatrixBase {
   }
 
   draw() {
-    this.root.ctx.save();
+    const ctx = this.root.layerManager.getLayer(this.zIndex).getContext();
+    ctx.save();
 
     const size = this.size;
 
-    this.root.ctx.setTransform(
+    ctx.setTransform(
       this.matrixState.matrix.a,
       this.matrixState.matrix.b,
       this.matrixState.matrix.c,
@@ -348,37 +349,30 @@ export class Element extends MatrixBase {
       this.matrixState.matrix.f
     );
 
-    this.root.ctx.beginPath();
+    ctx.beginPath();
 
     if (this.backgroundColor) {
-      this.root.ctx.fillStyle = this.backgroundColor;
+      ctx.fillStyle = this.backgroundColor;
     }
 
     if (this.backgroundColor || this.overflow === "hidden") {
       // const roundRectPath = new Path2D();
       // roundRectPath.roundRect(50, 50, 200, 100, 20); // 圆角半径为 20
-      this.root.ctx.roundRect(0, 0, size.width, size.height, this.radius);
+      ctx.roundRect(0, 0, size.width, size.height, this.radius);
     }
 
     if (this.backgroundColor) {
-      this.root.ctx.fill();
+      ctx.fill();
     }
 
     if (this.overflow === "hidden") {
-      this.root.ctx.clip();
+      ctx.clip();
     }
     if (this.children?.length) {
       this.children.forEach((child) => child.draw());
     }
-    this.root.ctx.restore();
+    ctx.restore();
   }
-
-  // getPaddingPoint(p: Point) {
-  //   return {
-  //     x: p.x + this.padding.left,
-  //     y: p.y + this.padding.top
-  //   };
-  // }
 
   mounted() {
     if (this.children?.length) {
@@ -465,7 +459,7 @@ export class Element extends MatrixBase {
     };
   }
 
-  getCenter() {
+  getGlobalCenter() {
     const localCenter = this.getLocalCenter();
     const point = new DOMPoint(localCenter.x, localCenter.y);
     const transformedPoint = point.matrixTransform(this.matrixState.matrix);

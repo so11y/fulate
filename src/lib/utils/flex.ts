@@ -95,30 +95,6 @@ export function calcJustifyContent(
   }
 }
 
-// export function calcAlignItems(
-//   content: Row,
-//   elements: Element[],
-//   v: {
-//     remainHeight: number;
-//     preHeight: number;
-//   }
-// ) {
-//   for (let index = 0; index < elements.length; index++) {
-//     const el = elements[index];
-//     el.matrixState.layout.y += v.preHeight;
-//     switch (content.alignItems) {
-//       case "flex-start":
-//         break;
-//       case "center":
-//         el.matrixState.layout.y += v.remainHeight / 2;
-//         break;
-//       case "flex-end":
-//         el.matrixState.layout.y += v.remainHeight;
-//         break;
-//     }
-//   }
-// }
-
 export function calcAlignItems(
   container: Row | Column,
   elements: Element[],

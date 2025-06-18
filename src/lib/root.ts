@@ -3,13 +3,14 @@ import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 import { debounce } from "lodash-es";
 import { Rect } from "./types";
+import { LayerManager } from "./layer";
 
 interface RootOptions {
   animationSwitch?: boolean;
   animationTime?: number;
-  el: HTMLCanvasElement;
-  width: number;
-  height: number;
+  el: HTMLElement;
+  // width: number;
+  // height: number;
   useDirtyRect?: boolean;
   dirtyDebug?: boolean;
   children?: Element[];
@@ -19,14 +20,15 @@ interface RootOptions {
 }
 
 export class Root extends Element {
-  el: HTMLCanvasElement;
-  ctx: CanvasRenderingContext2D;
+  el: HTMLElement;
+  // ctx: CanvasRenderingContext2D;
+  layerManager: LayerManager;
   type = "root";
   ac: AnimationController;
   keyMap = new Map<string, Element>();
   quickElements: Set<Element> = new Set();
   cursorElements: Set<Element> = new Set();
-  dirtys: Set<Element> = new Set();
+  // dirtys: Set<Element> = new Set();
   // font: Required<RootOptions["font"]>;
   currentElement?: Element;
   useDirtyRect: boolean;
@@ -35,10 +37,8 @@ export class Root extends Element {
     super(options);
     this.root = this;
     this.el = options.el;
-    this.el.width = options.width;
-    this.el.height = options.height;
-    this.ctx = this.el.getContext("2d")!;
-    this.useDirtyRect = options.useDirtyRect ?? false;
+    this.layerManager = new LayerManager(options.el, this);
+    // this.useDirtyRect = options.useDirtyRect ?? false;
     this.ac = new AnimationController(
       options.animationSwitch ? options.animationTime ?? 300 : 0
     );
@@ -74,121 +74,13 @@ export class Root extends Element {
 
   mounted() {
     this.root = this;
+    this.layerManager.mounted();
     this.render();
     super.mounted();
+    //忘记干嘛的
     this.eventManage.hasUserEvent = true;
-    const rect = this.el.getBoundingClientRect();
-    const abortController = new AbortController();
-
-    //为了如果鼠标按下那么即便鼠标已经移动出canvas之外
-    //也能继续触发的这个元素的事件
-    let hasLockPoint = false;
-
-    const calcCursorEls = debounce((offsetX, offsetY) => {
-      let isCursor: Element | undefined = undefined;
-      for (const element of this.cursorElements) {
-        if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
-          isCursor = element;
-          break;
-        }
-      }
-      if (isCursor && isCursor.cursor) {
-        this.el.style.cursor = isCursor.cursor;
-      } else {
-        this.el.style.cursor = "default";
-      }
-    });
-
-    document.addEventListener(
-      "pointermove",
-      (e) => {
-        const offsetX = e.clientX - rect.x;
-        const offsetY = e.clientY - rect.y;
-        const prevElement = this.currentElement;
-        if (hasLockPoint === false) {
-          this.currentElement = undefined;
-          for (const element of this.quickElements) {
-            if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
-              this.currentElement = element;
-              break;
-            }
-          }
-          calcCursorEls(offsetX, offsetY);
-        }
-
-        if (!this.currentElement) {
-          return;
-        }
-
-        if (this.currentElement !== prevElement) {
-          notify(e, "mouseleave", prevElement);
-          notify(e, "mouseenter");
-        }
-
-        notify(e, "pointermove");
-      },
-      {
-        signal: abortController.signal
-      }
-    );
-
-    document.addEventListener("click", (e) => notify(e, "click"), {
-      signal: abortController.signal
-    });
-    document.addEventListener("pointerdown", (e) => notify(e, "pointerdown"), {
-      signal: abortController.signal
-    });
-    document.addEventListener("pointerup", (e) => notify(e, "pointerup"), {
-      signal: abortController.signal
-    });
-
-    document.addEventListener("contextmenu", (e) => notify(e, "contextmenu"), {
-      signal: abortController.signal
-    });
-
-    this.el.addEventListener(
-      "wheel",
-      (e) => {
-        e.preventDefault();
-        notify(e, "wheel");
-      },
-      {
-        signal: abortController.signal,
-        passive: false
-      }
-    );
-
-    const notify = (
-      e: PointerEvent | MouseEvent | WheelEvent,
-      eventName: string,
-      el = this.currentElement
-    ) => {
-      if (!el) {
-        hasLockPoint = false;
-        return;
-      }
-      if (eventName === "contextmenu") {
-        e.preventDefault();
-      }
-      if (eventName === "pointerdown") {
-        hasLockPoint = true;
-      } else if (eventName === "pointerup") {
-        hasLockPoint = false;
-      }
-      const offsetX = e.clientX - rect.x;
-      const offsetY = e.clientY - rect.y;
-      el.eventManage.notify(eventName, {
-        target: el,
-        x: offsetX,
-        y: offsetY,
-        buttons: e.buttons,
-        deltaY: (e as WheelEvent).deltaY ?? 0,
-        deltaX: (e as WheelEvent).deltaX ?? 0
-      });
-    };
 
     this.unmounted = () => {
-      abortController.abort();
       super.unmounted();
       this.keyMap.clear();
       this.quickElements.clear();
@@ -218,10 +110,10 @@ export class Root extends Element {
 
   render() {
     const point = this.getLocalPoint();
-    this.ctx.clearRect(0, 0, this.width!, this.height!);
-    this.isDirty = true;
+    // this.ctx.clearRect(0, 0, this.width!, this.height!);
     // this.ctx.font = generateFont(this.font);
     // this.ctx.textBaseline ="ideographic"
+    this.layerManager.render();
     super.layout(Constraint.loose(this.width!, this.height!));
     super.calcMatrix();
     super.draw();

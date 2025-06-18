@@ -21,7 +21,7 @@ export interface ColumnOptions extends ElementOptions {
 }
 
 export class Column extends Element {
-  type = "row";
+  type = "column";
   justifyContent?: JustifyContent;
   alignItems?: AlignItems;
   constructor(options: ColumnOptions = {}) {
@@ -79,6 +79,8 @@ export class Column extends Element {
             remainSpace: this.size.width - element.size.width
           });
         });
+      } else {
+        this.size = selfConstraint.compareSize(this, this);
       }
     });
     return CalcAABB(this);

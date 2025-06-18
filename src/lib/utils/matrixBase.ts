@@ -1,11 +1,19 @@
 import { Point } from "../base";
 
 export class MatrixBase extends EventTarget {
+  setDirty() {}
+
   matrixState = {
-    layout: {
-      x: 0,
-      y: 0
-    },
+    layout: new Proxy(
+      { x: 0, y: 0 },
+      {
+        set: (target, key, value) => {
+          target[key] = value;
+          this.setDirty();
+          return true;
+        }
+      }
+    ),
     matrix: new DOMMatrix()
   };
 
