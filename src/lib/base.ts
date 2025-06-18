@@ -403,9 +403,9 @@ export class Element extends MatrixBase {
       this.root.quickElements.add(this);
     }
 
-    if (!this.isMounted && this.cursor) {
-      this.root.cursorElements.add(this);
-    }
+    // if (!this.isMounted && this.cursor) {
+    //   this.root.cursorElements.add(this);
+    // }
 
     this.isMounted = true;
   }

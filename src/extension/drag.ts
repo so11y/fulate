@@ -28,6 +28,7 @@ export class Drag extends Element implements DragOptions {
   mounted() {
     super.mounted();
     const el = this.proxyEl || this.children![0];
+    el.cursor = "pointer";
     const pointerdown = (e: UserCanvasEvent) => {
       e.stopPropagation();
       const selfPoint = {
@@ -60,6 +61,10 @@ export class Drag extends Element implements DragOptions {
       );
     };
     el.addEventListener("pointerdown", pointerdown);
+  }
+
+  hasPointHint() {
+    return false;
   }
 }
 

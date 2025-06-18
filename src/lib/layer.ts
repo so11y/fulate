@@ -66,21 +66,6 @@ export class LayerManager {
     //也能继续触发的这个元素的事件
     let hasLockPoint = false;
 
-    const calcCursorEls = debounce((offsetX, offsetY) => {
-      let isCursor: CanvasElement | undefined = undefined;
-      for (const element of this.root.cursorElements) {
-        if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
-          isCursor = element;
-          break;
-        }
-      }
-      if (isCursor && isCursor.cursor) {
-        el.style.cursor = isCursor.cursor;
-      } else {
-        el.style.cursor = "default";
-      }
-    });
-
     document.addEventListener(
       "pointermove",
       (e) => {
@@ -95,11 +80,14 @@ export class LayerManager {
               break;
             }
           }
-          calcCursorEls(offsetX, offsetY);
         }
 
         if (!this.root.currentElement) {
+          el.style.cursor = "default";
           return;
+        }
+        if (this.root.currentElement.cursor) {
+          el.style.cursor = this.root.currentElement.cursor;
         }
 
         if (this.root.currentElement !== prevElement) {

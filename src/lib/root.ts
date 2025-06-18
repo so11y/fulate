@@ -25,7 +25,7 @@ export class Root extends Element {
   ac: AnimationController;
   keyMap = new Map<string, Element>();
   quickElements: Set<Element> = new Set();
-  cursorElements: Set<Element> = new Set();
+  // cursorElements: Set<Element> = new Set();
   font: Required<RootOptions["font"]>;
   currentElement?: Element;
 
@@ -67,24 +67,10 @@ export class Root extends Element {
   }
 
   nextFrame(callback?: () => void) {
-    return requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
       callback?.();
       this.render();
     });
-    // return new Promise((resolve) => {
-    //   this.ac.addEventListener(
-    //     AnimationType.END,
-    //     () => {
-    //       this.ac.timeLine.progress = 0;
-    //       resolve(null);
-    //     },
-    //     {
-    //       once: true
-    //     }
-    //   );
-    //   this.ac.timeLine.progress = 1;
-    //   this.ac.play();
-    // });
   }
 
   render() {
@@ -98,93 +84,6 @@ export class Root extends Element {
     this.layerManager.renderEnd();
     return point;
   }
-
-  // //就脏节点开始重绘制
-  // dirtyRender = debounce(() => {
-  //   if (this.dirtys.has(this)) {
-  //     this.dirtys.clear();
-  //     super.render();
-  //     return;
-  //   }
-  //   console.time("dirtyRectMerger");
-  //   const dirtys = Array.from(this.dirtys);
-  //   this.dirtys.clear();
-  //   const aabbs = dirtys.map((v) => v.getBoundingBox());
-  //   const mergeDirtyAABB = mergeOverlappingRects(aabbs);
-  //   const needRerender: Set<Element> = new Set();
-  //   function walk(el: Element, dirtyAABB: Array<Rect>) {
-  //     if (el.parent) {
-  //       let parent: Element | undefined = el.parent;
-  //       while (parent) {
-  //         let aabb = parent.getBoundingBox();
-  //         if (dirtyAABB.some((v) => isPartiallyIntersecting(aabb, v))) {
-  //           needRerender.add(parent);
-  //           return;
-  //         }
-  //         parent = parent?.parent;
-  //       }
-  //       const provide = el.parent.provideLocalCtx();
-  //       if (provide.backgroundColorEl || provide.overflowHideEl) {
-  //         const el = provide.backgroundColorEl || provide.overflowHideEl!;
-  //         walk(el, [el.getBoundingBox()]);
-  //         return;
-  //       }
-  //     }
-  //     if (el.parent?.children) {
-  //       const children = el.parent?.children;
-  //       for (let index = 0; index < children.length; index++) {
-  //         const element = children[index];
-  //         const isDirty = element.isDirty;
-  //         if (isDirty || needRerender.has(element)) {
-  //           continue;
-  //         }
-  //         const isCurrent = element === el;
-  //         const aabb = element.getBoundingBox();
-  //         if (isCurrent && dirtyAABB.some((v) => isOverlap(v, aabb))) {
-  //           needRerender.add(element);
-  //         } else if (dirtyAABB.some((v) => isOverlapAndNotAdjacent(v, aabb))) {
-  //           dirtyAABB.push(aabb);
-  //           needRerender.add(element);
-  //         }
-  //       }
-  //     }
-  //   }
-  //   dirtys.forEach((v) => walk(v, mergeDirtyAABB.slice(0)));
-  //   console.log(needRerender);
-  //   console.timeEnd("dirtyRectMerger");
-
-  //   if (needRerender.has(this)) {
-  //     needRerender.clear();
-  //     needRerender.add(this);
-  //   }
-
-  //   // const mergeDirtyAABB1 = mergeOverlappingRects(mergeDirtyAABB);
-  //   // console.log(mergeDirtyAABB1, "--");
-  //   // if (this.dirtyDebugRoot) {
-  //   //   this.dirtyDebugRoot.children = Array.from(needRerender).map((v) => {
-  //   //     const point = v.getLocalPoint(v.getWordPoint());
-  //   //     return new Element({
-  //   //       x: point.x,
-  //   //       y: point.y,
-  //   //       width: v.size.width,
-  //   //       height: v.size.height,
-  //   //       backgroundColor: "rgba(128, 0, 128, 0.5)"
-  //   //     });
-  //   //   });
-  //   //   this.dirtyDebugRoot.render();
-  //   // }
-
-  //   needRerender.forEach((v) => {
-  //     v.isDirty = true;
-  //     v.render();
-  //   });
-  //   if (this.dirtyDebugRoot) {
-  //     setTimeout(() => {
-  //       this.dirtyDebugRoot!.children = [];
-  //       this.dirtyDebugRoot!.render();
-  //     }, 300);
-  //   }
-  // });
 }
 
 export function root(options: RootOptions) {

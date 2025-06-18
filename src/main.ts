@@ -26,45 +26,49 @@ const root = Root({
   useDirtyRect: true,
   dirtyDebug: true,
   children: [
-    column({
-      justifyContent: "space-between",
-      // justifyContent: "center",
-      // alignItems: "flex-end",
-      alignItems: "center",
-      // padding: [0, 5, 0, 5],
-      width: 130,
-      // height: 180,
-      backgroundColor: "black",
-      key: "333d",
-      // rotate: 10,
-      children: [
-        Element({
-          width: 30,
-          height: 40,
-          backgroundColor: "red",
-          key: "333",
-          rotate: 40
-        }),
-        // Element({
-        //   width: 100,
-        //   height: 30,
-        //   backgroundColor: "yellow"
-        // }),
-        // Text({
-        //   key: "xsd",
-        //   color: "white",
-        //   text: "可以点我的",
-        //   rotate: 10
-        // }),
-        Drag({
-          child: CircleImg({
-            src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
-            width: 50,
-            height: 50,
-            key: "3334"
+    Drag({
+      child: column({
+        justifyContent: "space-between",
+        // justifyContent: "center",
+        // alignItems: "flex-end",
+        alignItems: "center",
+        // padding: [0, 5, 0, 5],
+        width: 130,
+        // height: 180,
+        backgroundColor: "black",
+        key: "333d",
+        // rotate: 10,
+        children: [
+          Drag({
+            child: Element({
+              width: 30,
+              height: 40,
+              backgroundColor: "red",
+              key: "333",
+              rotate: 40
+            })
+          }),
+          // Element({
+          //   width: 100,
+          //   height: 30,
+          //   backgroundColor: "yellow"
+          // }),
+          // Text({
+          //   key: "xsd",
+          //   color: "white",
+          //   text: "可以点我的",
+          //   rotate: 10
+          // }),
+          Drag({
+            child: CircleImg({
+              src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
+              width: 50,
+              height: 50,
+              key: "3334"
+            })
           })
-        })
-      ]
+        ]
+      })
     })
   ]
 });
