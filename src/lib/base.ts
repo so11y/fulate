@@ -481,10 +481,6 @@ export class Element extends MatrixBase {
     // this.matrixState.matrix.translateSelf(x, y);
   }
 
-  extendsMatrix(parentMatrix: Element["matrixState"]) {
-    this.matrixState.matrix.preMultiplySelf(parentMatrix.matrix);
-  }
-
   hasInView() {
     // const scrollEl = localMatrix.scrollEl as Scroll;
     // if (scrollEl) {

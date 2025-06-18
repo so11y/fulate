@@ -14,6 +14,7 @@ import {
 } from "./lib";
 import { column, Column } from "./lib/column";
 import { Text as TextInterface } from "./lib/text";
+import { Drag } from "./extension";
 // import { Drag, Select } from "./extension";
 // import { TextOptions } from "./lib/text";
 
@@ -60,10 +61,12 @@ const root = Root({
           text: "可以点我的",
           rotate: 10
         }),
-        CircleImg({
-          src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
-          width: 50,
-          height: 50
+        Drag({
+          child: CircleImg({
+            src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
+            width: 50,
+            height: 50
+          })
         })
       ]
     })
