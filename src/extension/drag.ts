@@ -18,7 +18,7 @@ export class Drag extends Element implements DragOptions {
   proxyEl?: Element;
   constructor(options: DragOptions) {
     super(options);
-    this.cursor = "pointer";
+    // this.cursor = "pointer";
     this.proxyEl = options.proxyEl;
     this.onDragStart = options.onDragStart;
     this.onDragMove = options.onDragMove;

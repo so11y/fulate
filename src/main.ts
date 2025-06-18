@@ -60,7 +60,8 @@ const root = Root({
           child: CircleImg({
             src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
             width: 50,
-            height: 50
+            height: 50,
+            key: "3334"
           })
         })
       ]
@@ -109,7 +110,7 @@ setInterval(() => {
 
 // root.mounted();
 
-// const junFei = root.getElementByKey("333")!;
+const junFei = root.getElementByKey("3334")!;
 // const junFeibox = root.getElementByKey("333d")!;
 // junFei.addEventListener("click", (e) => {
 //   console.log(e.detail.target, "2");
@@ -119,8 +120,9 @@ setInterval(() => {
 // });
 
 // const junFei = root.getElementByKey<TextInterface>("xsd")!;
-// junFei.addEventListener("click", (e) => {
-//   junFei.setOption({
-//     text: "好点"
-//   });
-// });
+junFei.addEventListener("click", (e) => {
+  console.log(e.detail.target, "--");
+  // junFei.setOption({
+  //   text: "好点"
+  // });
+});

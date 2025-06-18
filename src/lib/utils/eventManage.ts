@@ -23,7 +23,6 @@ export interface CanvasPoint {
 }
 
 export class EventManage extends EventTarget {
-  hasUserEvent = false;
   hasMouseEnter = false;
   constructor(private target: Element) {
     super();
@@ -60,19 +59,14 @@ export class EventManage extends EventTarget {
         deltaX: event?.deltaX ?? 0
       }
     });
-    if (this.hasUserEvent) {
-      this.target.dispatchEvent(customEvent);
-      if (customEvent.cancelBubble) {
-        return;
-      }
+    this.target.dispatchEvent(customEvent);
+    if (customEvent.cancelBubble) {
+      return;
     }
     if (!parent) {
       return;
     }
-    while (
-      (parent!.isInternal || parent!.eventManage.hasUserEvent === false) &&
-      parent !== this.target.root
-    ) {
+    while (parent !== this.target.root) {
       parent = parent?.parent;
     }
     if (parent) {

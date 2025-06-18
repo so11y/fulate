@@ -1,4 +1,4 @@
-import { AnimationController, AnimationType } from "ac";
+import { AnimationController } from "ac";
 import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
 import { LayerManager } from "./layer";
@@ -28,8 +28,7 @@ export class Root extends Element {
   cursorElements: Set<Element> = new Set();
   font: Required<RootOptions["font"]>;
   currentElement?: Element;
-  useDirtyRect: boolean;
-  dirtyDebugRoot?: Root;
+
   constructor(options: RootOptions) {
     super(options);
     this.root = this;
@@ -55,8 +54,6 @@ export class Root extends Element {
     this.layerManager.mounted();
     this.render();
     super.mounted();
-    //忘记干嘛的
-    this.eventManage.hasUserEvent = true;
 
     this.unmounted = () => {
       super.unmounted();

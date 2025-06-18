@@ -399,7 +399,7 @@ export class Element extends MatrixBase {
       this.eventManage.mounted();
     }
 
-    if (!this.isMounted && this.eventManage.hasUserEvent) {
+    if (!this.isMounted) {
       this.root.quickElements.add(this);
     }
 
@@ -516,7 +516,6 @@ export class Element extends MatrixBase {
     callback: CanvasPointEvent,
     options?: AddEventListenerOptions | boolean
   ): void {
-    this.eventManage.hasUserEvent = true;
     //@ts-ignore
     super.addEventListener(type, callback, options);
   }
