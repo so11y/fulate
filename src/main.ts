@@ -23,8 +23,6 @@ const root = Root({
   // width: 500,
   // height: 500,
   animationSwitch: true,
-  useDirtyRect: true,
-  dirtyDebug: true,
   children: [
     Drag({
       child: column({
@@ -34,7 +32,7 @@ const root = Root({
         alignItems: "center",
         // padding: [0, 5, 0, 5],
         width: 130,
-        // height: 180,
+        height: 180,
         backgroundColor: "black",
         key: "333d",
         // rotate: 10,

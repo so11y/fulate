@@ -8,10 +8,6 @@ interface RootOptions {
   animationSwitch?: boolean;
   animationTime?: number;
   el: HTMLElement;
-  // width: number;
-  // height: number;
-  useDirtyRect?: boolean;
-  dirtyDebug?: boolean;
   children?: Element[];
   font?: TextOptions["font"] & {
     color?: string;
