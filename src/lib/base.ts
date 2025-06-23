@@ -464,6 +464,89 @@ export class Element extends MatrixBase {
     };
   }
 
+  getMinBoundingBox() {
+    const { width, height } = this.size;
+
+    // 1. 获取原始 4 个顶点
+    const corners = [
+      new DOMPoint(0, 0), // 左上
+      new DOMPoint(width, 0), // 右上
+      new DOMPoint(width, height), // 右下
+      new DOMPoint(0, height) // 左下
+    ];
+
+    // 2. 应用变换矩阵，得到全局顶点
+    const globalCorners = corners.map((corner) =>
+      corner.matrixTransform(this.matrixState.matrix)
+    );
+
+    // 3. 计算凸包（这里直接用 4 个顶点，因为矩形已经是凸包）
+    const hull = globalCorners;
+
+    // 4. 旋转卡壳法求最小包围盒
+    let minArea = Infinity;
+    let result = {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      angle: 0
+    };
+
+    for (let i = 0, j = hull.length - 1; i < hull.length; j = i, i++) {
+      const edge = {
+        x: hull[i].x - hull[j].x,
+        y: hull[i].y - hull[j].y
+      };
+      const angle = Math.atan2(edge.y, edge.x);
+
+      // 旋转点集，使当前边与x轴对齐
+      const rotated = hull.map((p) => ({
+        x: p.x * Math.cos(-angle) - p.y * Math.sin(-angle),
+        y: p.x * Math.sin(-angle) + p.y * Math.cos(-angle)
+      }));
+
+      // 计算AABB
+      let minX = Infinity,
+        maxX = -Infinity,
+        minY = Infinity,
+        maxY = -Infinity;
+      for (const p of rotated) {
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+      }
+
+      const width = maxX - minX;
+      const height = maxY - minY;
+      const area = width * height;
+
+      // 更新最小包围盒
+      if (area < minArea) {
+        minArea = area;
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // 逆旋转中心点，得到实际中心
+        const center = {
+          x: centerX * Math.cos(angle) - centerY * Math.sin(angle),
+          y: centerX * Math.sin(angle) + centerY * Math.cos(angle)
+        };
+
+        result = {
+          x: center.x - width / 2, // 左上角x
+          y: center.y - height / 2, // 左上角y
+          width,
+          height,
+          angle: angle * (180 / Math.PI) // 转为角度（可选）
+        };
+      }
+    }
+
+    return result;
+  }
+
   hasPointHint(x: number, y: number) {
     const local = this.globalToLocal(x, y);
     const size = this.size;
