@@ -3,11 +3,12 @@ import { Element as CanvasElement } from "./base";
 import { debounce } from "lodash-es";
 import { Root } from "./root";
 
-export class Layer {
+export class Layer extends EventTarget {
   declare el: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   isDirty = true;
   constructor(public key: number, public manager: LayerManager) {
+    super();
     this.el = document.createElement("canvas");
     this.ctx = this.el.getContext("2d")!;
     this.el.width = this.manager.width;
@@ -20,13 +21,16 @@ export class Layer {
     return this.ctx;
   }
 
+  setDirty = () => {
+    if (this.isDirty) return;
+    this.isDirty = true;
+    this.dispatchEvent(new CustomEvent("dirty"));
+  };
+
   clear() {
-    //TODO 后序考虑，如果父级和子级不在同一层级
-    //但是父级需要更新的话，也需要把子的层级进行清理
-    //后序子的层级注册父级的更新如果父级更新的话，子节点也需要更新
-    // if (this.isDirty) {
-    this.ctx.clearRect(0, 0, this.manager.width, this.manager.height);
-    // }
+    if (this.isDirty) {
+      this.ctx.clearRect(0, 0, this.manager.width, this.manager.height);
+    }
   }
 
   destroy() {

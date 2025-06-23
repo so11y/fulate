@@ -279,14 +279,13 @@ export class Element extends MatrixBase {
 
   setDirty() {
     if (this.isMounted === false) return;
-    this.getLayer().isDirty = true;
+    this.getLayer().setDirty();
   }
 
   dirtyCache<T>(callback: (...arg: any[]) => T): T | undefined {
-    //TODO 后序考虑
-    // if (this.getLayer().isDirty) {
-    return callback();
-    // }
+    if (this.getLayer().isDirty) {
+      return callback();
+    }
   }
 
   layout(constraint: Constraint, isBreak = false): Size {
@@ -331,6 +330,11 @@ export class Element extends MatrixBase {
     if (!isNil(this.zIndex)) {
       hasProvide = true;
       renderCtx.layer = this.root.layerManager.getLayer(this.zIndex);
+
+      const parentLayer = this.parent?.renderContext!.layer;
+
+      //TODO  卸载的时候需要移除 ,重新计算的时候也需要移除
+      parentLayer?.addEventListener("dirty", renderCtx.layer?.setDirty);
     }
     if (hasProvide) {
       this.renderContext = Object.assign(
