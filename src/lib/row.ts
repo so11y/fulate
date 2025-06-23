@@ -53,7 +53,7 @@ export class Row extends Element {
         let rowHeight = 0;
 
         for (const element of elements) {
-          linkEl(element, this);
+          // linkEl(element, this);
 
           // 计算元素需要的宽度
           let elementWidth = element.flexBasis ?? element.width ?? 0;

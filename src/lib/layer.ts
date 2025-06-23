@@ -21,9 +21,12 @@ export class Layer {
   }
 
   clear() {
-    if (this.isDirty) {
-      this.ctx.clearRect(0, 0, this.manager.width, this.manager.height);
-    }
+    //TODO 后序考虑，如果父级和子级不在同一层级
+    //但是父级需要更新的话，也需要把子的层级进行清理
+    //后序子的层级注册父级的更新如果父级更新的话，子节点也需要更新
+    // if (this.isDirty) {
+    this.ctx.clearRect(0, 0, this.manager.width, this.manager.height);
+    // }
   }
 
   destroy() {

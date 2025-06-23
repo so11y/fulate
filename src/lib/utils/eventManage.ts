@@ -24,6 +24,8 @@ export interface CanvasPoint {
 
 export class EventManage extends EventTarget {
   hasMouseEnter = false;
+  //是否注册过事件
+  hasUserEvent = false;
   constructor(private target: Element) {
     super();
   }

@@ -41,7 +41,7 @@ export class Column extends Element {
         let cols: Element[] = [];
 
         for (const element of elements) {
-          linkEl(element, this);
+          // linkEl(element, this);
           // 计算元素需要的高度
           let elementHeight = element.flexBasis ?? element.height ?? 0;
 

@@ -1,8 +1,10 @@
 import { AnimationController } from "ac";
 import { Element } from "./base";
 import { Constraint } from "./utils/constraint";
-import { LayerManager } from "./layer";
+import { Layer, LayerManager } from "./layer";
 import { TextOptions } from "./text";
+import { linkEl } from "./utils/helper";
+import { flatten } from "lodash-es";
 
 interface RootOptions {
   animationSwitch?: boolean;
@@ -20,7 +22,7 @@ export class Root extends Element {
   type = "root";
   ac: AnimationController;
   keyMap = new Map<string, Element>();
-  quickElements: Set<Element> = new Set();
+  quickElements: Array<Element> = [];
   // cursorElements: Set<Element> = new Set();
   font: Required<RootOptions["font"]>;
   currentElement?: Element;
@@ -48,13 +50,15 @@ export class Root extends Element {
   mounted() {
     this.root = this;
     this.layerManager.mounted();
+    this.calcRenderContext();
     this.render();
+    this.calcEventSort();
     super.mounted();
 
     this.unmounted = () => {
       super.unmounted();
       this.keyMap.clear();
-      this.quickElements.clear();
+      this.quickElements = [];
     };
   }
 
@@ -79,6 +83,53 @@ export class Root extends Element {
     super.draw();
     this.layerManager.renderEnd();
     return point;
+  }
+
+  calcRenderContext() {
+    this.renderContext = {
+      layer: this.layerManager.getLayer()!
+    };
+    if (this.children?.length) {
+      this.children?.forEach((child) => {
+        linkEl(child, this);
+        child.calcRenderContext();
+      });
+    }
+  }
+
+  calcEventSort() {
+    //让事件先注册上去
+    setTimeout(() => {
+      const layerMap = {};
+      this.renderContext?.layer.key;
+      const stack: Element[] = [this]; // 初始化栈，放入根节点
+      const resultStack: Element[] = [];
+      while (stack.length > 0) {
+        const currentNode = stack.pop()!; // 取出栈顶节点
+        resultStack.push(currentNode);
+        if (currentNode.children) {
+          for (let i = currentNode.children.length - 1; i >= 0; i--) {
+            stack.push(currentNode.children[i]);
+          }
+        }
+      }
+      while (resultStack.length > 0) {
+        const currentNode = resultStack.pop()!;
+        if (!layerMap[currentNode.renderContext?.layer.key!]) {
+          layerMap[currentNode.renderContext?.layer.key!] = [];
+        }
+        if (currentNode.eventManage.hasUserEvent) {
+          const layerNodes = layerMap[currentNode.renderContext?.layer.key!];
+          layerNodes.push(currentNode);
+        }
+      }
+
+      this.quickElements = flatten(
+        Object.values(layerMap).reverse()
+      ) as Element[];
+
+      console.log(this.quickElements);
+    }, 0);
   }
 }
 

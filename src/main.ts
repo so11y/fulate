@@ -62,7 +62,8 @@ const root = Root({
               src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
               width: 50,
               height: 50,
-              key: "3334"
+              key: "3334",
+              zIndex: 2
             })
           })
         ]
@@ -80,11 +81,11 @@ const root = Root({
 
 root.mounted();
 
-setInterval(() => {
-  console.time("render");
-  root.render();
-  console.timeEnd("render");
-}, 1000);
+// setInterval(() => {
+//   console.time("render");
+//   root.render();
+//   console.timeEnd("render");
+// }, 1000);
 
 // let lastTime = performance.now();
 // let frameCount = 0;
@@ -122,6 +123,7 @@ const junFei = root.getElementByKey("3334")!;
 // });
 
 // const junFei = root.getElementByKey<TextInterface>("xsd")!;
+console.log(1);
 junFei.addEventListener("click", (e) => {
   console.log(e.detail.target, "--");
   // junFei.setOption({

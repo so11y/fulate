@@ -1,7 +1,7 @@
 import { Root } from "./root";
 import { Constraint, Size } from "./utils/constraint";
 import { AnimationController, AnimationType, Tween } from "ac";
-import { omit, pick } from "lodash-es";
+import { isNil, last, omit, pick } from "lodash-es";
 import { EventManage, CanvasPointEvent, EventName } from "./utils/eventManage";
 import { TypeFn } from "./types";
 import { JustifyContent, AlignItems } from "./types/flex";
@@ -11,6 +11,7 @@ import {
 } from "./utils/calc";
 import { linkEl } from "./utils/helper";
 import { MatrixBase } from "./utils/matrixBase";
+import { Layer } from "./layer";
 
 export interface Point {
   x: number;
@@ -63,14 +64,13 @@ export interface ElementOptions {
 export class Element extends MatrixBase {
   eventManage = new EventManage(this);
   root: Root;
-  // isDirty: boolean = true;
   type = "element";
   x = 0;
   y = 0;
   radius: number | [number, number, number, number] = 0;
   rotate = 0;
   rotateCenter: undefined | Point;
-  zIndex = 1;
+  zIndex?: number;
   margin = {
     top: 0,
     right: 0,
@@ -84,9 +84,6 @@ export class Element extends MatrixBase {
     left: 0
   };
   display: "block" | "inline" = "block";
-  // justifyContent?: JustifyContent;
-  // alignItems?: AlignItems;
-  // flexDirection?: "row" | "column";
   flexGrow?: number;
   // flexShrink: number = 0;
   flexBasis?: number;
@@ -105,11 +102,6 @@ export class Element extends MatrixBase {
   widthAuto = false;
   cursor?: string;
   ac: AnimationController;
-  //如果是container这种内部嵌套的组件
-  //因为每次layout会对这些组件进行重建
-  //所以这些组件不算是真实的，将会被标记true
-  //主动代码new出来的才是false
-  isInternal: boolean = false;
   declare size: Size;
 
   constructor(option?: ElementOptions) {
@@ -122,7 +114,7 @@ export class Element extends MatrixBase {
     }
   }
 
-  setOption(option?: ElementOptions) {
+  setOption(option?: ElementOptions, render = true) {
     if (option) {
       this.key = option.key ?? this.key;
       this.width = option.width ?? this.width;
@@ -165,7 +157,9 @@ export class Element extends MatrixBase {
         : this.padding;
 
       this.setDirty();
-      this.root?.nextFrame();
+      if (render) {
+        this.root?.nextFrame();
+      }
     }
   }
 
@@ -268,6 +262,7 @@ export class Element extends MatrixBase {
       this.children = [];
     }
     linkEl(child, this);
+    //TODO 需要执行   this.root.calcRenderContext(); this.root.calcEventSort();
     this.children.push(child);
     this.root.draw();
     child.mounted();
@@ -284,13 +279,14 @@ export class Element extends MatrixBase {
 
   setDirty() {
     if (this.isMounted === false) return;
-    this.root.layerManager.getLayer(this.zIndex).isDirty = true;
+    this.getLayer().isDirty = true;
   }
 
   dirtyCache<T>(callback: (...arg: any[]) => T): T | undefined {
-    if (this.root.layerManager.getLayer(this.zIndex).isDirty) {
-      return callback();
-    }
+    //TODO 后序考虑
+    // if (this.getLayer().isDirty) {
+    return callback();
+    // }
   }
 
   layout(constraint: Constraint, isBreak = false): Size {
@@ -299,7 +295,7 @@ export class Element extends MatrixBase {
       const childConstraint = selfConstraint.getChildConstraint(this);
       if (this.children?.length) {
         const rects = this.children!.map((child) => {
-          linkEl(child, this);
+          // linkEl(child, this);
           return child.layout(childConstraint);
         });
         const rect = rects.reduce(
@@ -319,6 +315,39 @@ export class Element extends MatrixBase {
     return CalcAABB(this);
   }
 
+  renderContext?: {
+    layer: Layer;
+  };
+
+  calcRenderContext() {
+    if (this.renderContext) {
+      return;
+    }
+
+    let hasProvide = false;
+    const renderCtx = {
+      layer: undefined as Layer | undefined
+    };
+    if (!isNil(this.zIndex)) {
+      hasProvide = true;
+      renderCtx.layer = this.root.layerManager.getLayer(this.zIndex);
+    }
+    if (hasProvide) {
+      this.renderContext = Object.assign(
+        Object.create(this.parent?.renderContext!),
+        renderCtx
+      );
+    } else {
+      this.renderContext = this.parent?.renderContext!;
+    }
+    if (this.children?.length) {
+      this.children?.forEach((child) => {
+        linkEl(child, this);
+        child.calcRenderContext();
+      });
+    }
+  }
+
   calcMatrix() {
     this.dirtyCache(() => {
       const point = this.getLocalPoint();
@@ -335,16 +364,14 @@ export class Element extends MatrixBase {
       }
 
       this.matrixState.matrix = newMatrix;
-
-      if (this.children?.length) {
-        this.children.forEach((child) => child.calcMatrix());
-      }
     });
+    if (this.children?.length) {
+      this.children.forEach((child) => child.calcMatrix());
+    }
   }
 
   getLayer() {
-    const layer = this.root.layerManager.getLayer(this.zIndex);
-    return layer;
+    return this.renderContext!.layer as Layer;
   }
 
   draw() {
@@ -387,25 +414,13 @@ export class Element extends MatrixBase {
         child.mounted();
       }
     }
-    // const provideLocalCtx = this.provideLocalCtx();
-    if (
-      !this.isMounted
-      // && !provideLocalCtx.isInternal
-    ) {
+    if (!this.isMounted) {
       if (this.key) {
         this.root.keyMap.set(this.key, this);
       }
-      this.root.quickElements.add(this);
+      // this.root.quickElements.add(this);
       this.eventManage.mounted();
     }
-
-    if (!this.isMounted) {
-      this.root.quickElements.add(this);
-    }
-
-    // if (!this.isMounted && this.cursor) {
-    //   this.root.cursorElements.add(this);
-    // }
 
     this.isMounted = true;
   }
@@ -501,9 +516,10 @@ export class Element extends MatrixBase {
     if (this.key) {
       this.root.keyMap.delete(this.key);
     }
-    this.root.quickElements.delete(this);
+    // this.root.quickElements.delete(this);
     this.parent = undefined;
     this.isMounted = false;
+    this.eventManage.hasUserEvent = false;
     this.eventManage.unmounted();
     if (this.children?.length) {
       this.children.forEach((child) => child.unmounted());
@@ -516,6 +532,7 @@ export class Element extends MatrixBase {
     callback: CanvasPointEvent,
     options?: AddEventListenerOptions | boolean
   ): void {
+    this.eventManage.hasUserEvent = true;
     //@ts-ignore
     super.addEventListener(type, callback, options);
   }

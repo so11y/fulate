@@ -44,10 +44,13 @@ export class Drag extends Element implements DragOptions {
         const { x, y } = e.detail;
         const moveX = x - startDownPoint.x;
         const moveY = y - startDownPoint.y;
-        el.setOption({
-          x: moveX + selfPoint.x,
-          y: moveY + selfPoint.y
-        });
+        el.setOption(
+          {
+            x: moveX + selfPoint.x,
+            y: moveY + selfPoint.y
+          },
+          false
+        );
         this.onDragMove?.({ x: moveX, y: moveY });
         this.root.render();
       };
