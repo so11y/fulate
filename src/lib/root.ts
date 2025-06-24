@@ -131,6 +131,16 @@ export class Root extends Element {
       console.log(this.quickElements);
     }, 0);
   }
+
+  hasPointHint(x: number, y: number) {
+    const local = this.globalToLocal(x, y);
+    return (
+      local.x >= 0 &&
+      local.x <= this.layerManager.width &&
+      local.y >= 0 &&
+      local.y <= this.layerManager.height
+    );
+  }
 }
 
 export function root(options: RootOptions) {

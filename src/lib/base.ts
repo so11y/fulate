@@ -50,7 +50,7 @@ export interface ElementOptions {
   rotateCenter?: undefined | Point;
   // centerOffsetX?: number;
   // centerOffsetY?: number;
-  // position?: "static" | "absolute" | "relative";
+  position?: "static" | "absolute" | "relative";
   backgroundColor?: string;
   children?: Element[];
   child?: Element;
@@ -71,6 +71,7 @@ export class Element extends MatrixBase {
   rotate = 0;
   rotateCenter: undefined | Point;
   zIndex?: number;
+  position?: "static" | "absolute" | "relative";
   margin = {
     top: 0,
     right: 0,
@@ -136,7 +137,7 @@ export class Element extends MatrixBase {
       this.flexGrow = option.flexGrow ?? this.flexGrow;
       this.flexBasis = option.flexBasis ?? this.flexBasis;
       this.rotateCenter = option.rotateCenter ?? this.rotateCenter;
-      // this.position = option.position ?? "static";
+      this.position = option.position;
 
       this.margin = option.margin
         ? {
@@ -147,14 +148,14 @@ export class Element extends MatrixBase {
           }
         : this.margin;
 
-      this.padding = option.padding
-        ? {
-            top: option.padding[0],
-            right: option.padding[1],
-            bottom: option.padding[2],
-            left: option.padding[3]
-          }
-        : this.padding;
+      // this.padding = option.padding
+      //   ? {
+      //       top: option.padding[0],
+      //       right: option.padding[1],
+      //       bottom: option.padding[2],
+      //       left: option.padding[3]
+      //     }
+      //   : this.padding;
 
       this.setDirty();
       if (render) {
@@ -174,18 +175,8 @@ export class Element extends MatrixBase {
   getOutlieSize() {
     const size = this.size;
     return {
-      width:
-        size.width +
-        this.margin.left +
-        this.margin.right +
-        this.padding.left +
-        this.padding.right,
-      height:
-        size.height +
-        this.margin.top +
-        this.margin.bottom +
-        this.padding.top +
-        this.padding.bottom
+      width: size.width + this.margin.left + this.margin.right,
+      height: size.height + this.margin.top + this.margin.bottom
     };
   }
 
@@ -316,6 +307,7 @@ export class Element extends MatrixBase {
 
   renderContext?: {
     layer: Layer;
+    position?: Element;
   };
 
   calcRenderContext() {
@@ -325,6 +317,7 @@ export class Element extends MatrixBase {
 
     let hasProvide = false;
     const renderCtx = {
+      position: undefined as unknown as Element | null,
       layer: undefined as Layer | undefined
     };
     if (!isNil(this.zIndex)) {
@@ -336,6 +329,12 @@ export class Element extends MatrixBase {
       //TODO  卸载的时候需要移除 ,重新计算的时候也需要移除
       parentLayer?.addEventListener("dirty", renderCtx.layer?.setDirty);
     }
+
+    if (!isNil(this.position) && this.position !== "static") {
+      hasProvide = true;
+      renderCtx.position = this;
+    }
+
     if (hasProvide) {
       this.renderContext = Object.assign(
         Object.create(this.parent?.renderContext!),
@@ -356,9 +355,15 @@ export class Element extends MatrixBase {
     this.dirtyCache(() => {
       const point = this.getLocalPoint();
       const newMatrix = new DOMMatrix().translate(point.x, point.y);
-      if (this.parent) {
+
+      if (this.position === "absolute") {
+        newMatrix.preMultiplySelf(
+          this.renderContext!.position!.matrixState.matrix
+        );
+      } else if (this.parent) {
         newMatrix.preMultiplySelf(this.parent.matrixState.matrix);
       }
+
       if (this.rotate) {
         const center = this.rotateCenter ?? this.getLocalCenter();
         newMatrix
@@ -382,28 +387,30 @@ export class Element extends MatrixBase {
     const layer = this.root.layerManager.getLayer(this.zIndex);
     const ctx = layer.getContext();
     const size = this.size;
-
     ctx.save();
     ctx.beginPath();
-    layer.applyMatrix(this.matrixState.matrix);
+    this.dirtyCache(() => {
+      layer.applyMatrix(this.matrixState.matrix);
 
-    if (this.backgroundColor) {
-      ctx.fillStyle = this.backgroundColor;
-    }
+      if (this.backgroundColor) {
+        ctx.fillStyle = this.backgroundColor;
+      }
 
-    if (this.backgroundColor || this.overflow === "hidden") {
-      // const roundRectPath = new Path2D();
-      // roundRectPath.roundRect(50, 50, 200, 100, 20); // 圆角半径为 20
-      ctx.roundRect(0, 0, size.width, size.height, this.radius);
-    }
+      if (this.backgroundColor || this.overflow === "hidden") {
+        // const roundRectPath = new Path2D();
+        // roundRectPath.roundRect(50, 50, 200, 100, 20); // 圆角半径为 20
+        ctx.roundRect(0, 0, size.width, size.height, this.radius);
+      }
 
-    if (this.backgroundColor) {
-      ctx.fill();
-    }
+      if (this.backgroundColor) {
+        ctx.fill();
+      }
 
-    if (this.overflow === "hidden") {
-      ctx.clip();
-    }
+      if (this.overflow === "hidden") {
+        ctx.clip();
+      }
+    });
+
     if (this.children?.length) {
       this.children.forEach((child) => child.draw());
     }
@@ -467,84 +474,44 @@ export class Element extends MatrixBase {
   getMinBoundingBox() {
     const { width, height } = this.size;
 
-    // 1. 获取原始 4 个顶点
-    const corners = [
+    // 1. 计算变换后的 4 个顶点
+    const vertices = [
       new DOMPoint(0, 0), // 左上
       new DOMPoint(width, 0), // 右上
       new DOMPoint(width, height), // 右下
       new DOMPoint(0, height) // 左下
-    ];
+    ].map((p) => p.matrixTransform(this.matrixState.matrix));
 
-    // 2. 应用变换矩阵，得到全局顶点
-    const globalCorners = corners.map((corner) =>
-      corner.matrixTransform(this.matrixState.matrix)
-    );
+    // 2. 计算宽度（取第一条边的长度）
+    const edge1 = {
+      x: vertices[1].x - vertices[0].x,
+      y: vertices[1].y - vertices[0].y
+    };
+    const widthTransformed = Math.sqrt(edge1.x ** 2 + edge1.y ** 2);
 
-    // 3. 计算凸包（这里直接用 4 个顶点，因为矩形已经是凸包）
-    const hull = globalCorners;
+    // 3. 计算高度（取第二条边的长度）
+    const edge2 = {
+      x: vertices[3].x - vertices[0].x,
+      y: vertices[3].y - vertices[0].y
+    };
+    const heightTransformed = Math.sqrt(edge2.x ** 2 + edge2.y ** 2);
 
-    // 4. 旋转卡壳法求最小包围盒
-    let minArea = Infinity;
-    let result = {
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      angle: 0
+    // 4. 计算旋转角度（可选）
+    const angle = Math.atan2(edge1.y, edge1.x);
+
+    // 5. 计算中心点
+    const center = {
+      x: (vertices[0].x + vertices[2].x) / 2,
+      y: (vertices[0].y + vertices[2].y) / 2
     };
 
-    for (let i = 0, j = hull.length - 1; i < hull.length; j = i, i++) {
-      const edge = {
-        x: hull[i].x - hull[j].x,
-        y: hull[i].y - hull[j].y
-      };
-      const angle = Math.atan2(edge.y, edge.x);
-
-      // 旋转点集，使当前边与x轴对齐
-      const rotated = hull.map((p) => ({
-        x: p.x * Math.cos(-angle) - p.y * Math.sin(-angle),
-        y: p.x * Math.sin(-angle) + p.y * Math.cos(-angle)
-      }));
-
-      // 计算AABB
-      let minX = Infinity,
-        maxX = -Infinity,
-        minY = Infinity,
-        maxY = -Infinity;
-      for (const p of rotated) {
-        minX = Math.min(minX, p.x);
-        maxX = Math.max(maxX, p.x);
-        minY = Math.min(minY, p.y);
-        maxY = Math.max(maxY, p.y);
-      }
-
-      const width = maxX - minX;
-      const height = maxY - minY;
-      const area = width * height;
-
-      // 更新最小包围盒
-      if (area < minArea) {
-        minArea = area;
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-
-        // 逆旋转中心点，得到实际中心
-        const center = {
-          x: centerX * Math.cos(angle) - centerY * Math.sin(angle),
-          y: centerX * Math.sin(angle) + centerY * Math.cos(angle)
-        };
-
-        result = {
-          x: center.x - width / 2, // 左上角x
-          y: center.y - height / 2, // 左上角y
-          width,
-          height,
-          angle: angle * (180 / Math.PI) // 转为角度（可选）
-        };
-      }
-    }
-
-    return result;
+    return {
+      width: widthTransformed,
+      height: heightTransformed,
+      angle, // 弧度
+      center,
+      vertices // 变换后的 4 个顶点
+    };
   }
 
   hasPointHint(x: number, y: number) {

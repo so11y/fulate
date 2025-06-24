@@ -16,7 +16,6 @@ import {
 export interface ColumnOptions extends ElementOptions {
   justifyContent?: JustifyContent;
   alignItems?: AlignItems;
-  flexDirection?: "row";
   flexWrap?: "wrap" | "nowrap";
 }
 

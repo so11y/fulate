@@ -68,24 +68,43 @@ export function CalcAABB(el: Element) {
 //   });
 // }
 
-//检查是否重叠，相邻
-export function isOverlap(rect1: Rect, rect2: Rect) {
-  return (
-    rect1.x <= rect2.x + rect2.width &&
-    rect1.x + rect1.width >= rect2.x &&
-    rect1.y <= rect2.y + rect2.height &&
-    rect1.y + rect1.height >= rect2.y
-  );
+export function isOverlap(aabb: Rect, rotatedRect: Element) {
+  const aabbVertices = [
+    { x: aabb.x, y: aabb.y },
+    { x: aabb.x + aabb.width, y: aabb.y },
+    { x: aabb.x + aabb.width, y: aabb.y + aabb.height },
+    { x: aabb.x, y: aabb.y + aabb.height }
+  ];
+
+  for (const vertex of aabbVertices) {
+    if (rotatedRect.hasPointHint(vertex.x, vertex.y)) {
+      return true;
+    }
+  }
+  const rect = rotatedRect.getMinBoundingBox();
+  console.log(rect, rotatedRect);
+  // 检查旋转矩形的所有顶点是否都在 Select 框内
+  for (const vertex of rect.vertices) {
+    if (
+      vertex.x < aabb.x ||
+      vertex.x > aabb.x + aabb.width ||
+      vertex.y < aabb.y ||
+      vertex.y > aabb.y + aabb.height
+    ) {
+      return false; // 有一个顶点不在 Select 框内，不算包裹
+    }
+  }
+  return true; // 所有顶点都在 Select 框内，才算完全包裹
 }
 //检查是否重叠，不相邻
-export function isOverlapAndNotAdjacent(rect1: Rect, rect2: Rect) {
-  return (
-    rect1.x < rect2.x + rect2.width &&
-    rect1.x + rect1.width > rect2.x &&
-    rect1.y < rect2.y + rect2.height &&
-    rect1.y + rect1.height > rect2.y
-  );
-}
+// export function isOverlapAndNotAdjacent(rect1: Rect, rect2: Rect) {
+//   return (
+//     rect1.x < rect2.x + rect2.width &&
+//     rect1.x + rect1.width > rect2.x &&
+//     rect1.y < rect2.y + rect2.height &&
+//     rect1.y + rect1.height > rect2.y
+//   );
+// }
 
 // 合并两个矩形范围
 export function mergeTwoRects(rect1: Rect, rect2: Rect) {
@@ -101,26 +120,26 @@ export function mergeTwoRects(rect1: Rect, rect2: Rect) {
   };
 }
 
-export function mergeOverlappingRects(rects: Array<Rect>) {
-  const mergedRects: Array<Rect> = [];
-  for (const rect of rects) {
-    let isMerged = false;
-    // 检查是否可以与已合并的矩形合并
-    for (let i = 0; i < mergedRects.length; i++) {
-      if (isOverlap(rect, mergedRects[i])) {
-        mergedRects[i] = mergeTwoRects(mergedRects[i], rect);
-        isMerged = true;
-        break;
-      }
-    }
-    // 如果不能合并，则添加到已合并的矩形列表中
-    if (!isMerged) {
-      mergedRects.push(rect);
-    }
-  }
+// export function mergeOverlappingRects(rects: Array<Rect>) {
+//   const mergedRects: Array<Rect> = [];
+//   for (const rect of rects) {
+//     let isMerged = false;
+//     // 检查是否可以与已合并的矩形合并
+//     for (let i = 0; i < mergedRects.length; i++) {
+//       if (isOverlap(rect, mergedRects[i])) {
+//         mergedRects[i] = mergeTwoRects(mergedRects[i], rect);
+//         isMerged = true;
+//         break;
+//       }
+//     }
+//     // 如果不能合并，则添加到已合并的矩形列表中
+//     if (!isMerged) {
+//       mergedRects.push(rect);
+//     }
+//   }
 
-  return mergedRects;
-}
+//   return mergedRects;
+// }
 
 //A包含B
 export function isContaining(rect1: Rect, rect2: Rect) {
@@ -133,15 +152,15 @@ export function isContaining(rect1: Rect, rect2: Rect) {
 }
 
 //A不包含B && B不包含A,但是相交
-export function isPartiallyIntersecting(rect1: Rect, rect2: Rect) {
-  // const isRect2ContainsRect1 =
-  //   rect2.x <= rect1.x &&
-  //   rect2.y <= rect1.y &&
-  //   rect2.x + rect2.width >= rect1.x + rect1.width &&
-  //   rect2.y + rect2.height >= rect1.y + rect1.height;
-  //  &&   !isRect2ContainsRect1
-  return isOverlap(rect1, rect2) && !isContaining(rect1, rect2);
-}
+// export function isPartiallyIntersecting(rect1: Rect, rect2: Rect) {
+//   // const isRect2ContainsRect1 =
+//   //   rect2.x <= rect1.x &&
+//   //   rect2.y <= rect1.y &&
+//   //   rect2.x + rect2.width >= rect1.x + rect1.width &&
+//   //   rect2.y + rect2.height >= rect1.y + rect1.height;
+//   //  &&   !isRect2ContainsRect1
+//   return isOverlap(rect1, rect2) && !isContaining(rect1, rect2);
+// }
 
 //处理宽高可能的负数，然后再计算x,y
 export function calculateElementBounds(rect: Rect) {
