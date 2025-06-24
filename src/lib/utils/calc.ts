@@ -82,29 +82,70 @@ export function isOverlap(aabb: Rect, rotatedRect: Element) {
     }
   }
   const rect = rotatedRect.getMinBoundingBox();
-  console.log(rect, rotatedRect);
-  // 检查旋转矩形的所有顶点是否都在 Select 框内
   for (const vertex of rect.vertices) {
     if (
-      vertex.x < aabb.x ||
-      vertex.x > aabb.x + aabb.width ||
-      vertex.y < aabb.y ||
-      vertex.y > aabb.y + aabb.height
+      vertex.x >= aabb.x &&
+      vertex.x <= aabb.x + aabb.width &&
+      vertex.y >= aabb.y &&
+      vertex.y <= aabb.y + aabb.height
     ) {
-      return false; // 有一个顶点不在 Select 框内，不算包裹
+      return true;
     }
   }
-  return true; // 所有顶点都在 Select 框内，才算完全包裹
+
+  // 2. 新增：检查边交叉（SAT）
+  const axes = [
+    { x: 1, y: 0 }, // AABB 的 X 轴
+    { x: 0, y: 1 }, // AABB 的 Y 轴
+    ...getEdgeNormals(rect.vertices) // 旋转矩形的边法线
+  ];
+
+  for (const axis of axes) {
+    if (!overlapOnAxis(aabbVertices, rect.vertices, axis)) {
+      return false; // 存在分离轴，无碰撞
+    }
+  }
+
+  return true; // 所有轴重叠，碰撞成立 所有顶点都在 Select 框内，才算完全包裹
 }
-//检查是否重叠，不相邻
-// export function isOverlapAndNotAdjacent(rect1: Rect, rect2: Rect) {
-//   return (
-//     rect1.x < rect2.x + rect2.width &&
-//     rect1.x + rect1.width > rect2.x &&
-//     rect1.y < rect2.y + rect2.height &&
-//     rect1.y + rect1.height > rect2.y
-//   );
-// }
+
+// 获取旋转矩形的边法线
+function getEdgeNormals(points: { x: number; y: number }[]) {
+  const normals = [];
+  for (let i = 0; i < points.length; i++) {
+    const p1 = points[i];
+    const p2 = points[(i + 1) % points.length];
+    const edge = { x: p2.x - p1.x, y: p2.y - p1.y };
+    //@ts-ignore
+    normals.push({ x: -edge.y, y: edge.x }); // 法向量（垂直边）
+  }
+  return normals;
+}
+
+// 检查投影是否重叠
+function overlapOnAxis(
+  pointsA: { x: number; y: number }[],
+  pointsB: { x: number; y: number }[],
+  axis: { x: number; y: number }
+) {
+  let minA = Infinity,
+    maxA = -Infinity;
+  let minB = Infinity,
+    maxB = -Infinity;
+
+  for (const p of pointsA) {
+    const proj = p.x * axis.x + p.y * axis.y;
+    minA = Math.min(minA, proj);
+    maxA = Math.max(maxA, proj);
+  }
+  for (const p of pointsB) {
+    const proj = p.x * axis.x + p.y * axis.y;
+    minB = Math.min(minB, proj);
+    maxB = Math.max(maxB, proj);
+  }
+
+  return maxA >= minB && maxB >= minA;
+}
 
 // 合并两个矩形范围
 export function mergeTwoRects(rect1: Rect, rect2: Rect) {

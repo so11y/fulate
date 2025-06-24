@@ -59,6 +59,10 @@ export interface ElementOptions {
   cursor?: string;
   flexGrow?: number;
   flexBasis?: number;
+  top?: number;
+  left?: number;
+  right?: number;
+  bottom?: number;
 }
 
 export class Element extends MatrixBase {
@@ -102,6 +106,10 @@ export class Element extends MatrixBase {
   isMounted = false;
   widthAuto = false;
   cursor?: string;
+  top?: number;
+  left?: number;
+  right?: number;
+  bottom?: number;
   ac: AnimationController;
   declare size: Size;
 
@@ -137,7 +145,12 @@ export class Element extends MatrixBase {
       this.flexGrow = option.flexGrow ?? this.flexGrow;
       this.flexBasis = option.flexBasis ?? this.flexBasis;
       this.rotateCenter = option.rotateCenter ?? this.rotateCenter;
-      this.position = option.position;
+      this.position = option.position ?? this.position;
+
+      this.top = option.top ?? this.top;
+      this.right = option.right ?? this.right;
+      this.bottom = option.bottom ?? this.bottom;
+      this.left = option.left ?? this.left;
 
       this.margin = option.margin
         ? {
@@ -317,9 +330,10 @@ export class Element extends MatrixBase {
 
     let hasProvide = false;
     const renderCtx = {
-      position: undefined as unknown as Element | null,
-      layer: undefined as Layer | undefined
-    };
+      // position: undefined as unknown as Element | null,
+      // layer: undefined as Layer | undefined
+    } as any;
+
     if (!isNil(this.zIndex)) {
       hasProvide = true;
       renderCtx.layer = this.root.layerManager.getLayer(this.zIndex);
@@ -330,7 +344,7 @@ export class Element extends MatrixBase {
       parentLayer?.addEventListener("dirty", renderCtx.layer?.setDirty);
     }
 
-    if (!isNil(this.position) && this.position !== "static") {
+    if (!isNil(this.position) && this.position === "relative") {
       hasProvide = true;
       renderCtx.position = this;
     }
@@ -343,6 +357,7 @@ export class Element extends MatrixBase {
     } else {
       this.renderContext = this.parent?.renderContext!;
     }
+
     if (this.children?.length) {
       this.children?.forEach((child) => {
         linkEl(child, this);
@@ -353,10 +368,49 @@ export class Element extends MatrixBase {
 
   calcMatrix() {
     this.dirtyCache(() => {
-      const point = this.getLocalPoint();
-      const newMatrix = new DOMMatrix().translate(point.x, point.y);
+      console.log("ss", this.position);
+      let offsetX = 0;
+      let offsetY = 0;
+      // 获取父容器尺寸（用于百分比计算）
+      if (
+        this.position === "absolute" &&
+        this.renderContext!.position != this
+      ) {
+        const { width: parentWidth, height: parentHeight } =
+          this.renderContext!.position!.size;
+        // 解析定位值
+        const top = parsePositionValue(this.top, parentHeight);
+        const left = parsePositionValue(this.left, parentWidth);
+        const right = parsePositionValue(this.right, parentWidth);
+        const bottom = parsePositionValue(this.bottom, parentHeight);
 
-      if (this.position === "absolute") {
+        // 计算实际偏移（right/bottom 优先级高于 left/top）
+        offsetX = left;
+        offsetY = top;
+
+        if (this.right !== undefined) {
+          const elementWidth =
+            parsePositionValue(this.size.width, parentWidth) ?? 0;
+          offsetX = parentWidth - elementWidth - right;
+        }
+
+        if (this.bottom !== undefined) {
+          const elementHeight =
+            parsePositionValue(this.size.height, parentHeight) ?? 0;
+          offsetY = parentHeight - elementHeight - bottom;
+        }
+      }
+      const point = this.getLocalPoint();
+
+      const newMatrix = new DOMMatrix().translate(
+        point.x + offsetX,
+        point.y + offsetY
+      );
+
+      if (
+        this.position === "absolute" &&
+        this.renderContext!.position != this
+      ) {
         newMatrix.preMultiplySelf(
           this.renderContext!.position!.matrixState.matrix
         );
@@ -616,6 +670,15 @@ export const element: TypeFn<ElementOptions, Element> = (
 ) => {
   return new Element(option);
 };
+
+export function parsePositionValue(
+  value: number | undefined,
+  parentSize: number
+) {
+  if (value === undefined) return 0;
+
+  return parentSize * (value / 100); // 直接返回像素值
+}
 
 element.hFull = function (options: ElementOptions) {
   const g = element(options);

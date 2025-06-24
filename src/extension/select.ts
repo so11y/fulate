@@ -22,51 +22,60 @@ export class Select extends Element {
     super({
       key: "select"
     });
-    this.bodyControl = new Column({
-      justifyContent: "space-between",
-
-      height: Number.MAX_VALUE,
-      children: [
-        // Row({
-        //   justifyContent: "space-between",
-        //   translateY: -5,
-        //   children: [
-        //     ControlEl({
-        //       cursor: "nw-resize",
-        //       translateX: -5
-        //     }),
-        //     ControlEl({
-        //       cursor: "grabbing",
-        //       translateY: -30
-        //     }),
-        //     ControlEl({
-        //       cursor: "sw-resize",
-        //       translateX: 5
-        //     })
-        //   ]
-        // }),
-        // Row({
-        //   justifyContent: "space-between",
-        //   translateY: 5,
-        //   children: [
-        //     ControlEl({
-        //       cursor: "sw-resize",
-        //       translateX: -5
-        //     }),
-        //     ControlEl({
-        //       cursor: "nw-resize",
-        //       translateX: 5
-        //     })
-        //   ]
-        // })
-      ]
-    });
+    // this.bodyControl = new Column({
+    //   justifyContent: "space-between",
+    //   height: Number.MAX_VALUE,
+    //   children: [
+    //     // Row({
+    //     //   justifyContent: "space-between",
+    //     //   translateY: -5,
+    //     //   children: [
+    //     //     ControlEl({
+    //     //       cursor: "nw-resize",
+    //     //       translateX: -5
+    //     //     }),
+    //     //     ControlEl({
+    //     //       cursor: "grabbing",
+    //     //       translateY: -30
+    //     //     }),
+    //     //     ControlEl({
+    //     //       cursor: "sw-resize",
+    //     //       translateX: 5
+    //     //     })
+    //     //   ]
+    //     // }),
+    //     // Row({
+    //     //   justifyContent: "space-between",
+    //     //   translateY: 5,
+    //     //   children: [
+    //     //     ControlEl({
+    //     //       cursor: "sw-resize",
+    //     //       translateX: -5
+    //     //     }),
+    //     //     ControlEl({
+    //     //       cursor: "nw-resize",
+    //     //       translateX: 5
+    //     //     })
+    //     //   ]
+    //     // })
+    //   ]
+    // });
     this.selectBody = new Element({
-      width: 0,
-      height: 0,
+      width: 100,
+      height: 100,
       overflow: "hidden",
       backgroundColor: "rgba(0, 0, 0, 0.1)",
-      child: this.bodyControl
+      position: "relative",
+      children: [
+        new Element({
+          width: 5,
+          height: 5,
+          right: 100,
+          top: 0,
+          position: "absolute",
+          backgroundColor: "red"
+        })
+      ]
     });
 
     let selectElementsStartPoint: Array<Point & { element: Element }> = [];
@@ -101,7 +110,7 @@ export class Select extends Element {
     const pointerdown = (e: UserCanvasEvent) => {
       this.selectElements = [];
       this.lastRotate = 0;
-      this.selectBody.children = [];
+      // this.selectBody.children = [];
       const selects = new Set<Element>();
       e.stopPropagation();
       const startDownPoint = {
@@ -135,28 +144,28 @@ export class Select extends Element {
       this.root.addEventListener(
         "pointerup",
         () => {
-          // const els = Array.from(selects); //Array.from(hasParentIgNoreSelf(selects));
-          // if (selects.size === 0) {
-          //   setRectSize({
-          //     x: 0,
-          //     y: 0,
-          //     width: 0,
-          //     height: 0
-          //   });
-          // } else if (selects.size >= 1) {
-          //   if (els.length === 1) {
-          //     setRectSize(first(els).getBoundingBox());
-          //   } else {
-          //     const rects = els.map((v) => v.getBoundingBox());
-          //     const rect = rects.reduce((prev, next) =>
-          //       mergeTwoRects(prev, next)
-          //     );
-          //     setRectSize(rect);
-          //   }
-          //   // this.selectBody.children = [this.bodyControl];
-          // }
-          // this.selectBody.overflow = els.length ? "visible" : "hidden";
-          // this.selectElements = els;
+          const els = Array.from(selects); //Array.from(hasParentIgNoreSelf(selects));
+          if (selects.size === 0) {
+            setRectSize({
+              x: 0,
+              y: 0,
+              width: 0,
+              height: 0
+            });
+          } else if (selects.size >= 1) {
+            if (els.length === 1) {
+              setRectSize(first(els)!.getBoundingBox());
+            } else {
+              const rects = els.map((v) => v.getBoundingBox());
+              const rect = rects.reduce((prev, next) =>
+                mergeTwoRects(prev, next)
+              );
+              setRectSize(rect);
+            }
+            // this.selectBody.children = [this.bodyControl];
+          }
+          this.selectBody.overflow = els.length ? "visible" : "hidden";
+          this.selectElements = els;
           this.root.render();
           this.root.removeEventListener("pointermove", pointermove);
         },

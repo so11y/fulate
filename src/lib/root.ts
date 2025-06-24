@@ -87,7 +87,8 @@ export class Root extends Element {
 
   calcRenderContext() {
     this.renderContext = {
-      layer: this.layerManager.getLayer()!
+      layer: this.layerManager.getLayer()!,
+      position: this
     };
     if (this.children?.length) {
       this.children?.forEach((child) => {
