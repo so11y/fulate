@@ -258,12 +258,14 @@ export class Element extends MatrixBase {
     // ac.play();
   }
 
-  setRotate(rotate: number, center = this.getLocalCenter()) {
+  setRotate(rotate: number, center = this.getLocalCenter(), render = true) {
     this.rotate = rotate;
     this.rotateCenter = center;
     // this.children?.forEach((child) => child.setRotate(rotate, center));
     this.setDirty();
-    this.root.render();
+    if (render) {
+      this.root.render();
+    }
   }
 
   appendChild(child: Element) {
