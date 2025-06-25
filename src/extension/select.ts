@@ -67,11 +67,42 @@ export class Select extends Element {
       backgroundColor: "rgba(0, 0, 0, 0.1)",
       position: "relative",
       children: [
+        grabbing(),
         new Element({
           width: 5,
           height: 5,
-          right: 100,
+          x: -2,
+          y: -2,
+          position: "absolute",
+          backgroundColor: "red"
+        }),
+        new Element({
+          width: 5,
+          height: 5,
+          right: 0,
           top: 0,
+          x: 2,
+          y: -2,
+          position: "absolute",
+          backgroundColor: "red"
+        }),
+        new Element({
+          width: 5,
+          height: 5,
+          bottom: 0,
+          left: 0,
+          x: -2,
+          y: 2,
+          position: "absolute",
+          backgroundColor: "red"
+        }),
+        new Element({
+          width: 5,
+          height: 5,
+          bottom: 0,
+          right: 0,
+          x: 2,
+          y: 2,
           position: "absolute",
           backgroundColor: "red"
         })
@@ -144,6 +175,7 @@ export class Select extends Element {
       this.root.addEventListener(
         "pointerup",
         () => {
+          console.log(selects, "--");
           const els = Array.from(selects); //Array.from(hasParentIgNoreSelf(selects));
           if (selects.size === 0) {
             setRectSize({
@@ -190,56 +222,58 @@ export class Select extends Element {
   }
 }
 
-function ControlEl(option: ElementOptions) {
+function grabbing() {
   const el = new Element({
-    ...option,
     width: 10,
     height: 10,
-    backgroundColor: "#800080",
-    radius: 5
+    left: 50,
+    x: -2,
+    y: -50,
+    position: "absolute",
+    backgroundColor: "red",
+    radius: 10
   });
 
-  if (option.cursor === "grabbing") {
-    el.addEventListener("pointerdown", (e) => {
-      e.stopPropagation();
-      const select = el.root.getElementByKey("select") as Select;
-      const selectPoint = select.getLocalPoint(select.getWordPoint());
-      const selectSelect = select.selectElements.map((v) => ({
-        element: v
-        // rotate: v.rotate,
-        // center: v.getCenter(),
-        // centerOffsetX: v.centerOffsetX ?? 0,
-        // centerOffsetY: v.centerOffsetY ?? 0
-      }));
-      el.addEventListener("pointermove", pointermove);
-      el.addEventListener(
-        "pointerup",
-        () => el.removeEventListener("pointermove", pointermove),
-        {
-          once: true
-        }
-      );
-      const selectCenter = select.getCenter();
-      function pointermove(e: UserCanvasEvent) {
-        const dx = e.detail.x - selectPoint.x - select.size.width / 2;
-        const dy = e.detail.y - selectPoint.y;
-        const angle = (Math.atan2(dy, dx) + Math.PI / 2) % (2 * Math.PI);
-        const rotate = (angle * 180) / Math.PI;
-        selectSelect.forEach(
-          ({
-            //  center,
-            element
-            // centerOffsetX, centerOffsetY
-          }) => {
-            element.setRotate(rotate - select.lastRotate, selectCenter);
-          }
-        );
-        select.setRotate(rotate - select.lastRotate, selectCenter);
-        select.lastRotate = rotate;
-        el.root.render();
+  el.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+    const select = el.root.getElementByKey("select") as Select;
+    const startDownPoint = { x: e.detail.x, y: e.detail.y };
+    // const selectPoint = select.getLocalPoint(select.getWordPoint());
+    const selectSelect = select.selectElements;
+    el.addEventListener("pointermove", pointermove);
+    el.addEventListener(
+      "pointerup",
+      () => el.removeEventListener("pointermove", pointermove),
+      {
+        once: true
       }
-    });
-  }
+    );
+    // const selectCenter = select.getCenter();
+    function pointermove(e: UserCanvasEvent) {
+      const dx = e.detail.x - startDownPoint.x - select.size.width / 2;
+      const dy = e.detail.y - startDownPoint.y;
+      const angle = (Math.atan2(dy, dx) + Math.PI / 2) % (2 * Math.PI);
+      const rotate = (angle * 180) / Math.PI;
+
+      selectSelect.forEach((element) => {
+        element.setRotate(rotate);
+        // element.getGlobalCenter();
+      });
+      select.setRotate(rotate);
+      // selectSelect.forEach(
+      //   ({
+      //     //  center,
+      //     element
+      //     // centerOffsetX, centerOffsetY
+      //   }) => {
+      //     element.setRotate(rotate - select.lastRotate, selectCenter);
+      //   }
+      // );
+      // select.setRotate(rotate - select.lastRotate, selectCenter);
+      // select.lastRotate = rotate;
+      // el.root.render();
+    }
+  });
 
   return el;
 }

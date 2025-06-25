@@ -42,6 +42,7 @@ const root = Root({
       height: 180,
       backgroundColor: "black",
       key: "333d",
+      position: "relative",
       // rotate: 10,
       children: [
         // Element({
@@ -60,7 +61,9 @@ const root = Root({
           width: 50,
           height: 50,
           key: "3334",
-          zIndex: 2
+          zIndex: 2,
+          right: 0,
+          position: "absolute"
         })
       ]
     }),

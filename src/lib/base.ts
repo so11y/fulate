@@ -161,6 +161,10 @@ export class Element extends MatrixBase {
           }
         : this.margin;
 
+      // if (option.width || option.height) {
+      //   //考虑需要重新计算尺寸
+      //   this.dispatchEvent(new CustomEvent("sizeUpdate"));
+      // }
       // this.padding = option.padding
       //   ? {
       //       top: option.padding[0],
@@ -257,6 +261,7 @@ export class Element extends MatrixBase {
   setRotate(rotate: number, center = this.getLocalCenter()) {
     this.rotate = rotate;
     this.rotateCenter = center;
+    // this.children?.forEach((child) => child.setRotate(rotate, center));
     this.setDirty();
     this.root.render();
   }
@@ -323,16 +328,15 @@ export class Element extends MatrixBase {
     position?: Element;
   };
 
+  //TODO 结构变化的时候需要重新计算
+  //position变化也需要计算
   calcRenderContext() {
     if (this.renderContext) {
       return;
     }
 
     let hasProvide = false;
-    const renderCtx = {
-      // position: undefined as unknown as Element | null,
-      // layer: undefined as Layer | undefined
-    } as any;
+    const renderCtx = {} as any;
 
     if (!isNil(this.zIndex)) {
       hasProvide = true;
@@ -343,6 +347,16 @@ export class Element extends MatrixBase {
       //TODO  卸载的时候需要移除 ,重新计算的时候也需要移除
       parentLayer?.addEventListener("dirty", renderCtx.layer?.setDirty);
     }
+
+    // if (this.position === "absolute" && this.parent) {
+    //   console.log(3);
+    //   this.parent.renderContext!.position!.addEventListener(
+    //     "sizeUpdate",
+    //     (e) => {
+    //       this.setDirty();
+    //     }
+    //   );
+    // }
 
     if (!isNil(this.position) && this.position === "relative") {
       hasProvide = true;
@@ -368,14 +382,17 @@ export class Element extends MatrixBase {
 
   calcMatrix() {
     this.dirtyCache(() => {
-      console.log("ss", this.position);
-      let offsetX = 0;
-      let offsetY = 0;
       // 获取父容器尺寸（用于百分比计算）
+      const point = this.getLocalPoint();
+
+      const newMatrix = new DOMMatrix().translate(point.x, point.y);
+
       if (
         this.position === "absolute" &&
         this.renderContext!.position != this
       ) {
+        let offsetX = 0;
+        let offsetY = 0;
         const { width: parentWidth, height: parentHeight } =
           this.renderContext!.position!.size;
         // 解析定位值
@@ -387,25 +404,14 @@ export class Element extends MatrixBase {
         // 计算实际偏移（right/bottom 优先级高于 left/top）
         offsetX = left;
         offsetY = top;
-
         if (this.right !== undefined) {
-          const elementWidth =
-            parsePositionValue(this.size.width, parentWidth) ?? 0;
-          offsetX = parentWidth - elementWidth - right;
+          offsetX = parentWidth - this.size.width - right;
         }
-
         if (this.bottom !== undefined) {
-          const elementHeight =
-            parsePositionValue(this.size.height, parentHeight) ?? 0;
-          offsetY = parentHeight - elementHeight - bottom;
+          offsetY = parentHeight - this.size.height - bottom;
         }
+        newMatrix.translateSelf(offsetX, offsetY);
       }
-      const point = this.getLocalPoint();
-
-      const newMatrix = new DOMMatrix().translate(
-        point.x + offsetX,
-        point.y + offsetY
-      );
 
       if (
         this.position === "absolute" &&
@@ -488,6 +494,14 @@ export class Element extends MatrixBase {
     }
 
     this.isMounted = true;
+
+    // if (this.position === "absolute" && this.parent) {
+    //   console.log(3);
+    //   this.parent.addEventListener("sizeUpdate", (e) => {
+    //     console.log(e);
+    //   });
+    //   this.parent.eventManage.hasUserEvent = false;
+    // }
   }
 
   getBoundingBox() {
@@ -677,7 +691,7 @@ export function parsePositionValue(
 ) {
   if (value === undefined) return 0;
 
-  return parentSize * (value / 100); // 直接返回像素值
+  return (value / 100) * parentSize; // 直接返回像素值
 }
 
 element.hFull = function (options: ElementOptions) {

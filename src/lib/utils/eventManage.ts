@@ -10,7 +10,8 @@ export type EventName =
   | "contextmenu"
   | "mouseenter"
   | "mouseleave"
-  | "wheel";
+  | "wheel"
+  | "sizeUpdate";
 export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 
 export interface CanvasPoint {
