@@ -238,7 +238,6 @@ function grabbing() {
     e.stopPropagation();
     const select = el.root.getElementByKey("select") as Select;
     const startDownPoint = { x: e.detail.x, y: e.detail.y };
-    // const selectPoint = select.getLocalPoint(select.getWordPoint());
     const selectSelect = select.selectElements;
     el.addEventListener("pointermove", pointermove);
     el.addEventListener(
@@ -248,30 +247,15 @@ function grabbing() {
         once: true
       }
     );
-    // const selectCenter = select.getCenter();
     function pointermove(e: UserCanvasEvent) {
       const dx = e.detail.x - startDownPoint.x - select.size.width / 2;
       const dy = e.detail.y - startDownPoint.y;
       const angle = (Math.atan2(dy, dx) + Math.PI / 2) % (2 * Math.PI);
       const rotate = (angle * 180) / Math.PI;
-
       selectSelect.forEach((element) => {
         element.setRotate(rotate);
-        // element.getGlobalCenter();
       });
       select.setRotate(rotate);
-      // selectSelect.forEach(
-      //   ({
-      //     //  center,
-      //     element
-      //     // centerOffsetX, centerOffsetY
-      //   }) => {
-      //     element.setRotate(rotate - select.lastRotate, selectCenter);
-      //   }
-      // );
-      // select.setRotate(rotate - select.lastRotate, selectCenter);
-      // select.lastRotate = rotate;
-      // el.root.render();
     }
   });
 
