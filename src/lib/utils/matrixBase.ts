@@ -31,7 +31,7 @@ export class MatrixBase extends EventTarget {
     return { x: localPoint.x, y: localPoint.y };
   }
 
-  getWordPoint(): Point {
+  getGlobalPoint(): Point {
     const localPoint = new DOMPoint(0, 0);
     const globalPoint = localPoint.matrixTransform(this.matrixState.matrix);
     return {

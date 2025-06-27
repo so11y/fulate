@@ -377,7 +377,7 @@ export class Element extends MatrixBase {
     this.dirtyCache(() => {
       // 获取父容器尺寸（用于百分比计算）
       const point = this.getLocalPoint();
-
+      console.log(point,'--');
       const newMatrix = new DOMMatrix().translate(point.x, point.y);
 
       if (

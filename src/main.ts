@@ -29,7 +29,7 @@ const root = Root({
       width: 30,
       height: 40,
       backgroundColor: "red",
-      key: "333",
+      key: "333"
       // rotate: 40
     }),
     column({

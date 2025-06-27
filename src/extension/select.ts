@@ -25,6 +25,8 @@ export class Select extends Element {
     center: Point;
   }> = [];
 
+  _elementOffsets = new Map<Element, Point>();
+
   constructor() {
     super({
       key: "select"
@@ -36,45 +38,45 @@ export class Select extends Element {
       backgroundColor: "rgba(0, 0, 0, 0.1)",
       position: "relative",
       children: [
-        grabbing(),
-        new Element({
-          width: 5,
-          height: 5,
-          x: -2,
-          y: -2,
-          position: "absolute",
-          backgroundColor: "red"
-        }),
-        new Element({
-          width: 5,
-          height: 5,
-          right: 0,
-          top: 0,
-          x: 2,
-          y: -2,
-          position: "absolute",
-          backgroundColor: "red"
-        }),
-        new Element({
-          width: 5,
-          height: 5,
-          bottom: 0,
-          left: 0,
-          x: -2,
-          y: 2,
-          position: "absolute",
-          backgroundColor: "red"
-        }),
-        new Element({
-          width: 5,
-          height: 5,
-          bottom: 0,
-          right: 0,
-          x: 2,
-          y: 2,
-          position: "absolute",
-          backgroundColor: "red"
-        })
+        grabbing()
+        // new Element({
+        //   width: 5,
+        //   height: 5,
+        //   x: -2,
+        //   y: -2,
+        //   position: "absolute",
+        //   backgroundColor: "red"
+        // }),
+        // new Element({
+        //   width: 5,
+        //   height: 5,
+        //   right: 0,
+        //   top: 0,
+        //   x: 2,
+        //   y: -2,
+        //   position: "absolute",
+        //   backgroundColor: "red"
+        // }),
+        // new Element({
+        //   width: 5,
+        //   height: 5,
+        //   bottom: 0,
+        //   left: 0,
+        //   x: -2,
+        //   y: 2,
+        //   position: "absolute",
+        //   backgroundColor: "red"
+        // }),
+        // new Element({
+        //   width: 5,
+        //   height: 5,
+        //   bottom: 0,
+        //   right: 0,
+        //   x: 2,
+        //   y: 2,
+        //   position: "absolute",
+        //   backgroundColor: "red"
+        // })
       ]
     });
 
@@ -171,15 +173,20 @@ export class Select extends Element {
           //   v.setDirty();
           // });
           this.root.render();
+
           // 获取旋转中心点
           const center = this.getGlobalCenter();
           console.log(center, "---");
           // 保存初始旋转状态
-          // this.selectStatus = this.selectElements.map((v) => ({
-          //   element: v,
-          //   preRotate: v.rotate || 0,
-          //   center: v.globalToLocal(center.x, center.y)
-          // }));
+          this.selectStatus = this.selectElements.map((v) => {
+            const localCenter = v.globalToLocal(center.x, center.y);
+            return {
+              element: v,
+              preRotate: v.rotate || 0,
+              center: localCenter
+            };
+          });
+          console.log(this.selectStatus, "---");
           this.root.removeEventListener("pointermove", pointermove);
         },
         {
@@ -229,11 +236,11 @@ function grabbing() {
     const center = select.getGlobalCenter();
 
     // // 保存初始旋转状态
-    const selectSelect = select.selectElements.map((v) => ({
-      element: v,
-      preRotate: v.rotate || 0,
-      center: v.globalToLocal(center.x, center.y)
-    }));
+    // const selectSelect = select.selectElements.map((v) => ({
+    //   element: v,
+    //   preRotate: v.rotate || 0,
+    //   center: v.globalToLocal(center.x, center.y)
+    // }));
 
     // 创建初始参考向量（垂直向上）
     const initialVector: [number, number] = [0, -1];
@@ -267,7 +274,7 @@ function grabbing() {
       console.log(currentAngle, "---", initialAngle);
 
       // 应用旋转到每个元素
-      selectSelect.forEach(({ element, preRotate, center }) => {
+      select.selectStatus.forEach(({ element, preRotate, center }) => {
         // const localCenter = element.globalToLocal(center.x, center.y);
         console.log("---", center, "---");
         element.setRotate(deltaAngle + preRotate, center, false);
