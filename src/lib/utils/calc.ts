@@ -229,3 +229,50 @@ export function calcRotate(point: Point, rotate?: number) {
   point.x = point.x * Math.cos(rad) - point.y * Math.sin(rad); // 修正 x
   point.y = point.x * Math.sin(rad) + point.y * Math.cos(rad); // 修正 y
 }
+
+// 辅助函数：计算两个点之间的向量
+export function createVector(
+  start: { x: number; y: number },
+  end: { x: number; y: number }
+): [number, number] {
+  return [end.x - start.x, end.y - start.y];
+}
+
+// 辅助函数：计算旋转角度（基于getRotateAng）
+export function calculateRotationAngle(
+  vct1: [number, number],
+  vct2: [number, number]
+) {
+  let EPSILON = 1.0e-8;
+  let dist, dot, cross, degree, angle;
+
+  // 归一化第一个向量
+  dist = Math.sqrt(vct1[0] * vct1[0] + vct1[1] * vct1[1]);
+  vct1[0] /= dist;
+  vct1[1] /= dist;
+
+  // 归一化第二个向量
+  dist = Math.sqrt(vct2[0] * vct2[0] + vct2[1] * vct2[1]);
+  vct2[0] /= dist;
+  vct2[1] /= dist;
+
+  // 计算点积
+  dot = vct1[0] * vct2[0] + vct1[1] * vct2[1];
+
+  // 处理特殊情况
+  if (Math.abs(dot - 1.0) <= EPSILON) {
+    angle = 0;
+  } else if (Math.abs(dot + 1.0) <= EPSILON) {
+    angle = Math.PI;
+  } else {
+    angle = Math.acos(dot);
+    cross = vct1[0] * vct2[1] - vct2[0] * vct1[1];
+    if (cross < 0) {
+      angle = 2 * Math.PI - angle;
+    }
+  }
+
+  // 转换为度数
+  degree = (angle * 180) / Math.PI;
+  return degree;
+}

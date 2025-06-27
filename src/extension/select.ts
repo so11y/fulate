@@ -5,61 +5,30 @@ import { Column } from "../lib/column";
 import { Rect } from "../lib/types";
 import {
   calculateElementBounds,
+  calculateRotationAngle,
+  createVector,
   isOverlap,
   mergeTwoRects
 } from "../lib/utils/calc";
 import { UserCanvasEvent } from "../lib/utils/eventManage";
-import { first } from "lodash-es";
+import { first, isNil } from "lodash-es";
 
 export class Select extends Element {
   type = "select";
   selectElements: Element[] = [];
   selectBody: Element;
   bodyControl: Element;
-  lastRotate = 0;
+  lastRotate?: number;
+  selectStatus: Array<{
+    element: Element;
+    preRotate: number;
+    center: Point;
+  }> = [];
 
   constructor() {
     super({
       key: "select"
     });
-    // this.bodyControl = new Column({
-    //   justifyContent: "space-between",
-    //   height: Number.MAX_VALUE,
-    //   children: [
-    //     // Row({
-    //     //   justifyContent: "space-between",
-    //     //   translateY: -5,
-    //     //   children: [
-    //     //     ControlEl({
-    //     //       cursor: "nw-resize",
-    //     //       translateX: -5
-    //     //     }),
-    //     //     ControlEl({
-    //     //       cursor: "grabbing",
-    //     //       translateY: -30
-    //     //     }),
-    //     //     ControlEl({
-    //     //       cursor: "sw-resize",
-    //     //       translateX: 5
-    //     //     })
-    //     //   ]
-    //     // }),
-    //     // Row({
-    //     //   justifyContent: "space-between",
-    //     //   translateY: 5,
-    //     //   children: [
-    //     //     ControlEl({
-    //     //       cursor: "sw-resize",
-    //     //       translateX: -5
-    //     //     }),
-    //     //     ControlEl({
-    //     //       cursor: "nw-resize",
-    //     //       translateX: 5
-    //     //     })
-    //     //   ]
-    //     // })
-    //   ]
-    // });
     this.selectBody = new Element({
       width: 100,
       height: 100,
@@ -140,7 +109,7 @@ export class Select extends Element {
 
     const pointerdown = (e: UserCanvasEvent) => {
       this.selectElements = [];
-      this.lastRotate = 0;
+      this.lastRotate = undefined;
       // this.selectBody.children = [];
       const selects = new Set<Element>();
       e.stopPropagation();
@@ -198,7 +167,19 @@ export class Select extends Element {
           }
           this.selectBody.overflow = els.length ? "visible" : "hidden";
           this.selectElements = els;
+          // this.selectElements.forEach((v) => {
+          //   v.setDirty();
+          // });
           this.root.render();
+          // 获取旋转中心点
+          const center = this.getGlobalCenter();
+          console.log(center, "---");
+          // 保存初始旋转状态
+          // this.selectStatus = this.selectElements.map((v) => ({
+          //   element: v,
+          //   preRotate: v.rotate || 0,
+          //   center: v.globalToLocal(center.x, center.y)
+          // }));
           this.root.removeEventListener("pointermove", pointermove);
         },
         {
@@ -236,38 +217,80 @@ function grabbing() {
 
   el.addEventListener("pointerdown", (e) => {
     e.stopPropagation();
+    console.log(111);
+
     const select = el.root.getElementByKey("select") as Select;
-    const startDownPoint = { x: e.detail.x, y: e.detail.y };
-    const selectSelect = select.selectElements;
+    const startDownPoint = {
+      x: e.detail.x,
+      y: e.detail.y
+    };
+
+    // 获取旋转中心点
     const center = select.getGlobalCenter();
-    el.addEventListener("pointermove", pointermove);
-    el.addEventListener(
-      "pointerup",
-      () => el.removeEventListener("pointermove", pointermove),
-      {
-        once: true
-      }
+
+    // // 保存初始旋转状态
+    const selectSelect = select.selectElements.map((v) => ({
+      element: v,
+      preRotate: v.rotate || 0,
+      center: v.globalToLocal(center.x, center.y)
+    }));
+
+    // 创建初始参考向量（垂直向上）
+    const initialVector: [number, number] = [0, -1];
+
+    // 计算初始向量（从中心点到鼠标位置）
+    const initialMouseVector = createVector(center, startDownPoint);
+    let initialAngle = calculateRotationAngle(
+      initialVector,
+      initialMouseVector
     );
-    function pointermove(e: UserCanvasEvent) {
-      const dx = e.detail.x - (startDownPoint.x + select.size.width / 2);
-      const dy = e.detail.y - (startDownPoint.y + select.size.height / 2);
-      const angle = (Math.atan2(dy, dx) + Math.PI / 2) % (2 * Math.PI);
-      const rotate = (angle * 180) / Math.PI;
-      selectSelect.forEach((element) => {
-        element.setRotate(
-          rotate,
-          element.globalToLocal(center.x, center.y),
-          false
-        );
+    const lastRotate = select.lastRotate ?? 0;
+
+    // 指针移动处理函数
+    const pointermove = (e: UserCanvasEvent) => {
+      // 计算当前鼠标向量
+      const currentMouseVector = createVector(center, {
+        x: e.detail.x,
+        y: e.detail.y
       });
-      select.setRotate(rotate, undefined, false);
+
+      // 计算当前角度
+      const currentAngle = calculateRotationAngle(
+        initialVector,
+        currentMouseVector
+      );
+
+      // 计算旋转增量
+      // const deltaAngle = currentAngle;
+      let deltaAngle = currentAngle - initialAngle + lastRotate;
+
+      console.log(currentAngle, "---", initialAngle);
+
+      // 应用旋转到每个元素
+      selectSelect.forEach(({ element, preRotate, center }) => {
+        // const localCenter = element.globalToLocal(center.x, center.y);
+        console.log("---", center, "---");
+        element.setRotate(deltaAngle + preRotate, center, false);
+      });
+      select.lastRotate = deltaAngle;
+      // 更新选择框旋转
+      select.setRotate(deltaAngle, undefined, false);
       select.root.render();
-    }
+    };
+
+    // 添加事件监听
+    el.addEventListener("pointermove", pointermove);
+
+    // 清理函数
+    const cleanup = () => {
+      el.removeEventListener("pointermove", pointermove);
+    };
+
+    el.addEventListener("pointerup", cleanup, { once: true });
   });
 
   return el;
 }
-
 function hasParentIgNoreSelf(v: Set<Element>) {
   Array.from(v).forEach((element) => {
     let parent = element.parent;

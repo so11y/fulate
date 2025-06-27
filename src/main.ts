@@ -30,7 +30,7 @@ const root = Root({
       height: 40,
       backgroundColor: "red",
       key: "333",
-      rotate: 40
+      // rotate: 40
     }),
     column({
       // justifyContent: "space-between",
@@ -42,7 +42,7 @@ const root = Root({
       height: 180,
       backgroundColor: "black",
       key: "333d",
-      position: "relative",
+      // position: "relative",
       // rotate: 10,
       children: [
         // Element({
@@ -56,15 +56,15 @@ const root = Root({
         //   text: "可以点我的",
         //   rotate: 10
         // }),
-        CircleImg({
-          src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
-          width: 50,
-          height: 50,
-          key: "3334",
-          zIndex: 2,
-          right: 0,
-          position: "absolute"
-        })
+        // CircleImg({
+        //   src: "https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/VTable/custom-render/flower.jpg",
+        //   width: 50,
+        //   height: 50,
+        //   key: "3334",
+        //   zIndex: 2,
+        //   right: 0,
+        //   position: "absolute"
+        // })
       ]
     }),
     select()
@@ -80,11 +80,11 @@ const root = Root({
 
 root.mounted();
 
-setInterval(() => {
-  console.time("render");
-  root.render();
-  console.timeEnd("render");
-}, 1000);
+// setInterval(() => {
+//   console.time("render");
+//   root.render();
+//   console.timeEnd("render");
+// }, 1000);
 
 // let lastTime = performance.now();
 // let frameCount = 0;

@@ -259,6 +259,7 @@ export class Element extends MatrixBase {
   }
 
   setRotate(rotate: number, center = this.getLocalCenter(), render = true) {
+    rotate = rotate % 360;
     this.rotate = rotate;
     this.rotateCenter = center;
     // this.children?.forEach((child) => child.setRotate(rotate, center));
@@ -349,16 +350,6 @@ export class Element extends MatrixBase {
       //TODO  卸载的时候需要移除 ,重新计算的时候也需要移除
       parentLayer?.addEventListener("dirty", renderCtx.layer?.setDirty);
     }
-
-    // if (this.position === "absolute" && this.parent) {
-    //   console.log(3);
-    //   this.parent.renderContext!.position!.addEventListener(
-    //     "sizeUpdate",
-    //     (e) => {
-    //       this.setDirty();
-    //     }
-    //   );
-    // }
 
     if (!isNil(this.position) && this.position === "relative") {
       hasProvide = true;
