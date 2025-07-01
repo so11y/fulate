@@ -1,0 +1,51 @@
+<canvas
+  id="canvas"
+  width="400"
+  height="300"
+></canvas>
+<button onclick="switchCenter(50,50)">中心(50,50)</button>
+<button onclick="switchCenter(100,50)">中心(100,50)</button>
+
+<script>
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  // 初始状态
+  let currentMatrix = new DOMMatrix()
+    .translateSelf(50, 50)
+    .rotateSelf(30)
+    .translateSelf(-50, -50);
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(currentMatrix);
+    ctx.fillStyle = "red";
+    ctx.fillRect(50, 50, 100, 100);
+  }
+
+  function switchCenter(newX, newY) {
+    // 1. 提取当前旋转角度（假设已知为30°）
+    const angle = 30;
+    const rad = (angle * Math.PI) / 180;
+
+    // 2. 计算新旧中心差值
+    const dx = newX - 50; // 旧中心(50,50)
+    const dy = newY - 50;
+
+    // 3. 计算补偿量（核心公式）
+    const compensationX = dx * Math.cos(rad) - dy * Math.sin(rad) - dx;
+    const compensationY = dx * Math.sin(rad) + dy * Math.cos(rad) - dy;
+
+    // 4. 重建变换矩阵
+    currentMatrix = new DOMMatrix()
+      .translateSelf(compensationX, compensationY) // 补偿偏移
+      .translateSelf(newX, newY)
+      .rotateSelf(angle)
+      .translateSelf(-newX, -newY);
+
+    draw();
+  }
+
+  // 初始绘制
+  draw();
+</script>

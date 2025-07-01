@@ -17,67 +17,68 @@ export class Select extends Element {
   type = "select";
   selectElements: Element[] = [];
   selectBody: Element;
-  bodyControl: Element;
+  bodyControl: Element[];
   lastRotate?: number;
   selectStatus: Array<{
     element: Element;
     preRotate: number;
     center: Point;
+    // offsetX: number;
+    // offsetY: number;
   }> = [];
-
-  _elementOffsets = new Map<Element, Point>();
 
   constructor() {
     super({
       key: "select"
     });
+    this.bodyControl = [
+      grabbing(),
+      new Element({
+        width: 5,
+        height: 5,
+        x: -2,
+        y: -2,
+        position: "absolute",
+        backgroundColor: "red"
+      }),
+      new Element({
+        width: 5,
+        height: 5,
+        right: 0,
+        top: 0,
+        x: 2,
+        y: -2,
+        position: "absolute",
+        backgroundColor: "red"
+      }),
+      new Element({
+        width: 5,
+        height: 5,
+        bottom: 0,
+        left: 0,
+        x: -2,
+        y: 2,
+        position: "absolute",
+        backgroundColor: "red"
+      }),
+      new Element({
+        width: 5,
+        height: 5,
+        bottom: 0,
+        right: 0,
+        x: 2,
+        y: 2,
+        position: "absolute",
+        backgroundColor: "red"
+      })
+    ];
     this.selectBody = new Element({
-      width: 100,
-      height: 100,
+      width: 0,
+      height: 0,
       overflow: "hidden",
       backgroundColor: "rgba(0, 0, 0, 0.1)",
       position: "relative",
-      children: [
-        grabbing()
-        // new Element({
-        //   width: 5,
-        //   height: 5,
-        //   x: -2,
-        //   y: -2,
-        //   position: "absolute",
-        //   backgroundColor: "red"
-        // }),
-        // new Element({
-        //   width: 5,
-        //   height: 5,
-        //   right: 0,
-        //   top: 0,
-        //   x: 2,
-        //   y: -2,
-        //   position: "absolute",
-        //   backgroundColor: "red"
-        // }),
-        // new Element({
-        //   width: 5,
-        //   height: 5,
-        //   bottom: 0,
-        //   left: 0,
-        //   x: -2,
-        //   y: 2,
-        //   position: "absolute",
-        //   backgroundColor: "red"
-        // }),
-        // new Element({
-        //   width: 5,
-        //   height: 5,
-        //   bottom: 0,
-        //   right: 0,
-        //   x: 2,
-        //   y: 2,
-        //   position: "absolute",
-        //   backgroundColor: "red"
-        // })
-      ]
+      children: this.bodyControl
     });
 
     let selectElementsStartPoint: Array<Point & { element: Element }> = [];
@@ -112,15 +113,19 @@ export class Select extends Element {
     const pointerdown = (e: UserCanvasEvent) => {
       this.selectElements = [];
       this.lastRotate = undefined;
-      // this.selectBody.children = [];
+      this.selectBody.children = [];
       const selects = new Set<Element>();
       e.stopPropagation();
       const startDownPoint = {
         x: e.detail.x,
         y: e.detail.y
       };
-      this.setOption({
-        rotate: 0
+      this.rotate = 0;
+      setRectSize({
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0
       });
       const directEl = this.root.children?.filter(
         (v) => v.parent === v.root && v !== this
@@ -146,8 +151,7 @@ export class Select extends Element {
       this.root.addEventListener(
         "pointerup",
         () => {
-          console.log(selects, "--");
-          const els = Array.from(selects); //Array.from(hasParentIgNoreSelf(selects));
+          const els = Array.from(selects);
           if (selects.size === 0) {
             setRectSize({
               x: 0,
@@ -165,28 +169,36 @@ export class Select extends Element {
               );
               setRectSize(rect);
             }
-            // this.selectBody.children = [this.bodyControl];
+            this.selectBody.children = this.bodyControl;
           }
           this.selectBody.overflow = els.length ? "visible" : "hidden";
           this.selectElements = els;
-          // this.selectElements.forEach((v) => {
-          //   v.setDirty();
-          // });
           this.root.render();
 
           // 获取旋转中心点
           const center = this.getGlobalCenter();
-          console.log(center, "---");
+
           // 保存初始旋转状态
           this.selectStatus = this.selectElements.map((v) => {
-            const localCenter = v.globalToLocal(center.x, center.y);
+            const newCenter = v.globalToLocal(center.x, center.y);
+            const currentCenter = v.rotateCenter ?? newCenter;
+            const rad = (v.rotate * Math.PI) / 180;
+            const dx = newCenter.x - currentCenter.x;
+            const dy = newCenter.y - currentCenter.y;
+            const offsetX = dx * Math.cos(rad) - dy * Math.sin(rad) - dx;
+            const offsetY = dx * Math.sin(rad) + dy * Math.cos(rad) - dy;
+            v.x += offsetX;
+            v.y += offsetY;
+            v.rotateCenter = newCenter;
+            // v.setDirty();
             return {
               element: v,
               preRotate: v.rotate || 0,
-              center: localCenter
+              center: newCenter
             };
           });
-          console.log(this.selectStatus, "---");
+
+          // this.root.render();
           this.root.removeEventListener("pointermove", pointermove);
         },
         {
@@ -214,7 +226,7 @@ function grabbing() {
   const el = new Element({
     width: 10,
     height: 10,
-    left: 50,
+    left: 50, //50%
     x: -2,
     y: -50,
     position: "absolute",
@@ -224,7 +236,6 @@ function grabbing() {
 
   el.addEventListener("pointerdown", (e) => {
     e.stopPropagation();
-    console.log(111);
 
     const select = el.root.getElementByKey("select") as Select;
     const startDownPoint = {
@@ -234,13 +245,6 @@ function grabbing() {
 
     // 获取旋转中心点
     const center = select.getGlobalCenter();
-
-    // // 保存初始旋转状态
-    // const selectSelect = select.selectElements.map((v) => ({
-    //   element: v,
-    //   preRotate: v.rotate || 0,
-    //   center: v.globalToLocal(center.x, center.y)
-    // }));
 
     // 创建初始参考向量（垂直向上）
     const initialVector: [number, number] = [0, -1];
@@ -269,18 +273,18 @@ function grabbing() {
 
       // 计算旋转增量
       // const deltaAngle = currentAngle;
-      let deltaAngle = currentAngle - initialAngle + lastRotate;
-
-      console.log(currentAngle, "---", initialAngle);
+      let deltaAngle = normalizeAngle(currentAngle - initialAngle + lastRotate);
 
       // 应用旋转到每个元素
-      select.selectStatus.forEach(({ element, preRotate, center }) => {
-        // const localCenter = element.globalToLocal(center.x, center.y);
-        console.log("---", center, "---");
-        element.setRotate(deltaAngle + preRotate, center, false);
+      select.selectStatus.forEach((item) => {
+        const { element, preRotate } = item;
+        element.setRotate(
+          normalizeAngle(deltaAngle + preRotate),
+          undefined,
+          false
+        );
       });
       select.lastRotate = deltaAngle;
-      // 更新选择框旋转
       select.setRotate(deltaAngle, undefined, false);
       select.root.render();
     };
@@ -310,6 +314,10 @@ function hasParentIgNoreSelf(v: Set<Element>) {
     }
   });
   return v;
+}
+
+function normalizeAngle(angle: number) {
+  return ((angle % 360) + 360) % 360;
 }
 
 export function select() {

@@ -29,10 +29,29 @@ const root = Root({
       width: 30,
       height: 40,
       backgroundColor: "red",
-      key: "333"
+      key: "333",
+      x: 241,
+      y: 292
+      // rotateCenter: {
+      //   x: 123.5,
+      //   y: 10
+      // },
       // rotate: 40
     }),
+    Element({
+      width: 30,
+      height: 40,
+      backgroundColor: "red",
+      x: 116,
+      y: 402
+      // rotate: 90,
+      // x: 180,
+      // y: 338
+    }),
     column({
+      x: 358,
+      y: 212,
+      key: "444",
       // justifyContent: "space-between",
       // justifyContent: "center",
       // alignItems: "flex-end",
@@ -41,7 +60,11 @@ const root = Root({
       width: 130,
       height: 180,
       backgroundColor: "black",
-      key: "333d",
+      // rotateCenter: {
+      //   x: 6.5,
+      //   y: 90
+      // },
+      // rotate: 40,
       // position: "relative",
       // rotate: 10,
       children: [
@@ -82,6 +105,12 @@ root.mounted();
 
 // setInterval(() => {
 //   console.time("render");
+//   const c333 = root.getElementByKey("333")!;
+//   const c444 = root.getElementByKey("444")!;
+//   c333.rotate += 1;
+//   c444.rotate += 1;
+//   c333.setDirty();
+//   c444.setDirty();
 //   root.render();
 //   console.timeEnd("render");
 // }, 1000);

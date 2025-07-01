@@ -258,11 +258,10 @@ export class Element extends MatrixBase {
     // ac.play();
   }
 
-  setRotate(rotate: number, center = this.getLocalCenter(), render = true) {
+  setRotate(rotate: number, center = undefined, render = true) {
     rotate = rotate % 360;
     this.rotate = rotate;
-    this.rotateCenter = center;
-    // this.children?.forEach((child) => child.setRotate(rotate, center));
+    this.rotateCenter = center ?? this.rotateCenter;
     this.setDirty();
     if (render) {
       this.root.render();
@@ -377,8 +376,7 @@ export class Element extends MatrixBase {
     this.dirtyCache(() => {
       // 获取父容器尺寸（用于百分比计算）
       const point = this.getLocalPoint();
-      console.log(point,'--');
-      const newMatrix = new DOMMatrix().translate(point.x, point.y);
+      const newMatrix = new DOMMatrix().translateSelf(point.x, point.y);
 
       if (
         this.position === "absolute" &&
@@ -482,19 +480,9 @@ export class Element extends MatrixBase {
       if (this.key) {
         this.root.keyMap.set(this.key, this);
       }
-      // this.root.quickElements.add(this);
       this.eventManage.mounted();
     }
-
     this.isMounted = true;
-
-    // if (this.position === "absolute" && this.parent) {
-    //   console.log(3);
-    //   this.parent.addEventListener("sizeUpdate", (e) => {
-    //     console.log(e);
-    //   });
-    //   this.parent.eventManage.hasUserEvent = false;
-    // }
   }
 
   getBoundingBox() {
@@ -587,16 +575,16 @@ export class Element extends MatrixBase {
   }
 
   getLocalCenter() {
-    const size = this.size;
-    return {
-      x: size.width / 2,
-      y: size.height / 2
+    const size = {
+      x: this.size.width / 2,
+      y: this.size.height / 2
     };
+    return size;
   }
 
   getGlobalCenter() {
-    const localCenter = this.getLocalCenter();
-    const point = new DOMPoint(localCenter.x, localCenter.y);
+    const center = this.getLocalCenter();
+    const point = new DOMPoint(center.x, center.y);
     const transformedPoint = point.matrixTransform(this.matrixState.matrix);
     return {
       x: transformedPoint.x,
