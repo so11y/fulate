@@ -22,7 +22,6 @@ export class Select extends Element {
   selectStatus: Array<{
     element: Element;
     preRotate: number;
-    center: Point;
     // offsetX: number;
     // offsetY: number;
   }> = [];
@@ -180,21 +179,10 @@ export class Select extends Element {
 
           // 保存初始旋转状态
           this.selectStatus = this.selectElements.map((v) => {
-            const newCenter = v.globalToLocal(center.x, center.y);
-            const currentCenter = v.rotateCenter ?? newCenter;
-            const rad = (v.rotate * Math.PI) / 180;
-            const dx = newCenter.x - currentCenter.x;
-            const dy = newCenter.y - currentCenter.y;
-            const offsetX = dx * Math.cos(rad) - dy * Math.sin(rad) - dx;
-            const offsetY = dx * Math.sin(rad) + dy * Math.cos(rad) - dy;
-            v.x += offsetX;
-            v.y += offsetY;
-            v.rotateCenter = newCenter;
-            // v.setDirty();
+            v.setOrigin(center);
             return {
               element: v,
-              preRotate: v.rotate || 0,
-              center: newCenter
+              preRotate: v.rotate || 0
             };
           });
 

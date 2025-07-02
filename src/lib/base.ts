@@ -258,6 +258,20 @@ export class Element extends MatrixBase {
     // ac.play();
   }
 
+  setOrigin(center: Point) {
+    const newCenter = this.globalToLocal(center.x, center.y);
+    const currentCenter = this.rotateCenter ?? newCenter;
+    const rad = (this.rotate * Math.PI) / 180;
+    const dx = newCenter.x - currentCenter.x;
+    const dy = newCenter.y - currentCenter.y;
+    const offsetX = dx * Math.cos(rad) - dy * Math.sin(rad) - dx;
+    const offsetY = dx * Math.sin(rad) + dy * Math.cos(rad) - dy;
+    this.x += offsetX;
+    this.y += offsetY;
+    this.rotateCenter = newCenter;
+    this.setDirty();
+  }
+
   setRotate(rotate: number, center = undefined, render = true) {
     rotate = rotate % 360;
     this.rotate = rotate;
