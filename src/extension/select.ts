@@ -305,7 +305,6 @@ function resize(position: string, options: ElementOptions) {
     const initialHeight = select.size.height;
     const { x: initialLeft, y: initialTop } = select.getLocalPoint();
 
-    // Store initial rotation center if exists
     const initialRotateCenter = select.rotateCenter
       ? { ...select.rotateCenter }
       : select.getLocalCenter();
@@ -396,7 +395,6 @@ function resize(position: string, options: ElementOptions) {
       const scaleX = newWidth / initialWidth;
       const scaleY = newHeight / initialHeight;
 
-      // Update rotation center for the select box
       if (select.rotateCenter) {
         select.rotateCenter = {
           x: initialRotateCenter.x * scaleX,
@@ -412,7 +410,6 @@ function resize(position: string, options: ElementOptions) {
           element.width = width * scaleX;
           element.height = height * scaleY;
 
-          // Update rotation center for each element
           if (element.rotateCenter) {
             element.rotateCenter = {
               x: rotateCenter.x * scaleX,
