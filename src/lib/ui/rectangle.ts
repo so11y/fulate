@@ -4,10 +4,10 @@ import { Element } from "../base";
 export class Rectangle extends Element {
   type = "rectangle";
 
-  render(ctx: CanvasRenderingContext2D) {
+  render(ctx: CanvasRenderingContext2D = this.layer.ctx) {
     ctx.save();
     ctx.beginPath();
-    ctx.setTransform(this.ownMatrixCache!);
+    ctx.setTransform(this.getOwnMatrix());
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;
     }

@@ -191,7 +191,7 @@ export class Select extends Layer {
     };
 
     const handleSelect = (e) => {
-      // this.selectEls = [];
+      this.selectEls = [];
       const directEl = this.root.children?.filter((v) => v !== this);
       const startPoint = new Point(e.detail.x, e.detail.y);
       this.setOptions({
@@ -202,7 +202,9 @@ export class Select extends Layer {
         angle: 0
       }).render();
 
-      this.selectEls = [directEl.find(checkElementIntersects)].filter(Boolean);
+      const selectEls = new Set(
+        [directEl.find(checkElementIntersects)].filter(Boolean)
+      );
 
       let hasMove = false;
       const pointermove = (e: PointerEvent) => {
@@ -222,9 +224,11 @@ export class Select extends Layer {
           this.root.removeEventListener("pointermove", pointermove);
           if (hasMove) {
             const [{ point: tl }, , { point: br }] = this.getCoords();
-            const objects = directEl?.filter(checkElementIntersects);
-            this.selectEls = this.selectEls.concat(objects);
+            directEl
+              ?.filter(checkElementIntersects)
+              .forEach((child) => selectEls.add(child));
           }
+          this.selectEls = Array.from(selectEls);
           const rect = makeBoundingBoxFromPoints(
             this.selectEls?.map((v) => v.coords).flat(1)
           );
@@ -338,7 +342,6 @@ export class Select extends Layer {
   ) {
     ctx.save();
     if (control.type === "mtr") {
-      // 绘制圆形（边中点、旋转点）
       ctx.beginPath();
       ctx.arc(point.x, point.y, this.ControlSize - 4, 0, Math.PI * 2);
       ctx.fillStyle = "#ff4757";
@@ -415,7 +418,7 @@ export class Select extends Layer {
   }
 
   setCoords(): this {
-    const finalMatrix = this.ownMatrixCache;
+    const finalMatrix = this.getOwnMatrix();
     const dim = this._getTransformedDimensions({
       width: this.width ?? 0,
       height: this.height ?? 0

@@ -1,4 +1,3 @@
-import { Point } from "../util/point";
 import type { Element } from "./base";
 
 export type UserCanvasEvent = Event & { detail: CanvasPoint };

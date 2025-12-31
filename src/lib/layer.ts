@@ -6,9 +6,9 @@ export class Layer extends Rectangle {
   ctx: CanvasRenderingContext2D;
   zIndex: number;
   isRender: boolean;
-  constructor(options: any) {
+  constructor(options?: any) {
     super(options);
-    this.zIndex = options.zIndex ?? 1;
+    this.zIndex = options?.zIndex ?? 1;
     this.canvasEl = document.createElement("canvas");
     this.ctx = (this.canvasEl as HTMLCanvasElement).getContext("2d")!;
     this.layer = this;
@@ -34,7 +34,7 @@ export class Layer extends Rectangle {
       this.isRender = true;
       this.clear();
       Promise.resolve().then(() => {
-        super.render(this.ctx);
+        super.render();
         this.isDirty = false;
         this.isRender = false;
       });

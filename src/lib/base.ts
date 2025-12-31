@@ -25,6 +25,8 @@ export interface BaseElementOption {
   cursor?: string;
   selectable?: boolean;
   visible?: boolean;
+
+  children?: Array<Element>;
 }
 
 export class Element extends EventTarget {
@@ -60,23 +62,27 @@ export class Element extends EventTarget {
 
   constructor(options?: BaseElementOption) {
     super();
-    this.setOptions(options);
+    this.setOptions(options, false);
   }
 
-  render(ctx: CanvasRenderingContext2D) {
+  render(ctx = this.layer.ctx) {
     if (this.children) {
       for (const child of this.children) {
-        child.calcOwnMatrix();
         child.render(ctx);
+        this.isDirty = false;
       }
     }
   }
 
-  setOptions(options: BaseElementOption) {
-    Object.assign(this, options);
+  setOptions(options?: BaseElementOption, calc = true) {
     this.isDirty = true;
-    this.calcOwnMatrix();
-    this.setCoords();
+    if (options) {
+      Object.assign(this, options);
+    }
+    if (calc) {
+      this.calcOwnMatrix();
+      this.setCoords();
+    }
     return this;
   }
 
@@ -116,7 +122,16 @@ export class Element extends EventTarget {
       "top"
     );
     this.setOptions({ left: center.x, top: center.y });
+    console.log("--");
+    this.isDirty = true;
     return this;
+  }
+
+  getOwnMatrix() {
+    if (this.isDirty || this.parent?.isDirty || !this.ownMatrixCache) {
+      return this.calcOwnMatrix();
+    }
+    return this.ownMatrixCache;
   }
 
   calcOwnMatrix() {
@@ -126,8 +141,7 @@ export class Element extends EventTarget {
     const matrix = new DOMMatrix();
 
     if (this.parent && this.parent !== this.root) {
-      const parentMatrix =
-        this.parent.ownMatrixCache || this.parent.calcOwnMatrix();
+      const parentMatrix = this.parent.getOwnMatrix();
       matrix.multiplySelf(parentMatrix);
     }
 
@@ -167,12 +181,12 @@ export class Element extends EventTarget {
   }
 
   getWorldPoint(point) {
-    const matrix = this.ownMatrixCache;
+    const matrix = this.getOwnMatrix();
     return new Point(matrix.transformPoint(point));
   }
 
   getGlobalToLocal(point) {
-    const inverseMatrix = this.ownMatrixCache.inverse();
+    const inverseMatrix = this.getOwnMatrix().inverse();
     return point.matrixTransform(inverseMatrix);
   }
 
@@ -185,7 +199,7 @@ export class Element extends EventTarget {
     ];
 
     const globalCorners = corners.map((corner) =>
-      corner.matrixTransform(this.ownMatrixCache)
+      corner.matrixTransform(this.getOwnMatrix())
     );
 
     // 计算 min/max
@@ -217,7 +231,7 @@ export class Element extends EventTarget {
   }
 
   setCoords() {
-    const finalMatrix = this.ownMatrixCache;
+    const finalMatrix = this.getOwnMatrix();
     const dim = this._getTransformedDimensions();
 
     const localPoints = [

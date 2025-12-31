@@ -9,7 +9,7 @@ export class Root extends Layer {
 
   quickElements: Array<Element> = [];
 
-  constructor(el: HTMLElement, options: BaseElementOption) {
+  constructor(el: HTMLElement, options?: BaseElementOption) {
     super(options);
     this.container = el;
     //TODO 未来根据最大layer动态调整
@@ -21,7 +21,6 @@ export class Root extends Layer {
   mounted() {
     this.root = this;
     super.mounted();
-    this.calcOwnMatrix();
     this.calcEventSort();
     this.calcEvent();
     this.render();
