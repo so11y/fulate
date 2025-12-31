@@ -35,7 +35,6 @@ export class Layer extends Rectangle {
       this.clear();
       Promise.resolve().then(() => {
         super.render();
-        this.isDirty = false;
         this.isRender = false;
       });
     }

@@ -122,7 +122,6 @@ export class Element extends EventTarget {
       "top"
     );
     this.setOptions({ left: center.x, top: center.y });
-    console.log("--");
     this.isDirty = true;
     return this;
   }

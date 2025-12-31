@@ -129,15 +129,19 @@ export class Element extends YogaOption {
   layoutSyncToRenderNode() {
     const layout = this.yogaNode.getComputedLayout();
 
-    console.log(layout, this);
-    this.renderNode.setOptions({
+    const style = {
       left: layout.left,
       top: layout.top,
       width: layout.width,
       height: layout.height,
-      backgroundColor: this.backgroundColor,
       children: this.children?.map((child) => child.renderNode)
-    });
+    } as any;
+
+    if (this.backgroundColor) {
+      style.backgroundColor = this.backgroundColor;
+    }
+
+    this.renderNode.setOptions(style);
 
     if (this.children?.length) {
       this.children.forEach((v) => v.layoutSyncToRenderNode());

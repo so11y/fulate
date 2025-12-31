@@ -74,11 +74,17 @@ root
           ]
         }),
         new Div({
+          marginTop: 6,
           width: 100,
           height: 100,
           backgroundColor: "blue"
         })
       ]
+    }),
+    new Div({
+      height: 30,
+      width: 50,
+      backgroundColor: "pink"
     })
   )
   .mounted();
