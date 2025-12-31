@@ -69,13 +69,13 @@ export class Element extends EventTarget {
     if (this.children) {
       for (const child of this.children) {
         child.render(ctx);
-        this.isDirty = false;
       }
     }
+    this.isDirty = false;
   }
 
   setOptions(options?: BaseElementOption, calc = true) {
-    this.isDirty = true;
+    // this.isDirty = true;
     if (options) {
       Object.assign(this, options);
     }
@@ -127,8 +127,9 @@ export class Element extends EventTarget {
   }
 
   getOwnMatrix() {
-    if (this.isDirty || this.parent?.isDirty || !this.ownMatrixCache) {
-      return this.calcOwnMatrix();
+    if (this.isDirty || !this.ownMatrixCache) {
+      this.calcOwnMatrix();
+      this.children?.forEach((v) => (v.isDirty = true));
     }
     return this.ownMatrixCache;
   }
