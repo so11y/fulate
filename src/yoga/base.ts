@@ -80,7 +80,12 @@ export class Element extends YogaOption {
   }
 
   setStyleToYoga() {
-    !isNil(this.display) && this.yogaNode.setDisplay(this.display);
+    if (!isNil(this.display)) {
+      this.yogaNode.setDisplay(this.display);
+      if (this.display === Display.Flex) {
+        this.yogaNode.setFlexDirection(FlexDirection.Row);
+      }
+    }
     !isNil(this.width) && this.yogaNode.setWidth(this.width);
     !isNil(this.height) && this.yogaNode.setHeight(this.height);
     !isNil(this.minWidth) && this.yogaNode.setMinWidth(this.minWidth);
