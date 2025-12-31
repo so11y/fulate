@@ -7,6 +7,26 @@ import { EventManage } from "./eventManage";
 import { type Layer } from "./layer";
 import { type Root } from "./root";
 
+export interface BaseElementOption {
+  left?: number;
+  top?: number;
+  angle?: number;
+  width?: number;
+  height?: number;
+  scaleX?: number;
+  scaleY?: number;
+  originX?: string;
+  originY?: string;
+  backgroundColor?: string | null;
+  radius?: number | null;
+  skewX?: number;
+  skewY?: number;
+  strokeWidth?: number;
+  cursor?: string;
+  selectable?: boolean;
+  visible?: boolean;
+}
+
 export class Element extends EventTarget {
   type = "element";
 
@@ -38,20 +58,9 @@ export class Element extends EventTarget {
   selectable?: boolean;
   visible?: boolean;
 
-  constructor(options: any) {
+  constructor(options?: BaseElementOption) {
     super();
     this.setOptions(options);
-  }
-
-  mounted() {
-    this.isMounted = true;
-    if (this.children) {
-      for (const child of this.children) {
-        child.parent = this;
-        child.root = this.root;
-        child.mounted();
-      }
-    }
   }
 
   render(ctx: CanvasRenderingContext2D) {
@@ -63,10 +72,11 @@ export class Element extends EventTarget {
     }
   }
 
-  setOptions(options: any) {
+  setOptions(options: BaseElementOption) {
     Object.assign(this, options);
     this.isDirty = true;
     this.calcOwnMatrix();
+    this.setCoords();
     return this;
   }
 
@@ -93,17 +103,6 @@ export class Element extends EventTarget {
     super.addEventListener(type, callback, options);
   }
 
-  setCoord() {
-    // const center = this.getCenterPoint();
-    // return new DOMMatrix()
-    //   .translate(center.x, center.y)
-    //   .rotate(0, 0, this.angle)
-    //   .translate(-center.x, -center.y);
-    // const center = this.getCenterPoint();
-    // const tMatrix = createTranslateMatrix(center.x, center.y);
-    // const rMatrix = createRotateMatrix({ angle: this.angle });
-  }
-
   setPositionByOrigin(
     pos: Point,
     originX: TOriginX = this.originX,
@@ -116,13 +115,6 @@ export class Element extends EventTarget {
       "left",
       "top"
     );
-    // position = this.translateToGivenOrigin(
-    //   center,
-    //   this.originX,
-    //   this.originY,
-    //   CENTER,
-    //   CENTER,
-    // );
     this.setOptions({ left: center.x, top: center.y });
     return this;
   }
@@ -221,6 +213,10 @@ export class Element extends EventTarget {
   }
 
   getCoords() {
+    return this.coords ?? this.setCoords().coords;
+  }
+
+  setCoords() {
     const finalMatrix = this.ownMatrixCache;
     const dim = this._getTransformedDimensions();
 
@@ -233,7 +229,7 @@ export class Element extends EventTarget {
     this.coords = localPoints.map(
       (point) => new Point(finalMatrix.transformPoint(point))
     );
-    return this.coords;
+    return this;
   }
 
   translateToGivenOrigin(
@@ -255,17 +251,15 @@ export class Element extends EventTarget {
     return new Point(x, y);
   }
 
-  hasPointHint(x, y): boolean {
-    const point = new Point(x, y);
-    // 如果元素没有宽度或高度，直接返回 false
+  hasPointHint(x: number, y: number): boolean {
     if (this.width === undefined || this.height === undefined) {
       return false;
     }
 
-    // 将世界坐标点转换到元素的局部坐标
+    const point = new Point(x, y);
+
     const localPoint = this.getGlobalToLocal(point);
 
-    // 检查点是否在元素的局部坐标边界内
     return (
       localPoint.x >= 0 &&
       localPoint.x <= this.width &&
@@ -342,10 +336,14 @@ export class Element extends EventTarget {
   }
 
   mounted() {
+    this.isMounted = true;
     if (this.children) {
       for (const child of this.children) {
+        child.parent = this;
         child.root = this.root;
-        child.layer = this.layer;
+        if (!child.layer) {
+          child.layer = this.layer;
+        }
         child.mounted();
       }
     }

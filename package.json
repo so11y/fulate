@@ -5,6 +5,7 @@
   "devDependencies": {
     "ac": "https://github.com/so11y/ac.git",
     "lodash-es": "^4.17.22",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "yoga-layout": "^3.2.1"
   }
 }
