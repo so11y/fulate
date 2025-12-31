@@ -38,7 +38,14 @@
 
 import { Root } from "./yoga/root";
 import { Select } from "./yoga/select";
-import { Element as Div, Display, FlexDirection } from "./yoga/base";
+import {
+  Element as Div,
+  Display,
+  FlexDirection,
+  Justify,
+  PositionType,
+  Overflow
+} from "./yoga/base";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: 500,
@@ -51,6 +58,7 @@ root
     new Select(),
     new Div({
       display: Display.Flex,
+      justifyContent: Justify.SpaceBetween,
       flexDirection: FlexDirection.Row,
       backgroundColor: "yellow",
       width: 300,
@@ -61,14 +69,18 @@ root
       paddingLeft: 5,
       children: [
         new Div({
-          padding: 10,
           width: 100,
           height: 100,
           backgroundColor: "red",
+          position: PositionType.Relative,
+          // overflow: Overflow.Hidden,
           children: [
             new Div({
-              width: "50%",
-              height: "50%",
+              position: PositionType.Absolute,
+              right: "0%",
+              top: -15,
+              width: 30,
+              height: 100,
               backgroundColor: "black"
             })
           ]

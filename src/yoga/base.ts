@@ -1,11 +1,33 @@
 import { isNil } from "lodash-es";
-import Yoga, { Align, Display, Edge, FlexDirection, Wrap } from "yoga-layout";
+import Yoga, {
+  Align,
+  BoxSizing,
+  Display,
+  Edge,
+  FlexDirection,
+  Gutter,
+  Justify,
+  Overflow,
+  PositionType,
+  Wrap
+} from "yoga-layout";
 import { Rectangle as BaseRectangle } from "../lib/ui/rectangle";
 
 type YogaStyleSize = number | `${number}%`;
 type YogaStyleSizeAndAuto = YogaStyleSize | "auto";
 
-export { Align, Display, FlexDirection, Wrap };
+export {
+  Align,
+  BoxSizing,
+  Display,
+  Edge,
+  FlexDirection,
+  Gutter,
+  Justify,
+  Overflow,
+  PositionType,
+  Wrap
+};
 
 export abstract class YogaOption {
   display?: Display;
@@ -25,6 +47,7 @@ export abstract class YogaOption {
   flexGrow?: number;
   flexShrink?: number;
   flexWrap?: Wrap;
+  justifyContent?: Justify;
   paddingTop?: YogaStyleSize;
   paddingLeft?: YogaStyleSize;
   paddingRight?: YogaStyleSize;
@@ -35,6 +58,15 @@ export abstract class YogaOption {
   marginRight?: YogaStyleSizeAndAuto;
   marginBottom?: YogaStyleSizeAndAuto;
   margin?: YogaStyleSizeAndAuto;
+  position?: PositionType;
+  left?: YogaStyleSize;
+  top?: YogaStyleSize;
+  bottom?: YogaStyleSize;
+  right?: YogaStyleSize;
+  gap?: YogaStyleSize;
+  inset?: YogaStyleSize;
+  // overflow?: Overflow;
+  boxSizing?: BoxSizing;
 
   //render
   backgroundColor?: string;
@@ -93,6 +125,8 @@ export class Element extends YogaOption {
     !isNil(this.maxWidth) && this.yogaNode.setMaxWidth(this.maxWidth);
     !isNil(this.maxHeight) && this.yogaNode.setMaxHeight(this.maxHeight);
 
+    !isNil(this.justifyContent) &&
+      this.yogaNode.setJustifyContent(this.justifyContent);
     !isNil(this.alignContent) &&
       this.yogaNode.setAlignContent(this.alignContent);
     !isNil(this.alignItems) && this.yogaNode.setAlignItems(this.alignItems);
@@ -105,6 +139,7 @@ export class Element extends YogaOption {
     !isNil(this.flexGrow) && this.yogaNode.setFlexGrow(this.flexGrow);
     !isNil(this.flexShrink) && this.yogaNode.setFlexShrink(this.flexShrink);
     !isNil(this.flexWrap) && this.yogaNode.setFlexWrap(this.flexWrap);
+    !isNil(this.gap) && this.yogaNode.setGap(Gutter.All, this.gap);
 
     !isNil(this.padding) && this.yogaNode.setPadding(Edge.All, this.padding);
     !isNil(this.paddingLeft) &&
@@ -124,6 +159,16 @@ export class Element extends YogaOption {
       this.yogaNode.setMargin(Edge.Right, this.marginRight);
     !isNil(this.marginBottom) &&
       this.yogaNode.setMargin(Edge.Bottom, this.marginBottom);
+
+    !isNil(this.position) && this.yogaNode.setPositionType(this.position);
+    !isNil(this.inset) && this.yogaNode.setPosition(Edge.All, this.inset);
+    !isNil(this.left) && this.yogaNode.setPosition(Edge.Left, this.left);
+    !isNil(this.top) && this.yogaNode.setPosition(Edge.Top, this.top);
+    !isNil(this.bottom) && this.yogaNode.setPosition(Edge.Bottom, this.bottom);
+    !isNil(this.right) && this.yogaNode.setPosition(Edge.Right, this.right);
+
+    !isNil(this.boxSizing) && this.yogaNode.setBoxSizing(this.boxSizing);
+    // !isNil(this.overflow) && this.yogaNode.setOverflow(this.overflow);
 
     if (this.children?.length) {
       this.children.forEach((v) => v.setStyleToYoga());

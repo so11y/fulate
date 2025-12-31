@@ -1,5 +1,4 @@
 import { Element } from "../base";
-// import Yoga from 'yoga-layout';
 
 export class Rectangle extends Element {
   type = "rectangle";
