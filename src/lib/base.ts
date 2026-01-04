@@ -49,8 +49,8 @@ export class Element extends EventTarget {
   height: number | undefined;
   scaleX = 1;
   scaleY = 1;
-  originX: string = "center";
-  originY: string = "center";
+  originX: TOriginX = "center";
+  originY: TOriginY = "center";
   backgroundColor: string | null = null;
   radius: number | null = null;
   skewX = 0;
@@ -147,13 +147,33 @@ export class Element extends EventTarget {
 
     matrix.translateSelf(topLeft.x, topLeft.y);
 
-    if (this.angle) {
-      // 2. 计算偏移量（左上角到旋转中心）
+    const hasAngle = this.angle && this.angle !== 0;
+    const hasScale =
+      (this.scaleX !== 1 && this.scaleX !== undefined) ||
+      (this.scaleY !== 1 && this.scaleY !== undefined);
+    const hasSkew =
+      (this.skewX && this.skewX !== 0) || (this.skewY && this.skewY !== 0);
+
+    if (hasAngle || hasScale || hasSkew) {
+      // 计算偏移量（左上角到旋转中心）
       const offsetX = center.x - topLeft.x;
       const offsetY = center.y - topLeft.y;
 
       matrix.translateSelf(offsetX, offsetY);
-      matrix.rotateSelf(0, 0, this.angle);
+
+      if (hasAngle) {
+        matrix.rotateSelf(0, 0, this.angle);
+      }
+
+      if (hasSkew) {
+        if (this.skewX) matrix.skewXSelf(this.skewX);
+        if (this.skewY) matrix.skewYSelf(this.skewY);
+      }
+
+      if (this.scaleX !== 1 || this.scaleY !== 1) {
+        matrix.scaleSelf(this.scaleX, this.scaleY);
+      }
+
       matrix.translateSelf(-offsetX, -offsetY);
     }
 
@@ -314,10 +334,10 @@ export class Element extends EventTarget {
       // if scaleX or scaleY are negative numbers,
       // this will return dimensions that are negative.
       // and this will break assumptions around the codebase
-      scaleX: this.scaleX,
-      scaleY: this.scaleY,
-      skewX: this.skewX,
-      skewY: this.skewY,
+      // scaleX: this.scaleX,
+      // scaleY: this.scaleY,
+      // skewX: this.skewX,
+      // skewY: this.skewY,
       width: this.width,
       height: this.height,
       strokeWidth: this.strokeWidth,
@@ -331,21 +351,11 @@ export class Element extends EventTarget {
       postScalingStrokeValue = strokeWidth;
     }
     const dimX = dimOptions.width + preScalingStrokeValue,
-      dimY = dimOptions.height + preScalingStrokeValue,
-      noSkew = dimOptions.skewX === 0 && dimOptions.skewY === 0;
-    let finalDimensions;
-    if (noSkew) {
-      finalDimensions = new Point(
-        dimX * dimOptions.scaleX,
-        dimY * dimOptions.scaleY
-      );
-    } else {
-      // finalDimensions = sizeAfterTransform(dimX, dimY, calcDimensionsMatrix(dimOptions));
-    }
-    // return finalDimensions.scalarAdd(postScalingStrokeValue);
+      dimY = dimOptions.height + preScalingStrokeValue;
+
     return new Point(
-      finalDimensions.x + postScalingStrokeValue,
-      finalDimensions.y + postScalingStrokeValue
+      dimX + postScalingStrokeValue,
+      dimY + postScalingStrokeValue
     );
   }
 

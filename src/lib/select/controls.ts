@@ -285,11 +285,22 @@ export function resizeObject(
       break;
 
     case "mt": // 中上 (Middle Top)
-      // 宽度不变，只改高度。底边 (cy + halfH) 固定。
-      // newW = prevWidth; // 保持默认
       newH = cy + halfH - mouse.y;
       newCY = mouse.y + newH / 2;
-      // newCX = cx; // X轴中心保持不变
+      break;
+    case "mb": // 中下 (Middle Bottom)
+      newH = mouse.y - (cy - halfH);
+      newCY = mouse.y - newH / 2;
+      break;
+
+    case "ml": // 中左 (Middle Left)
+      newW = cx + halfW - mouse.x;
+      newCX = mouse.x + newW / 2;
+      break;
+
+    case "mr": // 中右 (Middle Right)
+      newW = mouse.x - (cx - halfW);
+      newCX = mouse.x - newW / 2;
       break;
   }
 

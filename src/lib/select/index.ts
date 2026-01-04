@@ -97,12 +97,14 @@ export class Select extends Layer {
         height: this.height,
         left: this.left,
         top: this.top,
+        center: this.getWorldCenterPoint(),
         selectCenterPoint: this.selectEls.map((v) => {
           return {
             angle: v.angle,
             width: v.width,
             height: v.height,
             worldCenterPoint: v.getWorldCenterPoint(),
+            matrix: DOMMatrix.fromMatrix(v.getOwnMatrix()),
             el: v
           };
         })
@@ -307,11 +309,10 @@ export class Select extends Layer {
       );
 
       if (dist <= this.hitPadding) {
-        // 命中了边框！构造一个虚拟的 Control 对象
-        this.cursor = edge.cursor; // 这里可以根据旋转角度进一步优化光标方向
+        this.cursor = "grabbing"; //edge.cursor;
 
         this.currentControl = {
-          point: hintPoint, // 记录鼠标按下时的点
+          point: hintPoint,
           control: {
             type: edge.type,
             actionName: "scale",
