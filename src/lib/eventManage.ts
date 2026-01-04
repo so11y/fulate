@@ -18,6 +18,7 @@ export interface FulateEvent extends Omit<PointerEvent, "detail"> {
   detail: {
     x: number;
     y: number;
+    target: Element;
   };
 }
 

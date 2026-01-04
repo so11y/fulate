@@ -3,7 +3,7 @@
 import { Intersection } from "../util/Intersection";
 import { Point, TOriginX, TOriginY } from "../util/point";
 import { resolveOrigin } from "../util/resolveOrigin";
-import { EventManage } from "./eventManage";
+import { EventManage, FulateEvent } from "./eventManage";
 import { type Layer } from "./layer";
 import { type Root } from "./root";
 
@@ -100,7 +100,7 @@ export class Element extends EventTarget {
     return this;
   }
 
-  addEventListener<T = MouseEvent>(
+  addEventListener<T = FulateEvent>(
     type: string,
     callback: (ev: T) => void,
     options?: AddEventListenerOptions | boolean

@@ -3,6 +3,7 @@ import { BaseElementOption, type Element } from "./base";
 
 export class Root extends Layer {
   type = "root";
+  
   container: HTMLElement;
 
   currentElement?: Element;
@@ -34,22 +35,26 @@ export class Root extends Layer {
     //为了如果鼠标按下那么即便鼠标已经移动出canvas之外
     //也能继续触发的这个元素的事件
     let hasLockPoint = false;
+    const checkHit = (e: PointerEvent) => {
+      const offsetX = e.clientX - rect.x;
+      const offsetY = e.clientY - rect.y;
+      if (hasLockPoint === false) {
+        this.currentElement = undefined;
+        for (const element of this.quickElements) {
+          if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
+            this.currentElement = element;
+            break;
+          }
+        }
+      }
+    };
 
     document.addEventListener(
       "pointermove",
       (e) => {
-        const offsetX = e.clientX - rect.x;
-        const offsetY = e.clientY - rect.y;
         const prevElement = this.currentElement;
-        if (hasLockPoint === false) {
-          this.currentElement = undefined;
-          for (const element of this.quickElements) {
-            if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
-              this.currentElement = element;
-              break;
-            }
-          }
-        }
+
+        checkHit(e);
 
         if (!this.currentElement) {
           el.style.cursor = "default";
@@ -72,12 +77,26 @@ export class Root extends Layer {
       }
     );
 
-    document.addEventListener("click", (e) => notify(e, "click"), {
-      signal: abortController.signal
-    });
-    document.addEventListener("pointerdown", (e) => notify(e, "pointerdown"), {
-      signal: abortController.signal
-    });
+    document.addEventListener(
+      "click",
+      (e) => {
+        checkHit(e);
+        notify(e, "click");
+      },
+      {
+        signal: abortController.signal
+      }
+    );
+    document.addEventListener(
+      "pointerdown",
+      (e) => {
+        checkHit(e);
+        notify(e, "pointerdown");
+      },
+      {
+        signal: abortController.signal
+      }
+    );
     document.addEventListener("pointerup", (e) => notify(e, "pointerup"), {
       signal: abortController.signal
     });

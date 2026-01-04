@@ -41,6 +41,7 @@ export class Select extends Layer {
 
     const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
+      //@ts-ignore
       const directEl = this.root.children?.filter((v) => v !== this);
       const startPoint = new Point(e.detail.x, e.detail.y);
       this.setOptions({
@@ -341,6 +342,7 @@ export class Select extends Layer {
   clear() {
     this.ctx.clearRect(0, 0, this.root.width, this.root.height);
   }
+
 
   setCoords(): this {
     const finalMatrix = this.getOwnMatrix();

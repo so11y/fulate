@@ -32,8 +32,12 @@ const div2 = new Rectangle({
 
 root.append(div1, div2, select);
 
-div1.addEventListener("click", () => {
-  console.log("??");
+div1.addEventListener("click", (e) => {
+  e.detail.target
+    .setOptions({
+      backgroundColor: "yellow"
+    })
+    .layer.render();
 });
 
 root.mounted();
