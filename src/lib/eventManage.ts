@@ -14,6 +14,13 @@ export type EventName =
   | "sizeUpdate";
 export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 
+export interface FulateEvent extends Omit<PointerEvent, "detail"> {
+  detail: {
+    x: number;
+    y: number;
+  };
+}
+
 export interface CanvasPoint {
   target: Element;
   x: number;
@@ -37,9 +44,9 @@ export class EventManage {
       if (this.hasMouseEnter) {
         return;
       }
-      if (this.target.cursor) {
-        this.target.root.canvasEl.style.cursor = this.target.cursor;
-      }
+      // if (this.target.cursor) {
+      //   this.target.root.container.style.cursor = this.target.cursor;
+      // }
 
       this.hasMouseEnter = true;
     }

@@ -190,7 +190,7 @@ export class Element extends EventTarget {
     return point.matrixTransform(inverseMatrix);
   }
 
-  getBoundingBox() {
+  getBoundingRect() {
     const corners = [
       new Point(0, 0), // 左上
       new Point(this.width, 0), // 右上
@@ -287,7 +287,7 @@ export class Element extends EventTarget {
   }
 
   isContainedWithinRect(tl, br) {
-    const { left, top, width, height } = this.getBoundingBox();
+    const { left, top, width, height } = this.getBoundingRect();
     return (
       left >= tl.x &&
       left + width <= br.x &&

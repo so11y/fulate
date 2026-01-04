@@ -1,5 +1,3 @@
-
-
-import { PiBy180 } from "./constants.ts";
+import { PiBy180 } from "./constants";
 export const degreesToRadians = (degrees: number) => degrees * PiBy180;
 export const radiansToDegrees = (radians: number) => radians / PiBy180;

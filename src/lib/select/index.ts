@@ -1,167 +1,17 @@
-//@ts-nocheck
-import { makeBoundingBoxFromPoints, Point } from "../util/point";
-import {
-  degreesToRadians,
-  radiansToDegrees
-} from "../util/radiansDegreesConversion";
-import { BaseElementOption, Element } from "./base";
-import { Layer } from "./layer";
-
-const size = 8; // 控制点尺寸
-
-interface Control {
-  type: string;
-  actionName: string;
-  cursor: string;
-  x: number;
-  y: number;
-  offsetY?: number;
-  offsetX?: number;
-}
-
-const controls: Array<Control> = [
-  {
-    type: "tl",
-    actionName: "scale",
-    cursor: "crosshair",
-    x: 0,
-    y: 0
-  },
-  {
-    type: "tr",
-    actionName: "scale",
-    cursor: "crosshair",
-    x: 1,
-    y: 0
-  },
-  {
-    type: "br",
-    actionName: "scale",
-    cursor: "crosshair",
-    x: 1,
-    y: 1
-  },
-  {
-    type: "bl",
-    actionName: "scale",
-    cursor: "crosshair",
-    x: 0,
-    y: 1
-  },
-  // {
-  //     type: "mb",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: 0,
-  //     y: 0.5
-  // },
-  // {
-  //     type: "ml",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: -0.5,
-  //     y: 0
-  // },
-  // {
-  //     type: "mr",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: 0.5,
-  //     y: 0
-  // },
-  // {
-  //     type: "mt",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: 0,
-  //     y: -0.5
-  // },
-  {
-    type: "mtr",
-    actionName: "rotate",
-    cursor: "crosshair",
-    x: 0.5,
-    y: 0,
-    offsetY: -40,
-    rotateObjectWithSnapping(
-      eventData,
-      { target, ex, ey, theta, originX, originY },
-      x,
-      y
-    ) {
-      const pivotPoint = target.translateToGivenOrigin(
-        target.getRelativeCenterPoint(),
-        originX,
-        originY
-      );
-      // if (isLocked(target, "lockRotation")) {
-      //     return false;
-      // }
-      const lastAngle = Math.atan2(ey - pivotPoint.y, ex - pivotPoint.x),
-        curAngle = Math.atan2(y - pivotPoint.y, x - pivotPoint.x);
-      let angle = radiansToDegrees(curAngle - lastAngle + theta);
-      if (target.snapAngle && target.snapAngle > 0) {
-        const snapAngle = target.snapAngle,
-          snapThreshold = target.snapThreshold || snapAngle,
-          rightAngleLocked = Math.ceil(angle / snapAngle) * snapAngle,
-          leftAngleLocked = Math.floor(angle / snapAngle) * snapAngle;
-        if (Math.abs(angle - leftAngleLocked) < snapThreshold) {
-          angle = leftAngleLocked;
-        } else if (Math.abs(angle - rightAngleLocked) < snapThreshold) {
-          angle = rightAngleLocked;
-        }
-      }
-      if (angle < 0) {
-        angle = 360 + angle;
-      }
-      angle %= 360;
-      // const hasRotated = target.angle !== angle;
-      return angle;
-    },
-    callback(selectEL: Select, point: Point, theta: number, event: MouseEvent) {
-      const constraint = selectEL.getWorldCenterPoint();
-
-      const angle = this.rotateObjectWithSnapping(
-        event,
-        {
-          target: selectEL,
-          ex: point.x,
-          ey: point.y,
-          originX: selectEL.originX,
-          originY: selectEL.originY,
-          theta
-        },
-        event.detail.x,
-        event.detail.y
-      );
-
-      const angleDelta = angle - selectEL.angle;
-
-      const rotationMatrix = new DOMMatrix()
-        .translate(constraint.x, constraint.y)
-        .rotate(0, 0, angleDelta)
-        .translate(-constraint.x, -constraint.y);
-
-      selectEL.selectEls.forEach((child: Element, index) => {
-        const childWorldCenter = child.getWorldCenterPoint();
-        child
-          .setOptions({
-            angle: child.angle + angleDelta
-          })
-          .setPositionByOrigin(childWorldCenter.matrixTransform(rotationMatrix))
-          .layer.render();
-      });
-
-      selectEL
-        .setOptions({
-          angle
-        })
-        .render();
-    }
-  }
-] as const;
+import { Intersection } from "../../util/Intersection";
+import { makeBoundingBoxFromPoints, Point } from "../../util/point";
+import { degreesToRadians } from "../../util/radiansDegreesConversion";
+import { Element } from "../base";
+import { FulateEvent } from "../eventManage";
+import { Layer } from "../layer";
+import { Controls, resizeObject } from "./controls";
 
 export class Select extends Layer {
+  declare selectEls: Element[];
+  declare currentControl: { control: any; point: any };
+  declare coords: any;
+  controlSize = 8;
+  hitPadding = 6;
   constructor() {
     super({
       backgroundColor: "rgba(0, 0, 0, 0.1)",
@@ -171,7 +21,6 @@ export class Select extends Layer {
       originY: "center"
     });
     this.selectEls = [];
-    this.ControlSize = 8;
     this.eventManage.hasUserEvent = true;
   }
 
@@ -190,7 +39,7 @@ export class Select extends Layer {
       }
     };
 
-    const handleSelect = (e) => {
+    const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
       const directEl = this.root.children?.filter((v) => v !== this);
       const startPoint = new Point(e.detail.x, e.detail.y);
@@ -207,7 +56,7 @@ export class Select extends Layer {
       );
 
       let hasMove = false;
-      const pointermove = (e: PointerEvent) => {
+      const pointermove = (e: FulateEvent) => {
         hasMove = true;
         const endPoint = new Point(e.detail.x, e.detail.y);
         this.setOptions({
@@ -223,14 +72,13 @@ export class Select extends Layer {
         () => {
           this.root.removeEventListener("pointermove", pointermove);
           if (hasMove) {
-            const [{ point: tl }, , { point: br }] = this.getCoords();
             directEl
               ?.filter(checkElementIntersects)
               .forEach((child) => selectEls.add(child));
           }
           this.selectEls = Array.from(selectEls);
           const rect = makeBoundingBoxFromPoints(
-            this.selectEls?.map((v) => v.coords).flat(1)
+            this.selectEls?.map((v) => v.getCoords()).flat(1)
           );
           this.setOptions(rect).render();
         },
@@ -240,12 +88,28 @@ export class Select extends Layer {
       );
     };
 
-    const handleControl = (e) => {
+    const handleControl = (e: FulateEvent) => {
       const { control, point } = this.currentControl;
       const theta = degreesToRadians(this.angle ?? 0);
-      const pointermove = (e: PointerEvent) => {
-        const endPoint = new Point(e.detail.x, e.detail.y);
-        control.callback(this, point, theta, e);
+      const selectPrevState = {
+        theta,
+        width: this.width,
+        height: this.height,
+        left: this.left,
+        top: this.top,
+        selectCenterPoint: this.selectEls.map((v) => {
+          return {
+            angle: v.angle,
+            width: v.width,
+            height: v.height,
+            worldCenterPoint: v.getWorldCenterPoint(),
+            el: v
+          };
+        })
+      };
+      const pointermove = (e: FulateEvent) => {
+        // const endPoint = new Point(e.detail.x, e.detail.y);
+        control.callback(this, point, selectPrevState, e);
       };
       this.root.addEventListener("pointermove", pointermove);
       this.root.addEventListener(
@@ -257,7 +121,7 @@ export class Select extends Layer {
       );
     };
 
-    const handleSelectMove = (e) => {
+    const handleSelectMove = (e: FulateEvent) => {
       const startPoint = new Point(e.detail.x, e.detail.y);
 
       const originalSelectLeft = this.left;
@@ -268,7 +132,7 @@ export class Select extends Layer {
         return { child, worldCenter: wc };
       });
 
-      const pointermove = (ev: PointerEvent) => {
+      const pointermove = (ev: FulateEvent) => {
         const current = new Point(ev.detail.x, ev.detail.y);
         const dx = current.x - startPoint.x;
         const dy = current.y - startPoint.y;
@@ -299,7 +163,7 @@ export class Select extends Layer {
       );
     };
 
-    const pointerdown = (e: PointerEvent) => {
+    const pointerdown = (e: FulateEvent) => {
       if (!this.currentControl) {
         if (this.selectEls.length && this.root.currentElement === this) {
           handleSelectMove(e);
@@ -326,7 +190,17 @@ export class Select extends Layer {
     if (!this.width || !this.height) {
       return;
     }
-    super.render();
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.setTransform(this.getOwnMatrix());
+    if (this.backgroundColor) {
+      this.ctx.fillStyle = this.backgroundColor;
+    }
+    this.ctx.roundRect(0, 0, this.width!, this.height!, this.radius ?? 0);
+    if (this.backgroundColor) {
+      this.ctx.fill();
+    }
+    this.ctx.restore();
     if (this.selectEls.length) {
       const coords = this.getCoords();
       coords.forEach(({ point, control }) =>
@@ -338,22 +212,25 @@ export class Select extends Layer {
   drawControlPoint(
     ctx: CanvasRenderingContext2D,
     point: Point,
-    control: (typeof controls)[0]
+    control: (typeof Controls)[0]
   ) {
     ctx.save();
     if (control.type === "mtr") {
       ctx.beginPath();
-      ctx.arc(point.x, point.y, this.ControlSize - 4, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, this.controlSize - 4, 0, Math.PI * 2);
       ctx.fillStyle = "#ff4757";
       ctx.fill();
     } else {
       ctx.beginPath();
+      const matrix = this.getOwnMatrix();
+      this.ctx.setTransform(matrix);
+      const localPoint = point.matrixTransform(matrix.inverse());
       this.drawRoundedRect(
         ctx,
-        point.x - this.ControlSize / 2,
-        point.y - this.ControlSize / 2,
-        this.ControlSize,
-        this.ControlSize
+        localPoint.x - this.controlSize / 2,
+        localPoint.y - this.controlSize / 2,
+        this.controlSize,
+        this.controlSize
       );
       ctx.fillStyle = "#0078ff";
       ctx.fill();
@@ -390,24 +267,71 @@ export class Select extends Layer {
       return false;
     }
     const coords = this.getCoords();
+    const hintPoint = new Point(x, y);
     this.currentControl = null;
     this.cursor = "default";
     for (let i = 0; i < coords.length; i++) {
       const { point, control } = coords[i];
 
       const distance = Math.sqrt(
-        Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2)
+        Math.pow(hintPoint.x - point.x, 2) + Math.pow(hintPoint.y - point.y, 2)
       );
 
-      if (distance <= this.ControlSize) {
+      if (distance <= this.controlSize) {
         this.cursor = control.cursor;
         this.currentControl = coords[i];
         return true;
       }
     }
 
+    const map = new Map();
+    coords.forEach((c) => map.set(c.control.type, c.point));
+
+    const tl = map.get("tl");
+    const tr = map.get("tr");
+    const br = map.get("br");
+    const bl = map.get("bl");
+
+    const edges = [
+      { start: tl, end: tr, type: "mt", cursor: "ns-resize" }, // 上边 (Middle Top)
+      { start: tr, end: br, type: "mr", cursor: "ew-resize" }, // 右边 (Middle Right)
+      { start: br, end: bl, type: "mb", cursor: "ns-resize" }, // 下边 (Middle Bottom)
+      { start: bl, end: tl, type: "ml", cursor: "ew-resize" } // 左边 (Middle Left)
+    ];
+
+    for (const edge of edges) {
+      const dist = Intersection.pointToLineSegmentDistance(
+        hintPoint,
+        edge.start,
+        edge.end
+      );
+
+      if (dist <= this.hitPadding) {
+        // 命中了边框！构造一个虚拟的 Control 对象
+        this.cursor = edge.cursor; // 这里可以根据旋转角度进一步优化光标方向
+
+        this.currentControl = {
+          point: hintPoint, // 记录鼠标按下时的点
+          control: {
+            type: edge.type,
+            actionName: "scale",
+            cursor: edge.cursor,
+            callback: (
+              selectEL: any,
+              point: any,
+              preState: any,
+              event: any
+            ) => {
+              return resizeObject(selectEL, preState, event, edge.type);
+            }
+          }
+        };
+        return true;
+      }
+    }
+
     if (super.hasPointHint(x, y)) {
-      this.cursor = "grab";
+      this.cursor = "move";
       return true;
     }
     return false;
@@ -423,7 +347,7 @@ export class Select extends Layer {
       width: this.width ?? 0,
       height: this.height ?? 0
     });
-    this.coords = controls.map((control, index) => {
+    this.coords = Controls.map((control, index) => {
       const x = control.x * dim.x + (control.offsetX ?? 0);
       const y = control.y * dim.y + (control.offsetY ?? 0);
       return {
