@@ -1,11 +1,12 @@
 import {
   degreesToRadians,
-  radiansToDegrees,
-} from '../../util/radiansDegreesConversion';
-import { Point } from '../../util/point';
-import { type Select } from './index';
-import { Element } from '../base';
-import { FulateEvent } from '../eventManage';
+  radiansToDegrees
+} from "../../util/radiansDegreesConversion";
+import { Point } from "../../util/point";
+import { type Select } from "./index";
+import { Element } from "../base";
+import { FulateEvent } from "../eventManage";
+import { qrDecompose } from "../../util/math";
 
 interface Control {
   type: string;
@@ -27,6 +28,7 @@ interface SelectState {
   selectCenterPoint: Array<{
     width: number;
     height: number;
+    matrix: DOMMatrix;
     worldCenterPoint: Point;
     el: Element;
     angle: number;
@@ -35,9 +37,9 @@ interface SelectState {
 
 export const Controls: Array<Control> = [
   {
-    type: 'tl',
-    actionName: 'scale',
-    cursor: 'crosshair',
+    type: "tl",
+    actionName: "scale",
+    cursor: "crosshair",
     x: 0,
     y: 0,
     callback(
@@ -46,13 +48,13 @@ export const Controls: Array<Control> = [
       selectState: SelectState,
       event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, 'tl');
-    },
+      return resizeObject(selectEL, selectState, event, "tl");
+    }
   },
   {
-    type: 'tr',
-    actionName: 'scale',
-    cursor: 'crosshair',
+    type: "tr",
+    actionName: "scale",
+    cursor: "crosshair",
     x: 1,
     y: 0,
     callback(
@@ -61,13 +63,13 @@ export const Controls: Array<Control> = [
       selectState: SelectState,
       event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, 'tr');
-    },
+      return resizeObject(selectEL, selectState, event, "tr");
+    }
   },
   {
-    type: 'br',
-    actionName: 'scale',
-    cursor: 'crosshair',
+    type: "br",
+    actionName: "scale",
+    cursor: "crosshair",
     x: 1,
     y: 1,
     callback(
@@ -76,13 +78,13 @@ export const Controls: Array<Control> = [
       selectState: SelectState,
       event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, 'br');
-    },
+      return resizeObject(selectEL, selectState, event, "br");
+    }
   },
   {
-    type: 'bl',
-    actionName: 'scale',
-    cursor: 'crosshair',
+    type: "bl",
+    actionName: "scale",
+    cursor: "crosshair",
     x: 0,
     y: 1,
     callback(
@@ -91,8 +93,8 @@ export const Controls: Array<Control> = [
       selectState: SelectState,
       event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, 'bl');
-    },
+      return resizeObject(selectEL, selectState, event, "bl");
+    }
   },
   // {
   //     type: "mb",
@@ -123,9 +125,9 @@ export const Controls: Array<Control> = [
   //     y: -0.5
   // },
   {
-    type: 'mtr',
-    actionName: 'rotate',
-    cursor: 'crosshair',
+    type: "mtr",
+    actionName: "rotate",
+    cursor: "crosshair",
     x: 0.5,
     y: 0,
     offsetY: -40,
@@ -180,7 +182,7 @@ export const Controls: Array<Control> = [
           ey: point.y,
           originX: selectEL.originX,
           originY: selectEL.originY,
-          theta,
+          theta
         },
         event.detail.x,
         event.detail.y
@@ -197,7 +199,7 @@ export const Controls: Array<Control> = [
         const childWorldCenter = el.getWorldCenterPoint();
 
         el.setOptions({
-          angle: el.angle + angleDelta,
+          angle: el.angle + angleDelta
         })
           .setPositionByOrigin(
             new Point(childWorldCenter.matrixTransform(rotationMatrix))
@@ -207,16 +209,16 @@ export const Controls: Array<Control> = [
 
       selectEL
         .setOptions({
-          angle,
+          angle
         })
         .render();
-    },
-  },
+    }
+  }
 ] as const;
 
 export function resizeObject(
   selectEL: any,
-  preState: any, // 你的快照：包含 selectCenterPoint, theta, width, height, left, top
+  preState: SelectState,
   event: any,
   type: string
 ) {
@@ -226,7 +228,7 @@ export function resizeObject(
     width: pWidth,
     height: pHeight,
     theta, // 选框初始弧度
-    selectCenterPoint, // 快照数组: { el, matrix, worldCenterPoint, width, height }
+    selectCenterPoint
   } = preState;
 
   // 1. 计算选框中心
@@ -247,23 +249,23 @@ export function resizeObject(
   const halfH = pHeight / 2;
   let ox = 0,
     oy = 0;
-  if (type.includes('r')) ox = -halfW;
-  else if (type.includes('l')) ox = halfW;
-  if (type.includes('b')) oy = -halfH;
-  else if (type.includes('t')) oy = halfH;
+  if (type.includes("r")) ox = -halfW;
+  else if (type.includes("l")) ox = halfW;
+  if (type.includes("b")) oy = -halfH;
+  else if (type.includes("t")) oy = halfH;
 
   const fixedX = cx + ox;
   const fixedY = cy + oy;
 
   let sx = 1,
     sy = 1;
-  if (type.includes('r')) sx = (mouse.x - fixedX) / pWidth;
-  if (type.includes('l')) sx = (fixedX - mouse.x) / pWidth;
-  if (type.includes('b')) sy = (mouse.y - fixedY) / pHeight;
-  if (type.includes('t')) sy = (fixedY - mouse.y) / pHeight;
+  if (type.includes("r")) sx = (mouse.x - fixedX) / pWidth;
+  if (type.includes("l")) sx = (fixedX - mouse.x) / pWidth;
+  if (type.includes("b")) sy = (mouse.y - fixedY) / pHeight;
+  if (type.includes("t")) sy = (fixedY - mouse.y) / pHeight;
 
   // Shift 等比
-  if (event.detail?.shiftKey && !['mt', 'mb', 'ml', 'mr'].includes(type)) {
+  if (event.detail?.shiftKey && !["mt", "mb", "ml", "mr"].includes(type)) {
     const ratio = Math.max(Math.abs(sx), Math.abs(sy));
     sx = Math.sign(sx) * ratio;
     sy = Math.sign(sy) * ratio;
@@ -273,8 +275,6 @@ export function resizeObject(
   sx = sx || 0.0001;
   sy = sy || 0.0001;
 
-  // 4. 构建全局【空间增量变换矩阵】 (Delta Matrix)
-  // 这是 LeaferJS 的核心：它代表了从按下鼠标到这一帧，整个选区发生的形变
   const worldFixedPoint = new Point(fixedX, fixedY).matrixTransform(
     new DOMMatrix().translate(cx, cy).rotate(0, 0, angleDeg).translate(-cx, -cy)
   );
@@ -286,53 +286,25 @@ export function resizeObject(
     .rotate(0, 0, -angleDeg)
     .translate(-worldFixedPoint.x, -worldFixedPoint.y);
 
-  // 5. 应用到子元素并精准分解
-  selectCenterPoint.forEach((snapshot: any) => {
+  selectCenterPoint.forEach((snapshot) => {
     const { el, matrix, worldCenterPoint } = snapshot;
 
-    // A. 算出该元素最新的世界矩阵 (Delta * Original)
-    const m = deltaMatrix.multiply(matrix);
-
-    // B. 【精准分解逻辑】 匹配 base.ts 顺序: Rotate -> SkewX -> Scale
-    // 设矩阵 M = R * K * S
-    const newAngleRad = Math.atan2(m.b, m.a);
-    const cos = Math.cos(-newAngleRad);
-    const sin = Math.sin(-newAngleRad);
-
-    // “回旋”矩阵，消除旋转影响，剩下 Skew 和 Scale
-    // mUnrotated = R(-theta) * M = K * S
-    const a1 = m.a * cos - m.b * sin;
-    const c1 = m.c * cos - m.d * sin;
-    const b1 = m.a * sin + m.b * cos; // 理论上应为 0
-    const d1 = m.c * sin + m.d * cos;
-
-    const resScaleX = a1;
-    const resScaleY = d1;
-    const resSkewXRad = Math.atan2(c1, d1); // 从 K*S 中提取 skewX
-
-    // C. 计算物体新的中心点
-    const newCenter = new Point(
-      worldCenterPoint.x,
-      worldCenterPoint.y
-    ).matrixTransform(deltaMatrix);
-
-    // D. 写入属性（不改 width/height）
-    el.setOptions({
-      angle: radiansToDegrees(newAngleRad),
-      scaleX: resScaleX,
-      scaleY: resScaleY,
-      skewX: radiansToDegrees(resSkewXRad),
-    });
-
-    // E. 核心：使用你的方法同步位置
-    // 这会根据 scale 后的 bounds 重新调整 left/top
-    el.setPositionByOrigin(
-      new Point(newCenter.x, newCenter.y),
-      'center',
-      'center'
+    const { angle, scaleX, scaleY, skewX } = qrDecompose(
+      deltaMatrix.multiply(matrix)
     );
 
-    el.layer.render();
+    el.setOptions({
+      angle,
+      scaleX,
+      scaleY,
+      skewX
+    })
+      .setPositionByOrigin(
+        new Point(worldCenterPoint.matrixTransform(deltaMatrix)),
+        "center",
+        "center"
+      )
+      .layer.render();
   });
 
   // 6. 更新选框 UI 尺寸
@@ -345,7 +317,7 @@ export function resizeObject(
       width: newW,
       height: newH,
       left: newSelectCenter.x - newW / 2,
-      top: newSelectCenter.y - newH / 2,
+      top: newSelectCenter.y - newH / 2
     })
     .render();
 }
