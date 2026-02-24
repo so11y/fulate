@@ -1,11 +1,11 @@
 import {
   degreesToRadians,
   radiansToDegrees,
-} from "../../util/radiansDegreesConversion";
-import { Point } from "../../util/point";
-import { type Select } from "./index";
-import { Element } from "../base";
-import { FulateEvent } from "../eventManage";
+} from '../../util/radiansDegreesConversion';
+import { Point } from '../../util/point';
+import { type Select } from './index';
+import { Element } from '../base';
+import { FulateEvent } from '../eventManage';
 
 interface Control {
   type: string;
@@ -35,63 +35,63 @@ interface SelectState {
 
 export const Controls: Array<Control> = [
   {
-    type: "tl",
-    actionName: "scale",
-    cursor: "crosshair",
+    type: 'tl',
+    actionName: 'scale',
+    cursor: 'crosshair',
     x: 0,
     y: 0,
     callback(
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent,
+      event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, "tl");
+      return resizeObject(selectEL, selectState, event, 'tl');
     },
   },
   {
-    type: "tr",
-    actionName: "scale",
-    cursor: "crosshair",
+    type: 'tr',
+    actionName: 'scale',
+    cursor: 'crosshair',
     x: 1,
     y: 0,
     callback(
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent,
+      event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, "tr");
+      return resizeObject(selectEL, selectState, event, 'tr');
     },
   },
   {
-    type: "br",
-    actionName: "scale",
-    cursor: "crosshair",
+    type: 'br',
+    actionName: 'scale',
+    cursor: 'crosshair',
     x: 1,
     y: 1,
     callback(
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent,
+      event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, "br");
+      return resizeObject(selectEL, selectState, event, 'br');
     },
   },
   {
-    type: "bl",
-    actionName: "scale",
-    cursor: "crosshair",
+    type: 'bl',
+    actionName: 'scale',
+    cursor: 'crosshair',
     x: 0,
     y: 1,
     callback(
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent,
+      event: FulateEvent
     ) {
-      return resizeObject(selectEL, selectState, event, "bl");
+      return resizeObject(selectEL, selectState, event, 'bl');
     },
   },
   // {
@@ -123,9 +123,9 @@ export const Controls: Array<Control> = [
   //     y: -0.5
   // },
   {
-    type: "mtr",
-    actionName: "rotate",
-    cursor: "crosshair",
+    type: 'mtr',
+    actionName: 'rotate',
+    cursor: 'crosshair',
     x: 0.5,
     y: 0,
     offsetY: -40,
@@ -133,12 +133,12 @@ export const Controls: Array<Control> = [
       //   eventData,
       { target, ex, ey, theta, originX, originY },
       x: number,
-      y: number,
+      y: number
     ) {
       const pivotPoint = target.translateToGivenOrigin(
         target.getRelativeCenterPoint(),
         originX,
-        originY,
+        originY
       );
       // if (isLocked(target, "lockRotation")) {
       //     return false;
@@ -168,7 +168,7 @@ export const Controls: Array<Control> = [
       selectEL: Select,
       point: Point,
       { theta, selectCenterPoint }: SelectState,
-      event: FulateEvent,
+      event: FulateEvent
     ) {
       const constraint = selectEL.getWorldCenterPoint();
 
@@ -183,7 +183,7 @@ export const Controls: Array<Control> = [
           theta,
         },
         event.detail.x,
-        event.detail.y,
+        event.detail.y
       );
 
       const angleDelta = angle - selectEL.angle;
@@ -200,7 +200,7 @@ export const Controls: Array<Control> = [
           angle: el.angle + angleDelta,
         })
           .setPositionByOrigin(
-            new Point(childWorldCenter.matrixTransform(rotationMatrix)),
+            new Point(childWorldCenter.matrixTransform(rotationMatrix))
           )
           .layer.render();
       });
@@ -218,7 +218,7 @@ export function resizeObject(
   selectEL: any,
   preState: any, // 你的快照：包含 selectCenterPoint, theta, width, height, left, top
   event: any,
-  type: string,
+  type: string
 ) {
   const {
     left: pLeft,
@@ -247,23 +247,23 @@ export function resizeObject(
   const halfH = pHeight / 2;
   let ox = 0,
     oy = 0;
-  if (type.includes("r")) ox = -halfW;
-  else if (type.includes("l")) ox = halfW;
-  if (type.includes("b")) oy = -halfH;
-  else if (type.includes("t")) oy = halfH;
+  if (type.includes('r')) ox = -halfW;
+  else if (type.includes('l')) ox = halfW;
+  if (type.includes('b')) oy = -halfH;
+  else if (type.includes('t')) oy = halfH;
 
   const fixedX = cx + ox;
   const fixedY = cy + oy;
 
   let sx = 1,
     sy = 1;
-  if (type.includes("r")) sx = (mouse.x - fixedX) / pWidth;
-  if (type.includes("l")) sx = (fixedX - mouse.x) / pWidth;
-  if (type.includes("b")) sy = (mouse.y - fixedY) / pHeight;
-  if (type.includes("t")) sy = (fixedY - mouse.y) / pHeight;
+  if (type.includes('r')) sx = (mouse.x - fixedX) / pWidth;
+  if (type.includes('l')) sx = (fixedX - mouse.x) / pWidth;
+  if (type.includes('b')) sy = (mouse.y - fixedY) / pHeight;
+  if (type.includes('t')) sy = (fixedY - mouse.y) / pHeight;
 
   // Shift 等比
-  if (event.detail?.shiftKey && !["mt", "mb", "ml", "mr"].includes(type)) {
+  if (event.detail?.shiftKey && !['mt', 'mb', 'ml', 'mr'].includes(type)) {
     const ratio = Math.max(Math.abs(sx), Math.abs(sy));
     sx = Math.sign(sx) * ratio;
     sy = Math.sign(sy) * ratio;
@@ -276,10 +276,7 @@ export function resizeObject(
   // 4. 构建全局【空间增量变换矩阵】 (Delta Matrix)
   // 这是 LeaferJS 的核心：它代表了从按下鼠标到这一帧，整个选区发生的形变
   const worldFixedPoint = new Point(fixedX, fixedY).matrixTransform(
-    new DOMMatrix()
-      .translate(cx, cy)
-      .rotate(0, 0, angleDeg)
-      .translate(-cx, -cy),
+    new DOMMatrix().translate(cx, cy).rotate(0, 0, angleDeg).translate(-cx, -cy)
   );
 
   const deltaMatrix = new DOMMatrix()
@@ -316,7 +313,7 @@ export function resizeObject(
     // C. 计算物体新的中心点
     const newCenter = new Point(
       worldCenterPoint.x,
-      worldCenterPoint.y,
+      worldCenterPoint.y
     ).matrixTransform(deltaMatrix);
 
     // D. 写入属性（不改 width/height）
@@ -331,8 +328,8 @@ export function resizeObject(
     // 这会根据 scale 后的 bounds 重新调整 left/top
     el.setPositionByOrigin(
       new Point(newCenter.x, newCenter.y),
-      "center",
-      "center",
+      'center',
+      'center'
     );
 
     el.layer.render();
