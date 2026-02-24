@@ -1,6 +1,6 @@
 import {
   degreesToRadians,
-  radiansToDegrees
+  radiansToDegrees,
 } from "../../util/radiansDegreesConversion";
 import { Point } from "../../util/point";
 import { type Select } from "./index";
@@ -44,10 +44,10 @@ export const Controls: Array<Control> = [
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent
+      event: FulateEvent,
     ) {
       return resizeObject(selectEL, selectState, event, "tl");
-    }
+    },
   },
   {
     type: "tr",
@@ -59,10 +59,10 @@ export const Controls: Array<Control> = [
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent
+      event: FulateEvent,
     ) {
       return resizeObject(selectEL, selectState, event, "tr");
-    }
+    },
   },
   {
     type: "br",
@@ -74,10 +74,10 @@ export const Controls: Array<Control> = [
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent
+      event: FulateEvent,
     ) {
       return resizeObject(selectEL, selectState, event, "br");
-    }
+    },
   },
   {
     type: "bl",
@@ -89,10 +89,10 @@ export const Controls: Array<Control> = [
       selectEL: Select,
       point: Point,
       selectState: SelectState,
-      event: FulateEvent
+      event: FulateEvent,
     ) {
       return resizeObject(selectEL, selectState, event, "bl");
-    }
+    },
   },
   // {
   //     type: "mb",
@@ -133,12 +133,12 @@ export const Controls: Array<Control> = [
       //   eventData,
       { target, ex, ey, theta, originX, originY },
       x: number,
-      y: number
+      y: number,
     ) {
       const pivotPoint = target.translateToGivenOrigin(
         target.getRelativeCenterPoint(),
         originX,
-        originY
+        originY,
       );
       // if (isLocked(target, "lockRotation")) {
       //     return false;
@@ -168,7 +168,7 @@ export const Controls: Array<Control> = [
       selectEL: Select,
       point: Point,
       { theta, selectCenterPoint }: SelectState,
-      event: FulateEvent
+      event: FulateEvent,
     ) {
       const constraint = selectEL.getWorldCenterPoint();
 
@@ -180,10 +180,10 @@ export const Controls: Array<Control> = [
           ey: point.y,
           originX: selectEL.originX,
           originY: selectEL.originY,
-          theta
+          theta,
         },
         event.detail.x,
-        event.detail.y
+        event.detail.y,
       );
 
       const angleDelta = angle - selectEL.angle;
@@ -197,172 +197,158 @@ export const Controls: Array<Control> = [
         const childWorldCenter = el.getWorldCenterPoint();
 
         el.setOptions({
-          angle: el.angle + angleDelta
+          angle: el.angle + angleDelta,
         })
           .setPositionByOrigin(
-            new Point(childWorldCenter.matrixTransform(rotationMatrix))
+            new Point(childWorldCenter.matrixTransform(rotationMatrix)),
           )
           .layer.render();
       });
 
       selectEL
         .setOptions({
-          angle
+          angle,
         })
         .render();
-    }
-  }
+    },
+  },
 ] as const;
 
 export function resizeObject(
-  selectEL: Select,
-  preState: SelectState,
-  event: FulateEvent,
-  type: string
+  selectEL: any,
+  preState: any, // 你的快照：包含 selectCenterPoint, theta, width, height, left, top
+  event: any,
+  type: string,
 ) {
   const {
-    left: prevLeft,
-    top: prevTop,
-    width: prevWidth,
-    height: prevHeight,
-    theta,
-    selectCenterPoint
+    left: pLeft,
+    top: pTop,
+    width: pWidth,
+    height: pHeight,
+    theta, // 选框初始弧度
+    selectCenterPoint, // 快照数组: { el, matrix, worldCenterPoint, width, height }
   } = preState;
 
-  // 1. 准备基础数据：中心点与角度
-  const cx = prevLeft + prevWidth / 2;
-  const cy = prevTop + prevHeight / 2;
-  const degrees = radiansToDegrees(theta);
+  // 1. 计算选框中心
+  const cx = pLeft + pWidth / 2;
+  const cy = pTop + pHeight / 2;
+  const angleDeg = theta * (180 / Math.PI);
 
-  // 逆旋转矩阵：将鼠标从【旋转世界】还原到【未旋转世界】 (Global -> Local)
+  // 2. 将鼠标坐标转换到选框的本地坐标系（未旋转状态）
   const unrotateMatrix = new DOMMatrix()
     .translate(cx, cy)
-    .rotate(0, 0, -degrees)
+    .rotate(0, 0, -angleDeg)
     .translate(-cx, -cy);
-
-  // 正向旋转矩阵：将计算好的点从【未旋转世界】放回【旋转世界】 (Local -> Global)
-  const rotateMatrix = new DOMMatrix()
-    .translate(cx, cy)
-    .rotate(0, 0, degrees)
-    .translate(-cx, -cy);
-
-  //将当前鼠标位置“摆正”
   const mouse = new Point(event.detail).matrixTransform(unrotateMatrix);
 
-  //在未旋转的坐标系下计算新尺寸和新中心
-  const halfW = prevWidth / 2;
-  const halfH = prevHeight / 2;
+  // 3. 计算缩放量 (sx, sy)
+  // 逻辑：基于固定对角点(Fixed Point)计算拉伸比例
+  const halfW = pWidth / 2;
+  const halfH = pHeight / 2;
+  let ox = 0,
+    oy = 0;
+  if (type.includes("r")) ox = -halfW;
+  else if (type.includes("l")) ox = halfW;
+  if (type.includes("b")) oy = -halfH;
+  else if (type.includes("t")) oy = halfH;
 
-  let newW = prevWidth;
-  let newH = prevHeight;
-  let newCX = cx;
-  let newCY = cy;
+  const fixedX = cx + ox;
+  const fixedY = cy + oy;
 
-  switch (type) {
-    case "tl": // 左上
-      newW = cx + halfW - mouse.x;
-      newH = cy + halfH - mouse.y;
-      newCX = mouse.x + newW / 2;
-      newCY = mouse.y + newH / 2;
-      break;
-    case "tr": // 右上
-      newW = mouse.x - (cx - halfW);
-      newH = cy + halfH - mouse.y;
-      newCX = mouse.x - newW / 2;
-      newCY = mouse.y + newH / 2;
-      break;
-    case "bl": // 左下
-      newW = cx + halfW - mouse.x;
-      newH = mouse.y - (cy - halfH);
-      newCX = mouse.x + newW / 2;
-      newCY = mouse.y - newH / 2;
-      break;
-    case "br": // 右下
-      newW = mouse.x - (cx - halfW);
-      newH = mouse.y - (cy - halfH);
-      newCX = mouse.x - newW / 2;
-      newCY = mouse.y - newH / 2;
-      break;
+  let sx = 1,
+    sy = 1;
+  if (type.includes("r")) sx = (mouse.x - fixedX) / pWidth;
+  if (type.includes("l")) sx = (fixedX - mouse.x) / pWidth;
+  if (type.includes("b")) sy = (mouse.y - fixedY) / pHeight;
+  if (type.includes("t")) sy = (fixedY - mouse.y) / pHeight;
 
-    case "mt": // 中上 (Middle Top)
-      newH = cy + halfH - mouse.y;
-      newCY = mouse.y + newH / 2;
-      break;
-    case "mb": // 中下 (Middle Bottom)
-      newH = mouse.y - (cy - halfH);
-      newCY = mouse.y - newH / 2;
-      break;
-
-    case "ml": // 中左 (Middle Left)
-      newW = cx + halfW - mouse.x;
-      newCX = mouse.x + newW / 2;
-      break;
-
-    case "mr": // 中右 (Middle Right)
-      newW = mouse.x - (cx - halfW);
-      newCX = mouse.x - newW / 2;
-      break;
+  // Shift 等比
+  if (event.detail?.shiftKey && !["mt", "mb", "ml", "mr"].includes(type)) {
+    const ratio = Math.max(Math.abs(sx), Math.abs(sy));
+    sx = Math.sign(sx) * ratio;
+    sy = Math.sign(sy) * ratio;
   }
 
-  if (newW < 1 || newH < 1) {
-    return;
-  }
+  // 极小值保护
+  sx = sx || 0.0001;
+  sy = sy || 0.0001;
 
-  // 将新的局部中心点旋转回全局坐标
-  // newCX/newCY 是基于未旋转系算出来的，现在通过正向矩阵转回去
-  const newGlobalCenter = new Point(newCX, newCY).matrixTransform(rotateMatrix);
+  // 4. 构建全局【空间增量变换矩阵】 (Delta Matrix)
+  // 这是 LeaferJS 的核心：它代表了从按下鼠标到这一帧，整个选区发生的形变
+  const worldFixedPoint = new Point(fixedX, fixedY).matrixTransform(
+    new DOMMatrix()
+      .translate(cx, cy)
+      .rotate(0, 0, angleDeg)
+      .translate(-cx, -cy),
+  );
 
-  //  处理子元素缩放 (关键: 相对原中心的比例变换)
-  const scaleX = newW / prevWidth;
-  const scaleY = newH / prevHeight;
+  const deltaMatrix = new DOMMatrix()
+    .translate(worldFixedPoint.x, worldFixedPoint.y)
+    .rotate(0, 0, angleDeg)
+    .scale(sx, sy)
+    .rotate(0, 0, -angleDeg)
+    .translate(-worldFixedPoint.x, -worldFixedPoint.y);
 
-  if (selectCenterPoint && selectCenterPoint.length > 0) {
-    selectCenterPoint.forEach(
-      ({ el, worldCenterPoint, width, height, angle }) => {
-        // 逆旋转到局部空间
-        const localCenter = worldCenterPoint.matrixTransform(unrotateMatrix);
+  // 5. 应用到子元素并精准分解
+  selectCenterPoint.forEach((snapshot: any) => {
+    const { el, matrix, worldCenterPoint } = snapshot;
 
-        // 计算相对于原中心(cx,cy)的向量并缩放
-        const vecX = (localCenter.x - cx) * scaleX;
-        const vecY = (localCenter.y - cy) * scaleY;
+    // A. 算出该元素最新的世界矩阵 (Delta * Original)
+    const m = deltaMatrix.multiply(matrix);
 
-        //  算出缩放后的局部坐标
-        const newLocalCenter = new Point(newCX + vecX, newCY + vecY);
+    // B. 【精准分解逻辑】 匹配 base.ts 顺序: Rotate -> SkewX -> Scale
+    // 设矩阵 M = R * K * S
+    const newAngleRad = Math.atan2(m.b, m.a);
+    const cos = Math.cos(-newAngleRad);
+    const sin = Math.sin(-newAngleRad);
 
-        //  正向旋转回世界坐标
-        const newChildCenter = newLocalCenter.matrixTransform(rotateMatrix);
+    // “回旋”矩阵，消除旋转影响，剩下 Skew 和 Scale
+    // mUnrotated = R(-theta) * M = K * S
+    const a1 = m.a * cos - m.b * sin;
+    const c1 = m.c * cos - m.d * sin;
+    const b1 = m.a * sin + m.b * cos; // 理论上应为 0
+    const d1 = m.c * sin + m.d * cos;
 
-        const childRad = degreesToRadians(angle);
+    const resScaleX = a1;
+    const resScaleY = d1;
+    const resSkewXRad = Math.atan2(c1, d1); // 从 K*S 中提取 skewX
 
-        const relativeRad = childRad - theta; // 相对旋转弧度
-        const cosValue = Math.cos(relativeRad);
-        const sinValue = Math.sin(relativeRad);
+    // C. 计算物体新的中心点
+    const newCenter = new Point(
+      worldCenterPoint.x,
+      worldCenterPoint.y,
+    ).matrixTransform(deltaMatrix);
 
-        const childScaleX = Math.sqrt(
-          Math.pow(scaleX * cosValue, 2) + Math.pow(scaleY * sinValue, 2)
-        );
+    // D. 写入属性（不改 width/height）
+    el.setOptions({
+      angle: radiansToDegrees(newAngleRad),
+      scaleX: resScaleX,
+      scaleY: resScaleY,
+      skewX: radiansToDegrees(resSkewXRad),
+    });
 
-        const childScaleY = Math.sqrt(
-          Math.pow(scaleX * sinValue, 2) + Math.pow(scaleY * cosValue, 2)
-        );
-
-        el.setOptions({
-          width: (width || 0) * childScaleX,
-          height: (height || 0) * childScaleY
-        })
-          .setPositionByOrigin(new Point(newChildCenter))
-          .layer.render();
-      }
+    // E. 核心：使用你的方法同步位置
+    // 这会根据 scale 后的 bounds 重新调整 left/top
+    el.setPositionByOrigin(
+      new Point(newCenter.x, newCenter.y),
+      "center",
+      "center",
     );
-  }
 
-  //  更新 Select 框 (left/top 为左上角)
+    el.layer.render();
+  });
+
+  // 6. 更新选框 UI 尺寸
+  const newW = pWidth * Math.abs(sx);
+  const newH = pHeight * Math.abs(sy);
+  const newSelectCenter = new Point(cx, cy).matrixTransform(deltaMatrix);
+
   selectEL
     .setOptions({
       width: newW,
       height: newH,
-      left: newGlobalCenter.x - newW / 2,
-      top: newGlobalCenter.y - newH / 2
+      left: newSelectCenter.x - newW / 2,
+      top: newSelectCenter.y - newH / 2,
     })
     .render();
 }
