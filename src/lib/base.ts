@@ -5,6 +5,13 @@ import { EventManage, FulateEvent } from "./eventManage";
 import { type Layer } from "./layer";
 import { type Root } from "./root";
 
+export interface Rect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface BaseElementOption {
   left?: number;
   top?: number;
@@ -231,7 +238,7 @@ export class Element extends EventTarget {
     return point.matrixTransform(inverseMatrix);
   }
 
-  getBoundingRect() {
+  getBoundingRect(): Rect {
     const corners = [
       new Point(0, 0), // 左上
       new Point(this.width, 0), // 右上
