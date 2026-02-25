@@ -54,6 +54,10 @@ export class Element extends Transformable {
     return this;
   }
 
+  update(options?: any) {
+    return this.setOptions(options).layer.render();
+  }
+
   render(ctx = this.layer.ctx) {
     if (this.children) {
       for (const child of this.children) {

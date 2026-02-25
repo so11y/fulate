@@ -28,6 +28,10 @@ const div1 = new Rectangle({
   backgroundColor: "red",
   onclick: (e) => {
     console.log("div1 clicked", e);
+
+    e.detail.target.update({
+      backgroundColor: "blue"
+    });
   }
 });
 
@@ -44,13 +48,13 @@ const div2 = new Rectangle({
 
 root.append(floorLayer, div1, div2, editerLayer);
 
-div1.addEventListener("click", (e) => {
-  e.detail.target
-    .setOptions({
-      backgroundColor: "yellow"
-    })
-    .layer.render();
-});
+// div1.addEventListener("click", (e) => {
+//   e.detail.target
+//     .setOptions({
+//       backgroundColor: "yellow"
+//     })
+//     .layer.render();
+// });
 
 root.mounted();
 
