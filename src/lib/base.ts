@@ -1,7 +1,5 @@
-//@ts-nocheck
-
 import { Intersection } from "../util/Intersection";
-import { Point, TOriginX, TOriginY } from "../util/point";
+import { Point, PointType, TOriginX, TOriginY } from "../util/point";
 import { resolveOrigin } from "../util/resolveOrigin";
 import { EventManage, FulateEvent } from "./eventManage";
 import { type Layer } from "./layer";
@@ -41,6 +39,7 @@ export class Element extends EventTarget {
   ownMatrixCache: DOMMatrix | null = null;
   isMounted = false;
   isDirty = true;
+  coords: Array<Point>;
 
   left = 0;
   top = 0;
@@ -65,7 +64,14 @@ export class Element extends EventTarget {
     this.setOptions(options, false);
   }
 
+  hasDirty() {
+    return this.isDirty || this.layer.isDirty || this.root.isDirty;
+  }
+
   render(ctx = this.layer.ctx) {
+    // if (this.hasDirty()) {
+    //   return;
+    // }
     if (this.children) {
       for (const child of this.children) {
         child.render(ctx);
@@ -75,13 +81,16 @@ export class Element extends EventTarget {
   }
 
   setOptions(options?: BaseElementOption, calc = true) {
-    // this.isDirty = true;
     if (options) {
       Object.assign(this, options);
+      this.isDirty = true;
     }
-    if (calc) {
+    if (calc && this.hasDirty()) {
       this.calcOwnMatrix();
       this.setCoords();
+    }
+    if (!this.isMounted) {
+      requestAnimationFrame(() => this.render());
     }
     return this;
   }
@@ -106,11 +115,12 @@ export class Element extends EventTarget {
     options?: AddEventListenerOptions | boolean
   ): void {
     this.eventManage.hasUserEvent = true;
+    //@ts-ignore
     super.addEventListener(type, callback, options);
   }
 
   setPositionByOrigin(
-    pos: Point,
+    pos: PointType,
     originX: TOriginX = this.originX,
     originY: TOriginY = this.originY
   ) {
@@ -124,6 +134,14 @@ export class Element extends EventTarget {
     this.setOptions({ left: center.x, top: center.y });
     this.isDirty = true;
     return this;
+  }
+
+  getPositionByOrigin(
+    pos: PointType,
+    originX: TOriginX = this.originX,
+    originY: TOriginY = this.originY
+  ) {
+    return this.translateToGivenOrigin(pos, originX, originY, "left", "top");
   }
 
   getOwnMatrix() {
@@ -267,7 +285,7 @@ export class Element extends EventTarget {
   }
 
   translateToGivenOrigin(
-    point: Point,
+    point: PointType,
     fromOriginX: TOriginX,
     fromOriginY: TOriginY,
     toOriginX: TOriginX,
@@ -346,10 +364,10 @@ export class Element extends EventTarget {
     const strokeWidth = dimOptions.strokeWidth;
     let preScalingStrokeValue = strokeWidth,
       postScalingStrokeValue = 0;
-    if (this.strokeUniform) {
-      preScalingStrokeValue = 0;
-      postScalingStrokeValue = strokeWidth;
-    }
+    // if (this.strokeUniform) {
+    //   preScalingStrokeValue = 0;
+    //   postScalingStrokeValue = strokeWidth;
+    // }
     const dimX = dimOptions.width + preScalingStrokeValue,
       dimY = dimOptions.height + preScalingStrokeValue;
 

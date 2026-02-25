@@ -195,16 +195,15 @@ export const Controls: Array<Control> = [
         .rotate(0, 0, angleDelta)
         .translate(-constraint.x, -constraint.y);
 
-      selectCenterPoint.forEach(({ el }, index) => {
-        const childWorldCenter = el.getWorldCenterPoint();
-
+      selectCenterPoint.forEach(({ el }) => {
+        const center = el.getPositionByOrigin(
+          el.getWorldCenterPoint().matrixTransform(rotationMatrix)
+        );
         el.setOptions({
-          angle: el.angle + angleDelta
-        })
-          .setPositionByOrigin(
-            new Point(childWorldCenter.matrixTransform(rotationMatrix))
-          )
-          .layer.render();
+          angle: el.angle + angleDelta,
+          left: center.x,
+          top: center.y
+        }).layer.render();
       });
 
       selectEL
@@ -293,18 +292,30 @@ export function resizeObject(
       deltaMatrix.multiply(matrix)
     );
 
+    const center = el.getPositionByOrigin(
+      worldCenterPoint.matrixTransform(deltaMatrix)
+    );
     el.setOptions({
       angle,
       scaleX,
       scaleY,
-      skewX
-    })
-      .setPositionByOrigin(
-        new Point(worldCenterPoint.matrixTransform(deltaMatrix)),
-        "center",
-        "center"
-      )
-      .layer.render();
+      skewX,
+      left: center.x,
+      top: center.y
+    }).layer.render();
+
+    // el.setOptions({
+    //   angle,
+    //   scaleX,
+    //   scaleY,
+    //   skewX
+    // })
+    //   .setPositionByOrigin(
+    //     new Point(worldCenterPoint.matrixTransform(deltaMatrix)),
+    //     "center",
+    //     "center"
+    //   )
+    //   .layer.render();
   });
 
   // 6. 更新选框 UI 尺寸
