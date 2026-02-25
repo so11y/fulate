@@ -48,8 +48,8 @@ root.append(
   div1,
   div2,
   new Rectangle({
-    left: 150,
-    top:50,
+    left: 0,
+    top:0,
     width: 30,
     height: 30,
     backgroundColor: "yellow"
