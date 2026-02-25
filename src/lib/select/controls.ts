@@ -175,7 +175,6 @@ export const Controls: Array<Control> = [
       const constraint = selectEL.getWorldCenterPoint();
 
       const angle = this.rotateObjectWithSnapping(
-        // event,
         {
           target: selectEL,
           ex: point.x,
@@ -210,7 +209,7 @@ export const Controls: Array<Control> = [
         .setOptions({
           angle
         })
-        .render();
+        .layer.render();
     }
   }
 ] as const;

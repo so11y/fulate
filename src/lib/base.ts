@@ -58,10 +58,19 @@ export class Element extends EventTarget {
   cursor?: string;
   selectable?: boolean;
   visible?: boolean;
+  key: string;
 
   constructor(options?: BaseElementOption) {
     super();
     this.setOptions(options, false);
+  }
+
+  markDirty() {
+    this.isDirty = true;
+    this.ownMatrixCache = null;
+    this.coords = null;
+    this.children?.forEach((v) => v.markDirty());
+    return this;
   }
 
   hasDirty() {
@@ -83,15 +92,15 @@ export class Element extends EventTarget {
   setOptions(options?: BaseElementOption, calc = true) {
     if (options) {
       Object.assign(this, options);
-      this.isDirty = true;
+      this.markDirty();
     }
     if (calc && this.hasDirty()) {
       this.calcOwnMatrix();
       this.setCoords();
     }
-    if (!this.isMounted) {
-      requestAnimationFrame(() => this.render());
-    }
+    // if (!this.isMounted) {
+    //   requestAnimationFrame(() => this.render());
+    // }
     return this;
   }
 
@@ -132,7 +141,7 @@ export class Element extends EventTarget {
       "top"
     );
     this.setOptions({ left: center.x, top: center.y });
-    this.isDirty = true;
+    this.markDirty();
     return this;
   }
 
@@ -145,9 +154,8 @@ export class Element extends EventTarget {
   }
 
   getOwnMatrix() {
-    if (this.isDirty || !this.ownMatrixCache) {
+    if (!this.ownMatrixCache) {
       this.calcOwnMatrix();
-      this.children?.forEach((v) => (v.isDirty = true));
     }
     return this.ownMatrixCache;
   }
@@ -158,7 +166,7 @@ export class Element extends EventTarget {
 
     const matrix = new DOMMatrix();
 
-    if (this.parent && this.parent !== this.root) {
+    if (this.parent) {
       const parentMatrix = this.parent.getOwnMatrix();
       matrix.multiplySelf(parentMatrix);
     }
@@ -173,7 +181,6 @@ export class Element extends EventTarget {
       (this.skewX && this.skewX !== 0) || (this.skewY && this.skewY !== 0);
 
     if (hasAngle || hasScale || hasSkew) {
-      // 计算偏移量（左上角到旋转中心）
       const offsetX = center.x - topLeft.x;
       const offsetY = center.y - topLeft.y;
 
@@ -194,7 +201,6 @@ export class Element extends EventTarget {
 
       matrix.translateSelf(-offsetX, -offsetY);
     }
-
     this.ownMatrixCache = matrix;
     return matrix;
   }
@@ -252,9 +258,6 @@ export class Element extends EventTarget {
       maxX = Math.max(maxX, x);
       maxY = Math.max(maxY, y);
     });
-
-    const width = maxX - minX;
-    const height = maxY - minY;
 
     return {
       left: minX, // 包围盒左上角 x
@@ -379,6 +382,9 @@ export class Element extends EventTarget {
 
   mounted() {
     this.isMounted = true;
+    if (this.key) {
+      this.root.keyElmenet.set(this.key, this);
+    }
     if (this.children) {
       for (const child of this.children) {
         child.parent = this;
@@ -392,6 +398,10 @@ export class Element extends EventTarget {
   }
 
   unmounted() {
+    this.dispatchEvent(new CustomEvent("unmounted"));
+    if (this.key) {
+      this.root.keyElmenet.delete(this.key);
+    }
     if (this.children) {
       for (const child of this.children) {
         child.unmounted();

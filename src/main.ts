@@ -1,16 +1,25 @@
 import { Root } from "./lib/root";
 import { Select } from "./lib/select";
 import { Rectangle } from "./lib/ui/rectangle";
+import { Rule } from "./lib/rule";
+import { Layer, FullLayer } from "./lib/layer";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: 500,
   height: 500
 });
 
-const select = new Select();
+const editerLayer = new FullLayer({
+  zIndex: 2,
+  children: [new Rule(), new Select()]
+});
+
+const floorLayer = new FullLayer({
+  children: []
+});
 
 const div1 = new Rectangle({
-  left: 100,
+  left: 300,
   top: 100,
   width: 50,
   height: 50,
@@ -30,7 +39,7 @@ const div2 = new Rectangle({
   backgroundColor: "blue"
 });
 
-root.append(div1, div2, select);
+root.append(floorLayer, div1, div2, editerLayer);
 
 div1.addEventListener("click", (e) => {
   e.detail.target

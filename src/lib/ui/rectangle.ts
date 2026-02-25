@@ -6,7 +6,9 @@ export class Rectangle extends Element {
   render(ctx: CanvasRenderingContext2D = this.layer.ctx) {
     ctx.save();
     ctx.beginPath();
-    ctx.setTransform(this.getOwnMatrix());
+    ctx.setTransform(
+      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
+    );
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;
     }

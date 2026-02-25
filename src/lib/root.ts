@@ -3,19 +3,26 @@ import { BaseElementOption, type Element } from "./base";
 
 export class Root extends Layer {
   type = "root";
-  
+
   container: HTMLElement;
-
+  // 视口状态：x,y 是偏移量，scale 是缩放
+  viewport = { x: 0, y: 0, scale: 1, matrix: null as DOMMatrix | null };
   currentElement?: Element;
-
+  keyElmenet = new Map();
   quickElements: Array<Element> = [];
+
+  // 内部交互状态
+  private isSpacePressed = false;
+  private isPanning = false;
+  private hasLockPoint = false; // 用于按下元素后的事件锁定
+  private lastPointerPos = { x: 0, y: 0 };
 
   constructor(el: HTMLElement, options?: BaseElementOption) {
     super(options);
     this.container = el;
-    //TODO 未来根据最大layer动态调整
     this.container.style.position = "relative";
-    this.container.style.zIndex = (10).toString();
+    this.container.style.userSelect = "none"; // 禁止文字选中干扰
+    this.container.style.touchAction = "none"; // 禁用浏览器默认手势
     this.cursor = "default";
   }
 
@@ -23,142 +30,246 @@ export class Root extends Layer {
     this.root = this;
     super.mounted();
     this.calcEventSort();
-    this.calcEvent();
+    this.initEvents();
     this.render();
   }
 
-  calcEvent() {
-    const el = this.container;
-    const rect = el.getBoundingClientRect();
-    const abortController = new AbortController();
+  /**
+   * 核心公式：将屏幕坐标转换为画布逻辑坐标（世界坐标）
+   */
+  private getLogicalPosition(clientX: number, clientY: number) {
+    const rect = this.container.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left - this.viewport.x) / this.viewport.scale,
+      y: (clientY - rect.top - this.viewport.y) / this.viewport.scale
+    };
+  }
 
-    //为了如果鼠标按下那么即便鼠标已经移动出canvas之外
-    //也能继续触发的这个元素的事件
-    let hasLockPoint = false;
-    const checkHit = (e: PointerEvent) => {
-      const offsetX = e.clientX - rect.x;
-      const offsetY = e.clientY - rect.y;
-      if (hasLockPoint === false) {
-        this.currentElement = undefined;
-        for (const element of this.quickElements) {
-          if (element.hasInView() && element.hasPointHint(offsetX, offsetY)) {
-            this.currentElement = element;
-            break;
-          }
+  getViewPointMtrix() {
+    if (this.viewport?.matrix) {
+      return this.viewport.matrix;
+    }
+    this.viewport.matrix = new DOMMatrix([
+      this.viewport.scale,
+      0,
+      0,
+      this.viewport.scale,
+      this.viewport.x,
+      this.viewport.y
+    ]);
+    return this.viewport.matrix;
+  }
+
+  /**
+   * 碰撞检测
+   */
+  private checkHit(e: PointerEvent | MouseEvent) {
+    if (this.isSpacePressed || this.isPanning) return;
+
+    // 如果鼠标已按下并锁定了某个元素（如拖拽中），不再寻找新目标
+    if (this.hasLockPoint && this.currentElement) return;
+
+    const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
+
+    this.currentElement = undefined;
+    for (const element of this.quickElements) {
+      if (element.hasInView() && element.hasPointHint(x, y)) {
+        this.currentElement = element;
+        break;
+      }
+    }
+  }
+
+  hasInView() {
+    return true;
+  }
+
+  hasPointHint() {
+    return true;
+  }
+
+  private initEvents() {
+    const abortController = new AbortController();
+    const { signal } = abortController;
+
+    // --- 1. 键盘监听：空格键控制状态 ---
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        this.isSpacePressed = true;
+        this.container.style.cursor = "grab";
+        // 按下空格时，清除当前的 hover 状态，避免干扰
+        if (this.currentElement) {
+          this.currentElement = undefined;
+          this.render();
         }
       }
     };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        this.isSpacePressed = false;
+        this.isPanning = false;
+        this.container.style.cursor = "default";
+      }
+    };
+    document.addEventListener("keydown", onKeyDown, { signal });
+    document.addEventListener("keyup", onKeyUp, { signal });
 
+    // --- 2. 指针移动：区分 平移 vs 交互 ---
     document.addEventListener(
       "pointermove",
       (e) => {
-        const prevElement = this.currentElement;
+        if (this.isPanning) {
+          // 执行视口平移
+          const dx = e.clientX - this.lastPointerPos.x;
+          const dy = e.clientY - this.lastPointerPos.y;
+          this.viewport.matrix = null;
+          this.viewport.x += dx;
+          this.viewport.y += dy;
+          this.lastPointerPos = { x: e.clientX, y: e.clientY };
 
-        checkHit(e);
+          this.dispatchEvent(new CustomEvent("panzoom"));
+          this.markDirty();
+          this.render();
+        } else {
+          // 执行正常的元素交互检测
+          const prevElement = this.currentElement;
+          this.checkHit(e);
 
-        if (!this.currentElement) {
-          el.style.cursor = "default";
-          return;
+          // 处理 cursor 切换
+          if (this.isSpacePressed) {
+            this.container.style.cursor = this.isPanning ? "grabbing" : "grab";
+          } else {
+            this.container.style.cursor =
+              this.currentElement?.cursor || "default";
+          }
+
+          // 处理 MouseEnter / MouseLeave
+          if (this.currentElement !== prevElement) {
+            if (prevElement) this.notify(e, "mouseleave", prevElement);
+            if (this.currentElement)
+              this.notify(e, "mouseenter", this.currentElement);
+          }
+          this.notify(e, "pointermove");
         }
-
-        if (this.currentElement.cursor) {
-          el.style.cursor = this.currentElement.cursor;
-        }
-
-        if (this.currentElement !== prevElement) {
-          notify(e, "mouseleave", prevElement);
-          notify(e, "mouseenter");
-        }
-
-        notify(e, "pointermove");
       },
-      {
-        signal: abortController.signal
-      }
+      { signal }
     );
 
-    document.addEventListener(
-      "click",
-      (e) => {
-        checkHit(e);
-        notify(e, "click");
-      },
-      {
-        signal: abortController.signal
-      }
-    );
-    document.addEventListener(
+    // --- 3. 指针按下 ---
+    this.container.addEventListener(
       "pointerdown",
       (e) => {
-        checkHit(e);
-        notify(e, "pointerdown");
-      },
-      {
-        signal: abortController.signal
-      }
-    );
-    document.addEventListener("pointerup", (e) => notify(e, "pointerup"), {
-      signal: abortController.signal
-    });
-    document.addEventListener("contextmenu", (e) => notify(e, "contextmenu"), {
-      signal: abortController.signal
-    });
+        if (e.button !== 0) return; // 仅左键
 
-    el.addEventListener(
+        if (this.isSpacePressed) {
+          // 进入平移模式
+          this.isPanning = true;
+          this.lastPointerPos = { x: e.clientX, y: e.clientY };
+          this.container.setPointerCapture(e.pointerId);
+        } else {
+          // 正常交互
+          this.checkHit(e);
+          this.hasLockPoint = true;
+          this.notify(e, "pointerdown");
+        }
+      },
+      { signal }
+    );
+
+    // --- 4. 指针抬起 ---
+    document.addEventListener(
+      "pointerup",
+      (e) => {
+        if (this.isPanning) {
+          this.isPanning = false;
+          this.container.releasePointerCapture(e.pointerId);
+        } else {
+          this.notify(e, "pointerup");
+          this.hasLockPoint = false;
+        }
+      },
+      { signal }
+    );
+
+    // --- 5. 滚轮：缩放逻辑 ---
+    this.container.addEventListener(
       "wheel",
-      (e: any) => {
+      (e) => {
         e.preventDefault();
-        notify(e, "wheel");
+
+        // 如果按住了空格，执行缩放；也可以不判断空格，直接支持缩放
+        const rect = this.container.getBoundingClientRect();
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+
+        const factor = e.deltaY < 0 ? 1.1 : 0.9;
+        const prevScale = this.viewport.scale;
+        const newScale = Math.max(0.1, Math.min(10, prevScale * factor));
+        this.viewport.matrix = null;
+        // 以鼠标当前位置为中心进行缩放的算法
+        this.viewport.x = cx - ((cx - this.viewport.x) * newScale) / prevScale;
+        this.viewport.y = cy - ((cy - this.viewport.y) * newScale) / prevScale;
+        this.viewport.scale = newScale;
+
+        this.dispatchEvent(new CustomEvent("panzoom"));
+        this.markDirty();
+        this.render();
+
+        // 缩放后重新计算 hit，防止缩放后鼠标下的元素变化
+        this.checkHit(e);
       },
-      {
-        signal: abortController.signal,
-        passive: false
-      }
+      { signal, passive: false }
     );
 
-    const notify = (
-      e: PointerEvent | MouseEvent | WheelEvent,
-      eventName: string,
-      el = this.currentElement
-    ) => {
-      if (!el) {
-        hasLockPoint = false;
-        return;
-      }
-      if (eventName === "contextmenu") {
+    // 其他事件包装
+    document.addEventListener("click", (e) => this.notify(e, "click"), {
+      signal
+    });
+    document.addEventListener(
+      "contextmenu",
+      (e) => {
         e.preventDefault();
-      }
-      if (eventName === "pointerdown") {
-        hasLockPoint = true;
-      } else if (eventName === "pointerup") {
-        hasLockPoint = false;
-      }
-      const offsetX = e.clientX - rect.x;
-      const offsetY = e.clientY - rect.y;
-      el.eventManage.notify(eventName, {
-        ctrlKey: e.ctrlKey,
-        originalClientX: e.clientX,
-        originalClientY: e.clientY,
-        target: el,
-        x: offsetX,
-        y: offsetY,
-        buttons: e.buttons,
-        deltaY: (e as WheelEvent).deltaY ?? 0,
-        deltaX: (e as WheelEvent).deltaX ?? 0
-      });
-    };
+        this.notify(e, "contextmenu");
+      },
+      { signal }
+    );
 
-    this.unmounted = () => {
-      abortController.abort();
-      super.unmounted();
-    };
+    this.addEventListener("unmounted", () => abortController.abort());
+  }
+
+  /**
+   * 统一的事件分发器
+   */
+  private notify(
+    e: PointerEvent | MouseEvent | WheelEvent,
+    eventName: string,
+    targetEl = this.currentElement
+  ) {
+    // 如果正在平移视口，拦截所有 UI 元素事件
+    if (this.isSpacePressed || this.isPanning) return;
+
+    if (!targetEl) return;
+
+    const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
+
+    targetEl.eventManage.notify(eventName, {
+      ctrlKey: e.ctrlKey,
+      originalClientX: e.clientX,
+      originalClientY: e.clientY,
+      target: targetEl,
+      x: x,
+      y: y,
+      buttons: e.buttons,
+      deltaY: (e as WheelEvent).deltaY ?? 0,
+      deltaX: (e as WheelEvent).deltaX ?? 0
+    });
   }
 
   calcEventSort() {
     const stack: Element[] = [this];
     const resultStack: Element[] = [];
     while (stack.length > 0) {
-      const currentNode = stack.pop()!; // 取出栈顶节点
+      const currentNode = stack.pop()!;
       if (currentNode.eventManage.hasUserEvent) {
         resultStack.unshift(currentNode);
       }

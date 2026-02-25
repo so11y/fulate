@@ -3,14 +3,16 @@ import { makeBoundingBoxFromPoints, Point } from "../../util/point";
 import { degreesToRadians } from "../../util/radiansDegreesConversion";
 import { Element } from "../base";
 import { FulateEvent } from "../eventManage";
-import { Layer } from "../layer";
+// import { Layer } from "../layer";
+// import { Element } from "../base";
 import { Controls, resizeObject } from "./controls";
 
-export class Select extends Layer {
+export class Select extends Element {
   declare selectEls: Element[];
   declare currentControl: { control: any; point: any };
   declare coords: any;
-  controlSize = 8;
+  key = "select";
+  controlSize = 10;
   hitPadding = 6;
   constructor() {
     super({
@@ -26,7 +28,7 @@ export class Select extends Layer {
 
   mounted() {
     const checkElementIntersects = (object: Element) => {
-      const [{ point: tl }, , { point: br }] = this.getCoords();
+      const [{ point: tl }, , { point: br }] = this.getCoords() as any[];
       if (
         !object.selectable &&
         !object.visible &&
@@ -41,7 +43,6 @@ export class Select extends Layer {
 
     const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
-      //@ts-ignore
       const directEl = this.root.children?.filter((v) => v !== this);
       const startPoint = new Point(e.detail.x, e.detail.y);
       this.setOptions({
@@ -50,7 +51,7 @@ export class Select extends Layer {
         width: 0,
         height: 0,
         angle: 0
-      }).render();
+      }).layer.render();
 
       const selectEls = new Set(
         [directEl.find(checkElementIntersects)].filter(Boolean)
@@ -65,7 +66,7 @@ export class Select extends Layer {
           top: Math.min(startPoint.y, endPoint.y),
           width: Math.abs(endPoint.x - startPoint.x),
           height: Math.abs(endPoint.y - startPoint.y)
-        }).render();
+        }).layer.render();
       };
       this.root.addEventListener("pointermove", pointermove);
       this.root.addEventListener(
@@ -81,7 +82,7 @@ export class Select extends Layer {
           const rect = makeBoundingBoxFromPoints(
             this.selectEls?.map((v) => v.getCoords()).flat(1)
           );
-          this.setOptions(rect).render();
+          this.setOptions(rect).layer.render();
         },
         {
           once: true
@@ -189,25 +190,28 @@ export class Select extends Layer {
   }
 
   render() {
-    this.clear();
     if (!this.width || !this.height) {
       return;
     }
-    this.ctx.save();
-    this.ctx.beginPath();
-    this.ctx.setTransform(this.getOwnMatrix());
+    const ctx = this.layer.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.setTransform(
+      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
+    );
     if (this.backgroundColor) {
-      this.ctx.fillStyle = this.backgroundColor;
+      ctx.fillStyle = this.backgroundColor;
     }
-    this.ctx.roundRect(0, 0, this.width!, this.height!, this.radius ?? 0);
+    ctx.roundRect(0, 0, this.width!, this.height!, this.radius ?? 0);
     if (this.backgroundColor) {
-      this.ctx.fill();
+      ctx.fill();
     }
-    this.ctx.restore();
+    ctx.restore();
+
     if (this.selectEls.length) {
-      const coords = this.getCoords();
+      const coords = this.getCoords() as any[];
       coords.forEach(({ point, control }) =>
-        this.drawControlPoint(this.ctx, point, control)
+        this.drawControlPoint(ctx, point, control)
       );
     }
   }
@@ -217,49 +221,17 @@ export class Select extends Layer {
     point: Point,
     control: (typeof Controls)[0]
   ) {
+    const size = this.controlSize;
     ctx.save();
-    if (control.type === "mtr") {
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, this.controlSize - 4, 0, Math.PI * 2);
-      ctx.fillStyle = "#ff4757";
-      ctx.fill();
-    } else {
-      ctx.beginPath();
-      const matrix = this.getOwnMatrix();
-      this.ctx.setTransform(matrix);
-      const localPoint = point.matrixTransform(matrix.inverse());
-      this.drawRoundedRect(
-        ctx,
-        localPoint.x - this.controlSize / 2,
-        localPoint.y - this.controlSize / 2,
-        this.controlSize,
-        this.controlSize
-      );
-      ctx.fillStyle = "#0078ff";
-      ctx.fill();
-    }
-    ctx.restore();
-  }
-
-  drawRoundedRect(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    radius = 2
-  ) {
     ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
+    ctx.arc(point.x, point.y, size - 4, 0, Math.PI * 2);
+    if (control.type === "mtr") {
+      ctx.fillStyle = "#ff4757";
+    } else {
+      ctx.fillStyle = "#0078ff";
+    }
+    ctx.fill();
+    ctx.restore();
   }
 
   hasPointHint(x: number, y: number): boolean {
@@ -269,7 +241,7 @@ export class Select extends Layer {
     if (this.width === 0 || this.height === 0) {
       return false;
     }
-    const coords = this.getCoords();
+    const coords = this.getCoords() as any[];
     const hintPoint = new Point(x, y);
     this.currentControl = null;
     this.cursor = "default";
@@ -338,11 +310,6 @@ export class Select extends Layer {
     }
     return false;
   }
-
-  clear() {
-    this.ctx.clearRect(0, 0, this.root.width, this.root.height);
-  }
-
 
   setCoords(): this {
     const finalMatrix = this.getOwnMatrix();

@@ -32,8 +32,10 @@ export class Layer extends Rectangle {
   render() {
     if (!this.isRender) {
       this.isRender = true;
-      this.clear();
       Promise.resolve().then(() => {
+        this.clear();
+        // const vp = this.root?.viewport;
+        // this.ctx.setTransform(vp.scale, 0, 0, vp.scale, vp.x, vp.y);
         super.render();
         this.isRender = false;
       });
@@ -41,6 +43,14 @@ export class Layer extends Rectangle {
   }
 
   clear() {
+    // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.width!, this.height!);
+  }
+}
+
+export class FullLayer extends Layer {
+  clear() {
+    // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.root.width!, this.root.height!);
   }
 }
