@@ -1,4 +1,4 @@
-import { Element } from "../base";
+import { Element } from "../node/element";
 
 export class Rectangle extends Element {
   type = "rectangle";

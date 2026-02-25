@@ -1,5 +1,5 @@
 import { Layer } from "./layer";
-import { BaseElementOption, type Element } from "./base";
+import { BaseElementOption, type Element } from "./node/element";
 
 export class Root extends Layer {
   type = "root";
@@ -78,10 +78,6 @@ export class Root extends Layer {
         break;
       }
     }
-  }
-
-  hasInView() {
-    return true;
   }
 
   hasPointHint() {

@@ -78,9 +78,6 @@ export class Element extends EventTarget {
   }
 
   render(ctx = this.layer.ctx) {
-    // if (this.hasDirty()) {
-    //   return;
-    // }
     if (this.children) {
       for (const child of this.children) {
         child.render(ctx);

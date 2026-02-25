@@ -25,7 +25,10 @@ const div1 = new Rectangle({
   height: 50,
   radius: 20,
   cursor: "pointer",
-  backgroundColor: "red"
+  backgroundColor: "red",
+  onclick: (e) => {
+    console.log("div1 clicked", e);
+  }
 });
 
 const div2 = new Rectangle({

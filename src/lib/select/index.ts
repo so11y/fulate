@@ -1,7 +1,7 @@
 import { Intersection } from "../../util/Intersection";
 import { makeBoundingBoxFromPoints, Point } from "../../util/point";
 import { degreesToRadians } from "../../util/radiansDegreesConversion";
-import { Element } from "../base";
+import { Element } from "../node/element";
 import { FulateEvent } from "../eventManage";
 // import { Layer } from "../layer";
 // import { Element } from "../base";

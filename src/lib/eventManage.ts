@@ -1,4 +1,4 @@
-import type { Element } from "./base";
+import type { Element } from "./node/element";
 
 export type UserCanvasEvent = Event & { detail: CanvasPoint };
 
@@ -19,6 +19,9 @@ export interface FulateEvent extends Omit<PointerEvent, "detail"> {
     x: number;
     y: number;
     target: Element;
+    buttons: number;
+    deltaX: number;
+    deltaY: number;
   };
 }
 
