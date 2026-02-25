@@ -1,4 +1,4 @@
-import type { Element } from "./node/element";
+import type { Node as Element } from "./node/node";
 
 export type UserCanvasEvent = Event & { detail: CanvasPoint };
 
@@ -56,6 +56,7 @@ export class EventManage {
     }
 
     if (eventName === "mouseleave" && this.hasMouseEnter) {
+      //@ts-ignore
       if (this.target.hasPointHint(event.x, event.y)) {
         return;
       }

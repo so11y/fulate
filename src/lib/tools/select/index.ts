@@ -6,6 +6,7 @@ import { FulateEvent } from "../../eventManage";
 // import { Layer } from "../layer";
 // import { Element } from "../base";
 import { Controls, resizeObject } from "./controls";
+import { Snap } from "./snap";
 
 export class Select extends Element {
   declare selectEls: Element[];
@@ -24,6 +25,10 @@ export class Select extends Element {
     });
     this.selectEls = [];
     this.eventManage.hasUserEvent = true;
+  }
+
+  get snapTool(): Snap | undefined {
+    return this.root.keyElmenet?.get("snap") as Snap;
   }
 
   mounted() {
@@ -127,6 +132,9 @@ export class Select extends Element {
 
     const handleSelectMove = (e: FulateEvent) => {
       const startPoint = new Point(e.detail.x, e.detail.y);
+      const coords = this.getCoordsPure();
+
+      this.snapTool?.start(this.selectEls.concat(this));
 
       const originalSelectLeft = this.left;
       const originalSelectTop = this.top;
@@ -138,8 +146,16 @@ export class Select extends Element {
 
       const pointermove = (ev: FulateEvent) => {
         const current = new Point(ev.detail.x, ev.detail.y);
-        const dx = current.x - startPoint.x;
-        const dy = current.y - startPoint.y;
+        let dx = current.x - startPoint.x;
+        let dy = current.y - startPoint.y;
+
+        const snapResult = this.snapTool?.detect(coords);
+
+        if (snapResult) {
+          // 将吸附修正量应用到 dx, dy
+          dx += snapResult.dx;
+          dy += snapResult.dy;
+        }
 
         const targets = snapshots.map(({ child, worldCenter }) => {
           return {
@@ -153,6 +169,7 @@ export class Select extends Element {
             .setPositionByOrigin(targetWorld, child.originX, child.originY)
             .layer.render();
         }
+
         this.setOptions({
           left: originalSelectLeft + dx,
           top: originalSelectTop + dy
@@ -162,7 +179,10 @@ export class Select extends Element {
       this.root.addEventListener("pointermove", pointermove);
       this.root.addEventListener(
         "pointerup",
-        () => this.root.removeEventListener("pointermove", pointermove),
+        () => {
+          this.root.removeEventListener("pointermove", pointermove);
+          this.snapTool?.stop();
+        },
         { once: true }
       );
     };
@@ -309,6 +329,24 @@ export class Select extends Element {
       return true;
     }
     return false;
+  }
+
+  getCoordsPure() {
+    const finalMatrix = this.getOwnMatrix();
+    const dim = this._getTransformedDimensions();
+
+    const localPoints = [
+      new Point(0, 0), // 左上
+      new Point(dim.x, 0), // 右上
+      new Point(dim.x, dim.y), // 右下
+      new Point(0, dim.y) // 左下
+    ];
+    return localPoints.map(
+      (point) => new Point(finalMatrix.transformPoint(point))
+    );
+    // return (this.getCoords() as any)
+    //   .filter((v) => v.control.type !== "mtr")
+    //   .map((v) => v.point);
   }
 
   setCoords(): this {

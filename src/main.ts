@@ -3,6 +3,7 @@ import { Select } from "./lib/tools/select";
 import { Rectangle } from "./lib/ui/rectangle";
 import { Rule } from "./lib/tools/rule";
 import { Layer, FullLayer } from "./lib/layer";
+import { Snap } from "./lib/tools/select/snap";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: 500,
@@ -11,7 +12,7 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
 
 const editerLayer = new FullLayer({
   zIndex: 2,
-  children: [new Rule(), new Select()]
+  children: [new Rule(), new Select(), new Snap()]
 });
 
 const floorLayer = new FullLayer({
@@ -28,10 +29,6 @@ const div1 = new Rectangle({
   backgroundColor: "red",
   onclick: (e) => {
     console.log("div1 clicked", e);
-
-    e.detail.target.update({
-      backgroundColor: "blue"
-    });
   }
 });
 
