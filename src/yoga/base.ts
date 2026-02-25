@@ -111,7 +111,7 @@ export class Element extends YogaOption {
     return this;
   }
 
-  setStyleToYoga() {
+  flushStyles() {
     if (!isNil(this.display)) {
       this.yogaNode.setDisplay(this.display);
       if (this.display === Display.Flex) {
@@ -171,7 +171,7 @@ export class Element extends YogaOption {
     // !isNil(this.overflow) && this.yogaNode.setOverflow(this.overflow);
 
     if (this.children?.length) {
-      this.children.forEach((v) => v.setStyleToYoga());
+      this.children.forEach((v) => v.flushStyles());
     }
     return this;
   }

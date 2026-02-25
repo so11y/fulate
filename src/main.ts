@@ -1,7 +1,7 @@
 import { Root } from "./lib/root";
-import { Select } from "./lib/select";
+import { Select } from "./lib/tools/select";
 import { Rectangle } from "./lib/ui/rectangle";
-import { Rule } from "./lib/rule";
+import { Rule } from "./lib/tools/rule";
 import { Layer, FullLayer } from "./lib/layer";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {

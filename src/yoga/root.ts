@@ -11,8 +11,11 @@ export class Root extends Element {
   }
 
   layoutSyncToRenderNode() {
-    this.setStyleToYoga();
-    this.yogaNode.calculateLayout(undefined, undefined);
+    this.flushStyles();
+    this.yogaNode.calculateLayout(
+      this.container.clientWidth,
+      this.container.clientHeight
+    );
     super.layoutSyncToRenderNode();
   }
 

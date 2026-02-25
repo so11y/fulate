@@ -1,5 +1,5 @@
-import { Element } from "../base";
-import { Point } from "../../util/point";
+import { Element } from "../../base";
+import { Point } from "../../../util/point";
 
 function niceStep(pxPerTick: number, scale: number) {
   const raw = pxPerTick / scale;

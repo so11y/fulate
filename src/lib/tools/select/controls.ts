@@ -1,12 +1,12 @@
 import {
   degreesToRadians,
   radiansToDegrees
-} from "../../util/radiansDegreesConversion";
-import { Point } from "../../util/point";
+} from "../../../util/radiansDegreesConversion";
+import { Point } from "../../../util/point";
 import { type Select } from "./index";
-import { Element } from "../base";
-import { FulateEvent } from "../eventManage";
-import { qrDecompose } from "../../util/math";
+import { Element } from "../../base";
+import { FulateEvent } from "../../eventManage";
+import { qrDecompose } from "../../../util/math";
 
 interface Control {
   type: string;
