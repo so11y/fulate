@@ -29,7 +29,7 @@ export class Layer extends Rectangle {
     root.container.appendChild(this.canvasEl);
   }
 
-  attrs(options, k) {
+  attrs(options, k?:any) {
     this.width = options.width ?? this.width;
     this.height = options.height ?? this.height;
     super.attrs(options, k);

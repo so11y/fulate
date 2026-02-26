@@ -36,7 +36,6 @@ export class Select extends Element {
     const checkElementIntersects = (object: Element) => {
       const [tl, , br] = this.getControlCoords();
       if (
-        !object.selectable &&
         !object.visible &&
         (object.intersectsWithRect(tl, br) ||
           object.isContainedWithinRect(tl, br) ||
