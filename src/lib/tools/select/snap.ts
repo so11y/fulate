@@ -73,6 +73,9 @@ export class Snap extends Element {
     this.cacheY = new Float32Array(yData);
   }
 
+  /**
+   * @param predictedPoints 拖动物体在预测位置的
+   */
   detect(originalPoints: Point[], dx_raw: number, dy_raw: number): SnapResult {
     if (!this.isActive) return { dx: 0, dy: 0 };
     this.snapLines = [];
@@ -102,153 +105,177 @@ export class Snap extends Element {
     const final_dx = dx_raw + dx_snap;
     const final_dy = dy_raw + dy_snap;
 
-    // ================= 垂直吸附处理 (显示左右间距) =================
+    // ================= 垂直吸附 (X) =================
     if (bestX) {
       const snapX = bestX.targetVal;
-      const movingYs = originalPoints.map((p) => p.y + final_dy);
+
+      // 取出当前对象在吸附线上的真实 Y 轴范围
+      const movingYs = originalPoints
+        .map((p) => ({ x: p.x + final_dx, y: p.y + final_dy }))
+        .filter((p) => Math.abs(p.x - snapX) < 0.0001)
+        .map((p) => p.y);
+
+      if (movingYs.length === 0) {
+        movingYs.push(originalPoints[bestX.matchedIndex].y + final_dy);
+      }
+
       const objMinY = Math.min(...movingYs);
       const objMaxY = Math.max(...movingYs);
 
-      // 分别存储上方和下方的最近邻居
-      let neighbors = {
-        before: { dist: Infinity, p1: 0, p2: 0 }, // 上方 (Y轴较小方向)
-        after: { dist: Infinity, p1: 0, p2: 0 } // 下方 (Y轴较大方向)
-      };
+      let minDistance = Infinity;
+      let bestP1 = objMinY;
+      let bestP2 = objMinY;
 
+      // 核心算法：计算两条一维线段[objMin, objMax] 与 [refMin, refMax] 之间的最短距离
       for (const seg of bestX.segments) {
         const refMinY = seg.min;
         const refMaxY = seg.max !== undefined ? seg.max : seg.min;
 
+        let p1, p2, dist;
         if (objMaxY < refMinY) {
-          // 参考物在下方
-          const d = refMinY - objMaxY;
-          if (d < neighbors.after.dist) {
-            neighbors.after = { dist: d, p1: objMaxY, p2: refMinY };
-          }
+          p1 = objMaxY;
+          p2 = refMinY;
+          dist = refMinY - objMaxY;
         } else if (refMaxY < objMinY) {
-          // 参考物在上方
-          const d = objMinY - refMaxY;
-          if (d < neighbors.before.dist) {
-            neighbors.before = { dist: d, p1: objMinY, p2: refMaxY };
-          }
+          p1 = objMinY;
+          p2 = refMaxY;
+          dist = objMinY - refMaxY;
         } else {
-          // 重叠情况：距离为0，通常画一条穿过两者的全长线
-          neighbors.before = {
-            dist: 0,
-            p1: Math.min(objMinY, refMinY),
-            p2: Math.max(objMaxY, refMaxY)
-          };
+          // 发生重叠
+          p1 = Math.max(objMinY, refMinY);
+          p2 = Math.min(objMaxY, refMaxY);
+          dist = 0;
+        }
+
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestP1 = p1;
+          bestP2 = p2;
         }
       }
 
-      // 渲染逻辑：如果 before 和 after 都有，都会被 push 进去
-      this.processNeighbors(neighbors, snapX, "vertical");
+      const distance = Math.round(minDistance);
+      let start, end, points;
+
+      if (distance > 0) {
+        start = Math.min(bestP1, bestP2);
+        end = Math.max(bestP1, bestP2);
+        points = [
+          { x: snapX, y: start },
+          { x: snapX, y: end }
+        ];
+      } else {
+        let minAll = objMinY;
+        let maxAll = objMaxY;
+        for (const seg of bestX.segments) {
+          minAll = Math.min(minAll, seg.min);
+          maxAll = Math.max(maxAll, seg.max !== undefined ? seg.max : seg.min);
+        }
+        start = minAll;
+        end = maxAll;
+        points = [
+          { x: snapX, y: start },
+          { x: snapX, y: end }
+        ];
+      }
+
+      this.snapLines.push({
+        type: "vertical",
+        value: snapX,
+        start: start,
+        end: end,
+        points: points,
+        distanceText: distance > 0 ? `${distance}` : undefined,
+        textPos: { x: snapX + 5, y: (start + end) / 2 }
+      });
     }
 
-    // ================= 水平吸附处理 (显示上下间距) =================
+    // ================= 水平吸附 (Y) =================
     if (bestY) {
       const snapY = bestY.targetVal;
-      const movingXs = originalPoints.map((p) => p.x + final_dx);
+
+      const movingXs = originalPoints
+        .map((p) => ({ x: p.x + final_dx, y: p.y + final_dy }))
+        .filter((p) => Math.abs(p.y - snapY) < 0.0001)
+        .map((p) => p.x);
+
+      if (movingXs.length === 0) {
+        movingXs.push(originalPoints[bestY.matchedIndex].x + final_dx);
+      }
+
       const objMinX = Math.min(...movingXs);
       const objMaxX = Math.max(...movingXs);
 
-      let neighbors = {
-        before: { dist: Infinity, p1: 0, p2: 0 }, // 左侧
-        after: { dist: Infinity, p1: 0, p2: 0 } // 右侧
-      };
+      let minDistance = Infinity;
+      let bestP1 = objMinX;
+      let bestP2 = objMinX;
 
       for (const seg of bestY.segments) {
         const refMinX = seg.min;
         const refMaxX = seg.max !== undefined ? seg.max : seg.min;
 
+        let p1, p2, dist;
         if (objMaxX < refMinX) {
-          // 右侧
-          const d = refMinX - objMaxX;
-          if (d < neighbors.after.dist) {
-            neighbors.after = { dist: d, p1: objMaxX, p2: refMinX };
-          }
+          p1 = objMaxX;
+          p2 = refMinX;
+          dist = refMinX - objMaxX;
         } else if (refMaxX < objMinX) {
-          // 左侧
-          const d = objMinX - refMaxX;
-          if (d < neighbors.before.dist) {
-            neighbors.before = { dist: d, p1: objMinX, p2: refMaxX };
-          }
+          p1 = objMinX;
+          p2 = refMaxX;
+          dist = objMinX - refMaxX;
         } else {
-          neighbors.before = {
-            dist: 0,
-            p1: Math.min(objMinX, refMinX),
-            p2: Math.max(objMaxX, refMaxX)
-          };
+          // 发生重叠
+          p1 = Math.max(objMinX, refMinX);
+          p2 = Math.min(objMaxX, refMaxX);
+          dist = 0;
+        }
+
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestP1 = p1;
+          bestP2 = p2;
         }
       }
 
-      this.processNeighbors(neighbors, snapY, "horizontal");
+      const distance = Math.round(minDistance);
+      let start, end, points;
+
+      if (distance > 0) {
+        start = Math.min(bestP1, bestP2);
+        end = Math.max(bestP1, bestP2);
+        points = [
+          { x: start, y: snapY },
+          { x: end, y: snapY }
+        ];
+      } else {
+        // 当距离为 0 (有重叠边界对齐)时，延伸对齐线覆盖两者范围
+        let minAll = objMinX;
+        let maxAll = objMaxX;
+        for (const seg of bestY.segments) {
+          minAll = Math.min(minAll, seg.min);
+          maxAll = Math.max(maxAll, seg.max !== undefined ? seg.max : seg.min);
+        }
+        start = minAll;
+        end = maxAll;
+        points = [
+          { x: start, y: snapY },
+          { x: end, y: snapY }
+        ];
+      }
+
+      this.snapLines.push({
+        type: "horizontal",
+        value: snapY,
+        start: start,
+        end: end,
+        points: points,
+        distanceText: distance > 0 ? `${distance}` : undefined,
+        textPos: { x: (start + end) / 2, y: snapY - 5 }
+      });
     }
 
     this.layer.render();
     return { dx: dx_snap, dy: dy_snap };
-  }
-
-  // 辅助方法：将计算好的邻居信息转化为渲染线段
-  private processNeighbors(
-    neighbors: any,
-    axisVal: number,
-    type: "vertical" | "horizontal"
-  ) {
-    const keys = ["before", "after"] as const;
-
-    if (neighbors.before.dist === 0 || neighbors.after.dist === 0) {
-      const combined =
-        neighbors.before.dist === 0 ? neighbors.before : neighbors.after;
-      this.addSnapLine(type, axisVal, combined.p1, combined.p2, undefined);
-      return;
-    }
-
-    keys.forEach((key) => {
-      const n = neighbors[key];
-      if (n.dist < Infinity && n.dist > 0.5) {
-        this.addSnapLine(
-          type,
-          axisVal,
-          n.p1,
-          n.p2,
-          Math.round(n.dist).toString()
-        );
-      }
-    });
-  }
-
-  private addSnapLine(
-    type: "vertical" | "horizontal",
-    axisVal: number,
-    start: number,
-    end: number,
-    text?: string
-  ) {
-    const s = Math.min(start, end);
-    const e = Math.max(start, end);
-
-    this.snapLines.push({
-      type,
-      value: axisVal,
-      start: s,
-      end: e,
-      points:
-        type === "vertical"
-          ? [
-              { x: axisVal, y: s },
-              { x: axisVal, y: e }
-            ]
-          : [
-              { x: s, y: axisVal },
-              { x: e, y: axisVal }
-            ],
-      distanceText: text,
-      textPos:
-        type === "vertical"
-          ? { x: axisVal + 5, y: (s + e) / 2 }
-          : { x: (s + e) / 2, y: axisVal - 5 }
-    });
   }
 
   private findClosest(
