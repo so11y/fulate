@@ -48,6 +48,7 @@ export class Select extends Element {
 
     const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
+      //@ts-ignore
       const directEl = this.root.children?.filter((v) => v !== this);
       const startPoint = new Point(e.detail.x, e.detail.y);
       this.setOptions({

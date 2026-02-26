@@ -130,6 +130,7 @@ export class Root extends Layer {
           this.lastPointerPos = { x: e.clientX, y: e.clientY };
 
           this.dispatchEvent(new CustomEvent("panzoom"));
+          //TODO 移除直接请求下一帧绘制
           this.markDirty();
           this.render();
         } else {
@@ -214,6 +215,7 @@ export class Root extends Layer {
         this.viewport.scale = newScale;
 
         this.dispatchEvent(new CustomEvent("panzoom"));
+        //TODO 移除直接请求下一帧绘制
         this.markDirty();
         this.render();
 
