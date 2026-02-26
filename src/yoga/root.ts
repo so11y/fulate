@@ -1,26 +1,23 @@
-import { Element, YogaOption } from "./base";
+import { withYoga, YogaOption } from "./base";
 import { Root as BaseRoot } from "../lib/root";
 
-export class Root extends Element {
-  container: HTMLElement;
-  constructor(el: HTMLElement, options: YogaOption) {
-    super(options);
-    this.container = el;
-    this.setOptions(options);
-    this.renderNode = new BaseRoot(this.container);
-  }
-
-  layoutSyncToRenderNode() {
-    this.flushStyles();
+export class Root extends withYoga<
+  new (html: HTMLElement, options: YogaOption) => BaseRoot
+>(BaseRoot as any) {
+  layout() {
+    super.layout();
     this.yogaNode.calculateLayout(
       this.container.clientWidth,
-      this.container.clientHeight
+      this.container.clientHeight,
     );
-    super.layoutSyncToRenderNode();
+    this.computedLayout();
+    return this;
   }
 
-  mounted() {
-    this.layoutSyncToRenderNode();
-    this.renderNode.mounted();
+  mounteded() {
+    console.log("---");
+
+    super.mounteded();
+    this.layout();
   }
 }

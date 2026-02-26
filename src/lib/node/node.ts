@@ -18,6 +18,10 @@ export class Node extends EventTarget {
   // 事件管理器
   eventManage = new EventManage(this as any);
 
+  _options: any = {};
+
+  attrs(options: any) {}
+
   append(...children: Node[]) {
     if (!this.children) this.children = [];
     children.forEach((child) => {
@@ -25,10 +29,17 @@ export class Node extends EventTarget {
       child.parent = this;
       this.children!.push(child);
     });
+    if (this.isMounted) {
+      children.forEach((v) => v.mounted());
+    }
     return this;
   }
 
-  // 生命周期钩子
+  removeChild(...children: Node[]) {
+    children.forEach((child) => child.unmounted());
+    return this;
+  }
+
   mounted() {
     this.isMounted = true;
     if (this.key && this.root) {
@@ -48,12 +59,17 @@ export class Node extends EventTarget {
       this.root.keyElmenet.delete(this.key);
     }
     this.children?.forEach((child) => child.unmounted());
+    this.children = [];
+    if (this.parent && this.parent.children?.length) {
+      const index = this.parent.children?.findIndex((v) => v === this);
+      this.parent.children.splice(index, 1);
+    }
   }
 
   addEventListener<T = FulateEvent>(
     type: string,
     callback: (ev: T) => void,
-    options?: AddEventListenerOptions | boolean
+    options?: AddEventListenerOptions | boolean,
   ): void {
     this.eventManage.hasUserEvent = true;
     //@ts-ignore

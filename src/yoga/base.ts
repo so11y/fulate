@@ -9,9 +9,10 @@ import Yoga, {
   Justify,
   Overflow,
   PositionType,
-  Wrap
+  Wrap,
 } from "yoga-layout";
 import { Rectangle as BaseRectangle } from "../lib/ui/rectangle";
+import { BaseElementOption, Element, KEYS } from "../lib/node/element";
 
 type YogaStyleSize = number | `${number}%`;
 type YogaStyleSizeAndAuto = YogaStyleSize | "auto";
@@ -26,10 +27,11 @@ export {
   Justify,
   Overflow,
   PositionType,
-  Wrap
+  Wrap,
 };
 
-export abstract class YogaOption {
+export interface YogaOption
+  extends Omit<BaseElementOption, "left" | "top" | "width" | "height"> {
   display?: Display;
   width?: YogaStyleSizeAndAuto;
   height?: YogaStyleSizeAndAuto;
@@ -68,141 +70,199 @@ export abstract class YogaOption {
   // overflow?: Overflow;
   boxSizing?: BoxSizing;
 
-  //render
-  backgroundColor?: string;
-  children?: Array<Element>;
+  children?: any[];
 }
 
-export class Element extends YogaOption {
-  yogaNode = Yoga.Node.create();
-  renderNode = new BaseRectangle();
+export const YKEYS = new Set(
+  Array.from(KEYS).concat([
+    "boxSizing",
+    "inset",
+    "gap",
+    "bottom",
+    "right",
+    "position",
+    "margin",
+    "marginBottom",
+    "marginTop",
+    "marginLeft",
+    "marginRight",
+    "padding",
+    "paddingLeft",
+    "paddingRight",
+    "paddingTop",
+    "paddingBottom",
+    "display",
+    "minWidth",
+    "minHeight",
+    "maxWidth",
+    "maxHeight",
+    "alignContent",
+    "alignItems",
+    "alignSelf",
+    "aspectRatio",
+    "flex",
+    "flexBasis",
+    "flexDirection",
+    "flexGrow",
+    "flexsShrink",
+    "flexWrap",
+    "justifyContent",
+  ]),
+);
 
-  constructor(options?: YogaOption) {
-    super();
-    this.setOptions(options);
-  }
+export const BKEYS = new Set(
+  Array.from(KEYS).filter(
+    (v) => v !== "width" && v !== "height" && v !== "left" && v !== "top",
+  ),
+);
 
-  setOptions(options: YogaOption) {
-    if (options?.children) {
-      if (this.children) {
-        this.children.forEach((child) => {
-          child.yogaNode.free();
-          child.renderNode.unmounted();
-        });
-        this.children = [];
+export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
+  Node: T,
+) {
+  class LayoutNode extends Node implements YogaOption {
+    yogaNode = Yoga.Node.create();
+    declare children: any[];
+
+    setOptions(options?: any) {
+      if (options.children) {
       }
-      this.append(...options.children);
-      delete options.children;
+      super.setOptions(options);
+      return this;
     }
-    Object.assign(this, options);
-    // this.yogaNode.markDirty();
-    return this;
-  }
 
-  append(...childNode: Element[]) {
-    if (!this.children) {
-      this.children = [];
+    attrs(options: any): void {
+      super.attrs(options, {
+        KEYS: BKEYS,
+      });
+
+      Object.assign(this._options, options);
+
+      this.layout();
+      this.computedLayout();
     }
-    childNode.forEach((child) => {
-      this.yogaNode.insertChild(child.yogaNode, this.children.length);
-      this.children.push(child);
-    });
 
-    return this;
-  }
-
-  flushStyles() {
-    if (!isNil(this.display)) {
-      this.yogaNode.setDisplay(this.display);
-      if (this.display === Display.Flex) {
-        this.yogaNode.setFlexDirection(FlexDirection.Row);
+    layout() {
+      if (this.isMounted) {
+        this.flushStyles();
+        this.children?.forEach((v) => v.layout?.());
       }
-    }
-    !isNil(this.width) && this.yogaNode.setWidth(this.width);
-    !isNil(this.height) && this.yogaNode.setHeight(this.height);
-    !isNil(this.minWidth) && this.yogaNode.setMinWidth(this.minWidth);
-    !isNil(this.minHeight) && this.yogaNode.setMinHeight(this.minHeight);
-    !isNil(this.maxWidth) && this.yogaNode.setMaxWidth(this.maxWidth);
-    !isNil(this.maxHeight) && this.yogaNode.setMaxHeight(this.maxHeight);
-
-    !isNil(this.justifyContent) &&
-      this.yogaNode.setJustifyContent(this.justifyContent);
-    !isNil(this.alignContent) &&
-      this.yogaNode.setAlignContent(this.alignContent);
-    !isNil(this.alignItems) && this.yogaNode.setAlignItems(this.alignItems);
-    !isNil(this.alignSelf) && this.yogaNode.setAlignSelf(this.alignSelf);
-    !isNil(this.aspectRatio) && this.yogaNode.setAspectRatio(this.aspectRatio);
-    !isNil(this.flex) && this.yogaNode.setFlex(this.flex);
-    !isNil(this.flexBasis) && this.yogaNode.setFlexBasis(this.flexBasis);
-    !isNil(this.flexDirection) &&
-      this.yogaNode.setFlexDirection(this.flexDirection);
-    !isNil(this.flexGrow) && this.yogaNode.setFlexGrow(this.flexGrow);
-    !isNil(this.flexShrink) && this.yogaNode.setFlexShrink(this.flexShrink);
-    !isNil(this.flexWrap) && this.yogaNode.setFlexWrap(this.flexWrap);
-    !isNil(this.gap) && this.yogaNode.setGap(Gutter.All, this.gap);
-
-    !isNil(this.padding) && this.yogaNode.setPadding(Edge.All, this.padding);
-    !isNil(this.paddingLeft) &&
-      this.yogaNode.setPadding(Edge.Left, this.paddingLeft);
-    !isNil(this.paddingTop) &&
-      this.yogaNode.setPadding(Edge.Top, this.paddingTop);
-    !isNil(this.paddingRight) &&
-      this.yogaNode.setPadding(Edge.Right, this.paddingRight);
-    !isNil(this.paddingBottom) &&
-      this.yogaNode.setPadding(Edge.Bottom, this.paddingBottom);
-
-    !isNil(this.margin) && this.yogaNode.setMargin(Edge.All, this.margin);
-    !isNil(this.marginLeft) &&
-      this.yogaNode.setMargin(Edge.Left, this.marginLeft);
-    !isNil(this.marginTop) && this.yogaNode.setMargin(Edge.Top, this.marginTop);
-    !isNil(this.marginRight) &&
-      this.yogaNode.setMargin(Edge.Right, this.marginRight);
-    !isNil(this.marginBottom) &&
-      this.yogaNode.setMargin(Edge.Bottom, this.marginBottom);
-
-    !isNil(this.position) && this.yogaNode.setPositionType(this.position);
-    !isNil(this.inset) && this.yogaNode.setPosition(Edge.All, this.inset);
-    !isNil(this.left) && this.yogaNode.setPosition(Edge.Left, this.left);
-    !isNil(this.top) && this.yogaNode.setPosition(Edge.Top, this.top);
-    !isNil(this.bottom) && this.yogaNode.setPosition(Edge.Bottom, this.bottom);
-    !isNil(this.right) && this.yogaNode.setPosition(Edge.Right, this.right);
-
-    !isNil(this.boxSizing) && this.yogaNode.setBoxSizing(this.boxSizing);
-    // !isNil(this.overflow) && this.yogaNode.setOverflow(this.overflow);
-
-    if (this.children?.length) {
-      this.children.forEach((v) => v.flushStyles());
-    }
-    return this;
-  }
-
-  layoutSyncToRenderNode() {
-    const layout = this.yogaNode.getComputedLayout();
-
-    const style = {
-      left: layout.left,
-      top: layout.top,
-      width: layout.width,
-      height: layout.height,
-      children: this.children?.map((child) => child.renderNode)
-    } as any;
-
-    if (this.backgroundColor) {
-      style.backgroundColor = this.backgroundColor;
+      return this;
     }
 
-    this.renderNode.setOptions(style);
+    computedLayout() {
+      if (this.isMounted) {
+        const layout = this.yogaNode.getComputedLayout();
+        this.left = layout.left;
+        this.top = layout.top;
+        this.width = layout.width;
+        this.height = layout.height;
+        this.children?.forEach((v) => v.computedLayout?.());
+      }
+      return this;
+    }
 
-    if (this.children?.length) {
-      this.children.forEach((v) => v.layoutSyncToRenderNode());
+    append(...childNode: LayoutNode[]) {
+      let currentIndex = this.children?.length ?? 0;
+      super.append(...childNode);
+      childNode.forEach((child) => {
+        if (child.yogaNode) {
+          this.yogaNode.insertChild(child.yogaNode, currentIndex++);
+        }
+      });
+      return this;
+    }
+
+    flushStyles(this: LayoutNode & YogaOption) {
+      const options = this._options;
+      if (!isNil(options.display)) {
+        this.yogaNode.setDisplay(options.display);
+        if (options.display === Display.Flex) {
+          this.yogaNode.setFlexDirection(FlexDirection.Row);
+        }
+      }
+      !isNil(options.width) && this.yogaNode.setWidth(options.width);
+      !isNil(options.height) && this.yogaNode.setHeight(options.height);
+      !isNil(options.minWidth) && this.yogaNode.setMinWidth(options.minWidth);
+      !isNil(options.minHeight) &&
+        this.yogaNode.setMinHeight(options.minHeight);
+      !isNil(options.maxWidth) && this.yogaNode.setMaxWidth(options.maxWidth);
+      !isNil(options.maxHeight) &&
+        this.yogaNode.setMaxHeight(options.maxHeight);
+
+      !isNil(options.justifyContent) &&
+        this.yogaNode.setJustifyContent(options.justifyContent);
+      !isNil(options.alignContent) &&
+        this.yogaNode.setAlignContent(options.alignContent);
+      !isNil(options.alignItems) &&
+        this.yogaNode.setAlignItems(options.alignItems);
+      !isNil(options.alignSelf) &&
+        this.yogaNode.setAlignSelf(options.alignSelf);
+      !isNil(options.aspectRatio) &&
+        this.yogaNode.setAspectRatio(options.aspectRatio);
+      !isNil(options.flex) && this.yogaNode.setFlex(options.flex);
+      !isNil(options.flexBasis) &&
+        this.yogaNode.setFlexBasis(options.flexBasis);
+      !isNil(options.flexDirection) &&
+        this.yogaNode.setFlexDirection(options.flexDirection);
+      !isNil(options.flexGrow) && this.yogaNode.setFlexGrow(options.flexGrow);
+      !isNil(options.flexShrink) &&
+        this.yogaNode.setFlexShrink(options.flexShrink);
+      !isNil(options.flexWrap) && this.yogaNode.setFlexWrap(options.flexWrap);
+      !isNil(options.gap) && this.yogaNode.setGap(Gutter.All, options.gap);
+
+      !isNil(options.padding) &&
+        this.yogaNode.setPadding(Edge.All, options.padding);
+      !isNil(options.paddingLeft) &&
+        this.yogaNode.setPadding(Edge.Left, options.paddingLeft);
+      !isNil(options.paddingTop) &&
+        this.yogaNode.setPadding(Edge.Top, options.paddingTop);
+      !isNil(options.paddingRight) &&
+        this.yogaNode.setPadding(Edge.Right, options.paddingRight);
+      !isNil(options.paddingBottom) &&
+        this.yogaNode.setPadding(Edge.Bottom, options.paddingBottom);
+
+      !isNil(options.margin) &&
+        this.yogaNode.setMargin(Edge.All, options.margin);
+      !isNil(options.marginLeft) &&
+        this.yogaNode.setMargin(Edge.Left, options.marginLeft);
+      !isNil(options.marginTop) &&
+        this.yogaNode.setMargin(Edge.Top, options.marginTop);
+      !isNil(options.marginRight) &&
+        this.yogaNode.setMargin(Edge.Right, options.marginRight);
+      !isNil(options.marginBottom) &&
+        this.yogaNode.setMargin(Edge.Bottom, options.marginBottom);
+
+      !isNil(options.position) &&
+        this.yogaNode.setPositionType(options.position);
+      !isNil(options.inset) &&
+        this.yogaNode.setPosition(Edge.All, options.inset);
+      !isNil(options.left) &&
+        this.yogaNode.setPosition(Edge.Left, options.left);
+      !isNil(options.top) && this.yogaNode.setPosition(Edge.Top, options.top);
+      !isNil(options.bottom) &&
+        this.yogaNode.setPosition(Edge.Bottom, options.bottom);
+      !isNil(options.right) &&
+        this.yogaNode.setPosition(Edge.Right, options.right);
+
+      !isNil(options.boxSizing) &&
+        this.yogaNode.setBoxSizing(options.boxSizing);
+      // !isNil(this.overflow) && this.yogaNode.setOverflow(this.overflow);
+
+      return this;
+    }
+
+    unmounted() {
+      super.unmounted();
+      this.yogaNode.free();
     }
   }
 
-  mounted() {
-    this.children?.forEach((v) => v.mounted());
-  }
-
-  render() {
-    this.renderNode.render();
-  }
+  // return LayoutNode;
+  return LayoutNode as any as new (
+    ...args: ConstructorParameters<T>
+  ) => LayoutNode & InstanceType<T>;
 }
+
+export const Rectangle = withYoga<new (v: YogaOption) => BaseRectangle>(
+  BaseRectangle as any,
+);

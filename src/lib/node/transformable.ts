@@ -3,6 +3,20 @@ import { Point, PointType, TOriginX, TOriginY } from "../../util/point";
 import { resolveOrigin } from "../../util/resolveOrigin";
 import { Intersection } from "../../util/Intersection";
 
+export interface TransformableOptions {
+  left?: number;
+  top?: number;
+  angle?: number;
+  width?: number;
+  height?: number;
+  scaleX?: number;
+  scaleY?: number;
+  originX?: TOriginX;
+  originY?: TOriginY;
+  skewX?: number;
+  skewY?: number;
+}
+
 export class Transformable extends Node {
   // 变换属性
   left = 0;
@@ -33,7 +47,11 @@ export class Transformable extends Node {
 
   setOptions(options?: any) {
     if (options) {
-      Object.assign(this, options);
+      this.attrs(options);
+      if (options.children) {
+        this.removeChild(...(this.children ?? []));
+        this.append(...options.children);
+      }
       this.markDirty();
     }
     if (this.hasDirty() && this.isMounted) {
@@ -61,7 +79,7 @@ export class Transformable extends Node {
       "left", // 从左上角开始
       "top",
       this.originX, // 到用户指定的原点
-      this.originY
+      this.originY,
     );
   }
 
@@ -136,11 +154,11 @@ export class Transformable extends Node {
       new Point(0, 0), // 左上
       new Point(this.width, 0), // 右上
       new Point(this.width, this.height), // 右下
-      new Point(0, this.height) // 左下
+      new Point(0, this.height), // 左下
     ];
 
     const globalCorners = corners.map((corner) =>
-      corner.matrixTransform(this.getOwnMatrix())
+      corner.matrixTransform(this.getOwnMatrix()),
     );
 
     // 计算 min/max
@@ -160,7 +178,7 @@ export class Transformable extends Node {
       left: minX, // 包围盒左上角 x
       top: minY, // 包围盒左上角 y
       width: maxX - minX, // 包围盒宽度
-      height: maxY - minY // 包围盒高度
+      height: maxY - minY, // 包围盒高度
     };
   }
 
@@ -176,10 +194,10 @@ export class Transformable extends Node {
       new Point(0, 0), // 左上
       new Point(dim.x, 0), // 右上
       new Point(dim.x, dim.y), // 右下
-      new Point(0, dim.y) // 左下
+      new Point(0, dim.y), // 左下
     ];
     this.coords = localPoints.map(
-      (point) => new Point(finalMatrix.transformPoint(point))
+      (point) => new Point(finalMatrix.transformPoint(point)),
     );
     return this;
   }
@@ -200,7 +218,7 @@ export class Transformable extends Node {
       width: this.width,
       height: this.height,
       //   strokeWidth: this.strokeWidth,
-      ...options
+      ...options,
     };
     const strokeWidth = 0; // dimOptions.strokeWidth;
     let preScalingStrokeValue = strokeWidth,
@@ -214,7 +232,7 @@ export class Transformable extends Node {
 
     return new Point(
       dimX + postScalingStrokeValue,
-      dimY + postScalingStrokeValue
+      dimY + postScalingStrokeValue,
     );
   }
 
@@ -223,7 +241,7 @@ export class Transformable extends Node {
     fromOriginX: TOriginX,
     fromOriginY: TOriginY,
     toOriginX: TOriginX,
-    toOriginY: TOriginY
+    toOriginY: TOriginY,
   ) {
     let x = point.x,
       y = point.y;
@@ -251,7 +269,7 @@ export class Transformable extends Node {
     const intersection = Intersection.intersectPolygonRectangle(
       this.getCoords(),
       tl,
-      br
+      br,
     );
     return intersection.status === "Intersection";
   }
@@ -264,14 +282,14 @@ export class Transformable extends Node {
   setPositionByOrigin(
     pos: PointType,
     originX: TOriginX = this.originX,
-    originY: TOriginY = this.originY
+    originY: TOriginY = this.originY,
   ) {
     const center = this.translateToGivenOrigin(
       pos,
       originX,
       originY,
       "left",
-      "top"
+      "top",
     );
     //@ts-ignore
     this.setOptions({ left: center.x, top: center.y });
@@ -282,7 +300,7 @@ export class Transformable extends Node {
   getPositionByOrigin(
     pos: PointType,
     originX: TOriginX = this.originX,
-    originY: TOriginY = this.originY
+    originY: TOriginY = this.originY,
   ) {
     return this.translateToGivenOrigin(pos, originX, originY, "left", "top");
   }

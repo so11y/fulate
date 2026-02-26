@@ -1,33 +1,38 @@
 import { Point } from "../../util/point";
 import { FulateEvent } from "../eventManage";
-import { Transformable } from "./transformable";
+import { Transformable, TransformableOptions } from "./transformable";
 
-export interface BaseElementOption {
-  left?: number;
-  top?: number;
-  angle?: number;
-  width?: number;
-  height?: number;
-  scaleX?: number;
-  scaleY?: number;
-  originX?: string;
-  originY?: string;
+export interface BaseElementOption extends TransformableOptions {
   backgroundColor?: string | null;
   radius?: number | null;
-  skewX?: number;
-  skewY?: number;
-  strokeWidth?: number;
   cursor?: string;
-  selectable?: boolean;
   visible?: boolean;
-
-  children?: Array<Element>;
 
   onclick?: (e: FulateEvent) => any;
   onpointermove?: (e: FulateEvent) => any;
   onpointerdown?: (e: FulateEvent) => any;
   onpointerup?: (e: FulateEvent) => any;
+
+  children?: Array<Element>;
 }
+
+export const KEYS = new Set([
+  "left",
+  "top",
+  "width",
+  "height",
+  "angle",
+  "scaleX",
+  "scaleY",
+  "skewX",
+  "skewY",
+  "originX",
+  "originY",
+  "backgroundColor",
+  "radius",
+  "cursor",
+  "visible",
+]);
 
 export class Element extends Transformable {
   type = "element";
@@ -35,23 +40,36 @@ export class Element extends Transformable {
   backgroundColor: string | null = null;
   radius: number | null = null;
   cursor?: string;
-  selectable?: boolean;
   visible?: boolean;
   declare children: Element[];
 
+  _pendingOption: any = {};
+
   constructor(options?: BaseElementOption) {
     super();
-    this.setOptions(options);
+    Object.assign(this._pendingOption, options);
   }
 
-  setOptions(options?: any) {
-    if (options) {
-      const event = Object.keys(options).filter((v) => v.startsWith("on"));
+  attrs(
+    options: any,
+    O: { target?: any; assign?: boolean; KEYS?: Set<string> } = {},
+  ): void {
+    const { target = this, assign = false, KEYS: K = KEYS } = O;
+    const keys = Object.keys(options ?? {});
+    const event = keys.filter((v) => v.startsWith("on"));
+    if (event.length) {
       event.forEach((key) => this.addEventListener(key.slice(2), options[key]));
     }
 
-    super.setOptions(options);
-    return this;
+    keys.forEach((key) => {
+      if (K.has(key)) {
+        target[key] = options[key];
+      }
+    });
+
+    if (assign) {
+      Object.assign(this._options, options);
+    }
   }
 
   update(options?: any) {
@@ -86,5 +104,13 @@ export class Element extends Transformable {
 
   hasInView() {
     return true;
+  }
+
+  mounted(): void {
+    if (this._pendingOption) {
+      this.setOptions(this._pendingOption);
+      this._pendingOption = {};
+    }
+    super.mounted();
   }
 }

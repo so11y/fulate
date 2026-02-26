@@ -16,6 +16,7 @@ export class Layer extends Rectangle {
   }
 
   mounted() {
+    super.mounted();
     const root = this.root!;
     this.canvasEl.width = root.width!;
     this.canvasEl.height = root.height!;
@@ -26,7 +27,12 @@ export class Layer extends Rectangle {
     this.canvasEl.style.top = "0px";
     this.canvasEl.style.zIndex = this.zIndex.toString();
     root.container.appendChild(this.canvasEl);
-    super.mounted();
+  }
+
+  attrs(options, k) {
+    this.width = options.width ?? this.width;
+    this.height = options.height ?? this.height;
+    super.attrs(options, k);
   }
 
   render() {
