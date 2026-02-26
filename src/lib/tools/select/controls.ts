@@ -4,9 +4,9 @@ import {
 } from "../../../util/radiansDegreesConversion";
 import { Point } from "../../../util/point";
 import { type Select } from "./index";
-import { Element } from "../../base";
 import { FulateEvent } from "../../eventManage";
 import { qrDecompose } from "../../../util/math";
+import { Element } from "../../node/element";
 
 interface Control {
   type: string;
@@ -198,7 +198,7 @@ export const Controls: Array<Control> = [
         const center = el.getPositionByOrigin(
           el.getWorldCenterPoint().matrixTransform(rotationMatrix)
         );
-        el.setOptions({
+        el.quickSetOptions({
           angle: el.angle + angleDelta,
           left: center.x,
           top: center.y
@@ -294,7 +294,7 @@ export function resizeObject(
     const center = el.getPositionByOrigin(
       worldCenterPoint.matrixTransform(deltaMatrix)
     );
-    el.setOptions({
+    el.quickSetOptions({
       angle,
       scaleX,
       scaleY,
@@ -302,19 +302,6 @@ export function resizeObject(
       left: center.x,
       top: center.y
     }).layer.render();
-
-    // el.setOptions({
-    //   angle,
-    //   scaleX,
-    //   scaleY,
-    //   skewX
-    // })
-    //   .setPositionByOrigin(
-    //     new Point(worldCenterPoint.matrixTransform(deltaMatrix)),
-    //     "center",
-    //     "center"
-    //   )
-    //   .layer.render();
   });
 
   // 6. 更新选框 UI 尺寸

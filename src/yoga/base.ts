@@ -9,7 +9,7 @@ import Yoga, {
   Justify,
   Overflow,
   PositionType,
-  Wrap,
+  Wrap
 } from "yoga-layout";
 import { Rectangle as BaseRectangle } from "../lib/ui/rectangle";
 import { BaseElementOption, Element, KEYS } from "../lib/node/element";
@@ -27,11 +27,13 @@ export {
   Justify,
   Overflow,
   PositionType,
-  Wrap,
+  Wrap
 };
 
-export interface YogaOption
-  extends Omit<BaseElementOption, "left" | "top" | "width" | "height"> {
+export interface YogaOption extends Omit<
+  BaseElementOption,
+  "left" | "top" | "width" | "height"
+> {
   display?: Display;
   width?: YogaStyleSizeAndAuto;
   height?: YogaStyleSizeAndAuto;
@@ -106,39 +108,40 @@ export const YKEYS = new Set(
     "flexGrow",
     "flexsShrink",
     "flexWrap",
-    "justifyContent",
-  ]),
+    "justifyContent"
+  ])
 );
 
 export const BKEYS = new Set(
   Array.from(KEYS).filter(
-    (v) => v !== "width" && v !== "height" && v !== "left" && v !== "top",
-  ),
+    (v) => v !== "width" && v !== "height" && v !== "left" && v !== "top"
+  )
 );
 
 export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
-  Node: T,
+  Node: T
 ) {
   class LayoutNode extends Node implements YogaOption {
     yogaNode = Yoga.Node.create();
     declare children: any[];
 
-    setOptions(options?: any) {
-      if (options.children) {
-      }
-      super.setOptions(options);
-      return this;
-    }
-
     attrs(options: any): void {
       super.attrs(options, {
-        KEYS: BKEYS,
+        KEYS: BKEYS
       });
 
       Object.assign(this._options, options);
 
       this.layout();
       this.computedLayout();
+    }
+
+    setOptions(options?: any) {
+      console.log("---");
+      super.setOptions(options, false);
+      this.markDirty();
+      this.inject("yoga-root").layout();
+      return this;
     }
 
     layout() {
@@ -257,12 +260,11 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
   }
 
-  // return LayoutNode;
   return LayoutNode as any as new (
     ...args: ConstructorParameters<T>
   ) => LayoutNode & InstanceType<T>;
 }
 
 export const Rectangle = withYoga<new (v: YogaOption) => BaseRectangle>(
-  BaseRectangle as any,
+  BaseRectangle as any
 );

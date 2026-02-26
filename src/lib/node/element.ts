@@ -31,7 +31,7 @@ export const KEYS = new Set([
   "backgroundColor",
   "radius",
   "cursor",
-  "visible",
+  "visible"
 ]);
 
 export class Element extends Transformable {
@@ -41,7 +41,8 @@ export class Element extends Transformable {
   radius: number | null = null;
   cursor?: string;
   visible?: boolean;
-  declare children: Element[];
+  declare children: this[];
+  declare parent: this;
 
   _pendingOption: any = {};
 
@@ -52,7 +53,7 @@ export class Element extends Transformable {
 
   attrs(
     options: any,
-    O: { target?: any; assign?: boolean; KEYS?: Set<string> } = {},
+    O: { target?: any; assign?: boolean; KEYS?: Set<string> } = {}
   ): void {
     const { target = this, assign = false, KEYS: K = KEYS } = O;
     const keys = Object.keys(options ?? {});
@@ -82,7 +83,7 @@ export class Element extends Transformable {
         child.render(ctx);
       }
     }
-    this.isDirty = false;
+    this.ditryDone();
   }
 
   hasPointHint(x: number, y: number): boolean {
@@ -108,9 +109,44 @@ export class Element extends Transformable {
 
   mounted(): void {
     if (this._pendingOption) {
-      this.setOptions(this._pendingOption);
+      this._setOptions(this._pendingOption, false);
       this._pendingOption = {};
     }
     super.mounted();
+  }
+
+  //用户调用or覆盖
+  setOptions(options?: any, syncCalc = true) {
+    return this._setOptions(options, syncCalc);
+  }
+
+  //内部调用
+  _setOptions(options?: any, syncCalc = true) {
+    if (options) {
+      this.attrs(options);
+      if (options.children) {
+        this.removeChild(...(this.children ?? []));
+        this.append(...options.children);
+      }
+      if (syncCalc) {
+        this.markDirty();
+      }
+    }
+    if (this.hasDirty() && this.isMounted && syncCalc) {
+      this.calcOwnMatrix();
+      this.setCoords();
+    }
+    return this;
+  }
+
+  //提供给select操作的
+  quickSetOptions(options: BaseElementOption) {
+    Object.assign(this, options);
+    this.markDirty();
+    if (this.hasDirty() && this.isMounted) {
+      this.calcOwnMatrix();
+      this.setCoords();
+    }
+    return this;
   }
 }

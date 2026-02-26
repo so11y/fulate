@@ -11,6 +11,8 @@ export class Root extends Layer {
   keyElmenet = new Map();
   quickElements: Array<Element> = [];
 
+  _provides = Object.create(null);
+
   // 内部交互状态
   private isSpacePressed = false;
   private isPanning = false;
@@ -45,7 +47,7 @@ export class Root extends Layer {
     const rect = this.container.getBoundingClientRect();
     return {
       x: (clientX - rect.left - this.viewport.x) / this.viewport.scale,
-      y: (clientY - rect.top - this.viewport.y) / this.viewport.scale,
+      y: (clientY - rect.top - this.viewport.y) / this.viewport.scale
     };
   }
 
@@ -59,7 +61,7 @@ export class Root extends Layer {
       0,
       this.viewport.scale,
       this.viewport.x,
-      this.viewport.y,
+      this.viewport.y
     ]);
     return this.viewport.matrix;
   }
@@ -152,7 +154,7 @@ export class Root extends Layer {
           this.notify(e, "pointermove");
         }
       },
-      { signal },
+      { signal }
     );
 
     // --- 3. 指针按下 ---
@@ -173,7 +175,7 @@ export class Root extends Layer {
           this.notify(e, "pointerdown");
         }
       },
-      { signal },
+      { signal }
     );
 
     // --- 4. 指针抬起 ---
@@ -188,7 +190,7 @@ export class Root extends Layer {
           this.hasLockPoint = false;
         }
       },
-      { signal },
+      { signal }
     );
 
     // --- 5. 滚轮：缩放逻辑 ---
@@ -218,12 +220,12 @@ export class Root extends Layer {
         // 缩放后重新计算 hit，防止缩放后鼠标下的元素变化
         this.checkHit(e);
       },
-      { signal, passive: false },
+      { signal, passive: false }
     );
 
     // 其他事件包装
     document.addEventListener("click", (e) => this.notify(e, "click"), {
-      signal,
+      signal
     });
     document.addEventListener(
       "contextmenu",
@@ -231,7 +233,7 @@ export class Root extends Layer {
         e.preventDefault();
         this.notify(e, "contextmenu");
       },
-      { signal },
+      { signal }
     );
 
     this.addEventListener("unmounted", () => abortController.abort());
@@ -243,7 +245,7 @@ export class Root extends Layer {
   private notify(
     e: PointerEvent | MouseEvent | WheelEvent,
     eventName: string,
-    targetEl = this.currentElement,
+    targetEl = this.currentElement
   ) {
     // 如果正在平移视口，拦截所有 UI 元素事件
     if (this.isSpacePressed || this.isPanning) return;
@@ -261,7 +263,7 @@ export class Root extends Layer {
       y: y,
       buttons: e.buttons,
       deltaY: (e as WheelEvent).deltaY ?? 0,
-      deltaX: (e as WheelEvent).deltaX ?? 0,
+      deltaX: (e as WheelEvent).deltaX ?? 0
     });
   }
 

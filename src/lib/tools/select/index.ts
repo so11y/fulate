@@ -169,8 +169,13 @@ export class Select extends Element {
 
         for (const { child, targetWorld } of targets) {
           //不会重复render
+          const center = child.getPositionByOrigin(targetWorld);
+
           child
-            .setPositionByOrigin(targetWorld, child.originX, child.originY)
+            .quickSetOptions({
+              left: center.x,
+              top: center.y
+            })
             .layer.render();
         }
 

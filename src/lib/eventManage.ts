@@ -1,4 +1,4 @@
-import type { Node as Element } from "./node/node";
+import type { Element } from "./node/element";
 
 export type UserCanvasEvent = Event & { detail: CanvasPoint };
 

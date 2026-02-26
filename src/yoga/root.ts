@@ -8,15 +8,14 @@ export class Root extends withYoga<
     super.layout();
     this.yogaNode.calculateLayout(
       this.container.clientWidth,
-      this.container.clientHeight,
+      this.container.clientHeight
     );
     this.computedLayout();
     return this;
   }
 
   mounteded() {
-    console.log("---");
-
+    this.provide("yoga-root", this);
     super.mounteded();
     this.layout();
   }

@@ -20,6 +20,8 @@ export class Node extends EventTarget {
 
   _options: any = {};
 
+  _provides: Record<string, any>;
+
   attrs(options: any) {}
 
   append(...children: Node[]) {
@@ -48,6 +50,7 @@ export class Node extends EventTarget {
     this.children?.forEach((child) => {
       child.parent = this;
       child.root = this.root;
+      child._provides = this._provides ?? this.root._provides;
       if (!child.layer && this.layer) child.layer = this.layer;
       child.mounted();
     });
@@ -69,10 +72,24 @@ export class Node extends EventTarget {
   addEventListener<T = FulateEvent>(
     type: string,
     callback: (ev: T) => void,
-    options?: AddEventListenerOptions | boolean,
+    options?: AddEventListenerOptions | boolean
   ): void {
     this.eventManage.hasUserEvent = true;
     //@ts-ignore
     super.addEventListener(type, callback, options);
   }
+
+  provide(key: string, value: any) {
+    const parentProvides = this.parent ? this.parent._provides : {};
+    if (this._provides === parentProvides) {
+      this._provides = Object.create(parentProvides);
+    }
+    this._provides[key] = value;
+    return this;
+  }
+
+  inject<T = any>(key: string): T | undefined {
+    return this._provides[key];
+  }
+
 }
