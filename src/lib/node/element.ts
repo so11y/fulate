@@ -77,13 +77,16 @@ export class Element extends Transformable {
     return this.setOptions(options).layer.render();
   }
 
-  render(ctx = this.layer.ctx) {
+  render(ctx = this.layer.ctx, forcedDirty = false) {
+    const shouldUpdate = forcedDirty || this.isDirty;
+    // if (shouldUpdate) {
+    //   this.calcOwnMatrix();
+    //   this.setCoords();
+    //   // this.markDirty(false);
+    // }
     if (this.children) {
       for (const child of this.children) {
-        if (this.hasDirty()) {
-          child.markDirty();
-        }
-        child.render(ctx);
+        child.render(ctx, shouldUpdate);
       }
     }
     this.ditryDone();
@@ -131,9 +134,9 @@ export class Element extends Transformable {
         this.removeChild(...(this.children ?? []));
         this.append(...options.children);
       }
-      if (syncCalc) {
+      // if (syncCalc) {
         this.markDirty();
-      }
+      // }
     }
     if (this.hasDirty() && this.isMounted && syncCalc) {
       this.calcOwnMatrix();

@@ -80,7 +80,7 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
 
 root
   .append(
-    // new Select(),
+    new Select(),
     new Div({
       display: Display.Flex,
       flexDirection: FlexDirection.Row,
@@ -91,32 +91,10 @@ root
       marginTop: 30,
       paddingTop: 20,
       paddingLeft: 5,
-      // onclick(e) {
-      //   console.log("---");
-      //   e.detail.target
-      //     .setOptions({
-      //       backgroundColor: "black"
-      //     })
-      //     .layer.render();
-      // },
       children: [
         new Div({
           width: 100,
-          height: 100,
-          onclick(e) {
-            e.detail.target.parent
-              .setOptions({
-                backgroundColor: "green",
-                width: 50
-              })
-              .layer.render();
-            e.detail.target
-              .setOptions({
-                backgroundColor: "red",
-                width: 30
-              })
-              .layer.render();
-          }
+          height: 100
         }),
         new Div({
           width: 100,

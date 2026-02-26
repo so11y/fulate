@@ -279,18 +279,25 @@ export class Transformable extends Node {
   }
 
   hasDirty() {
-    return this.isDirty;
+    return (
+      this.isDirty ||
+      this.parent.isDirty ||
+      this.layer.isDirty ||
+      this.root.isDirty
+    );
   }
 
   ditryDone() {
     this.isDirty = false;
   }
 
-  markDirty() {
+  markDirty(bubble = true) {
     this.isDirty = true;
     this.ownMatrixCache = null;
     this.coords = null;
-
+    if (bubble) {
+      this.parent?.markDirty();
+    }
     return this;
   }
 }
