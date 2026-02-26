@@ -80,6 +80,9 @@ export class Element extends Transformable {
   render(ctx = this.layer.ctx) {
     if (this.children) {
       for (const child of this.children) {
+        if (this.hasDirty()) {
+          child.markDirty();
+        }
         child.render(ctx);
       }
     }
