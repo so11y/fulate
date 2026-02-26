@@ -6,7 +6,7 @@ export class Root extends Layer {
 
   container: HTMLElement;
   // 视口状态：x,y 是偏移量，scale 是缩放
-  viewport = { x: 0, y: 0, scale: 1, matrix: null as DOMMatrix | null };
+  viewport = { x: 25, y: 25, scale: 1, matrix: null as DOMMatrix | null };
   currentElement?: Element;
   keyElmenet = new Map();
   quickElements: Array<Element> = [];

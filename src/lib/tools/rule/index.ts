@@ -41,13 +41,11 @@ export class Rule extends Element {
     const rulerSize = 25;
     const pxPerTick = 50;
     const minorCount = 5;
-    const majorLen = 10;
-    const minorLen = 4;
 
-    const bgColor = "#fafafa";
     const borderColor = "#dadada";
     const tickColor = "#c0c0c0";
-    const textColor = "#888888";
+    const bgColor = "#ffffff"; // 纯白背景让文字更跳
+    const textColor = "#333333"; // 深灰色文字，清晰度最高
 
     ctx.save();
     ctx.setTransform(this.getOwnMatrix());
@@ -57,45 +55,78 @@ export class Rule extends Element {
     ctx.fillStyle = bgColor;
     ctx.fillRect(rulerSize, 0, Math.max(0, w - rulerSize), rulerSize);
 
-    ctx.beginPath();
-    ctx.strokeStyle = borderColor;
-    ctx.lineWidth = 1;
-    ctx.moveTo(rulerSize, rulerSize - 0.5);
-    ctx.lineTo(w, rulerSize - 0.5);
-    ctx.stroke();
-
     const stepX = niceStep(pxPerTick, viewport.scale);
-    const startWorldX = (rulerSize - viewport.x) / viewport.scale;
+    // 修复缩放空隙：从 0 点对应的世界坐标开始算起
+    const startWorldX = (0 - viewport.x) / viewport.scale;
     const endWorldX = (w - viewport.x) / viewport.scale;
     const firstTickX = Math.floor(startWorldX / stepX) * stepX;
     const precisionX = Math.max(0, -Math.floor(Math.log10(stepX)));
 
+    ctx.save();
+    // 裁剪区防止线条画到左上角
     ctx.beginPath();
-    ctx.fillStyle = textColor;
+    ctx.rect(rulerSize, 0, w - rulerSize, rulerSize);
+    ctx.clip();
+
+    ctx.beginPath();
     ctx.strokeStyle = tickColor;
+    ctx.lineWidth = 1;
     ctx.font = "10px sans-serif";
-    ctx.textAlign = "center"; // X轴文字完全居中
-    ctx.textBaseline = "top";
 
     for (let x = firstTickX; x <= endWorldX; x += stepX) {
-      const majorPx = rulerSize + (x - startWorldX) * viewport.scale;
+      const px = Math.floor(x * viewport.scale + viewport.x) + 0.5;
 
+      // 1. 小刻度
       for (let i = 1; i < minorCount; i++) {
         const val = x + (i * stepX) / minorCount;
-        if (val > endWorldX) break;
-        const mx =
-          Math.floor(rulerSize + (val - startWorldX) * viewport.scale) + 0.5;
+        const mx = Math.floor(val * viewport.scale + viewport.x) + 0.5;
         ctx.moveTo(mx, rulerSize);
-        ctx.lineTo(mx, rulerSize - minorLen);
+        ctx.lineTo(mx, rulerSize - 5); // 小刻度不拉满，保持美观
       }
 
-      const px = Math.floor(majorPx) + 0.5;
-      ctx.moveTo(px, rulerSize);
-      ctx.lineTo(px, rulerSize - majorLen);
+      // 2. 主刻度：线条拉满 (0 到 rulerSize)
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, rulerSize);
 
+      // 3. 文字靠边：左对齐，距离线 2px
+      ctx.save();
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
       const label = Math.abs(x) < 1e-10 ? "0" : x.toFixed(precisionX);
-      ctx.fillText(label, px, 4); // 取消偏移量，直接在px位置居中绘制
+      ctx.fillText(label, px + 2, 2);
+      ctx.restore();
     }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+
+    // 顶部外贴边线 (新增)
+    ctx.moveTo(0, 0.5);
+    ctx.lineTo(w, 0.5);
+
+    // 左侧外贴边线 (新增)
+    ctx.moveTo(0.5, 0);
+    ctx.lineTo(0.5, h);
+
+    // X轴内侧底线
+    ctx.moveTo(0, rulerSize - 0.5);
+    ctx.lineTo(w, rulerSize - 0.5);
+
+    // Y轴内侧右线
+    ctx.moveTo(rulerSize - 0.5, 0);
+    ctx.lineTo(rulerSize - 0.5, h);
+
+    ctx.stroke();
+
+    // X轴底边线
+    ctx.beginPath();
+    ctx.strokeStyle = borderColor;
+    ctx.moveTo(rulerSize, rulerSize - 0.5);
+    ctx.lineTo(w, rulerSize - 0.5);
     ctx.stroke();
 
     // ================= Y 轴 =================
@@ -103,47 +134,71 @@ export class Rule extends Element {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, rulerSize, rulerSize, Math.max(0, h - rulerSize));
 
-    ctx.beginPath();
-    ctx.strokeStyle = borderColor;
-    ctx.moveTo(rulerSize - 0.5, rulerSize);
-    ctx.lineTo(rulerSize - 0.5, h);
-    ctx.stroke();
-
     const stepY = niceStep(pxPerTick, viewport.scale);
-    const startWorldY = (rulerSize - viewport.y) / viewport.scale;
+    const startWorldY = (0 - viewport.y) / viewport.scale;
     const endWorldY = (h - viewport.y) / viewport.scale;
     const firstTickY = Math.floor(startWorldY / stepY) * stepY;
     const precisionY = Math.max(0, -Math.floor(Math.log10(stepY)));
 
+    ctx.save();
     ctx.beginPath();
-    ctx.fillStyle = textColor;
+    ctx.rect(0, rulerSize, rulerSize, h - rulerSize);
+    ctx.clip();
+
+    ctx.beginPath();
     ctx.strokeStyle = tickColor;
 
     for (let y = firstTickY; y <= endWorldY; y += stepY) {
-      const majorPy = rulerSize + (y - startWorldY) * viewport.scale;
+      const py = Math.floor(y * viewport.scale + viewport.y) + 0.5;
 
+      // 1. 小刻度
       for (let i = 1; i < minorCount; i++) {
         const val = y + (i * stepY) / minorCount;
-        if (val > endWorldY) break;
-        const my =
-          Math.floor(rulerSize + (val - startWorldY) * viewport.scale) + 0.5;
+        const my = Math.floor(val * viewport.scale + viewport.y) + 0.5;
         ctx.moveTo(rulerSize, my);
-        ctx.lineTo(rulerSize - minorLen, my);
+        ctx.lineTo(rulerSize - 5, my);
       }
 
-      const py = Math.floor(majorPy) + 0.5;
-      ctx.moveTo(rulerSize, py);
-      ctx.lineTo(rulerSize - majorLen, py);
+      // 2. 主刻度：线条拉满 (0 到 rulerSize)
+      ctx.moveTo(0, py);
+      ctx.lineTo(rulerSize, py);
 
+      // 3. 文字靠边
       const label = Math.abs(y) < 1e-10 ? "0" : y.toFixed(precisionY);
       ctx.save();
-      ctx.translate(8, py);
+      ctx.translate(2, py + 2); // 靠左边 2px，线下侧 2px
       ctx.rotate(-Math.PI / 2);
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+      ctx.fillStyle = textColor;
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "top";
       ctx.fillText(label, 0, 0);
       ctx.restore();
     }
+    ctx.stroke();
+    ctx.restore();
+
+    // ================= 3. 边界线渲染 (补全外贴边) =================
+    ctx.beginPath();
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+
+    // 顶部外贴边线 (新增)
+    ctx.moveTo(0, 0.5);
+    ctx.lineTo(w, 0.5);
+
+    // 左侧外贴边线 (新增)
+    ctx.moveTo(0.5, 0);
+    ctx.lineTo(0.5, h);
+
+    // X轴内侧底线
+    ctx.moveTo(0, rulerSize - 0.5);
+    ctx.lineTo(w, rulerSize - 0.5);
+
+    // Y轴内侧右线
+    ctx.moveTo(rulerSize - 0.5, 0);
+    ctx.lineTo(rulerSize - 0.5, h);
+
     ctx.stroke();
 
     // ================= 左上角空白区 =================
@@ -158,10 +213,16 @@ export class Rule extends Element {
     ctx.lineTo(rulerSize, rulerSize - 0.5);
     ctx.stroke();
 
+    // 补上 "px" 文字，更像截图
+    ctx.fillStyle = textColor;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("px", rulerSize / 2, rulerSize / 2);
+
+    // ================= 选中高亮逻辑 =================
     const sleectEL = this.root.keyElmenet?.get("select") as any;
     if (sleectEL && sleectEL.width && sleectEL.height) {
       const rect = sleectEL.getBoundingRect();
-
       const rectLeft = rect.left * viewport.scale + viewport.x;
       const rectTop = rect.top * viewport.scale + viewport.y;
       const widthPx = rect.width * viewport.scale;
@@ -169,30 +230,19 @@ export class Rule extends Element {
 
       ctx.save();
       ctx.fillStyle = "#1890ff";
-      ctx.globalAlpha = 0.2;
-      ctx.strokeStyle = "#1890ff";
-      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.1; // 降低透明度，配合拉满的线条
 
-      // X轴高亮，控制范围不覆盖左上角交叉区
       const startX = Math.max(rulerSize, rectLeft);
       const endX = rectLeft + widthPx;
       if (endX > rulerSize) {
-        ctx.beginPath();
-        ctx.rect(startX, 0, endX - startX, rulerSize);
-        ctx.fill();
-        ctx.stroke();
+        ctx.fillRect(startX, 0, endX - startX, rulerSize);
       }
 
-      // Y轴高亮
       const startY = Math.max(rulerSize, rectTop);
       const endY = rectTop + heightPx;
       if (endY > rulerSize) {
-        ctx.beginPath();
-        ctx.rect(0, startY, rulerSize, endY - startY);
-        ctx.fill();
-        ctx.stroke();
+        ctx.fillRect(0, startY, rulerSize, endY - startY);
       }
-
       ctx.restore();
     }
 

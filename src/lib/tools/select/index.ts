@@ -13,8 +13,9 @@ export class Select extends Element {
   declare currentControl: { control: any; point: any };
   declare coords: any;
   key = "select";
-  controlSize = 10;
+  controlSize = 8;
   hitPadding = 6;
+  controlCoords: Array<Point>;
   constructor() {
     super({
       backgroundColor: "rgba(0, 0, 0, 0.1)",
@@ -33,7 +34,7 @@ export class Select extends Element {
 
   mounted() {
     const checkElementIntersects = (object: Element) => {
-      const [{ point: tl }, , { point: br }] = this.getCoords() as any[];
+      const [tl, , br] = this.getControlCoords();
       if (
         !object.selectable &&
         !object.visible &&
@@ -117,7 +118,6 @@ export class Select extends Element {
         })
       };
       const pointermove = (e: FulateEvent) => {
-        // const endPoint = new Point(e.detail.x, e.detail.y);
         control.callback(this, point, selectPrevState, e);
       };
       this.root.addEventListener("pointermove", pointermove);
@@ -132,12 +132,17 @@ export class Select extends Element {
 
     const handleSelectMove = (e: FulateEvent) => {
       const startPoint = new Point(e.detail.x, e.detail.y);
-      const coords = this.getCoordsPure();
 
-      this.snapTool?.start(this.selectEls.concat(this));
+      this.snapTool?.start(
+        this.selectEls
+          .concat(this)
+          .concat(this.root.children.filter((v) => v.type === "layer"))
+      );
 
       const originalSelectLeft = this.left;
       const originalSelectTop = this.top;
+
+      const coords = super.getCoords().map((p) => new Point(p.x, p.y));
 
       const snapshots = this.selectEls.map((child: any) => {
         const wc = child.getWorldCenterPoint();
@@ -149,10 +154,9 @@ export class Select extends Element {
         let dx = current.x - startPoint.x;
         let dy = current.y - startPoint.y;
 
-        const snapResult = this.snapTool?.detect(coords);
+        const snapResult = this.snapTool?.detect(coords, dx, dy);
 
         if (snapResult) {
-          // 将吸附修正量应用到 dx, dy
           dx += snapResult.dx;
           dy += snapResult.dy;
         }
@@ -165,6 +169,7 @@ export class Select extends Element {
         });
 
         for (const { child, targetWorld } of targets) {
+          //不会重复render
           child
             .setPositionByOrigin(targetWorld, child.originX, child.originY)
             .layer.render();
@@ -229,9 +234,8 @@ export class Select extends Element {
     ctx.restore();
 
     if (this.selectEls.length) {
-      const coords = this.getCoords() as any[];
-      coords.forEach(({ point, control }) =>
-        this.drawControlPoint(ctx, point, control)
+      this.getControlCoords().forEach((point, index) =>
+        this.drawControlPoint(ctx, point, Controls[index])
       );
     }
   }
@@ -261,26 +265,29 @@ export class Select extends Element {
     if (this.width === 0 || this.height === 0) {
       return false;
     }
-    const coords = this.getCoords() as any[];
+    const coords = this.getControlCoords();
     const hintPoint = new Point(x, y);
     this.currentControl = null;
     this.cursor = "default";
     for (let i = 0; i < coords.length; i++) {
-      const { point, control } = coords[i];
+      const point = coords[i];
 
       const distance = Math.sqrt(
         Math.pow(hintPoint.x - point.x, 2) + Math.pow(hintPoint.y - point.y, 2)
       );
 
       if (distance <= this.controlSize) {
-        this.cursor = control.cursor;
-        this.currentControl = coords[i];
+        this.cursor = Controls[i].cursor;
+        this.currentControl = {
+          point: hintPoint,
+          control: Controls[i]
+        };
         return true;
       }
     }
 
     const map = new Map();
-    coords.forEach((c) => map.set(c.control.type, c.point));
+    coords.forEach((c, i) => map.set(Controls[i].type, c));
 
     const tl = map.get("tl");
     const tr = map.get("tr");
@@ -302,7 +309,7 @@ export class Select extends Element {
       );
 
       if (dist <= this.hitPadding) {
-        this.cursor = "grabbing"; //edge.cursor;
+        this.cursor = edge.cursor;
 
         this.currentControl = {
           point: hintPoint,
@@ -310,14 +317,8 @@ export class Select extends Element {
             type: edge.type,
             actionName: "scale",
             cursor: edge.cursor,
-            callback: (
-              selectEL: any,
-              point: any,
-              preState: any,
-              event: any
-            ) => {
-              return resizeObject(selectEL, preState, event, edge.type);
-            }
+            callback: (selectEL: any, point: any, preState: any, event: any) =>
+              resizeObject(selectEL, preState, event, edge.type)
           }
         };
         return true;
@@ -331,38 +332,20 @@ export class Select extends Element {
     return false;
   }
 
-  getCoordsPure() {
-    const finalMatrix = this.getOwnMatrix();
-    const dim = this._getTransformedDimensions();
-
-    const localPoints = [
-      new Point(0, 0), // 左上
-      new Point(dim.x, 0), // 右上
-      new Point(dim.x, dim.y), // 右下
-      new Point(0, dim.y) // 左下
-    ];
-    return localPoints.map(
-      (point) => new Point(finalMatrix.transformPoint(point))
-    );
-    // return (this.getCoords() as any)
-    //   .filter((v) => v.control.type !== "mtr")
-    //   .map((v) => v.point);
-  }
-
   setCoords(): this {
     const finalMatrix = this.getOwnMatrix();
-    const dim = this._getTransformedDimensions({
-      width: this.width ?? 0,
-      height: this.height ?? 0
-    });
-    this.coords = Controls.map((control, index) => {
+    const dim = this._getTransformedDimensions();
+    super.setCoords();
+    this.controlCoords = Controls.map((control) => {
       const x = control.x * dim.x + (control.offsetX ?? 0);
       const y = control.y * dim.y + (control.offsetY ?? 0);
-      return {
-        control,
-        point: new Point(finalMatrix?.transformPoint(new Point(x, y)))
-      };
+      return new Point(finalMatrix.transformPoint(new Point(x, y)));
     });
     return this;
+  }
+
+  getControlCoords() {
+    this.getCoords();
+    return this.controlCoords;
   }
 }

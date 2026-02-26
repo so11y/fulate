@@ -43,7 +43,19 @@ const div2 = new Rectangle({
   backgroundColor: "blue"
 });
 
-root.append(floorLayer, div1, div2, editerLayer);
+root.append(
+  floorLayer,
+  div1,
+  div2,
+  new Rectangle({
+    left: 0,
+    top:0,
+    width: 30,
+    height: 30,
+    backgroundColor: "yellow"
+  }),
+  editerLayer
+);
 
 // div1.addEventListener("click", (e) => {
 //   e.detail.target
