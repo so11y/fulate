@@ -42,13 +42,13 @@ export class Node extends EventTarget {
     }
   }
 
-  append(...children: this[]) {
+  append<T extends Node>(...children: T[]) {
     if (!this.children) this.children = [];
 
     children.forEach((child) => {
       if (child.parent) return;
-      child.parent = this;
-      this.children!.push(child);
+      child.parent = this as any;
+      this.children!.push(child as any);
     });
 
     this.hasDirtyChild = true;

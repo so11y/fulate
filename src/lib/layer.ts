@@ -6,7 +6,6 @@ export class Layer extends Rectangle {
   ctx: CanvasRenderingContext2D;
   zIndex: number;
 
-  // 渲染锁：标记当前帧是否已排期
   private isRender: boolean = false;
 
   constructor(options?: any) {
@@ -38,9 +37,6 @@ export class Layer extends Rectangle {
     super.attrs(options, k);
   }
 
-  /**
-   * 渲染请求入口（使用 requestAnimationFrame）
-   */
   requestRender() {
     if (this.isRender) return;
     this.isRender = true;

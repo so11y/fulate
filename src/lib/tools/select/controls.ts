@@ -198,7 +198,7 @@ export const Controls: Array<Control> = [
         const center = el.getPositionByOrigin(
           el.getWorldCenterPoint().matrixTransform(rotationMatrix)
         );
-        el.quickSetOptions({
+        el.setOptionsSync({
           angle: el.angle + angleDelta,
           left: center.x,
           top: center.y
