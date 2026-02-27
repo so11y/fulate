@@ -14,19 +14,19 @@ export type EventName =
   | "sizeUpdate";
 export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 
-export interface FulateEvent extends Omit<PointerEvent, "detail"> {
+export interface FulateEvent<T = Element> extends Omit<PointerEvent, "detail"> {
   detail: {
     x: number;
     y: number;
-    target: Element;
+    target: T;
     buttons: number;
     deltaX: number;
     deltaY: number;
   };
 }
 
-export interface CanvasPoint {
-  target: Element;
+export interface CanvasPoint<T = Element> {
+  target: T;
   x: number;
   y: number;
   buttons: number;

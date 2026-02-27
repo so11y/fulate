@@ -13,6 +13,7 @@ import Yoga, {
 } from "yoga-layout";
 import { Rectangle as BaseRectangle } from "../lib/ui/rectangle";
 import { BaseElementOption } from "../lib/node/element";
+import { FulateEvent } from "../lib/eventManage";
 
 type YogaStyleSize = number | `${number}%`;
 type YogaStyleSizeAndAuto = YogaStyleSize | "auto";
@@ -32,7 +33,14 @@ export {
 
 export interface YogaOption extends Omit<
   BaseElementOption,
-  "left" | "top" | "width" | "height"
+  | "left"
+  | "top"
+  | "width"
+  | "height"
+  | "onclick"
+  | "onpointermove"
+  | "onpointerdown"
+  | "onpointerup"
 > {
   display?: Display;
   width?: YogaStyleSizeAndAuto;
@@ -73,7 +81,55 @@ export interface YogaOption extends Omit<
   boxSizing?: BoxSizing;
 
   children?: any[];
+
+  onclick?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
+  onpointermove?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
+  onpointerdown?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
+  onpointerup?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
 }
+
+const ExtractKey = new Set([
+  "left",
+  "top",
+  "width",
+  "height",
+  "display",
+  "width",
+  "height",
+  "minWidth",
+  "minHeight",
+  "maxWidth",
+  "maxHeight",
+  "alignContent",
+  "alignItems",
+  "alignSelf",
+  "aspectRatio",
+  "flexg",
+  "flexBasis",
+  "flexDirection",
+  "flexGrow",
+  "flexShrink",
+  "flexWrapg",
+  "justifyContent",
+  "paddingTop",
+  "paddingLeft",
+  "paddingRight",
+  "paddingBottom",
+  "padding",
+  "marginTop",
+  "marginLeft",
+  "marginRight",
+  "marginBottom",
+  "margin",
+  "position",
+  "left",
+  "top",
+  "bottom",
+  "right",
+  "gap",
+  "inset",
+  "boxSizing"
+]);
 
 export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
   Node: T
@@ -84,23 +140,50 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
 
     attrs(options: any): void {
       super.attrs(options, {
-        assign: true
+        assign: true,
+        target: this._options
       });
-      this.layout();
-      this.computedLayout();
+
+      Object.keys(options).forEach((key) => {
+        if (!ExtractKey.has(key) && !key.startsWith("on")) {
+          this[key] = options[key];
+        }
+      });
     }
 
-    setOptions(options?: any) {
-      super.setOptions(options);
-      this.inject("yoga-root").layout();
+    mounted(): void {
+      const yogaRoot = this.inject("yoga-root");
+      if (!yogaRoot) {
+        this.provide("yoga-root", this);
+      }
+      super.mounted();
+      if (this.children) {
+        this.children.forEach((child, index) => {
+          this.yogaNode.insertChild(child.yogaNode, index);
+        });
+      }
+      this.flushStyles();
+      if (this === this.inject("yoga-root")) {
+        this.layout();
+      }
+    }
+
+    setOptions(options?: YogaOption) {
+      super.setOptions(options as any);
+      this.flushStyles();
+      if (this.isMounted) {
+        this.inject("yoga-root").layout();
+      }
       return this;
     }
 
     layout() {
-      if (this.isMounted) {
-        this.flushStyles();
-        this.children?.forEach((v) => v.layout?.());
+      const yogaRoot = this.inject("yoga-root");
+      if (yogaRoot === this) {
+        this.yogaNode.calculateLayout("auto", "auto");
       }
+      this.computedLayout();
+      this.children?.forEach((v) => v.layout());
       return this;
     }
 

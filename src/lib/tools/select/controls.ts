@@ -203,7 +203,7 @@ export const Controls: Array<Control> = [
         const center = el.getPositionByOrigin(
           worldCenterPoint.matrixTransform(rotationMatrix)
         );
-        el.setOptions({
+        el.quickSetOptions({
           angle: angle + angleDelta,
           left: center.x,
           top: center.y

@@ -5,6 +5,7 @@ import { Rule } from "./lib/tools/rule";
 import { Layer, FullLayer } from "./lib/layer";
 import { Snap } from "./lib/tools/select/snap";
 import { Artboard } from "./lib/ui/artboard";
+import { Rectangle as Div, Display, FlexDirection, Justify } from "./yoga/base";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,
@@ -80,7 +81,31 @@ root.append(
     children: [
       div1,
       div2,
-      dev3
+      dev3,
+      new Div({
+        left: 300,
+        top: 170,
+        width: 100,
+        height: 100,
+        display: Display.Flex,
+        backgroundColor: "pink",
+        justifyContent: Justify.SpaceAround,
+        children: [
+          new Div({
+            width: 50,
+            backgroundColor: "black",
+            onclick(e) {
+              e.detail.target.setOptions({
+                width: "10%"
+              });
+            }
+          }),
+          new Div({
+            width: 10,
+            backgroundColor: "red"
+          })
+        ]
+      })
       // new FullLayer({
       //   zIndex: 3,
       //   selectctbale: true,
@@ -93,7 +118,7 @@ root.append(
       //   backgroundColor: "yellow"
       // });
 
-      e.detail.target.root.focusNode(e.detail.target);
+      // e.detail.target.root.focusNode(e.detail.target);
     }
   }),
   editerLayer
@@ -108,69 +133,3 @@ root.append(
 // });
 
 root.mounted();
-
-// -------------------
-
-// import { Root } from "./yoga/root";
-// import { Rectangle as Div, Display, FlexDirection } from "./yoga/base";
-// import { Select } from "./lib/tools/select";
-
-// const root = new Root(document.getElementById("app")! as HTMLElement, {
-//   width: 500,
-//   height: 500
-// });
-
-// root
-//   .append(
-//     // new Select(),
-//     new Div({
-//       display: Display.Flex,
-//       flexDirection: FlexDirection.Row,
-//       backgroundColor: "yellow",
-//       width: 300,
-//       height: 150,
-//       marginLeft: 30,
-//       marginTop: 30,
-//       paddingTop: 20,
-//       paddingLeft: 5,
-//       // onclick(e) {
-//       //   console.log("---");
-//       //   e.detail.target
-//       //     .setOptions({
-//       //       backgroundColor: "black"
-//       //     })
-//       //     .layer.render();
-//       // },
-//       children: [
-//         new Div({
-//           width: 100,
-//           height: 100,
-//           onclick(e) {
-//             e.detail.target.parent
-//               .setOptions({
-//                 backgroundColor: "green",
-//                 width: 50
-//               })
-//               .layer.render();
-//             e.detail.target
-//               .setOptions({
-//                 backgroundColor: "red",
-//                 width: 30
-//               })
-//               .layer.render();
-//           }
-//         }),
-//         new Div({
-//           width: 100,
-//           height: 100,
-//           backgroundColor: "blue"
-//         })
-//       ]
-//     }),
-//     new Div({
-//       height: 30,
-//       width: 50,
-//       backgroundColor: "pink"
-//     })
-//   )
-//   .mounted();

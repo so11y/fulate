@@ -2,7 +2,7 @@ import { Point } from "../../util/point";
 import { FulateEvent } from "../eventManage";
 import { Transformable, TransformableOptions } from "./transformable";
 
-export interface BaseElementOption extends TransformableOptions {
+export interface BaseElementOption<T = Element> extends TransformableOptions {
   key?: string;
   backgroundColor?: string | null;
   radius?: number | null;
@@ -10,10 +10,10 @@ export interface BaseElementOption extends TransformableOptions {
   visible?: boolean;
   selectctbale?: boolean;
 
-  onclick?: (e: FulateEvent) => any;
-  onpointermove?: (e: FulateEvent) => any;
-  onpointerdown?: (e: FulateEvent) => any;
-  onpointerup?: (e: FulateEvent) => any;
+  onclick?: (e: FulateEvent<T>) => any;
+  onpointermove?: (e: FulateEvent<T>) => any;
+  onpointerdown?: (e: FulateEvent<T>) => any;
+  onpointerup?: (e: FulateEvent<T>) => any;
 
   children?: Array<Element>;
 }
@@ -54,7 +54,7 @@ export class Element extends Transformable {
 
     Object.assign(target, options);
 
-    if (assign) {
+    if (assign && target !== this._options) {
       Object.assign(this._options, options);
     }
   }
