@@ -29,6 +29,10 @@ const div1 = new Rectangle({
   backgroundColor: "red",
   onclick: (e) => {
     console.log("div1 clicked", e);
+
+    e.detail.target.setOptions({
+      backgroundColor: "yellow"
+    });
   }
 });
 
@@ -49,7 +53,7 @@ root.append(
   div2,
   new Rectangle({
     left: 0,
-    top:0,
+    top: 0,
     width: 30,
     height: 30,
     backgroundColor: "yellow"

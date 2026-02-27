@@ -122,7 +122,7 @@ export class Element extends Transformable {
    * 设置选项（标记脏，延迟计算）
    * @param syncCalc 是否立即同步计算（用于需要立即获取坐标的场景）
    */
-  setOptions(options?: any, syncCalc = false) {
+  setOptions(options?: BaseElementOption, syncCalc = false) {
     if (!options) return this;
 
     this.attrs(options);
