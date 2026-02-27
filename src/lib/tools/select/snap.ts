@@ -122,72 +122,47 @@ export class Snap extends Element {
       const objMinY = Math.min(...movingYs);
       const objMaxY = Math.max(...movingYs);
 
-      let minDistance = Infinity;
-      let bestP1 = objMinY;
-      let bestP2 = objMinY;
+      // 收集所有元素的 Y 轴范围（包括移动对象和参考对象）
+      const allRanges: Array<{ min: number; max: number; isMoving: boolean }> = [];
 
-      // 核心算法：计算两条一维线段[objMin, objMax] 与 [refMin, refMax] 之间的最短距离
+      // 添加移动对象
+      allRanges.push({ min: objMinY, max: objMaxY, isMoving: true });
+
+      // 添加所有参考对象
       for (const seg of bestX.segments) {
         const refMinY = seg.min;
         const refMaxY = seg.max !== undefined ? seg.max : seg.min;
-
-        let p1, p2, dist;
-        if (objMaxY < refMinY) {
-          p1 = objMaxY;
-          p2 = refMinY;
-          dist = refMinY - objMaxY;
-        } else if (refMaxY < objMinY) {
-          p1 = objMinY;
-          p2 = refMaxY;
-          dist = objMinY - refMaxY;
-        } else {
-          // 发生重叠
-          p1 = Math.max(objMinY, refMinY);
-          p2 = Math.min(objMaxY, refMaxY);
-          dist = 0;
-        }
-
-        if (dist < minDistance) {
-          minDistance = dist;
-          bestP1 = p1;
-          bestP2 = p2;
-        }
+        allRanges.push({ min: refMinY, max: refMaxY, isMoving: false });
       }
 
-      const distance = Math.round(minDistance);
-      let start, end, points;
+      // 按位置排序
+      allRanges.sort((a, b) => a.min - b.min);
 
-      if (distance > 0) {
-        start = Math.min(bestP1, bestP2);
-        end = Math.max(bestP1, bestP2);
-        points = [
-          { x: snapX, y: start },
-          { x: snapX, y: end }
-        ];
-      } else {
-        let minAll = objMinY;
-        let maxAll = objMaxY;
-        for (const seg of bestX.segments) {
-          minAll = Math.min(minAll, seg.min);
-          maxAll = Math.max(maxAll, seg.max !== undefined ? seg.max : seg.min);
+      // 找出所有相邻的间隙并绘制
+      for (let i = 0; i < allRanges.length - 1; i++) {
+        const current = allRanges[i];
+        const next = allRanges[i + 1];
+
+        const gapStart = current.max;
+        const gapEnd = next.min;
+        const distance = gapEnd - gapStart;
+
+        if (distance > 0) {
+          // 有间隙，绘制距离线
+          this.snapLines.push({
+            type: "vertical",
+            value: snapX,
+            start: gapStart,
+            end: gapEnd,
+            points: [
+              { x: snapX, y: gapStart },
+              { x: snapX, y: gapEnd }
+            ],
+            distanceText: `${Math.round(distance)}`,
+            textPos: { x: snapX + 5, y: (gapStart + gapEnd) / 2 }
+          });
         }
-        start = minAll;
-        end = maxAll;
-        points = [
-          { x: snapX, y: start },
-          { x: snapX, y: end }
-        ];
       }
-
-      this.snapLines.push({
-        type: "vertical",
-        value: snapX,
-        start: start,
-        end: end,
-        points: points,
-        distanceText: distance > 0 ? `${distance}` : undefined,
-        textPos: { x: snapX + 5, y: (start + end) / 2 }
-      });
     }
 
     // ================= 水平吸附 (Y) =================
@@ -206,72 +181,47 @@ export class Snap extends Element {
       const objMinX = Math.min(...movingXs);
       const objMaxX = Math.max(...movingXs);
 
-      let minDistance = Infinity;
-      let bestP1 = objMinX;
-      let bestP2 = objMinX;
+      // 收集所有元素的 X 轴范围（包括移动对象和参考对象）
+      const allRanges: Array<{ min: number; max: number; isMoving: boolean }> = [];
 
+      // 添加移动对象
+      allRanges.push({ min: objMinX, max: objMaxX, isMoving: true });
+
+      // 添加所有参考对象
       for (const seg of bestY.segments) {
         const refMinX = seg.min;
         const refMaxX = seg.max !== undefined ? seg.max : seg.min;
-
-        let p1, p2, dist;
-        if (objMaxX < refMinX) {
-          p1 = objMaxX;
-          p2 = refMinX;
-          dist = refMinX - objMaxX;
-        } else if (refMaxX < objMinX) {
-          p1 = objMinX;
-          p2 = refMaxX;
-          dist = objMinX - refMaxX;
-        } else {
-          // 发生重叠
-          p1 = Math.max(objMinX, refMinX);
-          p2 = Math.min(objMaxX, refMaxX);
-          dist = 0;
-        }
-
-        if (dist < minDistance) {
-          minDistance = dist;
-          bestP1 = p1;
-          bestP2 = p2;
-        }
+        allRanges.push({ min: refMinX, max: refMaxX, isMoving: false });
       }
 
-      const distance = Math.round(minDistance);
-      let start, end, points;
+      // 按位置排序
+      allRanges.sort((a, b) => a.min - b.min);
 
-      if (distance > 0) {
-        start = Math.min(bestP1, bestP2);
-        end = Math.max(bestP1, bestP2);
-        points = [
-          { x: start, y: snapY },
-          { x: end, y: snapY }
-        ];
-      } else {
-        // 当距离为 0 (有重叠边界对齐)时，延伸对齐线覆盖两者范围
-        let minAll = objMinX;
-        let maxAll = objMaxX;
-        for (const seg of bestY.segments) {
-          minAll = Math.min(minAll, seg.min);
-          maxAll = Math.max(maxAll, seg.max !== undefined ? seg.max : seg.min);
+      // 找出所有相邻的间隙并绘制
+      for (let i = 0; i < allRanges.length - 1; i++) {
+        const current = allRanges[i];
+        const next = allRanges[i + 1];
+
+        const gapStart = current.max;
+        const gapEnd = next.min;
+        const distance = gapEnd - gapStart;
+
+        if (distance > 0) {
+          // 有间隙，绘制距离线
+          this.snapLines.push({
+            type: "horizontal",
+            value: snapY,
+            start: gapStart,
+            end: gapEnd,
+            points: [
+              { x: gapStart, y: snapY },
+              { x: gapEnd, y: snapY }
+            ],
+            distanceText: `${Math.round(distance)}`,
+            textPos: { x: (gapStart + gapEnd) / 2, y: snapY - 5 }
+          });
         }
-        start = minAll;
-        end = maxAll;
-        points = [
-          { x: start, y: snapY },
-          { x: end, y: snapY }
-        ];
       }
-
-      this.snapLines.push({
-        type: "horizontal",
-        value: snapY,
-        start: start,
-        end: end,
-        points: points,
-        distanceText: distance > 0 ? `${distance}` : undefined,
-        textPos: { x: (start + end) / 2, y: snapY - 5 }
-      });
     }
 
     this.layer.render();

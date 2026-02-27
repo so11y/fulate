@@ -6,7 +6,7 @@ export class Root extends Layer {
 
   container: HTMLElement;
   // 视口状态：x,y 是偏移量，scale 是缩放
-  viewport = { x: 25, y: 25, scale: 1, matrix: null as DOMMatrix | null };
+  viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
   currentElement?: Element;
   keyElmenet = new Map();
   quickElements: Array<Element> = [];
@@ -16,7 +16,7 @@ export class Root extends Layer {
   // 内部交互状态
   private isSpacePressed = false;
   private isPanning = false;
-  private hasLockPoint = false; // 用于按下元素后的事件锁定
+  private hasLockPoint = false;
   private lastPointerPos = { x: 0, y: 0 };
 
   constructor(el: HTMLElement, options?: BaseElementOption) {
@@ -32,7 +32,7 @@ export class Root extends Layer {
     this.root = this;
     super.mounted();
     this.mounteded();
-    this.render();
+    this.requestRender();
   }
 
   mounteded() {
@@ -52,18 +52,14 @@ export class Root extends Layer {
   }
 
   getViewPointMtrix() {
-    if (this.viewport?.matrix) {
-      return this.viewport.matrix;
-    }
-    this.viewport.matrix = new DOMMatrix([
-      this.viewport.scale,
-      0,
-      0,
-      this.viewport.scale,
-      this.viewport.x,
-      this.viewport.y
-    ]);
-    return this.viewport.matrix;
+    const m = this.viewport.matrix;
+    m.a = this.viewport.scale;
+    m.b = 0;
+    m.c = 0;
+    m.d = this.viewport.scale;
+    m.e = this.viewport.x;
+    m.f = this.viewport.y;
+    return m;
   }
 
   /**
@@ -71,15 +67,13 @@ export class Root extends Layer {
    */
   private checkHit(e: PointerEvent | MouseEvent) {
     if (this.isSpacePressed || this.isPanning) return;
-
-    // 如果鼠标已按下并锁定了某个元素（如拖拽中），不再寻找新目标
     if (this.hasLockPoint && this.currentElement) return;
 
     const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
 
     this.currentElement = undefined;
     for (const element of this.quickElements) {
-      if (element.hasInView() && element.hasPointHint(x, y)) {
+      if (element.visible && element.hasPointHint(x, y)) {
         this.currentElement = element;
         break;
       }
@@ -99,10 +93,9 @@ export class Root extends Layer {
       if (e.code === "Space") {
         this.isSpacePressed = true;
         this.container.style.cursor = "grab";
-        // 按下空格时，清除当前的 hover 状态，避免干扰
         if (this.currentElement) {
           this.currentElement = undefined;
-          this.render();
+          this.requestRender();
         }
       }
     };
@@ -124,14 +117,12 @@ export class Root extends Layer {
           // 执行视口平移
           const dx = e.clientX - this.lastPointerPos.x;
           const dy = e.clientY - this.lastPointerPos.y;
-          this.viewport.matrix = null;
           this.viewport.x += dx;
           this.viewport.y += dy;
           this.lastPointerPos = { x: e.clientX, y: e.clientY };
 
           this.dispatchEvent(new CustomEvent("panzoom"));
-          this.markDirty();
-          this.render();
+          this.requestRender();
         } else {
           // 执行正常的元素交互检测
           const prevElement = this.currentElement;
@@ -207,17 +198,16 @@ export class Root extends Layer {
         const factor = e.deltaY < 0 ? 1.1 : 0.9;
         const prevScale = this.viewport.scale;
         const newScale = Math.max(0.1, Math.min(10, prevScale * factor));
-        this.viewport.matrix = null;
-        // 以鼠标当前位置为中心进行缩放的算法
+
+        // 以鼠标当前位置为中心进行缩放
         this.viewport.x = cx - ((cx - this.viewport.x) * newScale) / prevScale;
         this.viewport.y = cy - ((cy - this.viewport.y) * newScale) / prevScale;
         this.viewport.scale = newScale;
 
         this.dispatchEvent(new CustomEvent("panzoom"));
-        this.markDirty();
-        this.render();
+        this.requestRender();
 
-        // 缩放后重新计算 hit，防止缩放后鼠标下的元素变化
+        // 缩放后重新计算 hit
         this.checkHit(e);
       },
       { signal, passive: false }

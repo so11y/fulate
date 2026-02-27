@@ -8,12 +8,14 @@ export class Node extends EventTarget {
   // 树结构关系
   root: Root;
   layer: Layer;
-  parent: Node | undefined;
-  children: Node[] | null = null;
+  parent: this | undefined;
+  children: this[] | null = null;
 
   // 生命周期状态
   isMounted = false;
   key: string;
+
+  hasDirtyChild = false;
 
   // 事件管理器
   eventManage = new EventManage(this as any);
@@ -24,21 +26,51 @@ export class Node extends EventTarget {
 
   attrs(options: any) {}
 
-  append(...children: Node[]) {
+  /**
+   * 向上冒泡通知祖先"我的分支脏了"
+   * 性能优化：如果祖先已经标记为脏，立即停止冒泡
+   */
+  markChildDirty() {
+    let p = this.parent;
+    while (p && !p.hasDirtyChild) {
+      p.hasDirtyChild = true;
+      p = p.parent;
+    }
+
+    if (this.layer) {
+      this.layer.requestRender?.();
+    }
+  }
+
+  append(...children: this[]) {
     if (!this.children) this.children = [];
+
     children.forEach((child) => {
       if (child.parent) return;
       child.parent = this;
       this.children!.push(child);
     });
+
+    this.hasDirtyChild = true;
+    this.markChildDirty();
+
     if (this.isMounted) {
       children.forEach((v) => v.mounted());
     }
+
+    if (this.root) {
+      this.root.calcEventSort();
+    }
+
     return this;
   }
 
-  removeChild(...children: Node[]) {
+  removeChild(...children: this[]) {
     children.forEach((child) => child.unmounted());
+
+    this.hasDirtyChild = true;
+    this.markChildDirty();
+    this.root.calcEventSort();
     return this;
   }
 
@@ -61,12 +93,22 @@ export class Node extends EventTarget {
     if (this.key && this.root) {
       this.root.keyElmenet.delete(this.key);
     }
+
+    const oldParent = this.parent;
+
+    if (oldParent && oldParent.children?.length) {
+      const index = oldParent.children?.findIndex((v) => v === this);
+      if (index !== -1) {
+        oldParent.children.splice(index, 1);
+        oldParent.hasDirtyChild = true;
+        oldParent.markChildDirty();
+      }
+    }
+
     this.children?.forEach((child) => child.unmounted());
     this.children = [];
-    if (this.parent && this.parent.children?.length) {
-      const index = this.parent.children?.findIndex((v) => v === this);
-      this.parent.children.splice(index, 1);
-    }
+    this.parent = undefined;
+    this.isMounted = false;
   }
 
   addEventListener<T = FulateEvent>(
@@ -91,5 +133,4 @@ export class Node extends EventTarget {
   inject<T = any>(key: string): T | undefined {
     return this._provides[key];
   }
-
 }

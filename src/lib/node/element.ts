@@ -40,7 +40,7 @@ export class Element extends Transformable {
   backgroundColor: string | null = null;
   radius: number | null = null;
   cursor?: string;
-  visible?: boolean;
+  visible: boolean = true;
   declare children: this[];
   declare parent: this;
 
@@ -73,29 +73,29 @@ export class Element extends Transformable {
     }
   }
 
-  update(options?: any) {
-    return this.setOptions(options).layer.render();
-  }
-
+  /**
+   * 纯净渲染函数（只负责绘制，不处理数学计算）
+   */
   render(ctx = this.layer.ctx) {
+    if (!this.visible) return;
+
     if (this.children) {
-      for (const child of this.children) {
-        if (this.hasDirty()) {
-          child.markDirty();
-        }
-        child.render(ctx);
+      for (let i = 0; i < this.children.length; i++) {
+        this.children[i].render(ctx);
       }
     }
-    this.ditryDone();
   }
 
   hasPointHint(x: number, y: number): boolean {
-    if (this.width === undefined || this.height === undefined) {
+    if (
+      this.width === undefined ||
+      this.height === undefined ||
+      !this.visible
+    ) {
       return false;
     }
 
     const point = new Point(x, y);
-
     const localPoint = this.getGlobalToLocal(point);
 
     return (
@@ -107,49 +107,51 @@ export class Element extends Transformable {
   }
 
   hasInView() {
-    return true;
+    return this.visible;
   }
 
   mounted(): void {
     if (this._pendingOption) {
-      this._setOptions(this._pendingOption, false);
+      this.setOptions(this._pendingOption, false);
       this._pendingOption = {};
     }
     super.mounted();
   }
 
-  //用户调用or覆盖
-  setOptions(options?: any, syncCalc = true) {
-    return this._setOptions(options, syncCalc);
-  }
+  /**
+   * 设置选项（标记脏，延迟计算）
+   * @param syncCalc 是否立即同步计算（用于需要立即获取坐标的场景）
+   */
+  setOptions(options?: any, syncCalc = false) {
+    if (!options) return this;
 
-  //内部调用
-  _setOptions(options?: any, syncCalc = true) {
-    if (options) {
-      this.attrs(options);
-      if (options.children) {
-        this.removeChild(...(this.children ?? []));
-        this.append(...options.children);
-      }
-      if (syncCalc) {
-        this.markDirty();
-      }
+    this.attrs(options);
+
+    if (options.children) {
+      this.removeChild(...(this.children ?? []));
+      this.append(...options.children);
     }
-    if (this.hasDirty() && this.isMounted && syncCalc) {
-      this.calcOwnMatrix();
-      this.setCoords();
+
+    // 标记脏
+    this.markDirty();
+
+    if (syncCalc && this.isMounted) {
+      super.updateTransform(this.parent ? this.parent.isDirty : false);
     }
+
     return this;
   }
 
-  //提供给select操作的
+  setOptionsSync(options?: any) {
+    return this.setOptions(options, true);
+  }
+
+  /**
+   * 快速更新变换属性（用于高频操作如拖拽）
+   */
   quickSetOptions(options: BaseElementOption) {
     Object.assign(this, options);
     this.markDirty();
-    if (this.hasDirty() && this.isMounted) {
-      this.calcOwnMatrix();
-      this.setCoords();
-    }
     return this;
   }
 }

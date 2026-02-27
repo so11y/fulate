@@ -137,9 +137,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
 
     setOptions(options?: any) {
-      console.log("---");
-      super.setOptions(options, false);
-      this.markDirty();
+      super.setOptions(options);
       this.inject("yoga-root").layout();
       return this;
     }
@@ -164,7 +162,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return this;
     }
 
-    append(...childNode: LayoutNode[]) {
+    append(...childNode: this[]) {
       let currentIndex = this.children?.length ?? 0;
       super.append(...childNode);
       childNode.forEach((child) => {

@@ -36,8 +36,8 @@ export class Transformable extends Node {
   height: number | undefined;
   // strokeWidth = 0;
 
-  // 缓存
-  protected ownMatrixCache: DOMMatrix | null = null;
+  // 缓存（对象池化，避免 GC）
+  protected ownMatrixCache: DOMMatrix = new DOMMatrix();
   protected coords: Array<Point> | null = null;
 
   isDirty = true;
@@ -59,53 +59,55 @@ export class Transformable extends Node {
   // --- 矩阵与坐标核心逻辑 ---
 
   getOwnMatrix() {
-    if (!this.ownMatrixCache) this.calcOwnMatrix();
-    return this.ownMatrixCache!;
+    return this.ownMatrixCache;
   }
 
-  calcOwnMatrix() {
-    const topLeft = this.getRelativeTopLeftPoint();
-    const center = this.getRelativeCenterPoint();
+  /**
+   * 计算世界矩阵（对象池优化，直接修改属性）
+   */
+  calcWorldMatrix() {
+    const m = this.ownMatrixCache;
 
-    const matrix = new DOMMatrix();
+    // 重置为单位矩阵
+    m.a = 1;
+    m.b = 0;
+    m.c = 0;
+    m.d = 1;
+    m.e = 0;
+    m.f = 0;
 
+    // 继承父级世界矩阵
     if (this.parent) {
-      const parentMatrix = this.parent.getOwnMatrix();
-      matrix.multiplySelf(parentMatrix);
+      m.multiplySelf(this.parent.ownMatrixCache);
     }
 
-    matrix.translateSelf(topLeft.x, topLeft.y);
+    // 应用本地变换
+    const topLeft = this.getRelativeTopLeftPoint();
+    const center = this.getRelativeCenterPoint(topLeft);
 
-    const hasAngle = this.angle && this.angle !== 0;
-    const hasScale =
-      (this.scaleX !== 1 && this.scaleX !== undefined) ||
-      (this.scaleY !== 1 && this.scaleY !== undefined);
-    const hasSkew =
-      (this.skewX && this.skewX !== 0) || (this.skewY && this.skewY !== 0);
+    m.translateSelf(topLeft.x, topLeft.y);
+
+    const hasAngle = this.angle !== 0;
+    const hasScale = this.scaleX !== 1 || this.scaleY !== 1;
+    const hasSkew = this.skewX !== 0 || this.skewY !== 0;
 
     if (hasAngle || hasScale || hasSkew) {
       const offsetX = center.x - topLeft.x;
       const offsetY = center.y - topLeft.y;
 
-      matrix.translateSelf(offsetX, offsetY);
+      m.translateSelf(offsetX, offsetY);
 
-      if (hasAngle) {
-        matrix.rotateSelf(0, 0, this.angle);
-      }
-
+      if (hasAngle) m.rotateSelf(0, 0, this.angle);
       if (hasSkew) {
-        if (this.skewX) matrix.skewXSelf(this.skewX);
-        if (this.skewY) matrix.skewYSelf(this.skewY);
+        if (this.skewX) m.skewXSelf(this.skewX);
+        if (this.skewY) m.skewYSelf(this.skewY);
       }
+      if (hasScale) m.scaleSelf(this.scaleX, this.scaleY);
 
-      if (this.scaleX !== 1 || this.scaleY !== 1) {
-        matrix.scaleSelf(this.scaleX, this.scaleY);
-      }
-
-      matrix.translateSelf(-offsetX, -offsetY);
+      m.translateSelf(-offsetX, -offsetY);
     }
-    this.ownMatrixCache = matrix;
-    return matrix;
+
+    return m;
   }
 
   // --- 坐标转换逻辑 ---
@@ -278,19 +280,50 @@ export class Transformable extends Node {
     return this.translateToGivenOrigin(pos, originX, originY, "left", "top");
   }
 
+  // ========== 脏标记机制 ==========
+
   hasDirty() {
     return this.isDirty;
   }
 
-  ditryDone() {
+  clearDirty() {
     this.isDirty = false;
   }
 
   markDirty() {
+    if (this.isDirty) return this;
+
     this.isDirty = true;
-    this.ownMatrixCache = null;
     this.coords = null;
 
+    if (this.parent) {
+      this.parent.markChildDirty();
+    } else if (this.layer) {
+      this.layer.requestRender?.();
+    }
+
     return this;
+  }
+
+  updateTransform(parentWorldDirty: boolean = false) {
+    const shouldUpdate = parentWorldDirty || this.isDirty;
+
+    if (shouldUpdate) {
+      this.calcWorldMatrix();
+      this.setCoords();
+      this.isDirty = false;
+    }
+
+    if (shouldUpdate || this.hasDirtyChild) {
+      if (this.children) {
+        for (let i = 0; i < this.children.length; i++) {
+          const child = this.children[i] as any;
+          if (child.updateTransform) {
+            child.updateTransform(shouldUpdate);
+          }
+        }
+      }
+      this.hasDirtyChild = false;
+    }
   }
 }

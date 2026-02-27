@@ -24,6 +24,8 @@ export class Rule extends Element {
     const onPanZoom = () => {
       this.render();
     };
+    this.root.viewport.x = 25;
+    this.root.viewport.y = 25;
     root.addEventListener("panzoom", onPanZoom);
     this.unmounted = () => {
       root.removeEventListener("panzoom", onPanZoom);

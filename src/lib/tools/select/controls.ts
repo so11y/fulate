@@ -202,14 +202,12 @@ export const Controls: Array<Control> = [
           angle: el.angle + angleDelta,
           left: center.x,
           top: center.y
-        }).layer.render();
+        });
       });
 
-      selectEL
-        .setOptions({
-          angle
-        })
-        .layer.render();
+      selectEL.setOptionsSync({
+        angle
+      });
     }
   }
 ] as const;
@@ -301,20 +299,17 @@ export function resizeObject(
       skewX,
       left: center.x,
       top: center.y
-    }).layer.render();
+    });
   });
 
-  // 6. 更新选框 UI 尺寸
   const newW = pWidth * Math.abs(sx);
   const newH = pHeight * Math.abs(sy);
   const newSelectCenter = new Point(cx, cy).matrixTransform(deltaMatrix);
 
-  selectEL
-    .setOptions({
-      width: newW,
-      height: newH,
-      left: newSelectCenter.x - newW / 2,
-      top: newSelectCenter.y - newH / 2
-    })
-    .render();
+  selectEL.setOptionsSync({
+    width: newW,
+    height: newH,
+    left: newSelectCenter.x - newW / 2,
+    top: newSelectCenter.y - newH / 2
+  });
 }

@@ -36,7 +36,7 @@ export class Select extends Element {
     const checkElementIntersects = (object: Element) => {
       const [tl, , br] = this.getControlCoords();
       if (
-        !object.visible &&
+        object.visible &&
         (object.intersectsWithRect(tl, br) ||
           object.isContainedWithinRect(tl, br) ||
           object.containsPoint(tl) ||
@@ -48,15 +48,16 @@ export class Select extends Element {
 
     const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
+      //@ts-ignore
       const directEl = this.root.children?.filter((v) => v !== this);
       const startPoint = new Point(e.detail.x, e.detail.y);
-      this.setOptions({
+      this.setOptionsSync({
         left: startPoint.x,
         top: startPoint.y,
         width: 0,
         height: 0,
         angle: 0
-      }).layer.render();
+      });
 
       const selectEls = new Set(
         [directEl.find(checkElementIntersects)].filter(Boolean)
@@ -66,12 +67,12 @@ export class Select extends Element {
       const pointermove = (e: FulateEvent) => {
         hasMove = true;
         const endPoint = new Point(e.detail.x, e.detail.y);
-        this.setOptions({
+        this.setOptionsSync({
           left: Math.min(startPoint.x, endPoint.x),
           top: Math.min(startPoint.y, endPoint.y),
           width: Math.abs(endPoint.x - startPoint.x),
           height: Math.abs(endPoint.y - startPoint.y)
-        }).layer.render();
+        });
       };
       this.root.addEventListener("pointermove", pointermove);
       this.root.addEventListener(
@@ -87,7 +88,7 @@ export class Select extends Element {
           const rect = makeBoundingBoxFromPoints(
             this.selectEls?.map((v) => v.getCoords()).flat(1)
           );
-          this.setOptions(rect).layer.render();
+          this.setOptionsSync(rect);
         },
         {
           once: true
@@ -168,21 +169,17 @@ export class Select extends Element {
         });
 
         for (const { child, targetWorld } of targets) {
-          //不会重复render
           const center = child.getPositionByOrigin(targetWorld);
-
-          child
-            .quickSetOptions({
-              left: center.x,
-              top: center.y
-            })
-            .layer.render();
+          child.quickSetOptions({
+            left: center.x,
+            top: center.y
+          });
         }
 
-        this.setOptions({
+        this.setOptionsSync({
           left: originalSelectLeft + dx,
           top: originalSelectTop + dy
-        }).layer.render();
+        });
       };
 
       this.root.addEventListener("pointermove", pointermove);

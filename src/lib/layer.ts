@@ -5,7 +5,10 @@ export class Layer extends Rectangle {
   canvasEl: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   zIndex: number;
-  isRender: boolean;
+
+  // 渲染锁：标记当前帧是否已排期
+  private isRender: boolean = false;
+
   constructor(options?: any) {
     super(options);
     this.zIndex = options?.zIndex ?? 1;
@@ -29,23 +32,29 @@ export class Layer extends Rectangle {
     root.container.appendChild(this.canvasEl);
   }
 
-  attrs(options, k?:any) {
+  attrs(options, k?: any) {
     this.width = options.width ?? this.width;
     this.height = options.height ?? this.height;
     super.attrs(options, k);
   }
 
+  /**
+   * 渲染请求入口（使用 requestAnimationFrame）
+   */
+  requestRender() {
+    if (this.isRender) return;
+    this.isRender = true;
+
+    requestAnimationFrame(() => {
+      this.updateTransform(false);
+      this.clear();
+      super.render(this.ctx);
+      this.isRender = false;
+    });
+  }
+
   render() {
-    if (!this.isRender) {
-      this.isRender = true;
-      Promise.resolve().then(() => {
-        this.clear();
-        // const vp = this.root?.viewport;
-        // this.ctx.setTransform(vp.scale, 0, 0, vp.scale, vp.x, vp.y);
-        super.render();
-        this.isRender = false;
-      });
-    }
+    this.requestRender();
   }
 
   clear() {
