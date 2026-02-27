@@ -1,7 +1,7 @@
 import { Intersection } from "../../../util/Intersection";
 import { makeBoundingBoxFromPoints, Point } from "../../../util/point";
 import { degreesToRadians } from "../../../util/radiansDegreesConversion";
-import { Element } from "../../node/element";
+import { BaseElementOption, Element } from "../../node/element";
 import { FulateEvent } from "../../eventManage";
 // import { Layer } from "../layer";
 // import { Element } from "../base";
@@ -16,13 +16,16 @@ export class Select extends Element {
   controlSize = 8;
   hitPadding = 6;
   controlCoords: Array<Point>;
-  constructor() {
+  targetKey = "root";
+
+  constructor(options: { targetKey?: string } & BaseElementOption) {
     super({
       backgroundColor: "rgba(0, 0, 0, 0.1)",
       width: 0,
       height: 0,
       originX: "center",
-      originY: "center"
+      originY: "center",
+      ...options
     });
     this.selectEls = [];
     this.eventManage.hasUserEvent = true;
@@ -30,6 +33,10 @@ export class Select extends Element {
 
   get snapTool(): Snap | undefined {
     return this.root.keyElmenet?.get("snap") as Snap;
+  }
+
+  get targetElement(): Element {
+    return this.root.keyElmenet.get(this.targetKey) ?? this.root;
   }
 
   mounted() {
@@ -48,8 +55,7 @@ export class Select extends Element {
 
     const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
-      //@ts-ignore
-      const directEl = this.root.children?.filter((v) => v !== this);
+      const directEl = this.targetElement.children?.filter((v) => v !== this);
       const startPoint = new Point(e.detail.x, e.detail.y);
       this.setOptionsSync({
         left: startPoint.x,

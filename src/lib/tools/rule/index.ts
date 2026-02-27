@@ -1,4 +1,4 @@
-import { Element } from "../../base";
+import { Element } from "../../node/element";
 import { Point } from "../../../util/point";
 
 function niceStep(pxPerTick: number, scale: number) {
@@ -18,6 +18,9 @@ export class Rule extends Element {
   lastPointer: Point | null = null;
   isSpace = false;
   type = "rule";
+  key = "rule";
+  rulerSize = 25;
+  selectable = false;
 
   mounted() {
     const root = this.root;
@@ -40,7 +43,7 @@ export class Rule extends Element {
     const h = this.root.height || 0;
     const viewport = this.root.viewport;
 
-    const rulerSize = 25;
+    const rulerSize = this.rulerSize;
     const pxPerTick = 50;
     const minorCount = 5;
 

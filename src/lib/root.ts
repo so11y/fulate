@@ -273,4 +273,32 @@ export class Root extends Layer {
     }
     this.quickElements = resultStack;
   }
+
+  focusNode(node: Element, padding = 10) {
+    const RULER_SIZE = this.keyElmenet.get("rule")?.rulerSize ?? 0;
+
+    const aabb = node.getBoundingRect();
+
+    // 2. 有效视觉区域
+    const activeWidth = this.width - RULER_SIZE;
+    const activeHeight = this.height - RULER_SIZE;
+
+    // 3. 计算缩放比例 (基于 AABB 的宽高)
+    const scaleX = (activeWidth - padding * 2) / aabb.width;
+    const scaleY = (activeHeight - padding * 2) / aabb.height;
+    const bestScale = Math.min(scaleX, scaleY, 1);
+
+    // 4. 计算视觉中心
+    const visualCenterX = RULER_SIZE + activeWidth / 2;
+    const visualCenterY = RULER_SIZE + activeHeight / 2;
+
+    // 5. 应用变换
+    this.viewport.scale = bestScale;
+
+    // 使用 AABB 的中心点进行对齐
+    this.viewport.x = visualCenterX - aabb.centerX * bestScale;
+    this.viewport.y = visualCenterY - aabb.centerY * bestScale;
+
+    this.requestRender();
+  }
 }

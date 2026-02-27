@@ -1,3 +1,4 @@
+import { BaseElementOption } from "./node/element";
 import { Rectangle } from "./ui/rectangle";
 
 export class Layer extends Rectangle {
@@ -8,7 +9,7 @@ export class Layer extends Rectangle {
 
   private isRender: boolean = false;
 
-  constructor(options?: any) {
+  constructor(options?: BaseElementOption & { zIndex?: number }) {
     super(options);
     this.zIndex = options?.zIndex ?? 1;
     this.canvasEl = document.createElement("canvas");
@@ -32,8 +33,8 @@ export class Layer extends Rectangle {
   }
 
   attrs(options, k?: any) {
-    this.width = options.width ?? this.width;
-    this.height = options.height ?? this.height;
+    this.width = options.width ?? this.root.width;
+    this.height = options.height ?? this.root.height;
     super.attrs(options, k);
   }
 
@@ -46,7 +47,7 @@ export class Layer extends Rectangle {
       this.clear();
       super.render(this.ctx);
       this.isRender = false;
-    });
+    }); 
   }
 
   render() {

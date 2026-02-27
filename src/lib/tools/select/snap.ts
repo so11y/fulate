@@ -10,7 +10,7 @@
  * 后面得脏矩形局部渲染也可以使用类似的方式
  */
 
-import { Element } from "../../node/element";
+import { BaseElementOption, Element } from "../../node/element";
 
 interface Point {
   x: number;
@@ -41,11 +41,24 @@ export class Snap extends Element {
   lineWidth = 1;
   dashPattern = [4, 4];
 
+  targetKey = "root";
+
+  selectable = false;
+
   private isActive = false;
   private snapLines: SnapLine[] = [];
 
   private cacheX: Float32Array = new Float32Array(0);
   private cacheY: Float32Array = new Float32Array(0);
+
+  constructor(options: { targetKey?: string }) {
+    super();
+    this.targetKey = options.targetKey ?? this.targetKey;
+  }
+
+  get targetElement(): Element {
+    return this.root.keyElmenet.get(this.targetKey) ?? this.root;
+  }
 
   start(excludeEls: Element[]) {
     if (!this.root) return;
@@ -67,7 +80,7 @@ export class Snap extends Element {
         }
       }
     };
-    if (this.root.children) traverse(this.root.children);
+    if (this.targetElement.children) traverse(this.targetElement.children);
 
     this.cacheX = new Float32Array(xData);
     this.cacheY = new Float32Array(yData);
@@ -123,7 +136,8 @@ export class Snap extends Element {
       const objMaxY = Math.max(...movingYs);
 
       // 收集所有元素的 Y 轴范围（包括移动对象和参考对象）
-      const allRanges: Array<{ min: number; max: number; isMoving: boolean }> = [];
+      const allRanges: Array<{ min: number; max: number; isMoving: boolean }> =
+        [];
 
       // 添加移动对象
       allRanges.push({ min: objMinY, max: objMaxY, isMoving: true });
@@ -182,7 +196,8 @@ export class Snap extends Element {
       const objMaxX = Math.max(...movingXs);
 
       // 收集所有元素的 X 轴范围（包括移动对象和参考对象）
-      const allRanges: Array<{ min: number; max: number; isMoving: boolean }> = [];
+      const allRanges: Array<{ min: number; max: number; isMoving: boolean }> =
+        [];
 
       // 添加移动对象
       allRanges.push({ min: objMinX, max: objMaxX, isMoving: true });

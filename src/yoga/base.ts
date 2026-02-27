@@ -12,7 +12,7 @@ import Yoga, {
   Wrap
 } from "yoga-layout";
 import { Rectangle as BaseRectangle } from "../lib/ui/rectangle";
-import { BaseElementOption, Element, KEYS } from "../lib/node/element";
+import { BaseElementOption } from "../lib/node/element";
 
 type YogaStyleSize = number | `${number}%`;
 type YogaStyleSizeAndAuto = YogaStyleSize | "auto";
@@ -75,49 +75,6 @@ export interface YogaOption extends Omit<
   children?: any[];
 }
 
-export const YKEYS = new Set(
-  Array.from(KEYS).concat([
-    "boxSizing",
-    "inset",
-    "gap",
-    "bottom",
-    "right",
-    "position",
-    "margin",
-    "marginBottom",
-    "marginTop",
-    "marginLeft",
-    "marginRight",
-    "padding",
-    "paddingLeft",
-    "paddingRight",
-    "paddingTop",
-    "paddingBottom",
-    "display",
-    "minWidth",
-    "minHeight",
-    "maxWidth",
-    "maxHeight",
-    "alignContent",
-    "alignItems",
-    "alignSelf",
-    "aspectRatio",
-    "flex",
-    "flexBasis",
-    "flexDirection",
-    "flexGrow",
-    "flexsShrink",
-    "flexWrap",
-    "justifyContent"
-  ])
-);
-
-export const BKEYS = new Set(
-  Array.from(KEYS).filter(
-    (v) => v !== "width" && v !== "height" && v !== "left" && v !== "top"
-  )
-);
-
 export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
   Node: T
 ) {
@@ -127,11 +84,8 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
 
     attrs(options: any): void {
       super.attrs(options, {
-        KEYS: BKEYS
+        assign: true
       });
-
-      Object.assign(this._options, options);
-
       this.layout();
       this.computedLayout();
     }
@@ -164,7 +118,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
 
     append(...childNode: this[]) {
       let currentIndex = this.children?.length ?? 0;
-      super.append(...childNode);
+      super.append(...(childNode as any[]));
       childNode.forEach((child) => {
         if (child.yogaNode) {
           this.yogaNode.insertChild(child.yogaNode, currentIndex++);

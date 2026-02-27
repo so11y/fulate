@@ -3,10 +3,12 @@ import { FulateEvent } from "../eventManage";
 import { Transformable, TransformableOptions } from "./transformable";
 
 export interface BaseElementOption extends TransformableOptions {
+  key?: string;
   backgroundColor?: string | null;
   radius?: number | null;
   cursor?: string;
   visible?: boolean;
+  selectctbale?: boolean;
 
   onclick?: (e: FulateEvent) => any;
   onpointermove?: (e: FulateEvent) => any;
@@ -16,23 +18,12 @@ export interface BaseElementOption extends TransformableOptions {
   children?: Array<Element>;
 }
 
-export const KEYS = new Set([
-  "left",
-  "top",
-  "width",
-  "height",
-  "angle",
-  "scaleX",
-  "scaleY",
-  "skewX",
-  "skewY",
-  "originX",
-  "originY",
-  "backgroundColor",
-  "radius",
-  "cursor",
-  "visible"
-]);
+export const EVENT_KEYS = [
+  "onclick",
+  "onpointerdown",
+  "onpointermove",
+  "onpointerup"
+];
 
 export class Element extends Transformable {
   type = "element";
@@ -41,6 +32,7 @@ export class Element extends Transformable {
   radius: number | null = null;
   cursor?: string;
   visible: boolean = true;
+  selectctbale?: boolean;
   declare children: this[];
   declare parent: this;
 
@@ -51,22 +43,16 @@ export class Element extends Transformable {
     Object.assign(this._pendingOption, options);
   }
 
-  attrs(
-    options: any,
-    O: { target?: any; assign?: boolean; KEYS?: Set<string> } = {}
-  ): void {
-    const { target = this, assign = false, KEYS: K = KEYS } = O;
-    const keys = Object.keys(options ?? {});
-    const event = keys.filter((v) => v.startsWith("on"));
-    if (event.length) {
-      event.forEach((key) => this.addEventListener(key.slice(2), options[key]));
-    }
+  attrs(options: any, O: { target?: any; assign?: boolean } = {}): void {
+    const { target = this, assign = false } = O;
 
-    keys.forEach((key) => {
-      if (K.has(key)) {
-        target[key] = options[key];
+    EVENT_KEYS.forEach((v) => {
+      if (options[v]) {
+        this.addEventListener(v.slice(2), options[v]);
       }
     });
+
+    Object.assign(target, options);
 
     if (assign) {
       Object.assign(this._options, options);
@@ -125,12 +111,12 @@ export class Element extends Transformable {
   setOptions(options?: BaseElementOption, syncCalc = false) {
     if (!options) return this;
 
-    this.attrs(options);
-
-    if (options.children) {
+    if (options.children && this.isMounted) {
       this.removeChild(...(this.children ?? []));
       this.append(...options.children);
     }
+
+    this.attrs(options);
 
     this.markDirty();
 

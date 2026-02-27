@@ -2,7 +2,6 @@ import { Node } from "./node";
 import { Point, PointType, TOriginX, TOriginY } from "../../util/point";
 import { resolveOrigin } from "../../util/resolveOrigin";
 import { Intersection } from "../../util/Intersection";
-import { BaseElementOption } from "./element";
 
 export interface TransformableOptions {
   left?: number;
@@ -153,7 +152,9 @@ export class Transformable extends Node {
       left: minX, // 包围盒左上角 x
       top: minY, // 包围盒左上角 y
       width: maxX - minX, // 包围盒宽度
-      height: maxY - minY // 包围盒高度
+      height: maxY - minY, // 包围盒高度
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2
     };
   }
 

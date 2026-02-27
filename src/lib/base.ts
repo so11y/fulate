@@ -104,7 +104,7 @@ export class Element extends EventTarget {
   addEventListener<T = FulateEvent>(
     type: string,
     callback: (ev: T) => void,
-    options?: AddEventListenerOptions | boolean,
+    options?: AddEventListenerOptions | boolean
   ): void {
     this.eventManage.hasUserEvent = true;
     //@ts-ignore
@@ -114,14 +114,14 @@ export class Element extends EventTarget {
   setPositionByOrigin(
     pos: PointType,
     originX: TOriginX = this.originX,
-    originY: TOriginY = this.originY,
+    originY: TOriginY = this.originY
   ) {
     const center = this.translateToGivenOrigin(
       pos,
       originX,
       originY,
       "left",
-      "top",
+      "top"
     );
     this.setOptions({ left: center.x, top: center.y });
     this.markDirty();
@@ -131,7 +131,7 @@ export class Element extends EventTarget {
   getPositionByOrigin(
     pos: PointType,
     originX: TOriginX = this.originX,
-    originY: TOriginY = this.originY,
+    originY: TOriginY = this.originY
   ) {
     return this.translateToGivenOrigin(pos, originX, originY, "left", "top");
   }
@@ -198,7 +198,7 @@ export class Element extends EventTarget {
       "left", // 从左上角开始
       "top",
       this.originX, // 到用户指定的原点
-      this.originY,
+      this.originY
     );
   }
 
@@ -222,11 +222,11 @@ export class Element extends EventTarget {
       new Point(0, 0), // 左上
       new Point(this.width, 0), // 右上
       new Point(this.width, this.height), // 右下
-      new Point(0, this.height), // 左下
+      new Point(0, this.height) // 左下
     ];
 
     const globalCorners = corners.map((corner) =>
-      corner.matrixTransform(this.getOwnMatrix()),
+      corner.matrixTransform(this.getOwnMatrix())
     );
 
     // 计算 min/max
@@ -246,7 +246,7 @@ export class Element extends EventTarget {
       left: minX, // 包围盒左上角 x
       top: minY, // 包围盒左上角 y
       width: maxX - minX, // 包围盒宽度
-      height: maxY - minY, // 包围盒高度
+      height: maxY - minY // 包围盒高度
     };
   }
 
@@ -262,10 +262,11 @@ export class Element extends EventTarget {
       new Point(0, 0), // 左上
       new Point(dim.x, 0), // 右上
       new Point(dim.x, dim.y), // 右下
-      new Point(0, dim.y), // 左下
+      new Point(0, dim.y) // 左下
     ];
+     
     this.coords = localPoints.map(
-      (point) => new Point(finalMatrix.transformPoint(point)),
+      (point) => new Point(finalMatrix.transformPoint(point))
     );
     return this;
   }
@@ -275,7 +276,7 @@ export class Element extends EventTarget {
     fromOriginX: TOriginX,
     fromOriginY: TOriginY,
     toOriginX: TOriginX,
-    toOriginY: TOriginY,
+    toOriginY: TOriginY
   ) {
     let x = point.x,
       y = point.y;
@@ -324,7 +325,7 @@ export class Element extends EventTarget {
     const intersection = Intersection.intersectPolygonRectangle(
       this.getCoords(),
       tl,
-      br,
+      br
     );
     return intersection.status === "Intersection";
   }
@@ -345,7 +346,7 @@ export class Element extends EventTarget {
       width: this.width,
       height: this.height,
       strokeWidth: this.strokeWidth,
-      ...options,
+      ...options
     };
     const strokeWidth = dimOptions.strokeWidth;
     let preScalingStrokeValue = strokeWidth,
@@ -359,7 +360,7 @@ export class Element extends EventTarget {
 
     return new Point(
       dimX + postScalingStrokeValue,
-      dimY + postScalingStrokeValue,
+      dimY + postScalingStrokeValue
     );
   }
 
