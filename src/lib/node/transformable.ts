@@ -296,9 +296,8 @@ export class Transformable extends Node {
     this.isDirty = true;
     this.coords = null;
 
-    if (this.parent) {
-      this.parent.markChildDirty();
-    } else if (this.layer) {
+    this.markChildDirty();
+    if (this.layer) {
       this.layer.requestRender?.();
     }
 

@@ -25,6 +25,8 @@ interface SelectState {
   top: number;
   width: number;
   height: number;
+  worldCenterPoint: Point;
+  angle: number;
   selectCenterPoint: Array<{
     width: number;
     height: number;
@@ -169,11 +171,14 @@ export const Controls: Array<Control> = [
     callback(
       selectEL: Select,
       point: Point,
-      { theta, selectCenterPoint }: SelectState,
+      {
+        theta,
+        selectCenterPoint,
+        angle: selectAngle,
+        worldCenterPoint
+      }: SelectState,
       event: FulateEvent
     ) {
-      const constraint = selectEL.getWorldCenterPoint();
-
       const angle = this.rotateObjectWithSnapping(
         {
           target: selectEL,
@@ -187,25 +192,25 @@ export const Controls: Array<Control> = [
         event.detail.y
       );
 
-      const angleDelta = angle - selectEL.angle;
+      const angleDelta = angle - selectAngle;
 
       const rotationMatrix = new DOMMatrix()
-        .translate(constraint.x, constraint.y)
+        .translate(worldCenterPoint.x, worldCenterPoint.y)
         .rotate(0, 0, angleDelta)
-        .translate(-constraint.x, -constraint.y);
+        .translate(-worldCenterPoint.x, -worldCenterPoint.y);
 
-      selectCenterPoint.forEach(({ el }) => {
+      selectCenterPoint.forEach(({ el, worldCenterPoint, angle }) => {
         const center = el.getPositionByOrigin(
-          el.getWorldCenterPoint().matrixTransform(rotationMatrix)
+          worldCenterPoint.matrixTransform(rotationMatrix)
         );
-        el.setOptionsSync({
-          angle: el.angle + angleDelta,
+        el.setOptions({
+          angle: angle + angleDelta,
           left: center.x,
           top: center.y
         });
       });
 
-      selectEL.setOptionsSync({
+      selectEL.setOptions({
         angle
       });
     }
@@ -306,7 +311,7 @@ export function resizeObject(
   const newH = pHeight * Math.abs(sy);
   const newSelectCenter = new Point(cx, cy).matrixTransform(deltaMatrix);
 
-  selectEL.setOptionsSync({
+  selectEL.setOptions({
     width: newW,
     height: newH,
     left: newSelectCenter.x - newW / 2,

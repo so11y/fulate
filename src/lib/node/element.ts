@@ -132,7 +132,6 @@ export class Element extends Transformable {
       this.append(...options.children);
     }
 
-    // 标记脏
     this.markDirty();
 
     if (syncCalc && this.isMounted) {

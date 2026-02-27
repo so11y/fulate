@@ -67,7 +67,7 @@ export class Select extends Element {
       const pointermove = (e: FulateEvent) => {
         hasMove = true;
         const endPoint = new Point(e.detail.x, e.detail.y);
-        this.setOptionsSync({
+        this.setOptions({
           left: Math.min(startPoint.x, endPoint.x),
           top: Math.min(startPoint.y, endPoint.y),
           width: Math.abs(endPoint.x - startPoint.x),
@@ -88,7 +88,7 @@ export class Select extends Element {
           const rect = makeBoundingBoxFromPoints(
             this.selectEls?.map((v) => v.getCoords()).flat(1)
           );
-          this.setOptionsSync(rect);
+          this.setOptions(rect);
         },
         {
           once: true
@@ -101,11 +101,12 @@ export class Select extends Element {
       const theta = degreesToRadians(this.angle ?? 0);
       const selectPrevState = {
         theta,
+        angle: this.angle ?? 0,
         width: this.width,
         height: this.height,
         left: this.left,
         top: this.top,
-        center: this.getWorldCenterPoint(),
+        worldCenterPoint: this.getWorldCenterPoint(),
         selectCenterPoint: this.selectEls.map((v) => {
           return {
             angle: v.angle,
@@ -176,7 +177,7 @@ export class Select extends Element {
           });
         }
 
-        this.setOptionsSync({
+        this.setOptions({
           left: originalSelectLeft + dx,
           top: originalSelectTop + dy
         });
