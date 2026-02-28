@@ -42,6 +42,10 @@ export class Layer extends Rectangle {
     root.container.appendChild(this.canvasEl);
   }
 
+  hasInView() {
+    return true;
+  }
+
   markChildDirty() {
     this.requestRender();
   }
@@ -75,6 +79,9 @@ export class Layer extends Rectangle {
     }
   }
 
+  paint() {
+    this.requestRender();
+  }
 
   clear() {
     // this.ctx.setTransform(1, 0, 0, 1, 0, 0);

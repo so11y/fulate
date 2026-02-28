@@ -5,8 +5,4 @@ export interface ArtboardOption extends BaseElementOption {}
 
 export class Artboard extends Layer {
   type = "artboard";
-
-  constructor(options?: ArtboardOption) {
-    super(options);
-  }
 }

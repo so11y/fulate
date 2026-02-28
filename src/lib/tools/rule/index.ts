@@ -22,6 +22,10 @@ export class Rule extends Element {
   rulerSize = 25;
   selectable = false;
 
+  hasInView() {
+    return true;
+  }
+
   mounted() {
     const root = this.root;
     const onPanZoom = () => {

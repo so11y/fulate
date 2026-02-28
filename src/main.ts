@@ -15,40 +15,105 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
 
 const editerLayer = new Layer({
   zIndex: 2,
-  children: [new Rule(), new Select(), 
-    // new Snap()
+  children: [
+    new Rule(), new Select(), new Snap()
   ]
 });
 
-// 生成 1w 个节点网格
-const gridChildren: Rectangle[] = [];
-const cols = 100;
-const rows = 100;
-const cellSize = 20;
-const gap = 5;
+const div1 = new Rectangle({
+  key: "344",
+  left: 300,
+  top: 100,
+  width: 50,
+  height: 50,
+  radius: 20,
+  cursor: "pointer",
+  backgroundColor: "red",
+  onclick: (e) => {
+    console.log("div1 clicked", e);
 
-for (let row = 0; row < rows; row++) {
-  for (let col = 0; col < cols; col++) {
-    gridChildren.push(
-      new Rectangle({
-        left: col * (cellSize + gap),
-        top: row * (cellSize + gap),
-        width: cellSize,
-        height: cellSize,
-        backgroundColor: `hsl(${(row * cols + col) % 360}, 70%, 60%)`,
-        cursor: "pointer",
-        onclick: (e) => {
-          e.detail.target.setOptions({
-            backgroundColor: "red"
-          });
-        }
-      })
-    );
+    e.detail.target.setOptions({
+      backgroundColor: "yellow"
+    });
   }
-}
+});
+
+const div2 = new Rectangle({
+  left: 170,
+  top: 100,
+  width: 50,
+  height: 50,
+  angle: 0,
+  // originX: "left",
+  // originY: "top",
+  backgroundColor: "blue"
+});
+
+const dev3 = new Rectangle({
+  left: 0,
+  top: 0,
+  width: 30,
+  height: 30,
+  backgroundColor: "yellow"
+});
 
 root.append(
-  ...gridChildren,
+  // floorLayer,
+  // div1,
+  // div2,
+  new Workspace({
+    backgroundColor: "#E5E5E5",
+    width: 1920,
+    height: 900,
+    children: [
+      new Artboard({
+        children: [
+          div1,
+          div2,
+          dev3,
+          new Div({
+            left: 300,
+            top: 170,
+            width: 100,
+            height: 100,
+            display: Display.Flex,
+            backgroundColor: "pink",
+            justifyContent: Justify.SpaceAround,
+            children: [
+              new Div({
+                width: 50,
+                backgroundColor: "black",
+                onclick(e) {
+                  e.detail.target.setOptions({
+                    width: 10
+                  });
+                }
+              }),
+              new Div({
+                width: 10,
+                backgroundColor: "red"
+              })
+            ]
+          }),
+          new Layer({
+            zIndex: 2,
+            children: [
+              new Rectangle({
+                left: 30,
+                width: 100,
+                height: 100,
+                backgroundColor: "pink"
+              })
+            ]
+          })
+        ],
+        onclick: (e) => {
+          console.log("div1 clicked", e);
+        }
+      })
+    ]
+  }),
+  editerLayer
 );
 
 // div1.addEventListener("click", (e) => {
@@ -59,38 +124,6 @@ root.append(
 //     .layer.render();
 // });
 
-console.time("渲染1w节点");
 root.mounted();
-root.layer.nextTick(() => {
-  console.timeEnd("渲染1w节点");
-});
-
-// FPS 计算
-let lastTime = performance.now();
-let frames = 0;
-const fpsEl = document.createElement("div");
-fpsEl.style.position = "fixed";
-fpsEl.style.top = "10px";
-fpsEl.style.right = "10px";
-fpsEl.style.padding = "8px 12px";
-fpsEl.style.backgroundColor = "rgba(0,0,0,0.7)";
-fpsEl.style.color = "#0f0";
-fpsEl.style.fontFamily = "monospace";
-fpsEl.style.fontSize = "14px";
-fpsEl.style.zIndex = "9999";
-document.body.appendChild(fpsEl);
-
-function updateFPS() {
-  frames++;
-  const now = performance.now();
-  if (now >= lastTime + 1000) {
-    const fps = Math.round((frames * 1000) / (now - lastTime));
-    fpsEl.textContent = `FPS: ${fps}`;
-    frames = 0;
-    lastTime = now;
-  }
-  requestAnimationFrame(updateFPS);
-}
-updateFPS();
 
 console.log(root, "--");

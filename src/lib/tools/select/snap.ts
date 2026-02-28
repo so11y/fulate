@@ -280,6 +280,7 @@ export class Snap extends Element {
   }
 
   paint() {
+    console.log('---');
     if (!this.isActive || this.snapLines.length === 0) return;
 
     const ctx = this.layer.ctx;
