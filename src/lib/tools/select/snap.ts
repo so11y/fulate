@@ -231,8 +231,7 @@ export class Snap extends Element {
         }
       }
     }
-
-    this.layer.render();
+    this.layer.requestRender();
     return { dx: dx_snap, dy: dy_snap };
   }
 
@@ -270,16 +269,17 @@ export class Snap extends Element {
         }
       }
     }
+    this.layer.requestRender();
     return best;
   }
 
   stop() {
     this.isActive = false;
     this.snapLines = [];
-    this.layer.render();
+    this.layer.requestRender();
   }
 
-  render() {
+  paint() {
     if (!this.isActive || this.snapLines.length === 0) return;
 
     const ctx = this.layer.ctx;

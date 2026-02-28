@@ -25,7 +25,7 @@ export class Rule extends Element {
   mounted() {
     const root = this.root;
     const onPanZoom = () => {
-      this.render();
+      this.paint();
     };
     this.root.viewport.x = 25;
     this.root.viewport.y = 25;
@@ -37,7 +37,7 @@ export class Rule extends Element {
     super.mounted();
   }
 
-  render() {
+  paint() {
     const ctx = this.layer.ctx;
     const w = this.root.width || 0;
     const h = this.root.height || 0;

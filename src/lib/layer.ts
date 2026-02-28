@@ -59,7 +59,7 @@ export class Layer extends Rectangle {
     requestAnimationFrame(() => {
       this.updateTransform(false);
       this.clear();
-      super.render(this.ctx);
+      super.paint(this.ctx);
       this.isRender = false;
       this.renderResolve?.();
       this.renderPromise = null;
@@ -75,10 +75,6 @@ export class Layer extends Rectangle {
     }
   }
 
-
-  render() {
-    this.requestRender();
-  }
 
   clear() {
     // this.ctx.setTransform(1, 0, 0, 1, 0, 0);

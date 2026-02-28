@@ -64,12 +64,12 @@ export class Element extends Transformable {
   /**
    * 纯净渲染函数（只负责绘制，不处理数学计算）
    */
-  render(ctx = this.layer.ctx) {
+  paint(ctx = this.layer.ctx) {
     if (!this.visible) return;
 
     if (this.children) {
       for (let i = 0; i < this.children.length; i++) {
-        this.children[i].render(ctx);
+        this.children[i].paint(ctx);
       }
     }
   }

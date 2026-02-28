@@ -234,7 +234,7 @@ export class Select extends Element {
     super.mounted();
   }
 
-  render() {
+  paint() {
     if (!this.width || !this.height) {
       return;
     }

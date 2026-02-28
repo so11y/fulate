@@ -3,7 +3,7 @@ import { Element } from "../node/element";
 export class Rectangle extends Element {
   type = "rectangle";
 
-  render(ctx: CanvasRenderingContext2D = this.layer.ctx) {
+  paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
     ctx.save();
     ctx.beginPath();
     ctx.setTransform(
@@ -17,7 +17,7 @@ export class Rectangle extends Element {
       ctx.fill();
     }
     if (this.children?.length) {
-      super.render(ctx);
+      super.paint(ctx);
     }
     ctx.restore();
   }

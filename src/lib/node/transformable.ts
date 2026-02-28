@@ -320,7 +320,7 @@ export class Transformable extends Node {
       if (this.children) {
         for (let i = 0; i < this.children.length; i++) {
           const child = this.children[i] as any;
-          if (child.updateTransform) {
+          if (child.updateTransform && (child.isDirty || shouldUpdate)) {
             child.updateTransform(shouldUpdate);
           }
         }
