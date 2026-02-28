@@ -7,7 +7,7 @@ export class Rectangle extends Element {
     ctx.save();
     ctx.beginPath();
     ctx.setTransform(
-      this.root.getViewPointMtrix().multiply(this.getOwnMatrix()),
+      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
     );
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;
@@ -16,7 +16,9 @@ export class Rectangle extends Element {
     if (this.backgroundColor) {
       ctx.fill();
     }
-    super.render(ctx);
+    if (this.children?.length) {
+      super.render(ctx);
+    }
     ctx.restore();
   }
 }

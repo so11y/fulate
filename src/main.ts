@@ -15,7 +15,9 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
 
 const editerLayer = new Layer({
   zIndex: 2,
-  children: [new Rule(), new Select(), new Snap()]
+  children: [
+    new Rule(), new Select(), new Snap()
+  ]
 });
 
 const div1 = new Rectangle({
@@ -83,7 +85,7 @@ root.append(
                 backgroundColor: "black",
                 onclick(e) {
                   e.detail.target.setOptions({
-                    width: "10%"
+                    width: 10
                   });
                 }
               }),

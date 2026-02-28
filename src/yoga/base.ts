@@ -172,6 +172,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       super.setOptions(options as any);
       this.flushStyles();
       if (this.isMounted) {
+        console.log("---");
         this.inject("yoga-root").layout();
       }
       return this;
@@ -183,7 +184,6 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
         this.yogaNode.calculateLayout("auto", "auto");
       }
       this.computedLayout();
-      this.children?.forEach((v) => v.layout());
       return this;
     }
 
@@ -194,6 +194,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
         this.top = layout.top;
         this.width = layout.width;
         this.height = layout.height;
+        this.markDirty();
         this.children?.forEach((v) => v.computedLayout?.());
       }
       return this;
