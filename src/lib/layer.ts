@@ -18,13 +18,21 @@ export class Layer extends Rectangle {
     this.isRender = false;
   }
 
+  get _width() {
+    return this.width ?? this.root.width!;
+  }
+
+  get _height() {
+    return this.height ?? this.root.height!;
+  }
+
   mounted() {
     super.mounted();
     const root = this.root!;
-    this.canvasEl.width = root.width!;
-    this.canvasEl.height = root.height!;
-    this.canvasEl.style.width = root.width! + "px";
-    this.canvasEl.style.height = root.height! + "px";
+    this.canvasEl.width = this._width;
+    this.canvasEl.height = this._height;
+    this.canvasEl.style.width = this._width + "px";
+    this.canvasEl.style.height = this._height! + "px";
     this.canvasEl.style.position = "absolute";
     this.canvasEl.style.left = "0px";
     this.canvasEl.style.top = "0px";
@@ -32,10 +40,8 @@ export class Layer extends Rectangle {
     root.container.appendChild(this.canvasEl);
   }
 
-  attrs(options, k?: any) {
-    this.width = options.width ?? this.root.width;
-    this.height = options.height ?? this.root.height;
-    super.attrs(options, k);
+  markChildDirty() {
+    this.requestRender();
   }
 
   requestRender() {
@@ -47,7 +53,7 @@ export class Layer extends Rectangle {
       this.clear();
       super.render(this.ctx);
       this.isRender = false;
-    }); 
+    });
   }
 
   render() {
@@ -56,13 +62,6 @@ export class Layer extends Rectangle {
 
   clear() {
     // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.clearRect(0, 0, this.width!, this.height!);
-  }
-}
-
-export class FullLayer extends Layer {
-  clear() {
-    // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.clearRect(0, 0, this.root.width!, this.root.height!);
+    this.ctx.clearRect(0, 0, this._width!, this._height!);
   }
 }

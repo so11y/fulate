@@ -1,11 +1,11 @@
 import { Layer } from "./layer";
-import { BaseElementOption, type Element } from "./node/element";
+import { Element } from "./node/element";
 
 export class Root extends Layer {
   type = "root";
 
   container: HTMLElement;
-  // 视口状态：x,y 是偏移量，scale 是缩放
+
   viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
   currentElement?: Element;
   keyElmenet = new Map();
@@ -13,23 +13,23 @@ export class Root extends Layer {
 
   _provides = Object.create(null);
 
-  // 内部交互状态
   private isSpacePressed = false;
   private isPanning = false;
   private hasLockPoint = false;
   private lastPointerPos = { x: 0, y: 0 };
 
-  constructor(el: HTMLElement, options?: BaseElementOption) {
-    super(options);
+  constructor(el: HTMLElement, options?: { width?: number; height?: number }) {
+    super({ zIndex: 0 });
     this.container = el;
+    this.width = options?.width ?? el.clientWidth;
+    this.height = options?.height ?? el.clientHeight;
     this.container.style.position = "relative";
-    this.container.style.userSelect = "none"; // 禁止文字选中干扰
-    this.container.style.touchAction = "none"; // 禁用浏览器默认手势
-    this.cursor = "default";
+    this.container.style.userSelect = "none";
+    this.container.style.touchAction = "none";
   }
 
   mounted() {
-    this.root = this;
+    this.root = this as any;
     super.mounted();
     this.mounteded();
     this.requestRender();
@@ -78,10 +78,6 @@ export class Root extends Layer {
         break;
       }
     }
-  }
-
-  hasPointHint() {
-    return true;
   }
 
   initEvents() {
@@ -240,20 +236,27 @@ export class Root extends Layer {
     // 如果正在平移视口，拦截所有 UI 元素事件
     if (this.isSpacePressed || this.isPanning) return;
 
-    if (!targetEl) return;
-
     const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
+    const detail = {
+      target: targetEl ?? null,
+      x,
+      y,
+      buttons: e.buttons,
+      deltaY: (e as WheelEvent).deltaY ?? 0,
+      deltaX: (e as WheelEvent).deltaX ?? 0
+    };
+
+    if (!targetEl) {
+      this.dispatchEvent(new CustomEvent(eventName, { detail }));
+      return;
+    }
 
     targetEl.eventManage.notify(eventName, {
       ctrlKey: e.ctrlKey,
       originalClientX: e.clientX,
       originalClientY: e.clientY,
-      target: targetEl,
-      x: x,
-      y: y,
-      buttons: e.buttons,
-      deltaY: (e as WheelEvent).deltaY ?? 0,
-      deltaX: (e as WheelEvent).deltaX ?? 0
+      ...detail,
+      target: targetEl
     });
   }
 
@@ -262,7 +265,7 @@ export class Root extends Layer {
     const resultStack: Element[] = [];
     while (stack.length > 0) {
       const currentNode = stack.pop()!;
-      if (currentNode.eventManage.hasUserEvent) {
+      if (currentNode.eventManage?.hasUserEvent) {
         resultStack.unshift(currentNode);
       }
       if (currentNode.children) {
@@ -274,31 +277,4 @@ export class Root extends Layer {
     this.quickElements = resultStack;
   }
 
-  focusNode(node: Element, padding = 10) {
-    const RULER_SIZE = this.keyElmenet.get("rule")?.rulerSize ?? 0;
-
-    const aabb = node.getBoundingRect();
-
-    // 2. 有效视觉区域
-    const activeWidth = this.width - RULER_SIZE;
-    const activeHeight = this.height - RULER_SIZE;
-
-    // 3. 计算缩放比例 (基于 AABB 的宽高)
-    const scaleX = (activeWidth - padding * 2) / aabb.width;
-    const scaleY = (activeHeight - padding * 2) / aabb.height;
-    const bestScale = Math.min(scaleX, scaleY, 1);
-
-    // 4. 计算视觉中心
-    const visualCenterX = RULER_SIZE + activeWidth / 2;
-    const visualCenterY = RULER_SIZE + activeHeight / 2;
-
-    // 5. 应用变换
-    this.viewport.scale = bestScale;
-
-    // 使用 AABB 的中心点进行对齐
-    this.viewport.x = visualCenterX - aabb.centerX * bestScale;
-    this.viewport.y = visualCenterY - aabb.centerY * bestScale;
-
-    this.requestRender();
-  }
 }

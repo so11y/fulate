@@ -36,11 +36,13 @@ export class Element extends Transformable {
   declare children: this[];
   declare parent: this;
 
-  _pendingOption: any = {};
-
   constructor(options?: BaseElementOption) {
     super();
-    Object.assign(this._pendingOption, options);
+    if (options) {
+      const { children, ...props } = options;
+      this.attrs(props);
+      if (children) this.children = children as any;
+    }
   }
 
   attrs(options: any, O: { target?: any; assign?: boolean } = {}): void {
@@ -97,10 +99,6 @@ export class Element extends Transformable {
   }
 
   mounted(): void {
-    if (this._pendingOption) {
-      this.setOptions(this._pendingOption, false);
-      this._pendingOption = {};
-    }
     super.mounted();
   }
 

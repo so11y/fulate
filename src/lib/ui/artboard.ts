@@ -1,18 +1,12 @@
-import { Rectangle } from "../ui/rectangle"; // 或者继承 Element
+import { Layer } from "../layer";
 import { BaseElementOption } from "../node/element";
 
-export interface ArtboardOption extends BaseElementOption {
-  clip?: boolean;
-}
+export interface ArtboardOption extends BaseElementOption {}
 
-export class Artboard extends Rectangle {
+export class Artboard extends Layer {
   type = "artboard";
-  clip = false;
-  key = "artboard";
 
   constructor(options?: ArtboardOption) {
     super(options);
-    this.clip = options?.clip ?? false;
-    this.backgroundColor = options?.backgroundColor ?? "#E5E5E5";
   }
 }

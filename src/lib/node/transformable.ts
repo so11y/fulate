@@ -310,7 +310,9 @@ export class Transformable extends Node {
 
     if (shouldUpdate) {
       this.calcWorldMatrix();
-      this.setCoords();
+      if (this.width && this.height) {
+        this.setCoords();
+      }
       this.isDirty = false;
     }
 

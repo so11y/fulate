@@ -16,9 +16,9 @@ export class Select extends Element {
   controlSize = 8;
   hitPadding = 6;
   controlCoords: Array<Point>;
-  targetKey = "root";
+  targetKey = "workspace";
 
-  constructor(options: { targetKey?: string } & BaseElementOption) {
+  constructor(options?: BaseElementOption) {
     super({
       backgroundColor: "rgba(0, 0, 0, 0.1)",
       width: 0,
@@ -39,6 +39,20 @@ export class Select extends Element {
     return this.root.keyElmenet.get(this.targetKey) ?? this.root;
   }
 
+  forEachTarget(callback: (el: Element) => void) {
+    this.targetElement.children?.forEach((artboard) => {
+      artboard.children?.forEach((child) => {
+        if (child !== this) {
+          if (child.type !== "layer") {
+            callback(child);
+          } else {
+            child.children.forEach((child) => callback(child));
+          }
+        }
+      });
+    });
+  }
+
   mounted() {
     const checkElementIntersects = (object: Element) => {
       const [tl, , br] = this.getControlCoords();
@@ -55,7 +69,8 @@ export class Select extends Element {
 
     const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
-      const directEl = this.targetElement.children?.filter((v) => v !== this);
+      const directEl: Element[] = [];
+      this.forEachTarget((el) => directEl.push(el));
       const startPoint = new Point(e.detail.x, e.detail.y);
       this.setOptionsSync({
         left: startPoint.x,
@@ -86,6 +101,7 @@ export class Select extends Element {
         () => {
           this.root.removeEventListener("pointermove", pointermove);
           if (hasMove) {
+            console.log("--");
             directEl
               ?.filter(checkElementIntersects)
               .forEach((child) => selectEls.add(child));
@@ -140,11 +156,7 @@ export class Select extends Element {
     const handleSelectMove = (e: FulateEvent) => {
       const startPoint = new Point(e.detail.x, e.detail.y);
 
-      this.snapTool?.start(
-        this.selectEls
-          .concat(this)
-          .concat(this.root.children.filter((v) => v.type === "layer"))
-      );
+      this.snapTool?.start(this.selectEls.concat(this));
 
       const originalSelectLeft = this.left;
       const originalSelectTop = this.top;

@@ -41,8 +41,6 @@ export class Snap extends Element {
   lineWidth = 1;
   dashPattern = [4, 4];
 
-  targetKey = "root";
-
   selectable = false;
 
   private isActive = false;
@@ -51,13 +49,12 @@ export class Snap extends Element {
   private cacheX: Float32Array = new Float32Array(0);
   private cacheY: Float32Array = new Float32Array(0);
 
-  constructor(options: { targetKey?: string }) {
+  constructor() {
     super();
-    this.targetKey = options.targetKey ?? this.targetKey;
   }
 
-  get targetElement(): Element {
-    return this.root.keyElmenet.get(this.targetKey) ?? this.root;
+  private get selectTool() {
+    return this.root.keyElmenet.get("select") as import("./index").Select;
   }
 
   start(excludeEls: Element[]) {
@@ -69,18 +66,14 @@ export class Snap extends Element {
     const yData: number[] = [];
     const excludes = new Set(excludeEls);
 
-    const traverse = (nodes: Element[]) => {
-      for (const node of nodes) {
-        if (excludes.has(node) || node === this) continue;
-
-        const coords = node.getCoords();
-        for (const p of coords) {
-          xData.push(p.x, p.y, p.y);
-          yData.push(p.y, p.x, p.x);
-        }
+    this.selectTool.forEachTarget((node) => {
+      if (excludes.has(node)) return;
+      const coords = node.getCoords();
+      for (const p of coords) {
+        xData.push(p.x, p.y, p.y);
+        yData.push(p.y, p.x, p.x);
       }
-    };
-    if (this.targetElement.children) traverse(this.targetElement.children);
+    });
 
     this.cacheX = new Float32Array(xData);
     this.cacheY = new Float32Array(yData);

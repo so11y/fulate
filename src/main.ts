@@ -2,9 +2,10 @@ import { Root } from "./lib/root";
 import { Select } from "./lib/tools/select";
 import { Rectangle } from "./lib/ui/rectangle";
 import { Rule } from "./lib/tools/rule";
-import { Layer, FullLayer } from "./lib/layer";
+import { Layer } from "./lib/layer";
 import { Snap } from "./lib/tools/select/snap";
 import { Artboard } from "./lib/ui/artboard";
+import { Workspace } from "./lib/ui/workspace";
 import { Rectangle as Div, Display, FlexDirection, Justify } from "./yoga/base";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
@@ -12,20 +13,12 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
   height: window.innerHeight
 });
 
-const editerLayer = new FullLayer({
+const editerLayer = new Layer({
   zIndex: 2,
-  children: [
-    new Rule(),
-    new Select({
-      targetKey: "artboard"
-    }),
-    new Snap({
-      targetKey: "artboard"
-    })
-  ]
+  children: [new Rule(), new Select(), new Snap()]
 });
 
-const floorLayer = new FullLayer({
+const floorLayer = new Layer({
   children: []
 });
 
@@ -67,59 +60,60 @@ const dev3 = new Rectangle({
 });
 
 root.append(
-  floorLayer,
+  // floorLayer,
   // div1,
   // div2,
-  // new FullLayer({
-  //   zIndex: 2,
-  //   selectctbale: true,
-  //   children: [dev3]
-  // }),
-  new Artboard({
+  new Workspace({
+    backgroundColor: "#E5E5E5",
     width: 1920,
     height: 900,
     children: [
-      div1,
-      div2,
-      dev3,
-      new Div({
-        left: 300,
-        top: 170,
-        width: 100,
-        height: 100,
-        display: Display.Flex,
-        backgroundColor: "pink",
-        justifyContent: Justify.SpaceAround,
+      new Artboard({
         children: [
+          div1,
+          div2,
+          dev3,
           new Div({
-            width: 50,
-            backgroundColor: "black",
-            onclick(e) {
-              e.detail.target.setOptions({
-                width: "10%"
-              });
-            }
+            left: 300,
+            top: 170,
+            width: 100,
+            height: 100,
+            display: Display.Flex,
+            backgroundColor: "pink",
+            justifyContent: Justify.SpaceAround,
+            children: [
+              new Div({
+                width: 50,
+                backgroundColor: "black",
+                onclick(e) {
+                  e.detail.target.setOptions({
+                    width: "10%"
+                  });
+                }
+              }),
+              new Div({
+                width: 10,
+                backgroundColor: "red"
+              })
+            ]
           }),
-          new Div({
-            width: 10,
-            backgroundColor: "red"
+          new Layer({
+            zIndex: 2,
+            children: [
+              new Rectangle({
+                left: 30,
+                width: 100,
+                height: 100,
+                backgroundColor: "pink"
+              })
+            ]
           })
-        ]
+        ],
+        onclick: (e) => {
+          console.log("div1 clicked", e);
+        }
       })
-      // new FullLayer({
-      //   zIndex: 3,
-      //   selectctbale: true,
-      //   children: [dev3]
-      // })
-    ],
-    onclick: (e) => {
-      console.log("div1 clicked", e);
-      // e.detail.target.setOptions({
-      //   backgroundColor: "yellow"
-      // });
-
-      // e.detail.target.root.focusNode(e.detail.target);
-    }
+    ]
   }),
   editerLayer
 );
@@ -133,3 +127,5 @@ root.append(
 // });
 
 root.mounted();
+
+console.log(root, "--");

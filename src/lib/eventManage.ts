@@ -60,7 +60,7 @@ export class EventManage {
       if (this.target.hasPointHint(event.x, event.y)) {
         return;
       }
-      this.target.root.canvasEl.style.cursor = "default";
+      this.target.root.container.style.cursor = "default";
       this.hasMouseEnter = false;
     }
 

@@ -11,6 +11,10 @@ export class Node extends EventTarget {
   parent: this | undefined;
   children: this[] | null = null;
 
+  // 链表指针
+  nextSibling: this | null = null;
+  previousSibling: this | null = null;
+
   // 生命周期状态
   isMounted = false;
   key: string;
@@ -23,6 +27,15 @@ export class Node extends EventTarget {
   _options: any = {};
 
   _provides: Record<string, any>;
+
+  get firstChild(): this | null {
+    return this.children?.[0] ?? null;
+  }
+
+  get lastChild(): this | null {
+    if (!this.children?.length) return null;
+    return this.children[this.children.length - 1];
+  }
 
   attrs(options: any) {}
 
@@ -42,35 +55,109 @@ export class Node extends EventTarget {
     }
   }
 
+  private _updateSiblings() {
+    if (!this.children?.length) return;
+    for (let i = 0; i < this.children.length; i++) {
+      this.children[i].previousSibling = (this.children[i - 1] ?? null) as any;
+      this.children[i].nextSibling = (this.children[i + 1] ?? null) as any;
+    }
+  }
+
+  private _afterMutate(nodes: Node[]) {
+    this._updateSiblings();
+    this.hasDirtyChild = true;
+    this.markChildDirty();
+    if (this.isMounted) {
+      nodes.forEach((v) => v.mounted());
+    }
+    if (this.root) {
+      this.root.calcEventSort();
+      this.dispatchEvent(new CustomEvent("childrenchange"));
+    }
+  }
+
   append(...children: Node[]) {
     if (!this.children) this.children = [];
-
+    const added: Node[] = [];
     children.forEach((child) => {
       if (child.parent) return;
       child.parent = this as any;
       this.children!.push(child as any);
+      added.push(child);
     });
+    this._afterMutate(added);
+    return this;
+  }
 
-    this.hasDirtyChild = true;
-    this.markChildDirty();
+  prepend(...children: Node[]) {
+    if (!this.children) this.children = [];
+    const added: Node[] = [];
+    children.forEach((child) => {
+      if (child.parent) return;
+      child.parent = this as any;
+      added.push(child);
+    });
+    this.children.unshift(...(added as any[]));
+    this._afterMutate(added);
+    return this;
+  }
 
-    if (this.isMounted) {
-      children.forEach((v) => v.mounted());
-    }
+  insertBefore(newChild: Node, refChild: Node | null) {
+    if (!refChild) return this.append(newChild);
+    if (!this.children || newChild.parent) return this;
+    const idx = this.children.indexOf(refChild as any);
+    if (idx === -1) return this;
+    newChild.parent = this as any;
+    this.children.splice(idx, 0, newChild as any);
+    this._afterMutate([newChild]);
+    return this;
+  }
 
-    if (this.root) {
-      this.root.calcEventSort();
-    }
+  insertAfter(newChild: Node, refChild: Node) {
+    if (!this.children || newChild.parent) return this;
+    const idx = this.children.indexOf(refChild as any);
+    if (idx === -1) return this;
+    newChild.parent = this as any;
+    this.children.splice(idx + 1, 0, newChild as any);
+    this._afterMutate([newChild]);
+    return this;
+  }
 
+  replaceChild(newChild: Node, oldChild: Node) {
+    if (!this.children) return this;
+    const idx = this.children.indexOf(oldChild as any);
+    if (idx === -1) return this;
+    oldChild.unmounted();
+    newChild.parent = this as any;
+    this.children[idx] = newChild as any;
+    this._afterMutate([newChild]);
+    return this;
+  }
+
+  /** 在自身前面插入节点（操作父级children） */
+  before(...nodes: Node[]) {
+    if (!this.parent) return this;
+    nodes.forEach((n) => this.parent!.insertBefore(n, this));
+    return this;
+  }
+
+  /** 在自身后面插入节点（操作父级children） */
+  after(...nodes: Node[]) {
+    if (!this.parent) return this;
+    let ref: Node = this;
+    nodes.forEach((n) => {
+      this.parent!.insertAfter(n, ref);
+      ref = n;
+    });
     return this;
   }
 
   removeChild(...children: this[]) {
     children.forEach((child) => child.unmounted());
-
     this.hasDirtyChild = true;
     this.markChildDirty();
-    this.root.calcEventSort();
+    this.root?.calcEventSort();
+    this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
@@ -100,6 +187,7 @@ export class Node extends EventTarget {
       const index = oldParent.children?.findIndex((v) => v === this);
       if (index !== -1) {
         oldParent.children.splice(index, 1);
+        oldParent._updateSiblings();
         oldParent.hasDirtyChild = true;
         oldParent.markChildDirty();
       }
@@ -107,6 +195,8 @@ export class Node extends EventTarget {
 
     this.children?.forEach((child) => child.unmounted());
     this.children = [];
+    this.nextSibling = null;
+    this.previousSibling = null;
     this.parent = undefined;
     this.isMounted = false;
   }
