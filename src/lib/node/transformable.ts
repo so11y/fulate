@@ -3,6 +3,15 @@ import { Point, PointType, TOriginX, TOriginY } from "../../util/point";
 import { resolveOrigin } from "../../util/resolveOrigin";
 import { Intersection } from "../../util/Intersection";
 
+export interface Rect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+}
+
 export interface TransformableOptions {
   left?: number;
   top?: number;
@@ -38,6 +47,7 @@ export class Transformable extends Node {
   // 缓存（对象池化，避免 GC）
   protected ownMatrixCache: DOMMatrix = new DOMMatrix();
   protected coords: Array<Point> | null = null;
+  protected _boundingRectCache: Rect | null = null;
 
   isDirty = true;
 
@@ -61,9 +71,6 @@ export class Transformable extends Node {
     return this.ownMatrixCache;
   }
 
-  /**
-   * 计算世界矩阵（对象池优化，直接修改属性）
-   */
   calcWorldMatrix() {
     const m = this.ownMatrixCache;
 
@@ -123,7 +130,9 @@ export class Transformable extends Node {
 
   // --- 几何与碰撞检测 ---
 
-  getBoundingRect() {
+  getBoundingRect(): Rect {
+    if (this._boundingRectCache) return this._boundingRectCache;
+
     const corners = [
       new Point(0, 0), // 左上
       new Point(this.width, 0), // 右上
@@ -148,14 +157,16 @@ export class Transformable extends Node {
       maxY = Math.max(maxY, y);
     });
 
-    return {
-      left: minX, // 包围盒左上角 x
-      top: minY, // 包围盒左上角 y
-      width: maxX - minX, // 包围盒宽度
-      height: maxY - minY, // 包围盒高度
+    this._boundingRectCache = {
+      left: minX,
+      top: minY,
+      width: maxX - minX,
+      height: maxY - minY,
       centerX: (minX + maxX) / 2,
       centerY: (minY + maxY) / 2
     };
+
+    return this._boundingRectCache;
   }
 
   getCoords() {
@@ -296,6 +307,7 @@ export class Transformable extends Node {
 
     this.isDirty = true;
     this.coords = null;
+    this._boundingRectCache = null;
 
     this.markChildDirty();
     if (this.layer) {
@@ -310,6 +322,7 @@ export class Transformable extends Node {
 
     if (shouldUpdate) {
       this.calcWorldMatrix();
+      this._boundingRectCache = null;
       if (this.width && this.height) {
         this.setCoords();
       }

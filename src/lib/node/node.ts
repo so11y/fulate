@@ -44,6 +44,9 @@ export class Node extends EventTarget {
    * 性能优化：如果祖先已经标记为脏，立即停止冒泡
    */
   markChildDirty() {
+    if (!this.isMounted) {
+      return;
+    }
     let p = this.parent;
     while (p && !p.hasDirtyChild) {
       p.hasDirtyChild = true;

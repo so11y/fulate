@@ -4,6 +4,7 @@ export class Rectangle extends Element {
   type = "rectangle";
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
+   
     ctx.save();
     ctx.beginPath();
     ctx.setTransform(

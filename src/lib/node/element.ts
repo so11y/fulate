@@ -69,7 +69,10 @@ export class Element extends Transformable {
 
     if (this.children) {
       for (let i = 0; i < this.children.length; i++) {
-        this.children[i].paint(ctx);
+        const child = this.children[i];
+        if (child.hasInView()) {
+          child.paint(ctx);
+        }
       }
     }
   }
@@ -95,7 +98,44 @@ export class Element extends Transformable {
   }
 
   hasInView() {
-    return this.visible;
+    if (!this.visible || !this.width || !this.height) return false;
+
+    const root = this.root;
+    const { x: vx, y: vy, scale } = root.viewport;
+    const vw = root.width / scale;
+    const vh = root.height / scale;
+
+    const viewLeft = -vx / scale;
+    const viewTop = -vy / scale;
+
+    const m = this.ownMatrixCache;
+
+    // 无旋转无skew时，直接用矩阵平移分量做快速判断
+    if (m.b === 0 && m.c === 0) {
+      const sx = m.a;
+      const sy = m.d;
+      const left = m.e;
+      const top = m.f;
+      const w = this.width * Math.abs(sx);
+      const h = this.height * Math.abs(sy);
+
+      return (
+        left + w > viewLeft &&
+        left < viewLeft + vw &&
+        top + h > viewTop &&
+        top < viewTop + vh
+      );
+    }
+
+    // 有旋转/skew时走完整包围盒计算
+    const { left, top, width, height } = this.getBoundingRect();
+
+    return (
+      left + width > viewLeft &&
+      left < viewLeft + vw &&
+      top + height > viewTop &&
+      top < viewTop + vh
+    );
   }
 
   /**
