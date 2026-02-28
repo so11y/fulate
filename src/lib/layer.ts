@@ -8,6 +8,8 @@ export class Layer extends Rectangle {
   zIndex: number;
 
   private isRender: boolean = false;
+  private renderResolve: (() => void) | null = null;
+  private renderPromise: Promise<void> | null = null;
 
   constructor(options?: BaseElementOption & { zIndex?: number }) {
     super(options);
@@ -48,13 +50,31 @@ export class Layer extends Rectangle {
     if (this.isRender) return;
     this.isRender = true;
 
+    if (!this.renderPromise) {
+      this.renderPromise = new Promise<void>((resolve) => {
+        this.renderResolve = resolve;
+      });
+    }
+
     requestAnimationFrame(() => {
       this.updateTransform(false);
       this.clear();
       super.render(this.ctx);
       this.isRender = false;
+      this.renderResolve?.();
+      this.renderPromise = null;
+      this.renderResolve = null;
     });
   }
+
+  nextTick(fn: () => void): void {
+    if (this.renderPromise) {
+      this.renderPromise.then(fn);
+    } else {
+      fn();
+    }
+  }
+
 
   render() {
     this.requestRender();
