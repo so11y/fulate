@@ -49,10 +49,6 @@ export class Snap extends Element {
   private cacheX: Float32Array = new Float32Array(0);
   private cacheY: Float32Array = new Float32Array(0);
 
-  constructor() {
-    super();
-  }
-
   private get selectTool() {
     return this.root.keyElmenet.get("select") as import("./index").Select;
   }
@@ -280,7 +276,7 @@ export class Snap extends Element {
   }
 
   paint() {
-    console.log('---');
+    console.log("---");
     if (!this.isActive || this.snapLines.length === 0) return;
 
     const ctx = this.layer.ctx;
@@ -327,5 +323,9 @@ export class Snap extends Element {
     }
 
     ctx.restore();
+  }
+
+  hasInView(): boolean {
+    return true;
   }
 }

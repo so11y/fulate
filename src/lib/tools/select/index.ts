@@ -401,4 +401,8 @@ export class Select extends Element {
     this.getCoords();
     return this.controlCoords;
   }
+
+  hasInView(): boolean {
+    return true;
+  }
 }
