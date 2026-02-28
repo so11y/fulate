@@ -18,10 +18,6 @@ const editerLayer = new Layer({
   children: [new Rule(), new Select(), new Snap()]
 });
 
-const floorLayer = new Layer({
-  children: []
-});
-
 const div1 = new Rectangle({
   key: "344",
   left: 300,

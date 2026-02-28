@@ -165,6 +165,7 @@ export const Controls: Array<Control> = [
         angle = 360 + angle;
       }
       angle %= 360;
+
       // const hasRotated = target.angle !== angle;
       return angle;
     },

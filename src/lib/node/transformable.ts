@@ -216,8 +216,8 @@ export class Transformable extends Node {
     point: PointType,
     fromOriginX: TOriginX,
     fromOriginY: TOriginY,
-    toOriginX: TOriginX,
-    toOriginY: TOriginY
+    toOriginX: TOriginX = this.originX,
+    toOriginY: TOriginY = this.originY
   ) {
     let x = point.x,
       y = point.y;

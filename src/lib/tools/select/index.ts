@@ -15,6 +15,8 @@ export class Select extends Element {
   key = "select";
   controlSize = 8;
   hitPadding = 6;
+  snapAngle = 45;
+  snapThreshold = 5;
   controlCoords: Array<Point>;
   targetKey = "workspace";
 
@@ -101,7 +103,6 @@ export class Select extends Element {
         () => {
           this.root.removeEventListener("pointermove", pointermove);
           if (hasMove) {
-            console.log("--");
             directEl
               ?.filter(checkElementIntersects)
               .forEach((child) => selectEls.add(child));
@@ -161,8 +162,7 @@ export class Select extends Element {
       const originalSelectLeft = this.left;
       const originalSelectTop = this.top;
 
-      const coords = super.getCoords().map((p) => new Point(p.x, p.y));
-
+      const coords = super.getCoords();
       const snapshots = this.selectEls.map((child: any) => {
         const wc = child.getWorldCenterPoint();
         return { child, worldCenter: wc };
@@ -252,12 +252,12 @@ export class Select extends Element {
       ctx.fill();
     }
     ctx.restore();
-
     if (this.selectEls.length) {
       this.getControlCoords().forEach((point, index) =>
         this.drawControlPoint(ctx, point, Controls[index])
       );
     }
+    this.drawInfoPanel(ctx);
   }
 
   drawControlPoint(
@@ -265,16 +265,49 @@ export class Select extends Element {
     point: Point,
     control: (typeof Controls)[0]
   ) {
+    const vp = this.root.getViewPointMtrix();
+    const sp = point.matrixTransform(vp);
     const size = this.controlSize;
     ctx.save();
+    ctx.resetTransform();
     ctx.beginPath();
-    ctx.arc(point.x, point.y, size - 4, 0, Math.PI * 2);
     if (control.type === "mtr") {
       ctx.fillStyle = "#ff4757";
+      ctx.arc(sp.x, sp.y, size - 4, 0, Math.PI * 2);
     } else {
       ctx.fillStyle = "#0078ff";
+      ctx.roundRect(sp.x - size / 2, sp.y - size / 2, size, size);
     }
     ctx.fill();
+    ctx.restore();
+  }
+
+  drawInfoPanel(ctx: CanvasRenderingContext2D) {
+    const vp = this.root.getViewPointMtrix();
+    const allPts = this.getControlCoords().map((p) => p.matrixTransform(vp));
+    const cornerPts = allPts.slice(0, 4);
+    const minX = Math.min(...cornerPts.map((p) => p.x));
+    const maxX = Math.max(...cornerPts.map((p) => p.x));
+    const maxY = Math.max(...allPts.map((p) => p.y));
+    const centerX = (minX + maxX) / 2;
+
+    const text = `x: ${Math.round(this.left)}  y: ${Math.round(this.top)}  ${Math.round(this.angle ?? 0)}°`;
+
+    ctx.save();
+    ctx.resetTransform();
+    ctx.font = "12px Arial";
+    const pw = ctx.measureText(text).width + 12;
+    const ph = 22;
+    const px = centerX - pw / 2;
+    const py = maxY + 8;
+
+    ctx.fillStyle = "rgba(0,0,0,0.75)";
+    ctx.beginPath();
+    ctx.roundRect(px, py, pw, ph, 4);
+    ctx.fill();
+
+    ctx.fillStyle = "#fff";
+    ctx.fillText(text, px + 6, py + 15);
     ctx.restore();
   }
 
