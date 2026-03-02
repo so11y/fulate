@@ -1,3 +1,4 @@
+import { Intersection } from "../../util/Intersection";
 import { Point } from "../../util/point";
 import { FulateEvent } from "../eventManage";
 import { Transformable, TransformableOptions } from "./transformable";
@@ -10,6 +11,7 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   visible?: boolean;
   selectctbale?: boolean;
   silent?: boolean;
+  breakDirtyRectCheck?: boolean;
 
   onclick?: (e: FulateEvent<T>) => any;
   onpointermove?: (e: FulateEvent<T>) => any;
@@ -34,6 +36,7 @@ export class Element extends Transformable {
   cursor?: string;
   visible: boolean = true;
   selectctbale?: boolean;
+  breakDirtyRectCheck = false;
   declare children: this[];
   declare parent: this;
 
@@ -61,10 +64,9 @@ export class Element extends Transformable {
       Object.assign(this._options, options);
     }
   }
-  
+
   getDirtyRect() {
     const current = this.getBoundingRect();
-    console.log('---');
     if (!this.lastBoundingRect) return current;
 
     const minX = Math.min(current.left, this.lastBoundingRect.left);
@@ -88,6 +90,19 @@ export class Element extends Transformable {
     };
   }
 
+  notInDitry() {
+    if (
+      !this.breakDirtyRectCheck &&
+      this.layer.finalDirtyRect &&
+      !Intersection.intersectRect(
+        this.getBoundingRect(),
+        this.layer.finalDirtyRect
+      )
+    ) {
+      return true;
+    }
+    return false;
+  }
 
   /**
    * 纯净渲染函数（只负责绘制，不处理数学计算）

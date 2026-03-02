@@ -4,17 +4,8 @@ import { Element } from "../node/element";
 export class Rectangle extends Element {
   type = "rectangle";
 
-  breakDirtyRectCheck = false;
-
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-    if (
-      !this.breakDirtyRectCheck &&
-      this.layer.finalDirtyRect &&
-      !Intersection.intersectRect(
-        this.getBoundingRect(),
-        this.layer.finalDirtyRect
-      )
-    ) {
+    if (this.notInDitry()) {
       return;
     }
 

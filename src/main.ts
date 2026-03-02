@@ -7,6 +7,7 @@ import { Snap } from "./lib/tools/select/snap";
 import { Artboard } from "./lib/ui/artboard";
 import { Workspace } from "./lib/ui/workspace";
 import { Rectangle as Div, Display, FlexDirection, Justify } from "./yoga/div";
+import { Text } from "./lib/ui/text";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,
@@ -78,6 +79,13 @@ root.append(
           div1,
           div2,
           dev3,
+          new Text({
+            left: 300,
+            width: 100,
+            height: 50,
+            autoScale:false,
+            text: "dqawd  毫安啊啊 "
+          }),
           new Div({
             left: 300,
             top: 170,

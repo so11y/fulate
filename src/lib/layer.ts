@@ -194,8 +194,7 @@ export class Layer extends Rectangle {
         if (screenWidth > 0 && screenHeight > 0) {
           this.ctx.save();
 
-          // 在屏幕坐标系下进行 clip 和 clearRect，避免抗锯齿导致的白边缝隙
-          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
           this.ctx.beginPath();
           this.ctx.rect(screenMinX, screenMinY, screenWidth, screenHeight);
@@ -205,7 +204,7 @@ export class Layer extends Rectangle {
 
           // 恢复视口变换进行绘制
           this.ctx.setTransform(m);
-
+          //TODO 后面遍历的时候需要考虑嵌套的layer，嵌套的layer不需要绘制
           super.paint(this.ctx);
 
           this.ctx.restore();
@@ -237,14 +236,22 @@ export class Layer extends Rectangle {
     }
   }
 
+  notInDitry() {
+    return super.notInDitry();
+  }
+
   paint() {
+    if (this.notInDitry()) {
+      return;
+    }
+
     this.requestRender();
   }
 
   clear() {
-    this.ctx.save();
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // this.ctx.save();
+    // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.width, this.height);
-    this.ctx.restore();
+    // this.ctx.restore();
   }
 }
