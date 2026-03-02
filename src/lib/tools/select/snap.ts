@@ -36,7 +36,7 @@ export class Snap extends Element {
   type = "snap";
   key = "snap";
 
-  threshold = 8;
+  threshold = 5;
   lineColor = "#ff00cc";
   lineWidth = 1;
   dashPattern = [4, 4];
@@ -65,9 +65,49 @@ export class Snap extends Element {
     this.selectTool.forEachTarget((node) => {
       if (excludes.has(node)) return;
       const coords = node.getCoords();
-      for (const p of coords) {
-        xData.push(p.x, p.y, p.y);
-        yData.push(p.y, p.x, p.x);
+      if (coords.length !== 4) return;
+
+      const isAxisAligned =
+        Math.abs(coords[0].x - coords[3].x) < 0.01 &&
+        Math.abs(coords[1].x - coords[2].x) < 0.01 &&
+        Math.abs(coords[0].y - coords[1].y) < 0.01 &&
+        Math.abs(coords[3].y - coords[2].y) < 0.01;
+
+      if (isAxisAligned) {
+        const minX = Math.min(coords[0].x, coords[1].x, coords[2].x, coords[3].x);
+        const maxX = Math.max(coords[0].x, coords[1].x, coords[2].x, coords[3].x);
+        const minY = Math.min(coords[0].y, coords[1].y, coords[2].y, coords[3].y);
+        const maxY = Math.max(coords[0].y, coords[1].y, coords[2].y, coords[3].y);
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // Vertical lines (Left, Right, CenterX)
+        // Store as range [minY, maxY]
+        xData.push(minX, minY, maxY);
+        xData.push(maxX, minY, maxY);
+        xData.push(centerX, minY, maxY);
+
+        // Horizontal lines (Top, Bottom, CenterY)
+        // Store as range [minX, maxX]
+        yData.push(minY, minX, maxX);
+        yData.push(maxY, minX, maxX);
+        yData.push(centerY, minX, maxX);
+      } else {
+        // Not axis aligned, store points individually
+        const points: { x: number; y: number }[] = [...coords];
+        const [p0, p1, p2, p3] = coords;
+        points.push(
+          { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }, // Top
+          { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }, // Right
+          { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 }, // Bottom
+          { x: (p3.x + p0.x) / 2, y: (p3.y + p0.y) / 2 }, // Left
+          { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 } // Center
+        );
+
+        for (const p of points) {
+          xData.push(p.x, p.y, p.y);
+          yData.push(p.y, p.x, p.x);
+        }
       }
     });
 
@@ -82,13 +122,71 @@ export class Snap extends Element {
     if (!this.isActive) return { dx: 0, dy: 0 };
     this.snapLines = [];
 
-    const predictedPoints = originalPoints.map((p) => ({
-      x: p.x + dx_raw,
-      y: p.y + dy_raw
-    }));
+    // Determine if moving object is axis aligned
+    let isAxisAligned = false;
+    if (originalPoints.length === 4) {
+      isAxisAligned =
+        Math.abs(originalPoints[0].x - originalPoints[3].x) < 0.01 &&
+        Math.abs(originalPoints[1].x - originalPoints[2].x) < 0.01 &&
+        Math.abs(originalPoints[0].y - originalPoints[1].y) < 0.01 &&
+        Math.abs(originalPoints[3].y - originalPoints[2].y) < 0.01;
+    }
 
-    const targetX = predictedPoints.map((p, i) => ({ val: p.x, index: i }));
-    const targetY = predictedPoints.map((p, i) => ({ val: p.y, index: i }));
+    let targetX: { val: number; index: number; min?: number; max?: number }[] = [];
+    let targetY: { val: number; index: number; min?: number; max?: number }[] = [];
+    let pointsToSnap: Point[] = [];
+
+    if (isAxisAligned) {
+      const minX = Math.min(...originalPoints.map((p) => p.x));
+      const maxX = Math.max(...originalPoints.map((p) => p.x));
+      const minY = Math.min(...originalPoints.map((p) => p.y));
+      const maxY = Math.max(...originalPoints.map((p) => p.y));
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      // Predicted positions
+      const pMinX = minX + dx_raw;
+      const pMaxX = maxX + dx_raw;
+      const pCenterX = centerX + dx_raw;
+      const pMinY = minY + dy_raw;
+      const pMaxY = maxY + dy_raw;
+      const pCenterY = centerY + dy_raw;
+
+      // We use index to identify which part of the object matched
+      // 0: Left, 1: Right, 2: CenterX
+      targetX = [
+        { val: pMinX, index: 0, min: pMinY, max: pMaxY },
+        { val: pMaxX, index: 1, min: pMinY, max: pMaxY },
+        { val: pCenterX, index: 2, min: pMinY, max: pMaxY }
+      ];
+
+      // 0: Top, 1: Bottom, 2: CenterY
+      targetY = [
+        { val: pMinY, index: 0, min: pMinX, max: pMaxX },
+        { val: pMaxY, index: 1, min: pMinX, max: pMaxX },
+        { val: pCenterY, index: 2, min: pMinX, max: pMaxX }
+      ];
+    } else {
+      pointsToSnap = [...originalPoints];
+      if (originalPoints.length === 4) {
+        const [p0, p1, p2, p3] = originalPoints;
+        pointsToSnap.push(
+          { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }, // Top
+          { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }, // Right
+          { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 }, // Bottom
+          { x: (p3.x + p0.x) / 2, y: (p3.y + p0.y) / 2 }, // Left
+          { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 } // Center
+        );
+      }
+
+      const predictedPoints = pointsToSnap.map((p) => ({
+        x: p.x + dx_raw,
+        y: p.y + dy_raw
+      }));
+
+      targetX = predictedPoints.map((p, i) => ({ val: p.x, index: i }));
+      targetY = predictedPoints.map((p, i) => ({ val: p.y, index: i }));
+    }
 
     const bestX = this.findClosest(
       targetX,
@@ -110,60 +208,92 @@ export class Snap extends Element {
     // ================= 垂直吸附 (X) =================
     if (bestX) {
       const snapX = bestX.targetVal;
-
-      // 取出当前对象在吸附线上的真实 Y 轴范围
-      const movingYs = originalPoints
-        .map((p) => ({ x: p.x + final_dx, y: p.y + final_dy }))
-        .filter((p) => Math.abs(p.x - snapX) < 0.0001)
-        .map((p) => p.y);
-
-      if (movingYs.length === 0) {
-        movingYs.push(originalPoints[bestX.matchedIndex].y + final_dy);
-      }
-
-      const objMinY = Math.min(...movingYs);
-      const objMaxY = Math.max(...movingYs);
-
-      // 收集所有元素的 Y 轴范围（包括移动对象和参考对象）
       const allRanges: Array<{ min: number; max: number; isMoving: boolean }> =
         [];
 
-      // 添加移动对象
-      allRanges.push({ min: objMinY, max: objMaxY, isMoving: true });
+      if (isAxisAligned) {
+        // If axis aligned, we know the full range of the moving object side
+        // bestX.matchedIndex corresponds to: 0: Left, 1: Right, 2: CenterX
+        // In all cases, the Y range is [minY, maxY] + final_dy
+        const minY = Math.min(...originalPoints.map((p) => p.y));
+        const maxY = Math.max(...originalPoints.map((p) => p.y));
+        allRanges.push({
+          min: minY + final_dy,
+          max: maxY + final_dy,
+          isMoving: true
+        });
+      } else {
+        // Fallback to point-based logic
+        const movingYs = pointsToSnap
+          .map((p) => ({ x: p.x + final_dx, y: p.y + final_dy }))
+          .filter((p) => Math.abs(p.x - snapX) < 0.0001)
+          .map((p) => p.y);
 
-      // 添加所有参考对象
+        if (movingYs.length === 0) {
+          movingYs.push(pointsToSnap[bestX.matchedIndex].y + final_dy);
+        }
+
+        const objMinY = Math.min(...movingYs);
+        const objMaxY = Math.max(...movingYs);
+        allRanges.push({ min: objMinY, max: objMaxY, isMoving: true });
+      }
+
+      // Add reference objects
       for (const seg of bestX.segments) {
         const refMinY = seg.min;
         const refMaxY = seg.max !== undefined ? seg.max : seg.min;
         allRanges.push({ min: refMinY, max: refMaxY, isMoving: false });
       }
 
-      // 按位置排序
+      // Sort and draw gaps
       allRanges.sort((a, b) => a.min - b.min);
 
-      // 找出所有相邻的间隙并绘制
+      // 绘制物体本身的尺寸
+      for (const range of allRanges) {
+        if (range.isMoving) continue;
+        const dist = range.max - range.min;
+        if (dist > 1) {
+          this.snapLines.push({
+            type: "vertical",
+            value: snapX,
+            start: range.min,
+            end: range.max,
+            points: [
+              { x: snapX, y: range.min },
+              { x: snapX, y: range.max }
+            ],
+            distanceText: `${Math.round(dist)}`,
+            textPos: { x: snapX + 5, y: (range.min + range.max) / 2 }
+          });
+        }
+      }
+
+      // Merge overlapping ranges of the same type (optional, but good for cleanup)
+      // For now, just find gaps
       for (let i = 0; i < allRanges.length - 1; i++) {
         const current = allRanges[i];
         const next = allRanges[i + 1];
 
-        const gapStart = current.max;
-        const gapEnd = next.min;
-        const distance = gapEnd - gapStart;
+        // Only draw gap if ranges don't overlap
+        if (current.max < next.min) {
+          const gapStart = current.max;
+          const gapEnd = next.min;
+          const distance = gapEnd - gapStart;
 
-        if (distance > 0) {
-          // 有间隙，绘制距离线
-          this.snapLines.push({
-            type: "vertical",
-            value: snapX,
-            start: gapStart,
-            end: gapEnd,
-            points: [
-              { x: snapX, y: gapStart },
-              { x: snapX, y: gapEnd }
-            ],
-            distanceText: `${Math.round(distance)}`,
-            textPos: { x: snapX + 5, y: (gapStart + gapEnd) / 2 }
-          });
+          if (distance > 0) {
+            this.snapLines.push({
+              type: "vertical",
+              value: snapX,
+              start: gapStart,
+              end: gapEnd,
+              points: [
+                { x: snapX, y: gapStart },
+                { x: snapX, y: gapEnd }
+              ],
+              distanceText: `${Math.round(distance)}`,
+              textPos: { x: snapX + 5, y: (gapStart + gapEnd) / 2 }
+            });
+          }
         }
       }
     }
@@ -171,59 +301,85 @@ export class Snap extends Element {
     // ================= 水平吸附 (Y) =================
     if (bestY) {
       const snapY = bestY.targetVal;
-
-      const movingXs = originalPoints
-        .map((p) => ({ x: p.x + final_dx, y: p.y + final_dy }))
-        .filter((p) => Math.abs(p.y - snapY) < 0.0001)
-        .map((p) => p.x);
-
-      if (movingXs.length === 0) {
-        movingXs.push(originalPoints[bestY.matchedIndex].x + final_dx);
-      }
-
-      const objMinX = Math.min(...movingXs);
-      const objMaxX = Math.max(...movingXs);
-
-      // 收集所有元素的 X 轴范围（包括移动对象和参考对象）
       const allRanges: Array<{ min: number; max: number; isMoving: boolean }> =
         [];
 
-      // 添加移动对象
-      allRanges.push({ min: objMinX, max: objMaxX, isMoving: true });
+      if (isAxisAligned) {
+        // 0: Top, 1: Bottom, 2: CenterY
+        // X range is [minX, maxX] + final_dx
+        const minX = Math.min(...originalPoints.map((p) => p.x));
+        const maxX = Math.max(...originalPoints.map((p) => p.x));
+        allRanges.push({
+          min: minX + final_dx,
+          max: maxX + final_dx,
+          isMoving: true
+        });
+      } else {
+        const movingXs = pointsToSnap
+          .map((p) => ({ x: p.x + final_dx, y: p.y + final_dy }))
+          .filter((p) => Math.abs(p.y - snapY) < 0.0001)
+          .map((p) => p.x);
 
-      // 添加所有参考对象
+        if (movingXs.length === 0) {
+          movingXs.push(pointsToSnap[bestY.matchedIndex].x + final_dx);
+        }
+
+        const objMinX = Math.min(...movingXs);
+        const objMaxX = Math.max(...movingXs);
+        allRanges.push({ min: objMinX, max: objMaxX, isMoving: true });
+      }
+
       for (const seg of bestY.segments) {
         const refMinX = seg.min;
         const refMaxX = seg.max !== undefined ? seg.max : seg.min;
         allRanges.push({ min: refMinX, max: refMaxX, isMoving: false });
       }
 
-      // 按位置排序
       allRanges.sort((a, b) => a.min - b.min);
 
-      // 找出所有相邻的间隙并绘制
+      // 绘制物体本身的尺寸
+      for (const range of allRanges) {
+        if (range.isMoving) continue;
+        const dist = range.max - range.min;
+        if (dist > 1) {
+          this.snapLines.push({
+            type: "horizontal",
+            value: snapY,
+            start: range.min,
+            end: range.max,
+            points: [
+              { x: range.min, y: snapY },
+              { x: range.max, y: snapY }
+            ],
+            distanceText: `${Math.round(dist)}`,
+            textPos: { x: (range.min + range.max) / 2, y: snapY - 5 }
+          });
+        }
+      }
+
       for (let i = 0; i < allRanges.length - 1; i++) {
         const current = allRanges[i];
         const next = allRanges[i + 1];
 
-        const gapStart = current.max;
-        const gapEnd = next.min;
-        const distance = gapEnd - gapStart;
+        if (current.max < next.min) {
+          const gapStart = current.max;
+          const gapEnd = next.min;
+          const distance = gapEnd - gapStart;
 
-        if (distance > 0) {
-          // 有间隙，绘制距离线
-          this.snapLines.push({
-            type: "horizontal",
-            value: snapY,
-            start: gapStart,
-            end: gapEnd,
-            points: [
-              { x: gapStart, y: snapY },
-              { x: gapEnd, y: snapY }
-            ],
-            distanceText: `${Math.round(distance)}`,
-            textPos: { x: (gapStart + gapEnd) / 2, y: snapY - 5 }
-          });
+          if (distance > 0) {
+            this.snapLines.push({
+              type: "horizontal",
+              value: snapY,
+              start: gapStart,
+              end: gapEnd,
+              points: [
+                { x: gapStart, y: snapY },
+                { x: gapEnd, y: snapY }
+              ],
+              distanceText: `${Math.round(distance)}`,
+              textPos: { x: (gapStart + gapEnd) / 2, y: snapY - 5 }
+            });
+          }
         }
       }
     }
