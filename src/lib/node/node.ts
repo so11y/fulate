@@ -6,7 +6,7 @@ export class Node extends EventTarget {
   type = "node";
 
   static nextId = 1;
-  id = Node.nextId++;
+  id!: number;
 
   // 树结构关系
   root: Root;
@@ -168,6 +168,9 @@ export class Node extends EventTarget {
   }
 
   mounted() {
+    if (this.id === undefined) {
+      this.id = Node.nextId++;
+    }
     this.isMounted = true;
     if (this.key && this.root) {
       this.root.keyElmenet.set(this.key, this as any);
