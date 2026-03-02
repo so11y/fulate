@@ -21,7 +21,7 @@ export class Layer extends Rectangle {
 
   finalDirtyRect: RectPoint;
 
-  private dirtyNodes = new Set<Element>();
+  dirtyNodes = new Set<Element>();
 
   private isRender: boolean = false;
   private renderResolve: (() => void) | null = null;
@@ -166,35 +166,45 @@ export class Layer extends Rectangle {
           maxY = Math.max(maxY, rect.top + rect.height);
         });
 
-        // 增加一点 padding 防止抗锯齿残留边缘
-        const padding = 2;
-        minX -= padding;
-        minY -= padding;
-        maxX += padding;
-        maxY += padding;
+        const m = this.root.getViewPointMtrix();
 
-        const dirtyWidth = maxX - minX;
-        const dirtyHeight = maxY - minY;
+        // 转换为屏幕坐标
+        let screenMinX = minX * m.a + m.e;
+        let screenMinY = minY * m.d + m.f;
+        let screenMaxX = maxX * m.a + m.e;
+        let screenMaxY = maxY * m.d + m.f;
+
+        // 增加一点 padding 防止抗锯齿残留边缘，并对齐到物理像素
+        const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0));
+        screenMinX = Math.floor(screenMinX) - padding;
+        screenMinY = Math.floor(screenMinY) - padding;
+        screenMaxX = Math.ceil(screenMaxX) + padding;
+        screenMaxY = Math.ceil(screenMaxY) + padding;
+
+        const screenWidth = screenMaxX - screenMinX;
+        const screenHeight = screenMaxY - screenMinY;
 
         this.finalDirtyRect = {
-          left: minX,
-          top: minY,
-          width: dirtyWidth,
-          height: dirtyHeight
+          left: (screenMinX - m.e) / m.a,
+          top: (screenMinY - m.f) / m.d,
+          width: screenWidth / m.a,
+          height: screenHeight / m.d
         };
 
-        if (dirtyWidth > 0 && dirtyHeight > 0) {
+        if (screenWidth > 0 && screenHeight > 0) {
           this.ctx.save();
 
-          // 2. 应用视口变换
-          // 必须应用视口变换，因为 minX/minY 是世界坐标
-          this.ctx.setTransform(this.root.getViewPointMtrix());
+          // 在屏幕坐标系下进行 clip 和 clearRect，避免抗锯齿导致的白边缝隙
+          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
           this.ctx.beginPath();
-          this.ctx.rect(minX, minY, dirtyWidth, dirtyHeight);
+          this.ctx.rect(screenMinX, screenMinY, screenWidth, screenHeight);
           this.ctx.clip();
 
-          this.ctx.clearRect(minX, minY, dirtyWidth, dirtyHeight);
+          this.ctx.clearRect(screenMinX, screenMinY, screenWidth, screenHeight);
+
+          // 恢复视口变换进行绘制
+          this.ctx.setTransform(m);
 
           super.paint(this.ctx);
 
@@ -205,9 +215,12 @@ export class Layer extends Rectangle {
       } else {
         // Fallback or initial render (全量重绘)
         this.clear();
+
         // 全量重绘不需要传脏矩形
         super.paint(this.ctx);
       }
+
+      this.finalDirtyRect = null as any;
 
       this.isRender = false;
       this.renderResolve?.();
@@ -229,7 +242,9 @@ export class Layer extends Rectangle {
   }
 
   clear() {
-    // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.save();
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.width, this.height);
+    this.ctx.restore();
   }
 }
