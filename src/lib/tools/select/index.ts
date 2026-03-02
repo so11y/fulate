@@ -269,9 +269,6 @@ export class Select extends Element {
     const sp = point.matrixTransform(vp);
     const size = this.controlSize;
     ctx.save();
-    ctx.resetTransform();
-    
-    // 移动到控制点位置，并根据选框自身的角度进行旋转，实现“潮汐锁定”
     ctx.translate(sp.x, sp.y);
     ctx.rotate(degreesToRadians(this.angle ?? 0));
 
@@ -320,7 +317,12 @@ export class Select extends Element {
     if (this._boundingRectCache) return this._boundingRectCache;
     const baseRect = super.getBoundingRect();
 
-    if (!this.selectEls || !this.selectEls.length || !this.width || !this.height) {
+    if (
+      !this.selectEls ||
+      !this.selectEls.length ||
+      !this.width ||
+      !this.height
+    ) {
       return baseRect;
     }
 
