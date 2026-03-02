@@ -17,6 +17,7 @@ export class Layer extends Rectangle {
   ctx: CanvasRenderingContext2D;
   zIndex: number;
   enableDirtyRect: boolean = true;
+  breakDirtyRectCheck = true;
   rbush = new RBush<RBushItem>();
 
   finalDirtyRect: RectPoint;
