@@ -282,7 +282,7 @@ export class Snap extends Element {
     const scale = this.root.viewport.scale;
 
     ctx.save();
-    ctx.setTransform(this.root.getViewPointMtrix());
+    // ctx.setTransform(this.root.getViewPointMtrix());
 
     ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = this.lineColor;

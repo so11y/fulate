@@ -1,5 +1,6 @@
 import { BaseElementOption, Element } from "./node/element";
 import RBush from "rbush";
+import { Rectangle } from "./ui/rectangle";
 
 export interface RBushItem {
   minX: number;
@@ -9,7 +10,7 @@ export interface RBushItem {
   element: Element;
 }
 
-export class Layer extends Element {
+export class Layer extends  Rectangle{
   type = "layer";
   canvasEl: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;

@@ -265,11 +265,10 @@ export class Select extends Element {
     point: Point,
     control: (typeof Controls)[0]
   ) {
-    const vp = this.root.getViewPointMtrix();
-    const sp = point.matrixTransform(vp);
     const size = this.controlSize;
     ctx.save();
-    ctx.translate(sp.x, sp.y);
+
+    ctx.translate(point.x, point.y);
     ctx.rotate(degreesToRadians(this.angle ?? 0));
 
     ctx.beginPath();
