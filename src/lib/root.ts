@@ -89,7 +89,8 @@ export class Root extends Node {
    */
   private checkHit(e: PointerEvent | MouseEvent) {
     if (this.isSpacePressed || this.isPanning) return;
-    if (this.hasLockPoint && this.currentElement) return;
+
+    if (this.hasLockPoint) return;
 
     const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
 
