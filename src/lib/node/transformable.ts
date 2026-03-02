@@ -311,8 +311,8 @@ export class Transformable extends Node {
 
     this.isDirty = true;
     this.coords = null;
-    this._boundingRectCache = null;
     this.lastBoundingRect = cloneDeep(this._boundingRectCache);
+    this._boundingRectCache = null;
     this.markChildDirty();
     if (this.layer) {
       this.layer.addDirtyNode(this as any);

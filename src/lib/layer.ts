@@ -201,11 +201,6 @@ export class Layer extends Rectangle {
           this.ctx.restore();
         }
 
-        // 5. 重置 dirty 状态
-        this.dirtyNodes.forEach((node) => {
-          node.lastBoundingRect = null;
-          node.isDirty = false;
-        });
         this.dirtyNodes.clear();
       } else {
         // Fallback or initial render (全量重绘)

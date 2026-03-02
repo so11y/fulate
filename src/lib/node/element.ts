@@ -64,6 +64,7 @@ export class Element extends Transformable {
   
   getDirtyRect() {
     const current = this.getBoundingRect();
+    console.log('---');
     if (!this.lastBoundingRect) return current;
 
     const minX = Math.min(current.left, this.lastBoundingRect.left);
