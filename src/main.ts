@@ -6,7 +6,7 @@ import { Layer } from "./lib/layer";
 import { Snap } from "./lib/tools/select/snap";
 import { Artboard } from "./lib/ui/artboard";
 import { Workspace } from "./lib/ui/workspace";
-import { Rectangle as Div, Display, FlexDirection, Justify } from "./yoga/base";
+import { Rectangle as Div, Display, FlexDirection, Justify } from "./yoga/div";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,
@@ -25,6 +25,7 @@ const floorLayer = new Layer({
 });
 
 const editerLayer = new Layer({
+  zIndex: 2,
   children: [new Rule(), new Select(), new Snap()]
 });
 

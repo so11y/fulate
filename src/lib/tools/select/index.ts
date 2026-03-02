@@ -270,13 +270,18 @@ export class Select extends Element {
     const size = this.controlSize;
     ctx.save();
     ctx.resetTransform();
+    
+    // 移动到控制点位置，并根据选框自身的角度进行旋转，实现“潮汐锁定”
+    ctx.translate(sp.x, sp.y);
+    ctx.rotate(degreesToRadians(this.angle ?? 0));
+
     ctx.beginPath();
     if (control.type === "mtr") {
       ctx.fillStyle = "#ff4757";
-      ctx.arc(sp.x, sp.y, size - 4, 0, Math.PI * 2);
+      ctx.arc(0, 0, size - 4, 0, Math.PI * 2);
     } else {
       ctx.fillStyle = "#0078ff";
-      ctx.roundRect(sp.x - size / 2, sp.y - size / 2, size, size);
+      ctx.roundRect(-size / 2, -size / 2, size, size);
     }
     ctx.fill();
     ctx.restore();
