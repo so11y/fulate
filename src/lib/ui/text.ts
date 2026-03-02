@@ -13,13 +13,15 @@ export interface TextOption extends BaseElementOption {
   underline?: boolean;
   lineHeight?: number;
   wordWrap?: boolean;
+  autoScale?: boolean;
 }
 
 const charWidthCache: Record<string, number> = {};
 
 // 预先测算并缓存常用字符
 function preCalculateChars(ctx: CanvasRenderingContext2D, font: string) {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i];
     const key = `${font}-${char}`;
@@ -59,7 +61,11 @@ export class Text extends Element {
   }
 
   // 获取单个字符宽度（带缓存）
-  private getCharWidth(ctx: CanvasRenderingContext2D, char: string, font: string): number {
+  private getCharWidth(
+    ctx: CanvasRenderingContext2D,
+    char: string,
+    font: string
+  ): number {
     const key = `${font}-${char}`;
     if (charWidthCache[key] !== undefined) {
       return charWidthCache[key];
@@ -70,7 +76,11 @@ export class Text extends Element {
   }
 
   // 测量字符串宽度：优先使用缓存累加，如果没有缓存则测量
-  private measureStringWidth(ctx: CanvasRenderingContext2D, str: string, font: string): number {
+  private measureStringWidth(
+    ctx: CanvasRenderingContext2D,
+    str: string,
+    font: string
+  ): number {
     let width = 0;
     for (let i = 0; i < str.length; i++) {
       width += this.getCharWidth(ctx, str[i], font);
@@ -79,7 +89,12 @@ export class Text extends Element {
   }
 
   // 基于二分法查找适合给定宽度的最大字符数
-  private findWrapIndexBinary(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, font: string): number {
+  private findWrapIndexBinary(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number,
+    font: string
+  ): number {
     let left = 0;
     let right = text.length;
     let best = 0;
@@ -89,7 +104,7 @@ export class Text extends Element {
       const subText = text.slice(0, mid);
       // 使用缓存的字符宽度进行快速测量
       const width = this.measureStringWidth(ctx, subText, font);
-      
+
       if (width <= maxWidth) {
         best = mid;
         left = mid + 1;
@@ -121,8 +136,13 @@ export class Text extends Element {
 
     let remainingText = this.text;
     while (remainingText.length > 0) {
-      const wrapIndex = this.findWrapIndexBinary(ctx, remainingText, maxWidth, font);
-      
+      const wrapIndex = this.findWrapIndexBinary(
+        ctx,
+        remainingText,
+        maxWidth,
+        font
+      );
+
       if (wrapIndex === 0) {
         // 如果连一个字符都放不下，强制放入一个字符防止死循环
         this.lines.push(remainingText[0]);
@@ -141,13 +161,7 @@ export class Text extends Element {
   }
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-    if (
-      this.layer.finalDirtyRect &&
-      !Intersection.intersectRect(
-        this.getBoundingRect(),
-        this.layer.finalDirtyRect
-      )
-    ) {
+    if (this.notInDitry()) {
       return;
     }
 
@@ -184,7 +198,7 @@ export class Text extends Element {
     for (let i = 0; i < this.lines.length; i++) {
       const line = this.lines[i];
       let x = 0;
-      
+
       if (this.textAlign === "center") {
         x = (this.width || 0) / 2;
       } else if (this.textAlign === "right") {
@@ -203,9 +217,12 @@ export class Text extends Element {
         } else if (this.textAlign === "right") {
           lineX = x - lineWidth;
         }
-        
-        const underlineY = y + this.fontSize * 0.1 + (this.textBaseline === "top" ? this.fontSize : 0);
-        
+
+        const underlineY =
+          y +
+          this.fontSize * 0.1 +
+          (this.textBaseline === "top" ? this.fontSize : 0);
+
         ctx.beginPath();
         ctx.moveTo(lineX, underlineY);
         ctx.lineTo(lineX + lineWidth, underlineY);
@@ -215,10 +232,6 @@ export class Text extends Element {
       }
     }
 
-    if (this.children?.length) {
-      super.paint(ctx);
-    }
-    
     ctx.restore();
   }
 }
