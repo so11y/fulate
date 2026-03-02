@@ -8,10 +8,9 @@ export class Workspace extends Element {
   type = "workspace";
   key = "workspace";
 
-
   mounted() {
     super.mounted();
-    this.layer?.nextTick(() => {
+    this.nextTick(() => {
       this.root.focusNode(this);
     });
   }

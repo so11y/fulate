@@ -139,6 +139,14 @@ export class Element extends Transformable {
     );
   }
 
+  nextTick(fn: () => void): void {
+    if (this.layer) {
+      this.layer.nextTick(fn);
+    } else {
+      setTimeout(fn, 0);
+    }
+  }
+
   /**
    * 设置选项（标记脏，延迟计算）
    * @param syncCalc 是否立即同步计算（用于需要立即获取坐标的场景）
