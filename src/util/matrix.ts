@@ -1,19 +1,5 @@
-import { Point } from "./point";
 import { radiansToDegrees } from "./radiansDegreesConversion";
 
-export function createTranslateMatrix(x: number, y: number): DOMMatrix {
-  const matrix = new DOMMatrix();
-  matrix.e = x;
-  matrix.f = y;
-  return matrix;
-}
-
-export function createRotateMatrix(point: Point, angle: number) {
-  return new DOMMatrix()
-    .translate(point.x, point.y)
-    .rotate(0, 0, angle)
-    .translate(-point.x, -point.y);
-}
 
 export function decomposeMatrix(a: DOMMatrix) {
   const angle = Math.atan2(a.b, a.a),

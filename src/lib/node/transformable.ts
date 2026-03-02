@@ -2,6 +2,7 @@ import { Node } from "./node";
 import { Point, PointType, TOriginX, TOriginY } from "../../util/point";
 import { resolveOrigin } from "../../util/resolveOrigin";
 import { Intersection } from "../../util/Intersection";
+import { cloneDeep } from "lodash-es";
 
 export interface Rect {
   left: number;
@@ -11,6 +12,8 @@ export interface Rect {
   centerX: number;
   centerY: number;
 }
+
+export interface RectPoint extends Omit<Rect, "centerX" | "centerY"> {}
 
 export interface TransformableOptions {
   left?: number;
@@ -25,8 +28,6 @@ export interface TransformableOptions {
   skewX?: number;
   skewY?: number;
 }
-
-import { RBushItem } from "../layer";
 
 export class Transformable extends Node {
   // 变换属性
@@ -50,8 +51,7 @@ export class Transformable extends Node {
   protected ownMatrixCache: DOMMatrix = new DOMMatrix();
   protected coords: Array<Point> | null = null;
   protected _boundingRectCache: Rect | null = null;
-  
-  rbushItem: RBushItem | null = null;
+  lastBoundingRect: Rect | null = null;
 
   isDirty = true;
 
@@ -312,9 +312,10 @@ export class Transformable extends Node {
     this.isDirty = true;
     this.coords = null;
     this._boundingRectCache = null;
-
+    this.lastBoundingRect = cloneDeep(this._boundingRectCache);
     this.markChildDirty();
     if (this.layer) {
+      this.layer.addDirtyNode(this as any);
       this.layer.requestRender?.();
     }
 

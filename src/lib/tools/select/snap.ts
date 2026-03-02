@@ -74,10 +74,30 @@ export class Snap extends Element {
         Math.abs(coords[3].y - coords[2].y) < 0.01;
 
       if (isAxisAligned) {
-        const minX = Math.min(coords[0].x, coords[1].x, coords[2].x, coords[3].x);
-        const maxX = Math.max(coords[0].x, coords[1].x, coords[2].x, coords[3].x);
-        const minY = Math.min(coords[0].y, coords[1].y, coords[2].y, coords[3].y);
-        const maxY = Math.max(coords[0].y, coords[1].y, coords[2].y, coords[3].y);
+        const minX = Math.min(
+          coords[0].x,
+          coords[1].x,
+          coords[2].x,
+          coords[3].x
+        );
+        const maxX = Math.max(
+          coords[0].x,
+          coords[1].x,
+          coords[2].x,
+          coords[3].x
+        );
+        const minY = Math.min(
+          coords[0].y,
+          coords[1].y,
+          coords[2].y,
+          coords[3].y
+        );
+        const maxY = Math.max(
+          coords[0].y,
+          coords[1].y,
+          coords[2].y,
+          coords[3].y
+        );
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
 
@@ -132,8 +152,10 @@ export class Snap extends Element {
         Math.abs(originalPoints[3].y - originalPoints[2].y) < 0.01;
     }
 
-    let targetX: { val: number; index: number; min?: number; max?: number }[] = [];
-    let targetY: { val: number; index: number; min?: number; max?: number }[] = [];
+    let targetX: { val: number; index: number; min?: number; max?: number }[] =
+      [];
+    let targetY: { val: number; index: number; min?: number; max?: number }[] =
+      [];
     let pointsToSnap: Point[] = [];
 
     if (isAxisAligned) {

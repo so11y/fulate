@@ -222,6 +222,18 @@ export class Intersection {
     }
     return result;
   }
+
+  static intersectRect(
+    r1: { left: number; top: number; width: number; height: number },
+    r2: { left: number; top: number; width: number; height: number }
+  ): boolean {
+    return !(
+      r1.left + r1.width < r2.left ||
+      r1.left > r2.left + r2.width ||
+      r1.top + r1.height < r2.top ||
+      r1.top > r2.top + r2.height
+    );
+  }
   /**
    * Checks if segment intersects polygon
    * @static

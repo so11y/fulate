@@ -61,6 +61,32 @@ export class Element extends Transformable {
       Object.assign(this._options, options);
     }
   }
+  
+  getDirtyRect() {
+    const current = this.getBoundingRect();
+    if (!this.lastBoundingRect) return current;
+
+    const minX = Math.min(current.left, this.lastBoundingRect.left);
+    const minY = Math.min(current.top, this.lastBoundingRect.top);
+    const maxX = Math.max(
+      current.left + current.width,
+      this.lastBoundingRect.left + this.lastBoundingRect.width
+    );
+    const maxY = Math.max(
+      current.top + current.height,
+      this.lastBoundingRect.top + this.lastBoundingRect.height
+    );
+
+    return {
+      left: minX,
+      top: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2
+    };
+  }
+
 
   /**
    * 纯净渲染函数（只负责绘制，不处理数学计算）

@@ -1,10 +1,20 @@
+import { Intersection } from "../../util/Intersection";
 import { Element } from "../node/element";
 
 export class Rectangle extends Element {
   type = "rectangle";
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-   
+    if (
+      this.layer.finalDirtyRect &&
+      !Intersection.intersectRect(
+        this.getBoundingRect(),
+        this.layer.finalDirtyRect
+      )
+    ) {
+      return;
+    }
+
     ctx.save();
     ctx.beginPath();
     ctx.setTransform(

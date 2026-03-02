@@ -26,6 +26,7 @@ const floorLayer = new Layer({
 
 const editerLayer = new Layer({
   zIndex: 2,
+  enableDirtyRect: false,
   children: [new Rule(), new Select(), new Snap()]
 });
 

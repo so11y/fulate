@@ -1,3 +1,4 @@
+import { RectPoint } from "../lib/node/transformable";
 import { halfPI } from "./constants";
 import { radiansToDegrees } from "./radiansDegreesConversion";
 export function cos(angle: number) {
@@ -43,7 +44,7 @@ export function qrDecompose(matrix: DOMMatrix) {
   // mUnrotated = R(-theta) * M = K * S
   const a1 = a * cos - b * sin;
   const c1 = c * cos - d * sin;
-//   const b1 = a * sin + b * cos; // 理论上应为 0
+  //   const b1 = a * sin + b * cos; // 理论上应为 0
   const d1 = c * sin + d * cos;
 
   const resScaleX = a1;
@@ -55,5 +56,21 @@ export function qrDecompose(matrix: DOMMatrix) {
     scaleX: resScaleX,
     scaleY: resScaleY,
     skewX: radiansToDegrees(resSkewXRad)
+  };
+}
+
+export function mergeTwoRects(rect1: RectPoint, rect2: RectPoint): RectPoint {
+  if (!rect1) return { ...rect2 };
+  if (!rect2) return { ...rect1 };
+
+  return {
+    left: Math.min(rect1.left, rect2.left),
+    top: Math.min(rect1.top, rect2.top),
+    width:
+      Math.max(rect1.left + rect1.width, rect2.left + rect2.width) -
+      Math.min(rect1.left, rect2.left),
+    height:
+      Math.max(rect1.top + rect1.height, rect2.top + rect2.height) -
+      Math.min(rect1.top, rect2.top)
   };
 }
