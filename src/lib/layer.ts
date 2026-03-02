@@ -39,7 +39,6 @@ export class Layer extends Rectangle {
     }
   ) {
     super(options);
-    this.zIndex = options?.zIndex ?? 1;
     this.enableDirtyRect = options?.enableDirtyRect ?? true;
     this.canvasEl = document.createElement("canvas");
     this.ctx = (this.canvasEl as HTMLCanvasElement).getContext("2d")!;
@@ -62,7 +61,7 @@ export class Layer extends Rectangle {
     this.canvasEl.style.position = "absolute";
     this.canvasEl.style.left = "0px";
     this.canvasEl.style.top = "0px";
-    this.canvasEl.style.zIndex = this.zIndex.toString();
+    this.canvasEl.style.zIndex = (this.zIndex ?? 1).toString();
     root.container.appendChild(this.canvasEl);
     root.registerLayer(this);
   }
