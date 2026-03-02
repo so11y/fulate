@@ -13,11 +13,19 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
   height: window.innerHeight
 });
 
-const editerLayer = new Layer({
-  zIndex: 2,
+const floorLayer = new Layer({
   children: [
-    new Rule(), new Select(), new Snap()
+    new Rectangle({
+      backgroundColor: "#E5E5E5",
+      width: 1920,
+      height: 900,
+      silent: true
+    })
   ]
+});
+
+const editerLayer = new Layer({
+  children: [new Rule(), new Select(), new Snap()]
 });
 
 const div1 = new Rectangle({
@@ -58,11 +66,8 @@ const dev3 = new Rectangle({
 });
 
 root.append(
-  // floorLayer,
-  // div1,
-  // div2,
+  floorLayer,
   new Workspace({
-    backgroundColor: "#E5E5E5",
     width: 1920,
     height: 900,
     children: [

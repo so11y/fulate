@@ -31,6 +31,8 @@ export {
   Wrap
 };
 
+const keysToSync = ["left", "top", "width", "height"];
+
 export interface YogaOption extends Omit<
   BaseElementOption,
   | "left"
@@ -172,7 +174,6 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       super.setOptions(options as any);
       this.flushStyles();
       if (this.isMounted) {
-        console.log("---");
         this.inject("yoga-root").layout();
       }
       return this;
@@ -287,6 +288,21 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
         this.yogaNode.setBoxSizing(options.boxSizing);
       // !isNil(this.overflow) && this.yogaNode.setOverflow(this.overflow);
 
+      return this;
+    }
+
+    quickSetOptions(options: BaseElementOption): this {
+      super.quickSetOptions(options);
+      let needFlush = false;
+      for (const key of keysToSync) {
+        if (options[key] !== undefined) {
+          this._options[key] = options[key];
+          needFlush = true;
+        }
+      }
+      if (needFlush) {
+        this.flushStyles();
+      }
       return this;
     }
 

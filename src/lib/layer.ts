@@ -1,17 +1,31 @@
-import { BaseElementOption } from "./node/element";
-import { Rectangle } from "./ui/rectangle";
+import { BaseElementOption, Element } from "./node/element";
+import RBush from "rbush";
 
-export class Layer extends Rectangle {
+export interface RBushItem {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  element: Element;
+}
+
+export class Layer extends Element {
   type = "layer";
   canvasEl: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   zIndex: number;
+  rbush = new RBush<RBushItem>();
 
   private isRender: boolean = false;
   private renderResolve: (() => void) | null = null;
   private renderPromise: Promise<void> | null = null;
 
-  constructor(options?: BaseElementOption & { zIndex?: number }) {
+  private pendingSyncNodes = new Set<Element>();
+  private syncTimeout: number | null = null;
+
+  constructor(
+    options?: BaseElementOption & { zIndex?: number; silen?: boolean }
+  ) {
     super(options);
     this.zIndex = options?.zIndex ?? 1;
     this.canvasEl = document.createElement("canvas");
@@ -40,6 +54,64 @@ export class Layer extends Rectangle {
     this.canvasEl.style.top = "0px";
     this.canvasEl.style.zIndex = this.zIndex.toString();
     root.container.appendChild(this.canvasEl);
+    root.registerLayer(this);
+  }
+
+  unmounted() {
+    super.unmounted();
+    if (this.canvasEl.parentNode) {
+      this.canvasEl.parentNode.removeChild(this.canvasEl);
+    }
+    this.root?.unregisterLayer(this);
+  }
+
+  syncNode(node: Element) {
+    if (node.type === "layer" || node.type === "root") return;
+    this.pendingSyncNodes.add(node);
+    if (this.syncTimeout === null) {
+      this.syncTimeout = requestAnimationFrame(() => {
+        this.flushSyncNodes();
+        this.syncTimeout = null;
+      }) as any;
+    }
+  }
+
+  searchHitElements(x: number, y: number): Element[] {
+    const hits = this.rbush.search({ minX: x, minY: y, maxX: x, maxY: y });
+    return hits.map((h) => h.element);
+  }
+
+  flushSyncNodes() {
+    this.pendingSyncNodes.forEach((node: any) => {
+      if (node.width === undefined || node.height === undefined) {
+        if (node.rbushItem) {
+          this.rbush.remove(node.rbushItem);
+          node.rbushItem = null;
+        }
+        return;
+      }
+
+      const { left, top, width, height } = node.getBoundingRect();
+
+      if (node.rbushItem) {
+        this.rbush.remove(node.rbushItem);
+        node.rbushItem.minX = left;
+        node.rbushItem.minY = top;
+        node.rbushItem.maxX = left + width;
+        node.rbushItem.maxY = top + height;
+        this.rbush.insert(node.rbushItem);
+      } else {
+        node.rbushItem = {
+          minX: left,
+          minY: top,
+          maxX: left + width,
+          maxY: top + height,
+          element: node
+        };
+        this.rbush.insert(node.rbushItem);
+      }
+    });
+    this.pendingSyncNodes.clear();
   }
 
   hasInView() {

@@ -1,7 +1,8 @@
+import { Node } from "./node/node";
 import { Layer } from "./layer";
 import { Element } from "./node/element";
 
-export class Root extends Layer {
+export class Root extends Node {
   type = "root";
 
   container: HTMLElement;
@@ -9,7 +10,6 @@ export class Root extends Layer {
   viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
   currentElement?: Element;
   keyElmenet = new Map();
-  quickElements: Array<Element> = [];
 
   _provides = Object.create(null);
 
@@ -18,8 +18,13 @@ export class Root extends Layer {
   private hasLockPoint = false;
   private lastPointerPos = { x: 0, y: 0 };
 
+  width: number;
+  height: number;
+
+  layers: Layer[] = [];
+
   constructor(el: HTMLElement, options?: { width?: number; height?: number }) {
-    super({ zIndex: 0 });
+    super();
     this.container = el;
     this.width = options?.width ?? el.clientWidth;
     this.height = options?.height ?? el.clientHeight;
@@ -35,9 +40,26 @@ export class Root extends Layer {
     this.requestRender();
   }
 
+  registerLayer(layer: Layer) {
+    if (!this.layers.includes(layer)) {
+      this.layers.push(layer);
+      this.layers.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+    }
+  }
+
+  unregisterLayer(layer: Layer) {
+    const idx = this.layers.indexOf(layer);
+    if (idx !== -1) {
+      this.layers.splice(idx, 1);
+    }
+  }
+
   mounteded() {
-    this.calcEventSort();
     this.initEvents();
+  }
+
+  requestRender() {
+    this.layers.forEach((layer) => layer.requestRender());
   }
 
   /**
@@ -72,10 +94,26 @@ export class Root extends Layer {
     const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
 
     this.currentElement = undefined;
-    for (const element of this.quickElements) {
-      if (element.visible && element.hasPointHint(x, y)) {
-        this.currentElement = element;
-        break;
+
+    // 遍历 layers (从上到下)
+    for (let i = this.layers.length - 1; i >= 0; i--) {
+      const layer = this.layers[i];
+
+      const hitElements = layer.searchHitElements(x, y);
+      if (hitElements.length > 0) {
+        // 由于 rbush 返回的结果可能是无序的，这里根据 id 倒序排列，优先命中后创建（显示在更上层）的元素
+        hitElements.sort((a, b) => b.id - a.id);
+        for (const element of hitElements) {
+          if (
+            !element.silent &&
+            element.visible &&
+            element.hasPointHint &&
+            element.hasPointHint(x, y)
+          ) {
+            this.currentElement = element;
+            return;
+          }
+        }
       }
     }
   }
@@ -258,23 +296,6 @@ export class Root extends Layer {
       ...detail,
       target: targetEl
     });
-  }
-
-  calcEventSort() {
-    const stack: Element[] = [this];
-    const resultStack: Element[] = [];
-    while (stack.length > 0) {
-      const currentNode = stack.pop()!;
-      if (currentNode.eventManage?.hasUserEvent) {
-        resultStack.unshift(currentNode);
-      }
-      if (currentNode.children) {
-        for (let i = currentNode.children.length - 1; i >= 0; i--) {
-          stack.push(currentNode.children[i]);
-        }
-      }
-    }
-    this.quickElements = resultStack;
   }
 
   focusNode(node: Element, padding = 10) {

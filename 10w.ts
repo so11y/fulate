@@ -22,6 +22,8 @@ const editerLayer = new Layer({
   ]
 });
 
+const layer = new Layer();
+
 // 生成 10w 个节点网格
 const gridChildren: Rectangle[] = [];
 const cols = 316;
@@ -49,7 +51,9 @@ for (let row = 0; row < rows; row++) {
   }
 }
 
-root.append(...gridChildren);
+layer.append(...gridChildren);
+
+root.append(layer);
 
 // div1.addEventListener("click", (e) => {
 //   e.detail.target
@@ -61,36 +65,36 @@ root.append(...gridChildren);
 
 console.time("渲染10w节点");
 root.mounted();
-root.layer.nextTick(() => {
-  console.timeEnd("渲染10w节点");
-});
+// root.layer.nextTick(() => {
+//   console.timeEnd("渲染10w节点");
+// });
 
 // FPS 计算
-// let lastTime = performance.now();
-// let frames = 0;
-// const fpsEl = document.createElement("div");
-// fpsEl.style.position = "fixed";
-// fpsEl.style.top = "10px";
-// fpsEl.style.right = "10px";
-// fpsEl.style.padding = "8px 12px";
-// fpsEl.style.backgroundColor = "rgba(0,0,0,0.7)";
-// fpsEl.style.color = "#0f0";
-// fpsEl.style.fontFamily = "monospace";
-// fpsEl.style.fontSize = "14px";
-// fpsEl.style.zIndex = "9999";
-// document.body.appendChild(fpsEl);
+let lastTime = performance.now();
+let frames = 0;
+const fpsEl = document.createElement("div");
+fpsEl.style.position = "fixed";
+fpsEl.style.top = "10px";
+fpsEl.style.right = "10px";
+fpsEl.style.padding = "8px 12px";
+fpsEl.style.backgroundColor = "rgba(0,0,0,0.7)";
+fpsEl.style.color = "#0f0";
+fpsEl.style.fontFamily = "monospace";
+fpsEl.style.fontSize = "14px";
+fpsEl.style.zIndex = "9999";
+document.body.appendChild(fpsEl);
 
-// function updateFPS() {
-//   frames++;
-//   const now = performance.now();
-//   if (now >= lastTime + 1000) {
-//     const fps = Math.round((frames * 1000) / (now - lastTime));
-//     fpsEl.textContent = `FPS: ${fps}`;
-//     frames = 0;
-//     lastTime = now;
-//   }
-//   requestAnimationFrame(updateFPS);
-// }
-// updateFPS();
+function updateFPS() {
+  frames++;
+  const now = performance.now();
+  if (now >= lastTime + 1000) {
+    const fps = Math.round((frames * 1000) / (now - lastTime));
+    fpsEl.textContent = `FPS: ${fps}`;
+    frames = 0;
+    lastTime = now;
+  }
+  requestAnimationFrame(updateFPS);
+}
+updateFPS();
 
-// console.log(root, "--");
+console.log(root, "--");

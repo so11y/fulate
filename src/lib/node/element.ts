@@ -9,6 +9,7 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   cursor?: string;
   visible?: boolean;
   selectctbale?: boolean;
+  silent?: boolean;
 
   onclick?: (e: FulateEvent<T>) => any;
   onpointermove?: (e: FulateEvent<T>) => any;

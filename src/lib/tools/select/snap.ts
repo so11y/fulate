@@ -41,7 +41,7 @@ export class Snap extends Element {
   lineWidth = 1;
   dashPattern = [4, 4];
 
-  selectable = false;
+  silent = true;
 
   private isActive = false;
   private snapLines: SnapLine[] = [];
@@ -276,7 +276,6 @@ export class Snap extends Element {
   }
 
   paint() {
-    console.log("---");
     if (!this.isActive || this.snapLines.length === 0) return;
 
     const ctx = this.layer.ctx;

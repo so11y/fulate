@@ -57,14 +57,14 @@ export class EventManage {
 
     if (eventName === "mouseleave" && this.hasMouseEnter) {
       //@ts-ignore
-      if (this.target.hasPointHint(event.x, event.y)) {
+      if (this.target.hasPointHint?.(event.x, event.y)) {
         return;
       }
       this.target.root.container.style.cursor = "default";
       this.hasMouseEnter = false;
     }
 
-    let parent = this.target.parent;
+    let parent = this.target.parent as any;
     const customEvent = new CustomEvent(eventName, {
       detail: {
         target: event?.target ?? this.target,
@@ -82,6 +82,7 @@ export class EventManage {
     if (!parent) {
       return;
     }
+    //@ts-ignore
     while (parent !== this.target.root) {
       parent = parent?.parent;
     }

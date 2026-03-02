@@ -20,7 +20,8 @@ export class Rule extends Element {
   type = "rule";
   key = "rule";
   rulerSize = 25;
-  selectable = false;
+
+  silent = true;
 
   hasInView() {
     return true;

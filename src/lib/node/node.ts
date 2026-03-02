@@ -5,6 +5,9 @@ import { type Layer } from "../layer";
 export class Node extends EventTarget {
   type = "node";
 
+  static nextId = 1;
+  id = Node.nextId++;
+
   // 树结构关系
   root: Root;
   layer: Layer;
@@ -20,6 +23,8 @@ export class Node extends EventTarget {
   key: string;
 
   hasDirtyChild = false;
+
+  silent = false;
 
   // 事件管理器
   eventManage = new EventManage(this as any);
@@ -44,7 +49,7 @@ export class Node extends EventTarget {
    * 性能优化：如果祖先已经标记为脏，立即停止冒泡
    */
   markChildDirty() {
-    if (!this.isMounted) {
+    if (!this.isMounted || this.parent.hasDirtyChild) {
       return;
     }
     let p = this.parent;
@@ -74,7 +79,6 @@ export class Node extends EventTarget {
       nodes.forEach((v) => v.mounted());
     }
     if (this.root) {
-      this.root.calcEventSort();
       this.dispatchEvent(new CustomEvent("childrenchange"));
     }
   }
@@ -159,7 +163,6 @@ export class Node extends EventTarget {
     children.forEach((child) => child.unmounted());
     this.hasDirtyChild = true;
     this.markChildDirty();
-    this.root?.calcEventSort();
     this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }

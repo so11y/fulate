@@ -311,6 +311,41 @@ export class Select extends Element {
     ctx.restore();
   }
 
+  getBoundingRect() {
+    if (this._boundingRectCache) return this._boundingRectCache;
+    const baseRect = super.getBoundingRect();
+
+    if (!this.selectEls || !this.selectEls.length || !this.width || !this.height) {
+      return baseRect;
+    }
+
+    const coords = this.getControlCoords();
+    let minX = baseRect.left;
+    let minY = baseRect.top;
+    let maxX = baseRect.left + baseRect.width;
+    let maxY = baseRect.top + baseRect.height;
+
+    const padding = this.controlSize + this.hitPadding;
+
+    for (const p of coords) {
+      minX = Math.min(minX, p.x - padding);
+      minY = Math.min(minY, p.y - padding);
+      maxX = Math.max(maxX, p.x + padding);
+      maxY = Math.max(maxY, p.y + padding);
+    }
+
+    this._boundingRectCache = {
+      left: minX,
+      top: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2
+    };
+
+    return this._boundingRectCache;
+  }
+
   hasPointHint(x: number, y: number): boolean {
     if (!this.selectEls.length) {
       return false;

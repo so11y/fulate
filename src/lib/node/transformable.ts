@@ -26,6 +26,8 @@ export interface TransformableOptions {
   skewY?: number;
 }
 
+import { RBushItem } from "../layer";
+
 export class Transformable extends Node {
   // 变换属性
   left = 0;
@@ -48,6 +50,8 @@ export class Transformable extends Node {
   protected ownMatrixCache: DOMMatrix = new DOMMatrix();
   protected coords: Array<Point> | null = null;
   protected _boundingRectCache: Rect | null = null;
+  
+  rbushItem: RBushItem | null = null;
 
   isDirty = true;
 
@@ -327,6 +331,7 @@ export class Transformable extends Node {
         this.setCoords();
       }
       this.isDirty = false;
+      this.layer?.syncNode(this as any);
     }
 
     if (shouldUpdate || this.hasDirtyChild) {
