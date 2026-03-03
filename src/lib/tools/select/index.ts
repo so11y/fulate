@@ -8,6 +8,8 @@ import { FulateEvent } from "../../eventManage";
 import { Controls, resizeObject, rotateCallback } from "./controls";
 import { Snap } from "./snap";
 
+const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
+
 export class Select extends Element {
   declare selectEls: Element[];
   declare currentControl: { control: any; point: any };
@@ -382,7 +384,6 @@ export class Select extends Element {
         distance <= scaledControlSize + scaledRotatePadding &&
         !super.hasPointHint(x, y)
       ) {
-        const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
         this.cursor = rotateCursor;
         this.currentControl = {
           point: hintPoint,
