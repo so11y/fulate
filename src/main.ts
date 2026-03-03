@@ -6,7 +6,13 @@ import { Layer } from "./lib/layer";
 import { Snap } from "./lib/tools/select/snap";
 import { Artboard } from "./lib/ui/artboard";
 import { Workspace } from "./lib/ui/workspace";
-import { Rectangle as Div, Display, FlexDirection, Justify } from "./yoga/div";
+import {
+  Rectangle as Div,
+  Display,
+  FlexDirection,
+  Justify,
+  Align
+} from "./yoga/div";
 import { Text } from "./lib/ui/text";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
@@ -79,13 +85,6 @@ root.append(
           div1,
           div2,
           dev3,
-          new Text({
-            left: 300,
-            width: 100,
-            height: 50,
-            autoScale:false,
-            text: "dqawd  毫安啊啊 "
-          }),
           new Div({
             left: 300,
             top: 170,
@@ -98,6 +97,7 @@ root.append(
               new Div({
                 width: 50,
                 backgroundColor: "black",
+                height: 50,
                 onclick(e) {
                   e.detail.target.setOptions({
                     width: 10
@@ -118,6 +118,17 @@ root.append(
                 width: 100,
                 height: 100,
                 backgroundColor: "pink"
+              }),
+              new Text({
+                left: 300,
+                width: 100,
+                textAlign: "center",
+                verticalAlign: "middle",
+                backgroundColor: "blue",
+                color: "#fff",
+                underline: true,
+                height: 50,
+                text: "dqawd  毫安啊啊 "
               })
             ]
           })

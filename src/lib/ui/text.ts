@@ -1,5 +1,4 @@
 import { BaseElementOption, Element } from "../node/element";
-import { Intersection } from "../../util/Intersection";
 
 export interface TextOption extends BaseElementOption {
   text?: string;
@@ -10,29 +9,18 @@ export interface TextOption extends BaseElementOption {
   color?: string;
   textAlign?: "left" | "center" | "right";
   textBaseline?: CanvasTextBaseline;
+  verticalAlign?: "top" | "middle" | "bottom"; // 新增：垂直对齐选项
   underline?: boolean;
   lineHeight?: number;
   wordWrap?: boolean;
   autoScale?: boolean;
 }
 
-const charWidthCache: Record<string, number> = {};
-
-// 预先测算并缓存常用字符
-function preCalculateChars(ctx: CanvasRenderingContext2D, font: string) {
-  const chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  for (let i = 0; i < chars.length; i++) {
-    const char = chars[i];
-    const key = `${font}-${char}`;
-    if (charWidthCache[key] === undefined) {
-      charWidthCache[key] = ctx.measureText(char).width;
-    }
-  }
-}
-
 export class Text extends Element {
   type = "text";
+
+  // 1. 改为静态属性，所有 Text 实例共享缓存
+  static charWidthCache: Record<string, number> = {};
 
   text: string = "";
   fontSize: number = 14;
@@ -42,6 +30,7 @@ export class Text extends Element {
   color: string = "#000000";
   textAlign: "left" | "center" | "right" = "left";
   textBaseline: CanvasTextBaseline = "top";
+  verticalAlign: "top" | "middle" | "bottom" = "top"; // 新增：默认顶部对齐
   underline: boolean = false;
   lineHeight: number = 1.5;
   wordWrap: boolean = true;
@@ -60,22 +49,35 @@ export class Text extends Element {
     return `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
   }
 
-  // 获取单个字符宽度（带缓存）
+  // 预先测算并缓存常用字符 (使用静态缓存)
+  private preCalculateChars(ctx: CanvasRenderingContext2D, font: string) {
+    const chars =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i];
+      const key = `${font}-${char}`;
+      if (Text.charWidthCache[key] === undefined) {
+        Text.charWidthCache[key] = ctx.measureText(char).width;
+      }
+    }
+  }
+
+  // 获取单个字符宽度（使用静态缓存）
   private getCharWidth(
     ctx: CanvasRenderingContext2D,
     char: string,
     font: string
   ): number {
     const key = `${font}-${char}`;
-    if (charWidthCache[key] !== undefined) {
-      return charWidthCache[key];
+    if (Text.charWidthCache[key] !== undefined) {
+      return Text.charWidthCache[key];
     }
     const width = ctx.measureText(char).width;
-    charWidthCache[key] = width;
+    Text.charWidthCache[key] = width;
     return width;
   }
 
-  // 测量字符串宽度：优先使用缓存累加，如果没有缓存则测量
+  // 测量字符串宽度
   private measureStringWidth(
     ctx: CanvasRenderingContext2D,
     str: string,
@@ -88,7 +90,7 @@ export class Text extends Element {
     return width;
   }
 
-  // 基于二分法查找适合给定宽度的最大字符数
+  // 二分法查找换行位置
   private findWrapIndexBinary(
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -102,7 +104,6 @@ export class Text extends Element {
     while (left <= right) {
       const mid = Math.floor((left + right) / 2);
       const subText = text.slice(0, mid);
-      // 使用缓存的字符宽度进行快速测量
       const width = this.measureStringWidth(ctx, subText, font);
 
       if (width <= maxWidth) {
@@ -116,21 +117,31 @@ export class Text extends Element {
   }
 
   // 计算文本换行
-  private computeLines(ctx: CanvasRenderingContext2D) {
+  private computeLines(
+    ctx: CanvasRenderingContext2D,
+    renderWidth: number,
+    stretchY: number
+  ) {
     const font = this.fontString;
     ctx.font = font;
-    preCalculateChars(ctx, font);
+    this.preCalculateChars(ctx, font);
 
     this.lines = [];
+    // 计算单行高度像素值
+    const lineHeightPx = this.fontSize * this.lineHeight;
+
     if (!this.text) {
       this.textHeight = 0;
       return;
     }
 
-    const maxWidth = this.width;
+    const maxWidth = renderWidth;
     if (!this.wordWrap || !maxWidth || maxWidth <= 0) {
       this.lines = [this.text];
-      this.textHeight = this.fontSize * this.lineHeight;
+      this.textHeight = lineHeightPx;
+      if (this.height === undefined) {
+        this.height = stretchY === 0 ? 0 : this.textHeight / stretchY;
+      }
       return;
     }
 
@@ -144,7 +155,6 @@ export class Text extends Element {
       );
 
       if (wrapIndex === 0) {
-        // 如果连一个字符都放不下，强制放入一个字符防止死循环
         this.lines.push(remainingText[0]);
         remainingText = remainingText.slice(1);
       } else {
@@ -153,41 +163,78 @@ export class Text extends Element {
       }
     }
 
-    this.textHeight = this.lines.length * this.fontSize * this.lineHeight;
-    // 如果没有固定高度，可以根据文本内容自动撑开高度
+    // 更新文本总高度
+    this.textHeight = this.lines.length * lineHeightPx;
     if (this.height === undefined) {
-      this.height = this.textHeight;
+      this.height = stretchY === 0 ? 0 : this.textHeight / stretchY;
     }
   }
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-    if (this.notInDitry()) {
-      return;
-    }
 
     ctx.save();
     ctx.beginPath();
-    ctx.setTransform(
-      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
+
+    const vpMatrix = this.root.getViewPointMtrix();
+    const localMatrix = this.getOwnMatrix();
+    const matrix = vpMatrix.multiply(localMatrix);
+
+    const stretchX = Math.sqrt(
+      localMatrix.a * localMatrix.a + localMatrix.b * localMatrix.b
+    );
+    const stretchY = Math.sqrt(
+      localMatrix.c * localMatrix.c + localMatrix.d * localMatrix.d
     );
 
-    // 绘制背景
-    if (this.backgroundColor) {
-      ctx.fillStyle = this.backgroundColor;
-      ctx.roundRect(0, 0, this.width || 0, this.height || 0, this.radius ?? 0);
-      ctx.fill();
-    }
+    const renderWidth = (this.width || 0) * stretchX;
 
-    // 准备文本样式
+    const { a, b, c, d, e, f } = matrix as any;
+    const angle = Math.atan2(b, a);
+    const det = a * d - b * c;
+    const flip = det < 0 ? -1 : 1;
+    const vpScale = Math.sqrt(
+      vpMatrix.a * vpMatrix.a + vpMatrix.b * vpMatrix.b
+    );
+
+    const newA = vpScale * Math.cos(angle);
+    const newB = vpScale * Math.sin(angle);
+    const newC = -vpScale * flip * Math.sin(angle);
+    const newD = vpScale * flip * Math.cos(angle);
+
+    ctx.setTransform(newA, newB, newC, newD, e, f);
+
     ctx.font = this.fontString;
     ctx.fillStyle = this.color;
     ctx.textAlign = this.textAlign;
     ctx.textBaseline = this.textBaseline;
 
-    // 计算换行
-    this.computeLines(ctx);
+    // 计算行
+    this.computeLines(ctx, renderWidth, stretchY);
 
+    // 计算最终渲染高度
+    const renderHeight =
+      this.height !== undefined ? this.height * stretchY : this.textHeight;
+
+    // 绘制背景
+    if (this.backgroundColor) {
+      ctx.fillStyle = this.backgroundColor;
+      ctx.roundRect(0, 0, renderWidth, renderHeight, this.radius ?? 0);
+      ctx.fill();
+      ctx.fillStyle = this.color;
+    }
+
+    // 行高像素
     const lineHeightPx = this.fontSize * this.lineHeight;
+
+    // 2. 计算垂直对齐的偏移量 (verticalOffset)
+    let verticalOffset = 0;
+    if (this.verticalAlign === "middle") {
+      verticalOffset = (renderHeight - this.textHeight) / 2;
+    } else if (this.verticalAlign === "bottom") {
+      verticalOffset = renderHeight - this.textHeight;
+    }
+
+    // 基础 Y 坐标 (处理 textBaseline)
     let startY = 0;
     if (this.textBaseline === "middle") {
       startY = lineHeightPx / 2;
@@ -200,15 +247,16 @@ export class Text extends Element {
       let x = 0;
 
       if (this.textAlign === "center") {
-        x = (this.width || 0) / 2;
+        x = renderWidth / 2;
       } else if (this.textAlign === "right") {
-        x = this.width || 0;
+        x = renderWidth;
       }
 
-      const y = startY + i * lineHeightPx;
+      // 3. 应用垂直偏移量
+      const y = startY + i * lineHeightPx + verticalOffset;
+
       ctx.fillText(line, x, y);
 
-      // 绘制下划线
       if (this.underline) {
         const lineWidth = this.measureStringWidth(ctx, line, this.fontString);
         let lineX = x;

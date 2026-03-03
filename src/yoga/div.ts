@@ -161,7 +161,9 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       super.mounted();
       if (this.children) {
         this.children.forEach((child, index) => {
-          this.yogaNode.insertChild(child.yogaNode, index);
+          if (child.yogaNode) {
+            this.yogaNode.insertChild(child.yogaNode, index);
+          }
         });
       }
       this.flushStyles();

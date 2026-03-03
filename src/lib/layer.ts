@@ -241,10 +241,6 @@ export class Layer extends Rectangle {
   }
 
   paint() {
-    if (this.notInDitry()) {
-      return;
-    }
-
     this.requestRender();
   }
 
