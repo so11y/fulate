@@ -97,126 +97,86 @@ export const Controls: Array<Control> = [
     ) {
       return resizeObject(selectEL, selectState, event, "bl");
     }
-  },
-  // {
-  //     type: "mb",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: 0,
-  //     y: 0.5
-  // },
-  // {
-  //     type: "ml",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: -0.5,
-  //     y: 0
-  // },
-  // {
-  //     type: "mr",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: 0.5,
-  //     y: 0
-  // },
-  // {
-  //     type: "mt",
-  //     actionName: "scale",
-  //     cursor: "crosshair",
-  //     x: 0,
-  //     y: -0.5
-  // },
-  {
-    type: "mtr",
-    actionName: "rotate",
-    cursor: "crosshair",
-    x: 0.5,
-    y: 0,
-    offsetY: -40,
-    rotateObjectWithSnapping(
-      //   eventData,
-      { target, ex, ey, theta, originX, originY },
-      x: number,
-      y: number
-    ) {
-      const pivotPoint = target.translateToGivenOrigin(
-        target.getRelativeCenterPoint(),
-        originX,
-        originY
-      );
-      // if (isLocked(target, "lockRotation")) {
-      //     return false;
-      // }
-      const lastAngle = Math.atan2(ey - pivotPoint.y, ex - pivotPoint.x),
-        curAngle = Math.atan2(y - pivotPoint.y, x - pivotPoint.x);
-      let angle = radiansToDegrees(curAngle - lastAngle + theta);
-      if (target.snapAngle && target.snapAngle > 0) {
-        const snapAngle = target.snapAngle,
-          snapThreshold = target.snapThreshold || snapAngle,
-          rightAngleLocked = Math.ceil(angle / snapAngle) * snapAngle,
-          leftAngleLocked = Math.floor(angle / snapAngle) * snapAngle;
-        if (Math.abs(angle - leftAngleLocked) < snapThreshold) {
-          angle = leftAngleLocked;
-        } else if (Math.abs(angle - rightAngleLocked) < snapThreshold) {
-          angle = rightAngleLocked;
-        }
-      }
-      if (angle < 0) {
-        angle = 360 + angle;
-      }
-      angle %= 360;
-
-      // const hasRotated = target.angle !== angle;
-      return angle;
-    },
-    callback(
-      selectEL: Select,
-      point: Point,
-      {
-        theta,
-        selectCenterPoint,
-        angle: selectAngle,
-        worldCenterPoint
-      }: SelectState,
-      event: FulateEvent
-    ) {
-      const angle = this.rotateObjectWithSnapping(
-        {
-          target: selectEL,
-          ex: point.x,
-          ey: point.y,
-          originX: selectEL.originX,
-          originY: selectEL.originY,
-          theta
-        },
-        event.detail.x,
-        event.detail.y
-      );
-
-      const angleDelta = angle - selectAngle;
-
-      const rotationMatrix = new DOMMatrix()
-        .translate(worldCenterPoint.x, worldCenterPoint.y)
-        .rotate(0, 0, angleDelta)
-        .translate(-worldCenterPoint.x, -worldCenterPoint.y);
-
-      selectCenterPoint.forEach(({ el, worldCenterPoint, angle }) => {
-        const center = el.getPositionByOrigin(
-          worldCenterPoint.matrixTransform(rotationMatrix)
-        );
-        el.quickSetOptions({
-          angle: angle + angleDelta,
-          left: center.x,
-          top: center.y
-        });
-      });
-
-      selectEL.setOptions({
-        angle
-      });
-    }
   }
 ] as const;
+
+export function rotateObjectWithSnapping(
+  { target, ex, ey, theta, originX, originY }: any,
+  x: number,
+  y: number
+) {
+  const pivotPoint = target.translateToGivenOrigin(
+    target.getRelativeCenterPoint(),
+    originX,
+    originY
+  );
+  const lastAngle = Math.atan2(ey - pivotPoint.y, ex - pivotPoint.x),
+    curAngle = Math.atan2(y - pivotPoint.y, x - pivotPoint.x);
+  let angle = radiansToDegrees(curAngle - lastAngle + theta);
+  if (target.snapAngle && target.snapAngle > 0) {
+    const snapAngle = target.snapAngle,
+      snapThreshold = target.snapThreshold || snapAngle,
+      rightAngleLocked = Math.ceil(angle / snapAngle) * snapAngle,
+      leftAngleLocked = Math.floor(angle / snapAngle) * snapAngle;
+    if (Math.abs(angle - leftAngleLocked) < snapThreshold) {
+      angle = leftAngleLocked;
+    } else if (Math.abs(angle - rightAngleLocked) < snapThreshold) {
+      angle = rightAngleLocked;
+    }
+  }
+  if (angle < 0) {
+    angle = 360 + angle;
+  }
+  angle %= 360;
+  return angle;
+}
+
+export function rotateCallback(
+  selectEL: Select,
+  point: Point,
+  {
+    theta,
+    selectCenterPoint,
+    angle: selectAngle,
+    worldCenterPoint
+  }: SelectState,
+  event: FulateEvent
+) {
+  const angle = rotateObjectWithSnapping(
+    {
+      target: selectEL,
+      ex: point.x,
+      ey: point.y,
+      originX: selectEL.originX,
+      originY: selectEL.originY,
+      theta
+    },
+    event.detail.x,
+    event.detail.y
+  );
+
+  const angleDelta = angle - selectAngle;
+
+  const rotationMatrix = new DOMMatrix()
+    .translate(worldCenterPoint.x, worldCenterPoint.y)
+    .rotate(0, 0, angleDelta)
+    .translate(-worldCenterPoint.x, -worldCenterPoint.y);
+
+  selectCenterPoint.forEach(({ el, worldCenterPoint, angle }) => {
+    const center = el.getPositionByOrigin(
+      worldCenterPoint.matrixTransform(rotationMatrix)
+    );
+    el.quickSetOptions({
+      angle: angle + angleDelta,
+      left: center.x,
+      top: center.y
+    });
+  });
+
+  selectEL.setOptions({
+    angle
+  });
+}
 
 export function resizeObject(
   selectEL: any,

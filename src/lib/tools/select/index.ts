@@ -5,7 +5,7 @@ import { BaseElementOption, Element } from "../../node/element";
 import { FulateEvent } from "../../eventManage";
 // import { Layer } from "../layer";
 // import { Element } from "../base";
-import { Controls, resizeObject } from "./controls";
+import { Controls, resizeObject, rotateCallback } from "./controls";
 import { Snap } from "./snap";
 
 export class Select extends Element {
@@ -13,7 +13,7 @@ export class Select extends Element {
   declare currentControl: { control: any; point: any };
   declare coords: any;
   key = "select";
-  controlSize = 8;
+  controlSize = 6;
   hitPadding = 6;
   snapAngle = 45;
   snapThreshold = 5;
@@ -265,20 +265,16 @@ export class Select extends Element {
     point: Point,
     control: (typeof Controls)[0]
   ) {
-    const size = this.controlSize;
+    const scale = this.root.viewport.scale;
+    const size = this.controlSize / scale;
     ctx.save();
 
     ctx.translate(point.x, point.y);
     ctx.rotate(degreesToRadians(this.angle ?? 0));
 
     ctx.beginPath();
-    if (control.type === "mtr") {
-      ctx.fillStyle = "#ff4757";
-      ctx.arc(0, 0, size - 4, 0, Math.PI * 2);
-    } else {
-      ctx.fillStyle = "#0078ff";
-      ctx.roundRect(-size / 2, -size / 2, size, size);
-    }
+    ctx.fillStyle = "#0078ff";
+    ctx.roundRect(-size / 2, -size / 2, size, size);
     ctx.fill();
     ctx.restore();
   }
@@ -331,7 +327,8 @@ export class Select extends Element {
     let maxX = baseRect.left + baseRect.width;
     let maxY = baseRect.top + baseRect.height;
 
-    const padding = this.controlSize + this.hitPadding;
+    const scale = this.root.viewport.scale;
+    const padding = (this.controlSize + this.hitPadding) / scale;
 
     for (const p of coords) {
       minX = Math.min(minX, p.x - padding);
@@ -370,11 +367,31 @@ export class Select extends Element {
         Math.pow(hintPoint.x - point.x, 2) + Math.pow(hintPoint.y - point.y, 2)
       );
 
-      if (distance <= this.controlSize) {
+      const scale = this.root.viewport.scale;
+      const scaledControlSize = this.controlSize / scale;
+      const scaledRotatePadding = 10 / scale;
+
+      if (distance <= scaledControlSize) {
         this.cursor = Controls[i].cursor;
         this.currentControl = {
           point: hintPoint,
           control: Controls[i]
+        };
+        return true;
+      } else if (
+        distance <= scaledControlSize + scaledRotatePadding &&
+        !super.hasPointHint(x, y)
+      ) {
+        const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
+        this.cursor = rotateCursor;
+        this.currentControl = {
+          point: hintPoint,
+          control: {
+            type: "rotate",
+            actionName: "rotate",
+            cursor: rotateCursor,
+            callback: rotateCallback
+          }
         };
         return true;
       }
@@ -402,7 +419,9 @@ export class Select extends Element {
         edge.end
       );
 
-      if (dist <= this.hitPadding) {
+      const scaledHitPadding = this.hitPadding / this.root.viewport.scale;
+
+      if (dist <= scaledHitPadding) {
         this.cursor = edge.cursor;
 
         this.currentControl = {
