@@ -182,6 +182,7 @@ export class Text extends Element {
     const localMatrix = this.getOwnMatrix();
     const matrix = vpMatrix.multiply(localMatrix);
 
+    // 1. 提取物理拉伸比例（非常关键：控制框的宽高等于原始宽高 * 这个比例）
     const stretchX = Math.sqrt(
       localMatrix.a * localMatrix.a + localMatrix.b * localMatrix.b
     );
@@ -189,10 +190,11 @@ export class Text extends Element {
       localMatrix.c * localMatrix.c + localMatrix.d * localMatrix.d
     );
 
+    // 计算实际应该占据的宽度
     const renderWidth = (this.width || 0) * stretchX;
 
     const { a, b, c, d, e, f } = matrix as any;
-    const angle = Math.atan2(b, a);
+    const angle = Math.atan2(b, a); // 提取纯粹的旋转角度
     const det = a * d - b * c;
     const flip = det < 0 ? -1 : 1;
     const vpScale = Math.sqrt(
@@ -202,12 +204,13 @@ export class Text extends Element {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
 
-    // 将变换分解为水平向和垂直向的向量分量
+    // 2. 构建干净矩阵（完全剔除了斜切和畸变，保证是直角）
     const horizontalX = vpScale * cos;
     const horizontalY = vpScale * sin;
     const verticalX = -vpScale * flip * sin;
     const verticalY = vpScale * flip * cos;
 
+    // 应用干净矩阵
     ctx.setTransform(horizontalX, horizontalY, verticalX, verticalY, e, f);
 
     ctx.font = this.fontString;
@@ -215,25 +218,33 @@ export class Text extends Element {
     ctx.textAlign = this.textAlign;
     ctx.textBaseline = this.textBaseline;
 
-    // 计算行
+    // 计算文字行
     this.computeLines(ctx, renderWidth, stretchY);
 
-    // 计算最终渲染高度
+    // =======================================================
+    // ⭐ 核心修改：让背景铺满外边框 ⭐
+    // =======================================================
+    // 这里极其关键：计算 renderHeight。
+    // 如果有设置高度，就必须用 高度 * stretchY，这正是外面蓝色控制框的实际高度！
     const renderHeight =
       this.height !== undefined ? this.height * stretchY : this.textHeight;
 
     // 绘制背景
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;
+      // 在当前的“干净矩阵”下，直接用拉伸后的 width 和 height 画矩形。
+      // 因为矩阵是直角的，所以画出来的一定是完美的直角矩形，绝不会变成平行四边形！
+      // 并且它的尺寸精确等于拉伸后的尺寸，会和外面的控制框完美重合！
       ctx.roundRect(0, 0, renderWidth, renderHeight, this.radius ?? 0);
       ctx.fill();
+
+      // 画完背景记得恢复成文字的颜色
       ctx.fillStyle = this.color;
     }
+    // =======================================================
 
-    // 行高像素
     const lineHeightPx = this.fontSize * this.lineHeight;
 
-    // 2. 计算垂直对齐的偏移量 (verticalOffset)
     let verticalOffset = 0;
     if (this.verticalAlign === "middle") {
       verticalOffset = (renderHeight - this.textHeight) / 2;
@@ -241,7 +252,6 @@ export class Text extends Element {
       verticalOffset = renderHeight - this.textHeight;
     }
 
-    // 基础 Y 坐标 (处理 textBaseline)
     let startY = 0;
     if (this.textBaseline === "middle") {
       startY = lineHeightPx / 2;
@@ -249,6 +259,7 @@ export class Text extends Element {
       startY = lineHeightPx;
     }
 
+    // 绘制文字
     for (let i = 0; i < this.lines.length; i++) {
       const line = this.lines[i];
       let x = 0;
@@ -259,7 +270,6 @@ export class Text extends Element {
         x = renderWidth;
       }
 
-      // 3. 应用垂直偏移量
       const y = startY + i * lineHeightPx + verticalOffset;
 
       ctx.fillText(line, x, y);

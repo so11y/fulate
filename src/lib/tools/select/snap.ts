@@ -64,39 +64,39 @@ export class Snap extends Element {
 
     this.selectTool.forEachTarget((node) => {
       if (excludes.has(node)) return;
-      const coords = node.getCoords();
-      if (coords.length !== 4) return;
+      const snapPoints = node.getSnapPoints();
+      if (!snapPoints || snapPoints.length === 0) return;
 
-      const isAxisAligned =
-        Math.abs(coords[0].x - coords[3].x) < 0.01 &&
-        Math.abs(coords[1].x - coords[2].x) < 0.01 &&
-        Math.abs(coords[0].y - coords[1].y) < 0.01 &&
-        Math.abs(coords[3].y - coords[2].y) < 0.01;
+      const isAxisAligned = snapPoints.length === 4 &&
+        Math.abs(snapPoints[0].x - snapPoints[3].x) < 0.01 &&
+        Math.abs(snapPoints[1].x - snapPoints[2].x) < 0.01 &&
+        Math.abs(snapPoints[0].y - snapPoints[1].y) < 0.01 &&
+        Math.abs(snapPoints[3].y - snapPoints[2].y) < 0.01;
 
       if (isAxisAligned) {
         const minX = Math.min(
-          coords[0].x,
-          coords[1].x,
-          coords[2].x,
-          coords[3].x
+          snapPoints[0].x,
+          snapPoints[1].x,
+          snapPoints[2].x,
+          snapPoints[3].x
         );
         const maxX = Math.max(
-          coords[0].x,
-          coords[1].x,
-          coords[2].x,
-          coords[3].x
+          snapPoints[0].x,
+          snapPoints[1].x,
+          snapPoints[2].x,
+          snapPoints[3].x
         );
         const minY = Math.min(
-          coords[0].y,
-          coords[1].y,
-          coords[2].y,
-          coords[3].y
+          snapPoints[0].y,
+          snapPoints[1].y,
+          snapPoints[2].y,
+          snapPoints[3].y
         );
         const maxY = Math.max(
-          coords[0].y,
-          coords[1].y,
-          coords[2].y,
-          coords[3].y
+          snapPoints[0].y,
+          snapPoints[1].y,
+          snapPoints[2].y,
+          snapPoints[3].y
         );
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
@@ -114,15 +114,17 @@ export class Snap extends Element {
         yData.push(centerY, minX, maxX);
       } else {
         // Not axis aligned, store points individually
-        const points: { x: number; y: number }[] = [...coords];
-        const [p0, p1, p2, p3] = coords;
-        points.push(
-          { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }, // Top
-          { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }, // Right
-          { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 }, // Bottom
-          { x: (p3.x + p0.x) / 2, y: (p3.y + p0.y) / 2 }, // Left
-          { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 } // Center
-        );
+        const points: { x: number; y: number }[] = [...snapPoints];
+        if (snapPoints.length === 4) {
+          const [p0, p1, p2, p3] = snapPoints;
+          points.push(
+            { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }, // Top
+            { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }, // Right
+            { x: (p2.x + p3.x) / 2, y: (p2.y + p3.y) / 2 }, // Bottom
+            { x: (p3.x + p0.x) / 2, y: (p3.y + p0.y) / 2 }, // Left
+            { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 } // Center
+          );
+        }
 
         for (const p of points) {
           xData.push(p.x, p.y, p.y);

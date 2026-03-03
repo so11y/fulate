@@ -50,6 +50,7 @@ export class Transformable extends Node {
   // 缓存（对象池化，避免 GC）
   protected ownMatrixCache: DOMMatrix = new DOMMatrix();
   protected coords: Array<Point> | null = null;
+  protected bbboxCoords: Array<Point> | null = null;
   protected _boundingRectCache: Rect | null = null;
   lastBoundingRect: Rect | null = null;
 
@@ -162,6 +163,29 @@ export class Transformable extends Node {
     };
 
     return this._boundingRectCache;
+  }
+
+  getSnapPoints(): Point[] {
+    return this.getBBoxCoords();
+  }
+
+  getBBoxCoords() {
+    if (this.bbboxCoords) {
+      return this.bbboxCoords;
+    }
+    const finalMatrix = this.getOwnMatrix();
+    const dim = this._getTransformedDimensions();
+
+    const localPoints = [
+      new Point(0, 0), // 左上
+      new Point(dim.x, 0), // 右上
+      new Point(dim.x, dim.y), // 右下
+      new Point(0, dim.y) // 左下
+    ];
+    this.bbboxCoords = localPoints.map(
+      (point) => new Point(finalMatrix.transformPoint(point))
+    );
+    return this.bbboxCoords;
   }
 
   getCoords() {
@@ -302,6 +326,7 @@ export class Transformable extends Node {
 
     this.isDirty = true;
     this.coords = null;
+    this.bbboxCoords = null;
     this.lastBoundingRect = cloneDeep(this._boundingRectCache);
     this._boundingRectCache = null;
     this.markChildDirty();

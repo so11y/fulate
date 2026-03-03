@@ -24,7 +24,6 @@ export class Select extends Element {
 
   constructor(options?: BaseElementOption) {
     super({
-      backgroundColor: "rgba(0, 0, 0, 0.1)",
       width: 0,
       height: 0,
       originX: "center",
@@ -250,13 +249,13 @@ export class Select extends Element {
     ctx.setTransform(
       this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
     );
-    if (this.backgroundColor) {
-      ctx.fillStyle = this.backgroundColor;
-    }
+
+    const scale = this.root.viewport.scale;
+    ctx.strokeStyle = "#0078ff";
+    ctx.lineWidth = 1 / scale;
     ctx.roundRect(0, 0, this.width!, this.height!, this.radius ?? 0);
-    if (this.backgroundColor) {
-      ctx.fill();
-    }
+    ctx.stroke();
+
     ctx.restore();
     if (this.selectEls.length) {
       this.getControlCoords().forEach((point, index) =>
