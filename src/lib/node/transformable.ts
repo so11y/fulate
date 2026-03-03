@@ -137,16 +137,7 @@ export class Transformable extends Node {
   getBoundingRect(): Rect {
     if (this._boundingRectCache) return this._boundingRectCache;
 
-    const corners = [
-      new Point(0, 0), // 左上
-      new Point(this.width, 0), // 右上
-      new Point(this.width, this.height), // 右下
-      new Point(0, this.height) // 左下
-    ];
-
-    const globalCorners = corners.map((corner) =>
-      corner.matrixTransform(this.getOwnMatrix())
-    );
+    const globalCorners = this.getCoords();
 
     // 计算 min/max
     let minX = Infinity,

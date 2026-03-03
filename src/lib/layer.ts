@@ -24,7 +24,8 @@ export class Layer extends Rectangle {
 
   dirtyNodes = new Set<Element>();
 
-  private isRender: boolean = false;
+  isRender: boolean = false;
+  isRenderDitryMode = false;
   private renderResolve: (() => void) | null = null;
   private renderPromise: Promise<void> | null = null;
 
@@ -47,6 +48,9 @@ export class Layer extends Rectangle {
   }
 
   mounted() {
+    if (!this.inject("layer-root")) {
+      this.provide("layer-root", this);
+    }
     super.mounted();
     const root = this.root!;
     const width = this.width ?? this.root.width!;
@@ -64,6 +68,7 @@ export class Layer extends Rectangle {
     this.canvasEl.style.zIndex = (this.zIndex ?? 1).toString();
     root.container.appendChild(this.canvasEl);
     root.registerLayer(this);
+    console.log("---");
   }
 
   unmounted() {
@@ -150,6 +155,7 @@ export class Layer extends Rectangle {
       this.updateTransform(false);
 
       if (this.enableDirtyRect && this.dirtyNodes.size > 0) {
+        this.isRenderDitryMode = true;
         // 1. 仅仅只计算“真正发生变化”的节点的旧/新包围盒的合并集合
         let minX = Infinity;
         let minY = Infinity;
@@ -222,6 +228,7 @@ export class Layer extends Rectangle {
       this.finalDirtyRect = null as any;
 
       this.isRender = false;
+      this.isRenderDitryMode = false;
       this.renderResolve?.();
       this.renderPromise = null;
       this.renderResolve = null;
@@ -237,11 +244,12 @@ export class Layer extends Rectangle {
   }
 
   notInDitry() {
-    //|| this.renderPromise
-    // if (this.dirtyNodes.size === 0 && this.enableDirtyRect) {
-    //   return false;
-    // }
-    // return true;
+    const rootLayer = this.inject("layer-root");
+    if (this.enableDirtyRect && rootLayer.isRenderDitryMode) {
+      if (rootLayer !== this || this.dirtyNodes.size === 0) {
+        return true;
+      }
+    }
     return false;
   }
 

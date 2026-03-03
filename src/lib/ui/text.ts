@@ -199,12 +199,16 @@ export class Text extends Element {
       vpMatrix.a * vpMatrix.a + vpMatrix.b * vpMatrix.b
     );
 
-    const newA = vpScale * Math.cos(angle);
-    const newB = vpScale * Math.sin(angle);
-    const newC = -vpScale * flip * Math.sin(angle);
-    const newD = vpScale * flip * Math.cos(angle);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
 
-    ctx.setTransform(newA, newB, newC, newD, e, f);
+    // 将变换分解为水平向和垂直向的向量分量
+    const horizontalX = vpScale * cos;
+    const horizontalY = vpScale * sin;
+    const verticalX = -vpScale * flip * sin;
+    const verticalY = vpScale * flip * cos;
+
+    ctx.setTransform(horizontalX, horizontalY, verticalX, verticalY, e, f);
 
     ctx.font = this.fontString;
     ctx.fillStyle = this.color;

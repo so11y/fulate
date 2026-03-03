@@ -215,14 +215,18 @@ export class Select extends Element {
     };
 
     const pointerdown = (e: FulateEvent) => {
-      if (!this.currentControl) {
-        if (this.selectEls.length && this.root.currentElement === this) {
-          handleSelectMove(e);
-        } else {
-          handleSelect(e);
-        }
-      } else {
+      const hasSelection =
+        this.selectEls.length > 0 && this.root.currentElement === this;
+
+      if (!hasSelection) {
+        handleSelect(e);
+        return;
+      }
+
+      if (this.currentControl) {
         handleControl(e);
+      } else {
+        handleSelectMove(e);
       }
     };
 
@@ -371,7 +375,7 @@ export class Select extends Element {
 
       const scale = this.root.viewport.scale;
       const scaledControlSize = this.controlSize / scale;
-      const scaledRotatePadding = 10 / scale;
+      const scaledRotatePadding = 8 / scale;
 
       if (distance <= scaledControlSize) {
         this.cursor = Controls[i].cursor;

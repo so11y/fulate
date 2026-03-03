@@ -1,3 +1,4 @@
+import { Point } from "../../util/point";
 import { Element } from "../node/element";
 
 export class Triangle extends Element {
@@ -32,5 +33,23 @@ export class Triangle extends Element {
       super.paint(ctx);
     }
     ctx.restore();
+  }
+
+  setCoords() {
+    const finalMatrix = this.getOwnMatrix();
+    const dim = this._getTransformedDimensions();
+
+    const localPoints = [
+      new Point(dim.x / 2, 0),
+      new Point(dim.x, dim.y),
+      new Point(0, dim.y)
+    ];
+
+    // 通过矩阵变换将局部坐标转为全局/画布坐标
+    this.coords = localPoints.map(
+      (point) => new Point(finalMatrix.transformPoint(point))
+    );
+
+    return this;
   }
 }
