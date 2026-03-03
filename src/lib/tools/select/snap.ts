@@ -462,7 +462,11 @@ export class Snap extends Element {
     const scale = this.root.viewport.scale;
 
     ctx.save();
-    // ctx.setTransform(this.root.getViewPointMtrix());
+    
+    // 吸附线也需要加上 DPR 和视口矩阵的缩放
+    const dpr = window.devicePixelRatio || 1;
+    const vp = this.root.getViewPointMtrix();
+    ctx.setTransform(vp.a * dpr, vp.b * dpr, vp.c * dpr, vp.d * dpr, vp.e * dpr, vp.f * dpr);
 
     ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = this.lineColor;

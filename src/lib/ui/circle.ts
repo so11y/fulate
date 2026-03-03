@@ -10,9 +10,7 @@ export class Circle extends Element {
     }
     ctx.save();
     ctx.beginPath();
-    ctx.setTransform(
-      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
-    );
+    this.applyTransformToCtx(ctx);
 
     const w = this.width || 0;
     const h = this.height || 0;

@@ -48,11 +48,11 @@ export class Transformable extends Node {
   // strokeWidth = 0;
 
   // 缓存（对象池化，避免 GC）
-  protected ownMatrixCache: DOMMatrix = new DOMMatrix();
-  protected coords: Array<Point> | null = null;
-  protected bbboxCoords: Array<Point> | null = null;
+  protected _ownMatrixCache: DOMMatrix = new DOMMatrix();
+  protected _coords: Array<Point> | null = null;
+  protected _bbboxCoords: Array<Point> | null = null;
   protected _boundingRectCache: Rect | null = null;
-  lastBoundingRect: Rect | null = null;
+  _lastBoundingRect: Rect | null = null;
 
   isDirty = true;
 
@@ -73,11 +73,11 @@ export class Transformable extends Node {
   // --- 矩阵与坐标核心逻辑 ---
 
   getOwnMatrix() {
-    return this.ownMatrixCache;
+    return this._ownMatrixCache;
   }
 
   calcWorldMatrix() {
-    const m = this.ownMatrixCache;
+    const m = this._ownMatrixCache;
 
     // 重置为单位矩阵
     m.a = 1;
@@ -89,7 +89,7 @@ export class Transformable extends Node {
 
     // 继承父级世界矩阵
     if (this.parent) {
-      m.multiplySelf(this.parent.ownMatrixCache);
+      m.multiplySelf(this.parent._ownMatrixCache);
     }
 
     // 应用本地变换
@@ -122,6 +122,27 @@ export class Transformable extends Node {
   }
 
   // --- 坐标转换逻辑 ---
+
+  /**
+   * 优雅设置矩阵，自动带上当前环境的 DPR
+   * @param ctx 目标画布上下文
+   * @param customMatrix 可选的自定义矩阵。如果不传，则默认使用 视口矩阵 × 自身矩阵
+   */
+  applyTransformToCtx(ctx: CanvasRenderingContext2D, customMatrix?: DOMMatrix) {
+    const dpr = window.devicePixelRatio || 1;
+    const matrix =
+      customMatrix ??
+      this.root.getViewPointMtrix().multiply(this.getOwnMatrix());
+
+    ctx.setTransform(
+      matrix.a * dpr,
+      matrix.b * dpr,
+      matrix.c * dpr,
+      matrix.d * dpr,
+      matrix.e * dpr,
+      matrix.f * dpr
+    );
+  }
 
   getWorldPoint(point: Point) {
     const matrix = this.getOwnMatrix();
@@ -170,8 +191,8 @@ export class Transformable extends Node {
   }
 
   getBBoxCoords() {
-    if (this.bbboxCoords) {
-      return this.bbboxCoords;
+    if (this._bbboxCoords) {
+      return this._bbboxCoords;
     }
     const finalMatrix = this.getOwnMatrix();
     const dim = this._getTransformedDimensions();
@@ -182,14 +203,14 @@ export class Transformable extends Node {
       new Point(dim.x, dim.y), // 右下
       new Point(0, dim.y) // 左下
     ];
-    this.bbboxCoords = localPoints.map(
+    this._bbboxCoords = localPoints.map(
       (point) => new Point(finalMatrix.transformPoint(point))
     );
-    return this.bbboxCoords;
+    return this._bbboxCoords;
   }
 
   getCoords() {
-    return this.coords ?? this.setCoords().coords;
+    return this._coords ?? this.setCoords()._coords;
   }
 
   setCoords() {
@@ -202,7 +223,7 @@ export class Transformable extends Node {
       new Point(dim.x, dim.y), // 右下
       new Point(0, dim.y) // 左下
     ];
-    this.coords = localPoints.map(
+    this._coords = localPoints.map(
       (point) => new Point(finalMatrix.transformPoint(point))
     );
     return this;
@@ -325,9 +346,9 @@ export class Transformable extends Node {
     if (this.isDirty) return this;
 
     this.isDirty = true;
-    this.coords = null;
-    this.bbboxCoords = null;
-    this.lastBoundingRect = cloneDeep(this._boundingRectCache);
+    this._coords = null;
+    this._bbboxCoords = null;
+    this._lastBoundingRect = cloneDeep(this._boundingRectCache);
     this._boundingRectCache = null;
     this.markChildDirty();
     if (this.layer) {

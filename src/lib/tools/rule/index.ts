@@ -58,7 +58,9 @@ export class Rule extends Element {
     const textColor = "#333333"; // 深灰色文字，清晰度最高
 
     ctx.save();
-    ctx.setTransform(this.getOwnMatrix());
+    const dpr = window.devicePixelRatio || 1;
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
 
     // ================= X 轴 =================
     ctx.clearRect(rulerSize, 0, w - rulerSize, rulerSize);

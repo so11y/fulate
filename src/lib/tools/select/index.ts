@@ -13,7 +13,7 @@ const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org
 export class Select extends Element {
   declare selectEls: Element[];
   declare currentControl: { control: any; point: any };
-  declare coords: any;
+  declare _coords: any;
   key = "select";
   controlSize = 6;
   hitPadding = 6;
@@ -246,14 +246,19 @@ export class Select extends Element {
     const ctx = this.layer.ctx;
     ctx.save();
     ctx.beginPath();
-    ctx.setTransform(
-      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
-    );
+    this.applyTransformToCtx(ctx);
 
     const scale = this.root.viewport.scale;
+    const padding = 1 / scale;
     ctx.strokeStyle = "#0078ff";
     ctx.lineWidth = 1 / scale;
-    ctx.roundRect(0, 0, this.width!, this.height!, this.radius ?? 0);
+    ctx.roundRect(
+      -padding,
+      -padding,
+      this.width! + padding * 2,
+      this.height! + padding * 2,
+      this.radius ?? 0
+    );
     ctx.stroke();
 
     ctx.restore();
@@ -286,6 +291,7 @@ export class Select extends Element {
 
   drawInfoPanel(ctx: CanvasRenderingContext2D) {
     const vp = this.root.getViewPointMtrix();
+    const dpr = window.devicePixelRatio || 1;
     const allPts = this.getControlCoords().map((p) => p.matrixTransform(vp));
     const cornerPts = allPts.slice(0, 4);
     const minX = Math.min(...cornerPts.map((p) => p.x));
@@ -296,7 +302,8 @@ export class Select extends Element {
     const text = `x: ${Math.round(this.left)}  y: ${Math.round(this.top)}  ${Math.round(this.angle ?? 0)}°`;
 
     ctx.save();
-    ctx.resetTransform();
+    // 彻底重置画笔，并使用 DPR 放大的物理像素坐标系
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.font = "12px Arial";
     const pw = ctx.measureText(text).width + 12;
     const ph = 22;

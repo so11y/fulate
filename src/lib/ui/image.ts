@@ -42,9 +42,7 @@ export class Image extends Element {
     }
     ctx.save();
     ctx.beginPath();
-    ctx.setTransform(
-      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
-    );
+    this.applyTransformToCtx(ctx);
 
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;

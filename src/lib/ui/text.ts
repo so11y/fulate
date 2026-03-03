@@ -211,7 +211,15 @@ export class Text extends Element {
     const verticalY = vpScale * flip * cos;
 
     // 应用干净矩阵
-    ctx.setTransform(horizontalX, horizontalY, verticalX, verticalY, e, f);
+    const pureMatrix = new DOMMatrix([
+      horizontalX,
+      horizontalY,
+      verticalX,
+      verticalY,
+      e,
+      f
+    ]);
+    this.applyTransformToCtx(ctx, pureMatrix);
 
     ctx.font = this.fontString;
     ctx.fillStyle = this.color;
@@ -221,10 +229,6 @@ export class Text extends Element {
     // 计算文字行
     this.computeLines(ctx, renderWidth, stretchY);
 
-    // =======================================================
-    // ⭐ 核心修改：让背景铺满外边框 ⭐
-    // =======================================================
-    // 这里极其关键：计算 renderHeight。
     // 如果有设置高度，就必须用 高度 * stretchY，这正是外面蓝色控制框的实际高度！
     const renderHeight =
       this.height !== undefined ? this.height * stretchY : this.textHeight;

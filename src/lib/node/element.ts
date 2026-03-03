@@ -67,17 +67,17 @@ export class Element extends Transformable {
 
   getDirtyRect() {
     const current = this.getBoundingRect();
-    if (!this.lastBoundingRect) return current;
+    if (!this._lastBoundingRect) return current;
 
-    const minX = Math.min(current.left, this.lastBoundingRect.left);
-    const minY = Math.min(current.top, this.lastBoundingRect.top);
+    const minX = Math.min(current.left, this._lastBoundingRect.left);
+    const minY = Math.min(current.top, this._lastBoundingRect.top);
     const maxX = Math.max(
       current.left + current.width,
-      this.lastBoundingRect.left + this.lastBoundingRect.width
+      this._lastBoundingRect.left + this._lastBoundingRect.width
     );
     const maxY = Math.max(
       current.top + current.height,
-      this.lastBoundingRect.top + this.lastBoundingRect.height
+      this._lastBoundingRect.top + this._lastBoundingRect.height
     );
 
     return {
@@ -151,7 +151,7 @@ export class Element extends Transformable {
     const viewLeft = -vx / scale;
     const viewTop = -vy / scale;
 
-    const m = this.ownMatrixCache;
+    const m = this._ownMatrixCache;
 
     // 无旋转无skew时，直接用矩阵平移分量做快速判断
     if (m.b === 0 && m.c === 0) {

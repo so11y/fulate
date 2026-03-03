@@ -58,8 +58,11 @@ export class Layer extends Rectangle {
 
     this.width = width;
     this.height = height;
-    this.canvasEl.width = this.width;
-    this.canvasEl.height = this.height;
+
+    const dpr = window.devicePixelRatio || 1;
+    this.canvasEl.width = this.width * dpr;
+    this.canvasEl.height = this.height * dpr;
+
     this.canvasEl.style.width = this.width + "px";
     this.canvasEl.style.height = this.height + "px";
     this.canvasEl.style.position = "absolute";
@@ -68,7 +71,6 @@ export class Layer extends Rectangle {
     this.canvasEl.style.zIndex = (this.zIndex ?? 1).toString();
     root.container.appendChild(this.canvasEl);
     root.registerLayer(this);
-    console.log("---");
   }
 
   unmounted() {
@@ -174,14 +176,16 @@ export class Layer extends Rectangle {
 
         const m = this.root.getViewPointMtrix();
 
-        // 转换为屏幕坐标
-        let screenMinX = minX * m.a + m.e;
-        let screenMinY = minY * m.d + m.f;
-        let screenMaxX = maxX * m.a + m.e;
-        let screenMaxY = maxY * m.d + m.f;
+        const dpr = window.devicePixelRatio || 1;
+
+        // 转换为屏幕坐标，并立即乘以 DPR 得到物理坐标
+        let screenMinX = (minX * m.a + m.e) * dpr;
+        let screenMinY = (minY * m.d + m.f) * dpr;
+        let screenMaxX = (maxX * m.a + m.e) * dpr;
+        let screenMaxY = (maxY * m.d + m.f) * dpr;
 
         // 增加一点 padding 防止抗锯齿残留边缘，并对齐到物理像素
-        const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0));
+        const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
         screenMinX = Math.floor(screenMinX) - padding;
         screenMinY = Math.floor(screenMinY) - padding;
         screenMaxX = Math.ceil(screenMaxX) + padding;
@@ -191,16 +195,16 @@ export class Layer extends Rectangle {
         const screenHeight = screenMaxY - screenMinY;
 
         this.finalDirtyRect = {
-          left: (screenMinX - m.e) / m.a,
-          top: (screenMinY - m.f) / m.d,
-          width: screenWidth / m.a,
-          height: screenHeight / m.d
+          left: (screenMinX / dpr - m.e) / m.a,
+          top: (screenMinY / dpr - m.f) / m.d,
+          width: screenWidth / dpr / m.a,
+          height: screenHeight / dpr / m.d
         };
 
         if (screenWidth > 0 && screenHeight > 0) {
           this.ctx.save();
 
-          // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
 
           this.ctx.beginPath();
           this.ctx.rect(screenMinX, screenMinY, screenWidth, screenHeight);
@@ -208,9 +212,6 @@ export class Layer extends Rectangle {
 
           this.ctx.clearRect(screenMinX, screenMinY, screenWidth, screenHeight);
 
-          // 恢复视口变换进行绘制
-          this.ctx.setTransform(m);
-          //TODO 后面遍历的时候需要考虑嵌套的layer，嵌套的layer不需要绘制
           super.paint(this.ctx);
 
           this.ctx.restore();
@@ -220,6 +221,17 @@ export class Layer extends Rectangle {
       } else {
         // Fallback or initial render (全量重绘)
         this.clear();
+
+        const dpr = window.devicePixelRatio || 1;
+        const m = this.root.getViewPointMtrix();
+        const scaledM = DOMMatrix.fromMatrix(m);
+        scaledM.a *= dpr;
+        scaledM.b *= dpr;
+        scaledM.c *= dpr;
+        scaledM.d *= dpr;
+        scaledM.e *= dpr;
+        scaledM.f *= dpr;
+        this.ctx.setTransform(scaledM);
 
         // 全量重绘不需要传脏矩形
         super.paint(this.ctx);
@@ -261,9 +273,10 @@ export class Layer extends Rectangle {
   }
 
   clear() {
-    // this.ctx.save();
-    // this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.clearRect(0, 0, this.width, this.height);
-    // this.ctx.restore();
+    this.ctx.save();
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const dpr = window.devicePixelRatio || 1;
+    this.ctx.clearRect(0, 0, this.width * dpr, this.height * dpr);
+    this.ctx.restore();
   }
 }

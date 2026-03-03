@@ -10,9 +10,7 @@ export class Triangle extends Element {
     }
     ctx.save();
     ctx.beginPath();
-    ctx.setTransform(
-      this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
-    );
+    this.applyTransformToCtx(ctx);
 
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;
@@ -46,7 +44,7 @@ export class Triangle extends Element {
     ];
 
     // 通过矩阵变换将局部坐标转为全局/画布坐标
-    this.coords = localPoints.map(
+    this._coords = localPoints.map(
       (point) => new Point(finalMatrix.transformPoint(point))
     );
 
