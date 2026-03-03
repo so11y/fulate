@@ -14,6 +14,9 @@ import {
   Align
 } from "./yoga/div";
 import { Text } from "./lib/ui/text";
+import { Circle } from "./lib/ui/circle";
+import { Triangle } from "./lib/ui/triangle";
+import { Image } from "./lib/ui/image";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,
@@ -83,44 +86,69 @@ root.append(
       new Artboard({
         children: [
           div1,
-          div2,
-          dev3,
-          new Div({
-            left: 300,
-            top: 170,
-            width: 100,
-            height: 100,
-            display: Display.Flex,
-            backgroundColor: "pink",
-            justifyContent: Justify.SpaceAround,
-            children: [
-              new Div({
-                width: 50,
-                backgroundColor: "black",
-                height: 50,
-                onclick(e) {
-                  e.detail.target.setOptions({
-                    width: 10
-                  });
-                }
-              }),
-              new Div({
-                width: 10,
-                backgroundColor: "red"
-              })
-            ]
-          }),
+          // div2,
+          // dev3,
+          // new Div({
+          //   left: 300,
+          //   top: 170,
+          //   width: 100,
+          //   height: 100,
+          //   display: Display.Flex,
+          //   backgroundColor: "pink",
+          //   justifyContent: Justify.SpaceAround,
+          //   children: [
+          //     new Div({
+          //       width: 50,
+          //       backgroundColor: "black",
+          //       height: 50,
+          //       onclick(e) {
+          //         e.detail.target.setOptions({
+          //           width: 10
+          //         });
+          //       }
+          //     }),
+          //     new Div({
+          //       width: 10,
+          //       backgroundColor: "red"
+          //     })
+          //   ]
+          // }),
           new Layer({
             zIndex: 2,
+            enableDirtyRect: true,
             children: [
               new Rectangle({
                 left: 30,
+                top: 30,
                 width: 100,
                 height: 100,
                 backgroundColor: "pink"
               }),
+              new Circle({
+                left: 150,
+                top: 30,
+                width: 100,
+                height: 100,
+                backgroundColor: "green"
+              }),
+              new Triangle({
+                left: 270,
+                top: 30,
+                width: 100,
+                height: 100,
+                backgroundColor: "orange"
+              }),
+              new Image({
+                left: 390,
+                top: 30,
+                width: 100,
+                height: 100,
+                src: "https://picsum.photos/200/200",
+                radius: 10
+              }),
               new Text({
-                left: 300,
+                left: 30,
+                top: 150,
                 width: 100,
                 textAlign: "center",
                 verticalAlign: "middle",
@@ -132,10 +160,7 @@ root.append(
               })
             ]
           })
-        ],
-        onclick: (e) => {
-          console.log("div1 clicked", e);
-        }
+        ]
       })
     ]
   }),

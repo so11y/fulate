@@ -1,7 +1,8 @@
-import { Element } from "../node/element";
+import { BaseElementOption, Element } from "../node/element";
 
-export class Rectangle extends Element {
-  type = "rectangle";
+
+export class Circle extends Element {
+  type = "circle";
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
     if (this.notInDitry()) {
@@ -12,10 +13,19 @@ export class Rectangle extends Element {
     ctx.setTransform(
       this.root.getViewPointMtrix().multiply(this.getOwnMatrix())
     );
+
+    const w = this.width || 0;
+    const h = this.height || 0;
+    const r = this.radius ?? Math.min(w / 2, h / 2);
+    const cx = w / 2;
+    const cy = h / 2;
+
     if (this.backgroundColor) {
       ctx.fillStyle = this.backgroundColor;
     }
-    ctx.roundRect(0, 0, this.width!, this.height!, this.radius ?? 0);
+
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+
     if (this.backgroundColor) {
       ctx.fill();
     }

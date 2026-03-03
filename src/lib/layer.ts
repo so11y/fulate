@@ -237,10 +237,18 @@ export class Layer extends Rectangle {
   }
 
   notInDitry() {
-    return super.notInDitry();
+    //|| this.renderPromise
+    // if (this.dirtyNodes.size === 0 && this.enableDirtyRect) {
+    //   return false;
+    // }
+    // return true;
+    return false;
   }
 
   paint() {
+    if (this.notInDitry()) {
+      return;
+    }
     this.requestRender();
   }
 

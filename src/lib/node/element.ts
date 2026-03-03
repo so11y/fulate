@@ -108,7 +108,7 @@ export class Element extends Transformable {
    * 纯净渲染函数（只负责绘制，不处理数学计算）
    */
   paint(ctx = this.layer.ctx) {
-    if (!this.visible || this.notInDitry()) return;
+    if (!this.visible) return;
 
     if (this.children) {
       for (let i = 0; i < this.children.length; i++) {
