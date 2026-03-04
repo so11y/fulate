@@ -153,7 +153,7 @@ export class Layer extends Rectangle {
   }
 
   requestRender() {
-    if (this.isRender) return;
+    if (this.isRender) return this.renderPromise;
     this.isRender = true;
 
     if (!this.renderPromise) {
@@ -236,6 +236,7 @@ export class Layer extends Rectangle {
       this.renderPromise = null;
       this.renderResolve = null;
     });
+    return this.renderPromise;
   }
 
   nextTick(fn: () => void): void {
