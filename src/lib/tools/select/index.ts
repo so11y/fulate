@@ -11,7 +11,6 @@ const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org
 
 export class Select extends Group {
   declare currentControl: { control: any; point: any };
-  declare _coords: any;
   key = "select";
   controlSize = 6;
   hitPadding = 6;
@@ -49,9 +48,9 @@ export class Select extends Group {
 
   forEachTarget(callback: (el: Element) => void) {
     this.targetElement.children?.forEach((artboard) => {
-      artboard.children?.forEach((child) => {
+      artboard.children?.forEach((child: any) => {
         if (child !== this) {
-          if (child.type !== "layer") {
+          if (!child.isLayer) {
             if (!child.groupParent) callback(child);
           } else {
             child.children.forEach((child) => {
@@ -89,7 +88,7 @@ export class Select extends Group {
 
     parent.append(group);
     group.snapshotChildren();
-    
+
     this.selectEls = [group as any];
     this.snapshotChildren();
   }
@@ -111,7 +110,14 @@ export class Select extends Group {
     const rect = makeBoundingBoxFromPoints(
       this.selectEls.map((v) => v.getCoords()).flat(1)
     );
-    this.setOptions({ ...rect, angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0 });
+    this.setOptions({
+      ...rect,
+      angle: 0,
+      scaleX: 1,
+      scaleY: 1,
+      skewX: 0,
+      skewY: 0
+    });
     this.snapshotChildren();
   }
 
@@ -175,7 +181,14 @@ export class Select extends Group {
           const rect = makeBoundingBoxFromPoints(
             this.selectEls?.map((v) => v.getCoords()).flat(1)
           );
-          this.setOptions({ ...rect, angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0 });
+          this.setOptions({
+            ...rect,
+            angle: 0,
+            scaleX: 1,
+            scaleY: 1,
+            skewX: 0,
+            skewY: 0
+          });
           this.snapshotChildren();
         },
         {
@@ -195,7 +208,7 @@ export class Select extends Group {
         left: this.left,
         top: this.top,
         worldCenterPoint: this.getWorldCenterPoint(),
-        matrix: DOMMatrix.fromMatrix(this.getOwnMatrix()),
+        matrix: DOMMatrix.fromMatrix(this.getOwnMatrix())
       };
       const pointermove = (e: FulateEvent) => {
         control.callback(this, point, selectPrevState, e);
@@ -232,7 +245,7 @@ export class Select extends Group {
           dy += snapResult.dy;
         }
 
-        // Just move the Select bounding box. 
+        // Just move the Select bounding box.
         // Group._applyTransformToChildren will automatically move the selected items.
         this.setOptions({
           left: originalSelectLeft + dx,
@@ -283,11 +296,6 @@ export class Select extends Group {
     }
     const ctx = this.layer.ctx;
     ctx.save();
-    
-    // Explicitly apply Viewport matrix to ensure we are in world coordinate space
-    const vp = this.root.getViewPointMtrix();
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(vp.a * dpr, vp.b * dpr, vp.c * dpr, vp.d * dpr, vp.e * dpr, vp.f * dpr);
 
     const coords = this.getCoords();
 
@@ -299,39 +307,28 @@ export class Select extends Group {
     ctx.closePath();
 
     const scale = this.root.viewport.scale;
-    ctx.strokeStyle = "#0078ff";
+    ctx.strokeStyle = "#4F81FF";
     ctx.lineWidth = 1 / scale;
     ctx.stroke();
 
     ctx.restore();
     if (this.selectEls.length) {
-      this.getControlCoords().forEach((point, index) =>
-        this.drawControlPoint(ctx, point, Controls[index])
+      this.getControlCoords().forEach((point) =>
+        this.drawControlPoint(ctx, point)
       );
     }
     this.drawInfoPanel(ctx);
   }
 
-  drawControlPoint(
-    ctx: CanvasRenderingContext2D,
-    point: Point,
-    control: (typeof Controls)[0]
-  ) {
+  drawControlPoint(ctx: CanvasRenderingContext2D, point: Point) {
     const scale = this.root.viewport.scale;
     const size = this.controlSize / scale;
     ctx.save();
-
-    const vp = this.root.getViewPointMtrix();
-    const dpr = window.devicePixelRatio || 1;
-    // Set to world space!
-    ctx.setTransform(vp.a * dpr, vp.b * dpr, vp.c * dpr, vp.d * dpr, vp.e * dpr, vp.f * dpr);
-
     ctx.translate(point.x, point.y);
     ctx.rotate(degreesToRadians(this.angle ?? 0));
-
     ctx.beginPath();
-    ctx.fillStyle = "#0078ff";
-    ctx.roundRect(-size / 2, -size / 2, size, size, 1);
+    ctx.fillStyle = "#4F81FF";
+    ctx.roundRect(-size / 2, -size / 2, size, size, 1 / scale);
     ctx.fill();
     ctx.restore();
   }
@@ -339,11 +336,10 @@ export class Select extends Group {
   drawInfoPanel(ctx: CanvasRenderingContext2D) {
     const vp = this.root.getViewPointMtrix();
     const dpr = window.devicePixelRatio || 1;
-    const allPts = this.getControlCoords().map((p) => p.matrixTransform(vp));
-    const cornerPts = allPts.slice(0, 4);
+    const cornerPts = this.getControlCoords().map((p) => p.matrixTransform(vp));
     const minX = Math.min(...cornerPts.map((p) => p.x));
     const maxX = Math.max(...cornerPts.map((p) => p.x));
-    const maxY = Math.max(...allPts.map((p) => p.y));
+    const maxY = Math.max(...cornerPts.map((p) => p.y));
     const centerX = (minX + maxX) / 2;
 
     const text = `x: ${Math.round(this.left)}  y: ${Math.round(this.top)}  ${Math.round(this.angle ?? 0)}°`;
@@ -411,6 +407,7 @@ export class Select extends Group {
     if (!this.selectEls.length) {
       return false;
     }
+    console.log('---');
     if (this.width === 0 || this.height === 0) {
       return false;
     }
@@ -422,8 +419,7 @@ export class Select extends Group {
       const point = coords[i];
 
       const distance = Math.sqrt(
-        Math.pow(hintPoint.x - point.x, 2) +
-          Math.pow(hintPoint.y - point.y, 2)
+        Math.pow(hintPoint.x - point.x, 2) + Math.pow(hintPoint.y - point.y, 2)
       );
 
       const scale = this.root.viewport.scale;

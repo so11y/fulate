@@ -14,9 +14,6 @@ function niceStep(pxPerTick: number, scale: number) {
 }
 
 export class Rule extends Element {
-  dragging = false;
-  lastPointer: Point | null = null;
-  isSpace = false;
   type = "rule";
   key = "rule";
   rulerSize = 25;

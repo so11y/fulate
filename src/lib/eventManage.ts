@@ -87,7 +87,7 @@ export class EventManage {
       parent = parent?.parent;
     }
     if (parent) {
-      parent.eventManage.notify(eventName, event);
+      parent.eventManage.notify(eventName, event, event?.target ?? this.target);
     }
   }
 

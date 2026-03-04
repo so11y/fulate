@@ -62,10 +62,7 @@ export class Root extends Node {
     this.layers.forEach((layer) => layer.requestRender());
   }
 
-  /**
-   * 核心公式：将屏幕坐标转换为画布逻辑坐标（世界坐标）
-   */
-  private getLogicalPosition(clientX: number, clientY: number) {
+  getLogicalPosition(clientX: number, clientY: number) {
     const rect = this.container.getBoundingClientRect();
     return {
       x: (clientX - rect.left - this.viewport.x) / this.viewport.scale,
@@ -87,7 +84,7 @@ export class Root extends Node {
   /**
    * 碰撞检测
    */
-  private checkHit(e: PointerEvent | MouseEvent) {
+  checkHit(e: PointerEvent | MouseEvent) {
     if (this.isSpacePressed || this.isPanning) return;
 
     if (this.hasLockPoint) return;
@@ -96,14 +93,26 @@ export class Root extends Node {
 
     this.currentElement = undefined;
 
-    // 遍历 layers (从上到下)
     for (let i = this.layers.length - 1; i >= 0; i--) {
       const layer = this.layers[i];
 
       const hitElements = layer.searchHitElements(x, y);
       if (hitElements.length > 0) {
-        // 由于 rbush 返回的结果可能是无序的，这里根据 id 倒序排列，优先命中后创建（显示在更上层）的元素
         hitElements.sort((a, b) => b.id - a.id);
+
+        // this.dispatchEvent(
+        //   new CustomEvent("hitElements", {
+        //     detail: {
+        //       target: this,
+        //       x,
+        //       y,
+        //       buttons: e.buttons,
+        //       deltaY: (e as WheelEvent).deltaY ?? 0,
+        //       deltaX: (e as WheelEvent).deltaX ?? 0
+        //     }
+        //   })
+        // );
+
         for (const element of hitElements) {
           if (
             !element.silent &&

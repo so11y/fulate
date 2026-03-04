@@ -24,6 +24,7 @@ export class Layer extends Rectangle {
 
   dirtyNodes = new Set<Element>();
 
+  isLayer = true;
   isRender: boolean = false;
   isRenderDitryMode = false;
   private renderResolve: (() => void) | null = null;
@@ -81,8 +82,8 @@ export class Layer extends Rectangle {
     this.root?.unregisterLayer(this);
   }
 
-  syncNode(node: Element) {
-    if (node.type === "layer" || node.type === "root") return;
+  syncNode(node: any) {
+    if (node.isLayer || node.type === "root") return;
     this.pendingSyncNodes.add(node);
     if (this.syncTimeout === null) {
       this.syncTimeout = requestAnimationFrame(() => {
@@ -158,7 +159,6 @@ export class Layer extends Rectangle {
 
       if (this.enableDirtyRect && this.dirtyNodes.size > 0) {
         this.isRenderDitryMode = true;
-        // 1. 仅仅只计算“真正发生变化”的节点的旧/新包围盒的合并集合
         let minX = Infinity;
         let minY = Infinity;
         let maxX = -Infinity;
@@ -203,17 +203,11 @@ export class Layer extends Rectangle {
 
         if (screenWidth > 0 && screenHeight > 0) {
           this.ctx.save();
-
-          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-
           this.ctx.beginPath();
           this.ctx.rect(screenMinX, screenMinY, screenWidth, screenHeight);
           this.ctx.clip();
-
           this.ctx.clearRect(screenMinX, screenMinY, screenWidth, screenHeight);
-
           super.paint(this.ctx);
-
           this.ctx.restore();
         }
 
@@ -221,17 +215,6 @@ export class Layer extends Rectangle {
       } else {
         // Fallback or initial render (全量重绘)
         this.clear();
-
-        const dpr = window.devicePixelRatio || 1;
-        const m = this.root.getViewPointMtrix();
-        const scaledM = DOMMatrix.fromMatrix(m);
-        scaledM.a *= dpr;
-        scaledM.b *= dpr;
-        scaledM.c *= dpr;
-        scaledM.d *= dpr;
-        scaledM.e *= dpr;
-        scaledM.f *= dpr;
-        this.ctx.setTransform(scaledM);
 
         // 全量重绘不需要传脏矩形
         super.paint(this.ctx);
