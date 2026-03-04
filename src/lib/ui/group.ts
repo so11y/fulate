@@ -6,7 +6,14 @@ export interface GroupOption extends BaseElementOption { }
 
 export class Group extends Element {
   type = "group";
-  groupEls: Element[] = [];
+  private _groupEls: Element[] = [];
+  get groupEls(): Element[] {
+    return this._groupEls;
+  }
+  set groupEls(els: Element[]) {
+    this._groupEls = els;
+    this._childrenSnapshots.clear();
+  }
   private _childrenSnapshots: Map<
     Element,
     { localMatrix: DOMMatrix; localCenter: Point }

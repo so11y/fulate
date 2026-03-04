@@ -27,14 +27,7 @@ interface SelectState {
   height: number;
   worldCenterPoint: Point;
   angle: number;
-  selectCenterPoint: Array<{
-    width: number;
-    height: number;
-    matrix: DOMMatrix;
-    worldCenterPoint: Point;
-    el: Element;
-    angle: number;
-  }>;
+  matrix: DOMMatrix;
 }
 
 export const Controls: Array<Control> = [
@@ -136,7 +129,6 @@ export function rotateCallback(
   point: Point,
   {
     theta,
-    selectCenterPoint,
     angle: selectAngle,
     worldCenterPoint
   }: SelectState,
@@ -155,24 +147,7 @@ export function rotateCallback(
     event.detail.y
   );
 
-  const angleDelta = angle - selectAngle;
-
-  const rotationMatrix = new DOMMatrix()
-    .translate(worldCenterPoint.x, worldCenterPoint.y)
-    .rotate(0, 0, angleDelta)
-    .translate(-worldCenterPoint.x, -worldCenterPoint.y);
-
-  selectCenterPoint.forEach(({ el, worldCenterPoint, angle }) => {
-    const center = el.getPositionByOrigin(
-      worldCenterPoint.matrixTransform(rotationMatrix)
-    );
-    el.quickSetOptions({
-      angle: angle + angleDelta,
-      left: center.x,
-      top: center.y
-    });
-  });
-
+  // Group._applyTransformToChildren ensures children are rotated automatically
   selectEL.setOptions({
     angle
   });
@@ -185,46 +160,41 @@ export function resizeObject(
   type: string
 ) {
   const {
-    left: pLeft,
-    top: pTop,
     width: pWidth,
     height: pHeight,
-    theta, // 选框初始弧度
-    selectCenterPoint
+    matrix // 选框初始世界矩阵
   } = preState;
 
-  // 1. 计算选框中心
-  const cx = pLeft + pWidth / 2;
-  const cy = pTop + pHeight / 2;
-  const angleDeg = theta * (180 / Math.PI);
+  // 1. 找出固定点(局部坐标)
+  let fixedLocalX = 0;
+  let fixedLocalY = 0;
+  if (type.includes("r")) fixedLocalX = 0;
+  else if (type.includes("l")) fixedLocalX = pWidth;
+  
+  if (type.includes("b")) fixedLocalY = 0;
+  else if (type.includes("t")) fixedLocalY = pHeight;
 
-  // 2. 将鼠标坐标转换到选框的本地坐标系（未旋转状态）
-  const unrotateMatrix = new DOMMatrix()
-    .translate(cx, cy)
-    .rotate(0, 0, -angleDeg)
-    .translate(-cx, -cy);
-  const mouse = new Point(event.detail).matrixTransform(unrotateMatrix);
+  if (type === "mr") fixedLocalY = pHeight / 2;
+  if (type === "ml") fixedLocalY = pHeight / 2;
+  if (type === "mt") fixedLocalX = pWidth / 2;
+  if (type === "mb") fixedLocalX = pWidth / 2;
 
-  // 3. 计算缩放量 (sx, sy)
-  // 逻辑：基于固定对角点(Fixed Point)计算拉伸比例
-  const halfW = pWidth / 2;
-  const halfH = pHeight / 2;
-  let ox = 0,
-    oy = 0;
-  if (type.includes("r")) ox = -halfW;
-  else if (type.includes("l")) ox = halfW;
-  if (type.includes("b")) oy = -halfH;
-  else if (type.includes("t")) oy = halfH;
+  // 2. 将鼠标坐标转换到选框的未缩放局部坐标系中
+  const mouseWorld = new Point(event.detail.x, event.detail.y);
+  const inverseMatrix = DOMMatrix.fromMatrix(matrix).inverse();
+  const mouseLocal = mouseWorld.matrixTransform(inverseMatrix);
 
-  const fixedX = cx + ox;
-  const fixedY = cy + oy;
+  // 3. 计算局部坐标系下的拉伸比例
+  let sx = 1;
+  let sy = 1;
 
-  let sx = 1,
-    sy = 1;
-  if (type.includes("r")) sx = (mouse.x - fixedX) / pWidth;
-  if (type.includes("l")) sx = (fixedX - mouse.x) / pWidth;
-  if (type.includes("b")) sy = (mouse.y - fixedY) / pHeight;
-  if (type.includes("t")) sy = (fixedY - mouse.y) / pHeight;
+  if (type.includes("r")) sx = mouseLocal.x / pWidth;
+  if (type.includes("l")) sx = (pWidth - mouseLocal.x) / pWidth;
+  if (type.includes("b")) sy = mouseLocal.y / pHeight;
+  if (type.includes("t")) sy = (pHeight - mouseLocal.y) / pHeight;
+
+  if (type === "mr" || type === "ml") sy = 1;
+  if (type === "mt" || type === "mb") sx = 1;
 
   // Shift 等比
   if (event.detail?.shiftKey && !["mt", "mb", "ml", "mr"].includes(type)) {
@@ -237,45 +207,29 @@ export function resizeObject(
   sx = sx || 0.0001;
   sy = sy || 0.0001;
 
-  const worldFixedPoint = new Point(fixedX, fixedY).matrixTransform(
-    new DOMMatrix().translate(cx, cy).rotate(0, 0, angleDeg).translate(-cx, -cy)
-  );
-
-  const deltaMatrix = new DOMMatrix()
-    .translate(worldFixedPoint.x, worldFixedPoint.y)
-    .rotate(0, 0, angleDeg)
+  // 4. 构造局部缩放矩阵，并求出新的世界矩阵
+  const localScaleMatrix = new DOMMatrix()
+    .translate(fixedLocalX, fixedLocalY)
     .scale(sx, sy)
-    .rotate(0, 0, -angleDeg)
-    .translate(-worldFixedPoint.x, -worldFixedPoint.y);
+    .translate(-fixedLocalX, -fixedLocalY);
 
-  selectCenterPoint.forEach((snapshot) => {
-    const { el, matrix, worldCenterPoint } = snapshot;
+  const newWorldMatrix = matrix.multiply(localScaleMatrix);
+  
+  // 5. 分解出新的 scaleX, scaleY, angle 等
+  const { angle, scaleX, scaleY, skewX } = qrDecompose(newWorldMatrix);
+  
+  // 6. 求出新的中心点世界坐标，并反算出 left 和 top
+  const newLocalCenter = new Point(pWidth / 2, pHeight / 2).matrixTransform(localScaleMatrix);
+  const newWorldCenter = newLocalCenter.matrixTransform(matrix);
 
-    const { angle, scaleX, scaleY, skewX } = qrDecompose(
-      deltaMatrix.multiply(matrix)
-    );
-
-    const center = el.getPositionByOrigin(
-      worldCenterPoint.matrixTransform(deltaMatrix)
-    );
-    el.quickSetOptions({
-      angle,
-      scaleX,
-      scaleY,
-      skewX,
-      left: center.x,
-      top: center.y
-    });
-  });
-
-  const newW = pWidth * Math.abs(sx);
-  const newH = pHeight * Math.abs(sy);
-  const newSelectCenter = new Point(cx, cy).matrixTransform(deltaMatrix);
+  const center = selectEL.getPositionByOrigin(newWorldCenter);
 
   selectEL.setOptions({
-    width: newW,
-    height: newH,
-    left: newSelectCenter.x - newW / 2,
-    top: newSelectCenter.y - newH / 2
+    angle,
+    scaleX,
+    scaleY,
+    skewX,
+    left: center.x,
+    top: center.y
   });
 }

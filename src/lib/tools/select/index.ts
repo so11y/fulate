@@ -1,7 +1,6 @@
 import { Intersection } from "../../../util/Intersection";
 import { makeBoundingBoxFromPoints, Point } from "../../../util/point";
 import { degreesToRadians } from "../../../util/radiansDegreesConversion";
-import { qrDecompose } from "../../../util/math";
 import { BaseElementOption, Element } from "../../node/element";
 import { FulateEvent } from "../../eventManage";
 import { Controls, resizeObject, rotateCallback } from "./controls";
@@ -10,8 +9,7 @@ import { Group } from "../../ui/group";
 
 const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
 
-export class Select extends Element {
-  declare selectEls: Element[];
+export class Select extends Group {
   declare currentControl: { control: any; point: any };
   declare _coords: any;
   key = "select";
@@ -30,8 +28,15 @@ export class Select extends Element {
       originY: "center",
       ...options
     });
-    this.selectEls = [];
     this.eventManage.hasUserEvent = true;
+  }
+
+  get selectEls() {
+    return this.groupEls;
+  }
+
+  set selectEls(els: Element[]) {
+    this.groupEls = els;
   }
 
   get snapTool(): Snap | undefined {
@@ -71,6 +76,10 @@ export class Select extends Element {
       width: this.width,
       height: this.height,
       angle: this.angle,
+      scaleX: this.scaleX,
+      scaleY: this.scaleY,
+      skewX: this.skewX,
+      skewY: this.skewY,
       originX: "center",
       originY: "center"
     });
@@ -80,7 +89,9 @@ export class Select extends Element {
 
     parent.append(group);
     group.snapshotChildren();
+    
     this.selectEls = [group as any];
+    this.snapshotChildren();
   }
 
   unGroup() {
@@ -100,7 +111,8 @@ export class Select extends Element {
     const rect = makeBoundingBoxFromPoints(
       this.selectEls.map((v) => v.getCoords()).flat(1)
     );
-    this.setOptions(rect);
+    this.setOptions({ ...rect, angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0 });
+    this.snapshotChildren();
   }
 
   mounted() {
@@ -127,7 +139,11 @@ export class Select extends Element {
         top: startPoint.y,
         width: 0,
         height: 0,
-        angle: 0
+        angle: 0,
+        scaleX: 1,
+        scaleY: 1,
+        skewX: 0,
+        skewY: 0
       });
 
       const selectEls = new Set(
@@ -159,7 +175,8 @@ export class Select extends Element {
           const rect = makeBoundingBoxFromPoints(
             this.selectEls?.map((v) => v.getCoords()).flat(1)
           );
-          this.setOptions(rect);
+          this.setOptions({ ...rect, angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0 });
+          this.snapshotChildren();
         },
         {
           once: true
@@ -178,16 +195,7 @@ export class Select extends Element {
         left: this.left,
         top: this.top,
         worldCenterPoint: this.getWorldCenterPoint(),
-        selectCenterPoint: this.selectEls.map((v) => {
-          return {
-            angle: v.angle,
-            width: v.width,
-            height: v.height,
-            worldCenterPoint: v.getWorldCenterPoint(),
-            matrix: DOMMatrix.fromMatrix(v.getOwnMatrix()),
-            el: v
-          };
-        })
+        matrix: DOMMatrix.fromMatrix(this.getOwnMatrix()),
       };
       const pointermove = (e: FulateEvent) => {
         control.callback(this, point, selectPrevState, e);
@@ -205,16 +213,12 @@ export class Select extends Element {
     const handleSelectMove = (e: FulateEvent) => {
       const startPoint = new Point(e.detail.x, e.detail.y);
 
-      this.snapTool?.start(this.selectEls.concat(this));
+      this.snapTool?.start(this.selectEls.concat(this as any));
 
       const originalSelectLeft = this.left;
       const originalSelectTop = this.top;
 
       const coords = super.getCoords();
-      const snapshots = this.selectEls.map((child: any) => {
-        const wc = child.getWorldCenterPoint();
-        return { child, worldCenter: wc };
-      });
 
       const pointermove = (ev: FulateEvent) => {
         const current = new Point(ev.detail.x, ev.detail.y);
@@ -228,21 +232,8 @@ export class Select extends Element {
           dy += snapResult.dy;
         }
 
-        const targets = snapshots.map(({ child, worldCenter }) => {
-          return {
-            child,
-            targetWorld: new Point(worldCenter.x + dx, worldCenter.y + dy)
-          };
-        });
-
-        for (const { child, targetWorld } of targets) {
-          const center = child.getPositionByOrigin(targetWorld);
-          child.quickSetOptions({
-            left: center.x,
-            top: center.y
-          });
-        }
-
+        // Just move the Select bounding box. 
+        // Group._applyTransformToChildren will automatically move the selected items.
         this.setOptions({
           left: originalSelectLeft + dx,
           top: originalSelectTop + dy
@@ -292,20 +283,24 @@ export class Select extends Element {
     }
     const ctx = this.layer.ctx;
     ctx.save();
+    
+    // Explicitly apply Viewport matrix to ensure we are in world coordinate space
+    const vp = this.root.getViewPointMtrix();
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(vp.a * dpr, vp.b * dpr, vp.c * dpr, vp.d * dpr, vp.e * dpr, vp.f * dpr);
+
+    const coords = this.getCoords();
+
     ctx.beginPath();
-    this.applyTransformToCtx(ctx);
+    ctx.moveTo(coords[0].x, coords[0].y);
+    ctx.lineTo(coords[1].x, coords[1].y);
+    ctx.lineTo(coords[2].x, coords[2].y);
+    ctx.lineTo(coords[3].x, coords[3].y);
+    ctx.closePath();
 
     const scale = this.root.viewport.scale;
-    const padding = 1 / scale;
     ctx.strokeStyle = "#0078ff";
     ctx.lineWidth = 1 / scale;
-    ctx.roundRect(
-      -padding,
-      -padding,
-      this.width! + padding * 2,
-      this.height! + padding * 2,
-      this.radius ?? 0
-    );
     ctx.stroke();
 
     ctx.restore();
@@ -326,12 +321,17 @@ export class Select extends Element {
     const size = this.controlSize / scale;
     ctx.save();
 
+    const vp = this.root.getViewPointMtrix();
+    const dpr = window.devicePixelRatio || 1;
+    // Set to world space!
+    ctx.setTransform(vp.a * dpr, vp.b * dpr, vp.c * dpr, vp.d * dpr, vp.e * dpr, vp.f * dpr);
+
     ctx.translate(point.x, point.y);
     ctx.rotate(degreesToRadians(this.angle ?? 0));
 
     ctx.beginPath();
     ctx.fillStyle = "#0078ff";
-    ctx.roundRect(-size / 2, -size / 2, size, size);
+    ctx.roundRect(-size / 2, -size / 2, size, size, 1);
     ctx.fill();
     ctx.restore();
   }
