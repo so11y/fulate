@@ -118,24 +118,11 @@ export class Element extends Transformable {
     }
   }
 
-  hasPointHint(x: number, y: number): boolean {
-    if (
-      this.width === undefined ||
-      this.height === undefined ||
-      !this.visible
-    ) {
+  hasPointHint(point: Point): boolean {
+    if (!this.visible) {
       return false;
     }
-
-    const point = new Point(x, y);
-    const localPoint = this.getGlobalToLocal(point);
-
-    return (
-      localPoint.x >= 0 &&
-      localPoint.x <= this.width &&
-      localPoint.y >= 0 &&
-      localPoint.y <= this.height
-    );
+    return super.hasPointHint(point);
   }
 
   hasInView() {

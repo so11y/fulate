@@ -1,4 +1,5 @@
 import { CustomEvent } from "../util/event";
+import { Point } from "../util/point";
 import type { Element } from "./node/element";
 
 export type UserCanvasEvent = Event & { detail: CanvasPoint };
@@ -54,7 +55,7 @@ export class EventManage {
     }
 
     if (eventName === "mouseleave" && this.hasMouseEnter) {
-      if (this.target.hasPointHint?.(event.x, event.y)) {
+      if (this.target.hasPointHint?.(new Point(event.x, event.y))) {
         return;
       }
       this.target.root.container.style.cursor = "default";

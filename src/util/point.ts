@@ -67,6 +67,12 @@ export class Point extends DOMPoint {
     this.y = y;
     return this;
   }
+
+  pointDistance(p1: Point, threshold: number) {
+    const dx = this.x - p1.x;
+    const dy = this.y - p1.y;
+    return dx * dx + dy * dy <= threshold ** 2;
+  }
 }
 
 export function makeBoundingBoxFromPoints(points: Point[]) {

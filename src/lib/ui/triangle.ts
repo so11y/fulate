@@ -1,3 +1,4 @@
+import { Intersection } from "../../util/Intersection";
 import { Point } from "../../util/point";
 import { Element } from "../node/element";
 
@@ -44,5 +45,9 @@ export class Triangle extends Element {
       new Point(dim.x, dim.y),
       new Point(0, dim.y)
     ];
+  }
+
+  hasPointHint(point: Point): boolean {
+    return Intersection.isPointInPolygon(point, this.getCoords());
   }
 }

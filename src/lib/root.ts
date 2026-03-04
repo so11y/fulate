@@ -3,6 +3,7 @@ import { Layer, RBushItem } from "./layer";
 import { Element } from "./node/element";
 import { CustomEvent } from "../util/event";
 import { Rule } from "./tools/rule";
+import { Point } from "../util/point";
 
 export class Root extends Node {
   type = "root";
@@ -69,10 +70,10 @@ export class Root extends Node {
 
   getLogicalPosition(clientX: number, clientY: number) {
     const rect = this.container.getBoundingClientRect();
-    return {
-      x: (clientX - rect.left - this.viewport.x) / this.viewport.scale,
-      y: (clientY - rect.top - this.viewport.y) / this.viewport.scale
-    };
+    return new Point(
+      (clientX - rect.left - this.viewport.x) / this.viewport.scale,
+      (clientY - rect.top - this.viewport.y) / this.viewport.scale
+    );
   }
 
   getViewPointMtrix() {
@@ -102,14 +103,14 @@ export class Root extends Node {
 
     if (this.hasLockPoint) return;
 
-    const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
+    const point = this.getLogicalPosition(e.clientX, e.clientY);
 
     this.currentElement = undefined;
 
     for (let i = this.layers.length - 1; i >= 0; i--) {
       const layer = this.layers[i];
 
-      const hitElements = layer.searchHitElements(x, y);
+      const hitElements = layer.searchHitElements(point);
       if (hitElements.length > 0) {
         hitElements.sort((a, b) => b.element.uIndex - a.element.uIndex);
 
@@ -118,7 +119,7 @@ export class Root extends Node {
           if (
             !element.silent &&
             element.visible &&
-            element.hasPointHint?.(x, y)
+            element.hasPointHint?.(point)
           ) {
             this.currentElement = item;
             return;
@@ -176,8 +177,17 @@ export class Root extends Node {
           if (this.isSpacePressed) {
             this.container.style.cursor = this.isPanning ? "grabbing" : "grab";
           } else {
-            this.container.style.cursor =
-              this.currentElement?.element.cursor || "default";
+            if (
+              this.currentElement &&
+              ((this.currentElement?.element &&
+                this.currentElement.element?.eventManage.hasUserEvent) ||
+                this.currentElement.element?.cursor)
+            ) {
+              this.container.style.cursor =
+                this.currentElement.element.cursor || "pointer";
+            } else {
+              this.container.style.cursor = "default";
+            }
           }
 
           // 处理 MouseEnter / MouseLeave

@@ -1,3 +1,5 @@
+import { Intersection } from "../../util/Intersection";
+import { Point } from "../../util/point";
 import { Element } from "../node/element";
 
 export class Rectangle extends Element {
@@ -21,5 +23,18 @@ export class Rectangle extends Element {
       super.paint(ctx);
     }
     ctx.restore();
+  }
+
+  hasPointHint(point: Point): boolean {
+    if (!this.radius) {
+      return super.hasPointHint(point);
+    }
+    const localPoint = this.getGlobalToLocal(point);
+    return Intersection.isPointInRoundRect(
+      localPoint,
+      this.width,
+      this.height,
+      this.radius
+    );
   }
 }

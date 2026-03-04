@@ -121,13 +121,6 @@ export class Transformable extends Node {
     return m;
   }
 
-  // --- 坐标转换逻辑 ---
-
-  /**
-   * 优雅设置矩阵，自动带上当前环境的 DPR
-   * @param ctx 目标画布上下文
-   * @param customMatrix 可选的自定义矩阵。如果不传，则默认使用 视口矩阵 × 自身矩阵
-   */
   applyTransformToCtx(ctx: CanvasRenderingContext2D, customMatrix?: DOMMatrix) {
     const dpr = window.devicePixelRatio || 1;
     const matrix =
@@ -151,7 +144,7 @@ export class Transformable extends Node {
 
   getGlobalToLocal(point: Point) {
     const inverseMatrix = this.getOwnMatrix().inverse();
-    return point.matrixTransform(inverseMatrix);
+    return new Point(inverseMatrix.transformPoint(point));
   }
 
   // --- 几何与碰撞检测 ---
@@ -223,8 +216,19 @@ export class Transformable extends Node {
     return this;
   }
 
-  containsPoint(point: Point) {
-    return Intersection.isPointInPolygon(point, this.getCoords());
+  hasPointHint(point: Point): boolean {
+    if (this.width === undefined || this.height === undefined) {
+      return false;
+    }
+    const localPoint = this.getGlobalToLocal(point);
+
+    return (
+      localPoint.x >= 0 &&
+      localPoint.x <= this.width &&
+      localPoint.y >= 0 &&
+      localPoint.y <= this.height
+    );
+    // return Intersection.isPointInPolygon(point, this.getCoords());
   }
 
   _getTransformedDimensions(options?) {

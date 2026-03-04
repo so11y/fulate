@@ -2,6 +2,7 @@ import { BaseElementOption, Element } from "./node/element";
 import RBush from "rbush";
 import { Rectangle } from "./ui/rectangle";
 import { Rect, RectPoint } from "./node/transformable";
+import { Point } from "../util/point";
 
 export interface RBushItem {
   minX: number;
@@ -94,7 +95,9 @@ export class Layer extends Rectangle {
     }
   }
 
-  searchHitElements(x: number, y: number): RBushItem[] {
+  searchHitElements(point: Point): RBushItem[] {
+    const x = point.x;
+    const y = point.y;
     const interactions = this.hitTestRBush.search({
       minX: x,
       minY: y,

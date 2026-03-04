@@ -66,15 +66,12 @@ window.addEventListener("keydown", (e) => {
 const div1 = new Rectangle({
   key: "344",
   left: 300,
-  top: 100,
+  top: 150,
   width: 50,
   height: 50,
   radius: 20,
-  cursor: "pointer",
   backgroundColor: "red",
   onclick: (e) => {
-    console.log("div1 clicked", e);
-
     e.detail.target.setOptions({
       backgroundColor: "yellow"
     });
@@ -97,7 +94,12 @@ const dev3 = new Rectangle({
   top: 0,
   width: 30,
   height: 30,
-  backgroundColor: "yellow"
+  backgroundColor: "yellow",
+  onclick: (e) => {
+    e.detail.target.setOptions({
+      backgroundColor: "yellow"
+    });
+  }
 });
 
 // --- 布局常量设置 ---
@@ -134,18 +136,28 @@ root.append(
                 backgroundColor: "pink"
               }),
               new Circle({
-                left: col(1),
+                left: col(4),
                 top: START_Y,
                 width: ITEM_SIZE,
                 height: ITEM_SIZE,
-                backgroundColor: "green"
+                backgroundColor: "green",
+                onclick: (e) => {
+                  e.detail.target.setOptions({
+                    backgroundColor: "yellow"
+                  });
+                }
               }),
               new Triangle({
                 left: col(2),
                 top: START_Y,
                 width: ITEM_SIZE,
                 height: ITEM_SIZE,
-                backgroundColor: "orange"
+                backgroundColor: "orange",
+                onclick: (e) => {
+                  e.detail.target.setOptions({
+                    backgroundColor: "yellow"
+                  });
+                }
               }),
               new Image({
                 left: col(3),
