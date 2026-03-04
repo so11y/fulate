@@ -29,7 +29,7 @@ export class Layer extends Rectangle {
   isRender: boolean = false;
   isRenderDitryMode = false;
   private renderResolve: (() => void) | null = null;
-  private renderPromise: Promise<void> | null = null;
+  private _renderPromise: Promise<void> | null = null;
 
   private pendingSyncNodes = new Set<Element>();
   private syncTimeout: number | null = null;
@@ -153,11 +153,11 @@ export class Layer extends Rectangle {
   }
 
   requestRender() {
-    if (this.isRender) return this.renderPromise;
+    if (this.isRender) return this._renderPromise;
     this.isRender = true;
 
-    if (!this.renderPromise) {
-      this.renderPromise = new Promise<void>((resolve) => {
+    if (!this._renderPromise) {
+      this._renderPromise = new Promise<void>((resolve) => {
         this.renderResolve = resolve;
       });
     }
@@ -233,17 +233,17 @@ export class Layer extends Rectangle {
       this.isRender = false;
       this.isRenderDitryMode = false;
       this.renderResolve?.();
-      this.renderPromise = null;
+      this._renderPromise = null;
       this.renderResolve = null;
     });
-    return this.renderPromise;
+    return this._renderPromise;
   }
 
   nextTick(fn: () => void): void {
-    if (this.renderPromise) {
-      this.renderPromise.then(fn);
+    if (this._renderPromise) {
+      this._renderPromise.then(fn);
     } else {
-      fn();
+      setTimeout(fn, 0);
     }
   }
 

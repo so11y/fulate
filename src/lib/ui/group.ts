@@ -2,7 +2,10 @@ import { BaseElementOption, Element } from "../node/element";
 import { makeBoundingBoxFromPoints, Point } from "../../util/point";
 import { qrDecompose } from "../../util/math";
 
-export interface GroupOption extends BaseElementOption { }
+export interface GroupOption extends BaseElementOption {
+  /** 导入时用：通过 root.idElements 查找并还原 groupEls */
+  groupElIds?: string[];
+}
 
 export class Group extends Element {
   type = "group";
@@ -19,7 +22,6 @@ export class Group extends Element {
     { localMatrix: DOMMatrix; localCenter: Point }
   > = new Map();
 
-
   updateBoundingBox() {
     if (!this.groupEls.length) return;
     const allPoints = this.groupEls.map((v) => v.getCoords()).flat(1);
@@ -30,7 +32,7 @@ export class Group extends Element {
   }
 
   paint(ctx?: CanvasRenderingContext2D): void {
-    return
+    return;
   }
 
   snapshotChildren() {
@@ -41,7 +43,9 @@ export class Group extends Element {
       child.calcWorldMatrix();
       this._childrenSnapshots.set(child, {
         localMatrix: groupWorldInv.multiply(child.getOwnMatrix()),
-        localCenter: new Point(child.getWorldCenterPoint().matrixTransform(groupWorldInv))
+        localCenter: new Point(
+          child.getWorldCenterPoint().matrixTransform(groupWorldInv)
+        )
       });
     });
   }
@@ -74,7 +78,6 @@ export class Group extends Element {
       const newWorldCenter = localCenter.matrixTransform(groupWorldMatrix);
       const center = child.getPositionByOrigin(newWorldCenter);
 
-
       child.quickSetOptions({
         angle,
         scaleX,
@@ -89,5 +92,22 @@ export class Group extends Element {
   hasInView() {
     return !!(this.visible && this.width && this.height);
   }
-}
 
+  mounted() {
+    super.mounted();
+    const groupElIds = (this as any).groupElIds as string[] | undefined;
+    if (groupElIds?.length && this.root?.idElements) {
+      setTimeout(() => {
+        const els = groupElIds
+          .map((id) => this.root.idElements.get(id))
+          .filter(Boolean) as Element[];
+        if (els.length) {
+          this.groupEls = els;
+          els.forEach((el) => (el.groupParent = this));
+          this.snapshotChildren();
+        }
+        delete (this as any).groupElIds;
+      });
+    }
+  }
+}

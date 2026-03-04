@@ -10,8 +10,14 @@ import {
 export class Node extends EventEmitter {
   type = "node";
 
-  static nextId = 1;
-  id!: number;
+  static uIndex = 1;
+  static _uidSeq = 0;
+  static genKey(): string {
+    return `${Date.now().toString(36)}_${++Node._uidSeq}`;
+  }
+
+  id!: string;
+  uIndex: number;
 
   // 树结构关系
   root: Root;
@@ -173,13 +179,15 @@ export class Node extends EventEmitter {
   }
 
   mounted() {
+    this.uIndex = Node.uIndex++;
     if (this.id === undefined) {
-      this.id = Node.nextId++;
+      this.id = Node.genKey();
     }
     this.isMounted = true;
     if (this.key && this.root) {
       this.root.keyElmenet.set(this.key, this as any);
     }
+    this.root.idElements?.set(this.key, this as any);
     this.children?.forEach((child) => {
       child.parent = this;
       child.root = this.root;
@@ -194,7 +202,7 @@ export class Node extends EventEmitter {
     if (this.key && this.root) {
       this.root.keyElmenet.delete(this.key);
     }
-
+    this.root.idElements?.delete(this.id);
     const oldParent = this.parent;
 
     if (oldParent && oldParent.children?.length) {

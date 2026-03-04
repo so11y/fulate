@@ -2,6 +2,7 @@ import { Node } from "./node/node";
 import { Layer, RBushItem } from "./layer";
 import { Element } from "./node/element";
 import { CustomEvent } from "../util/event";
+import { Rule } from "./tools/rule";
 
 export class Root extends Node {
   type = "root";
@@ -10,9 +11,12 @@ export class Root extends Node {
 
   viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
   currentElement?: RBushItem;
-  keyElmenet = new Map();
+  keyElmenet = new Map<string, Element>();
+  /** 按稳定 key 索引元素，用于导出/导入时 groupElIds 查找 */
+  idElements = new Map<string, Element>();
 
   _provides = Object.create(null);
+  private _renderPromise: Promise<void> | null = null;
 
   private isSpacePressed = false;
   private isPanning = false;
@@ -86,8 +90,8 @@ export class Root extends Node {
     return this.currentElement;
   }
 
-  find<T = Element>(v: T): T | undefined {
-    return this.keyElmenet.get(v);
+  find<T = Element>(v: string): T | undefined {
+    return this.keyElmenet.get(v) as T;
   }
 
   /**
@@ -107,7 +111,7 @@ export class Root extends Node {
 
       const hitElements = layer.searchHitElements(x, y);
       if (hitElements.length > 0) {
-        hitElements.sort((a, b) => b.element.id - a.element.id);
+        hitElements.sort((a, b) => b.element.uIndex - a.element.uIndex);
 
         for (const item of hitElements) {
           const element = item.element;
@@ -308,7 +312,7 @@ export class Root extends Node {
 
   focusNode(node: Element, padding = 10) {
     const root = this.root;
-    const RULER_SIZE = root.keyElmenet.get("rule")?.rulerSize ?? 0;
+    const RULER_SIZE = root.find<Rule>("rule")?.rulerSize ?? 0;
     const aabb = node.getBoundingRect();
 
     const activeWidth = root.width - RULER_SIZE;
