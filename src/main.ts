@@ -34,10 +34,14 @@ const floorLayer = new Layer({
   ]
 });
 
+const ruleLayer = new Layer({
+  children: [new Rule()]
+});
+
 const editerLayer = new Layer({
   zIndex: 2,
   enableDirtyRect: false,
-  children: [new Rule(), new Select(), new Snap()]
+  children: [new Select(), new Snap()]
 });
 
 const div1 = new Rectangle({
@@ -177,6 +181,7 @@ root.append(
       })
     ]
   }),
+  ruleLayer,
   editerLayer
 );
 
