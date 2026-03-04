@@ -50,7 +50,7 @@ export class Transformable extends Node {
   // 缓存（对象池化，避免 GC）
   protected _ownMatrixCache: DOMMatrix = new DOMMatrix();
   protected _coords: Array<Point> | null = null;
-  protected _bbboxCoords: Array<Point> | null = null;
+  protected _snapPoints: Array<Point> | null = null;
   protected _boundingRectCache: Rect | null = null;
   _lastBoundingRect: Rect | null = null;
 
@@ -187,26 +187,28 @@ export class Transformable extends Node {
   }
 
   getSnapPoints(): Point[] {
-    return this.getBBoxCoords();
-  }
-
-  getBBoxCoords() {
-    if (this._bbboxCoords) {
-      return this._bbboxCoords;
+    if (this._snapPoints) {
+      return this._snapPoints;
     }
     const finalMatrix = this.getOwnMatrix();
-    const dim = this._getTransformedDimensions();
+    this._snapPoints = this.getLocalSnapPoints().map(
+      (point) => new Point(finalMatrix.transformPoint(point))
+    );
+    return this._snapPoints;
+  }
 
-    const localPoints = [
+  getLocalSnapPoints() {
+    return this.getLocalPoints();
+  }
+
+  getLocalPoints() {
+    const dim = this._getTransformedDimensions();
+    return [
       new Point(0, 0), // 左上
       new Point(dim.x, 0), // 右上
       new Point(dim.x, dim.y), // 右下
       new Point(0, dim.y) // 左下
     ];
-    this._bbboxCoords = localPoints.map(
-      (point) => new Point(finalMatrix.transformPoint(point))
-    );
-    return this._bbboxCoords;
   }
 
   getCoords() {
@@ -215,15 +217,7 @@ export class Transformable extends Node {
 
   setCoords() {
     const finalMatrix = this.getOwnMatrix();
-    const dim = this._getTransformedDimensions();
-
-    const localPoints = [
-      new Point(0, 0), // 左上
-      new Point(dim.x, 0), // 右上
-      new Point(dim.x, dim.y), // 右下
-      new Point(0, dim.y) // 左下
-    ];
-    this._coords = localPoints.map(
+    this._coords = this.getLocalPoints().map(
       (point) => new Point(finalMatrix.transformPoint(point))
     );
     return this;
@@ -347,7 +341,7 @@ export class Transformable extends Node {
 
     this.isDirty = true;
     this._coords = null;
-    this._bbboxCoords = null;
+    this._snapPoints = null;
     this._lastBoundingRect = cloneDeep(this._boundingRectCache);
     this._boundingRectCache = null;
     this.markChildDirty();

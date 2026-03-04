@@ -33,21 +33,16 @@ export class Triangle extends Element {
     ctx.restore();
   }
 
-  setCoords() {
-    const finalMatrix = this.getOwnMatrix();
-    const dim = this._getTransformedDimensions();
+  getLocalSnapPoints() {
+    return super.getLocalPoints();
+  }
 
-    const localPoints = [
+  getLocalPoints() {
+    const dim = this._getTransformedDimensions();
+    return [
       new Point(dim.x / 2, 0),
       new Point(dim.x, dim.y),
       new Point(0, dim.y)
     ];
-
-    // 通过矩阵变换将局部坐标转为全局/画布坐标
-    this._coords = localPoints.map(
-      (point) => new Point(finalMatrix.transformPoint(point))
-    );
-
-    return this;
   }
 }

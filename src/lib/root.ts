@@ -1,5 +1,5 @@
 import { Node } from "./node/node";
-import { Layer } from "./layer";
+import { Layer, RBushItem } from "./layer";
 import { Element } from "./node/element";
 
 export class Root extends Node {
@@ -8,7 +8,7 @@ export class Root extends Node {
   container: HTMLElement;
 
   viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
-  currentElement?: Element;
+  currentElement?: RBushItem;
   keyElmenet = new Map();
 
   _provides = Object.create(null);
@@ -81,6 +81,14 @@ export class Root extends Node {
     return m;
   }
 
+  getCurrnetEelement() {
+    return this.currentElement;
+  }
+
+  find<T = Element>(v: T): T | undefined {
+    return this.keyElmenet.get(v);
+  }
+
   /**
    * 碰撞检测
    */
@@ -98,29 +106,16 @@ export class Root extends Node {
 
       const hitElements = layer.searchHitElements(x, y);
       if (hitElements.length > 0) {
-        hitElements.sort((a, b) => b.id - a.id);
+        hitElements.sort((a, b) => b.element.id - a.element.id);
 
-        // this.dispatchEvent(
-        //   new CustomEvent("hitElements", {
-        //     detail: {
-        //       target: this,
-        //       x,
-        //       y,
-        //       buttons: e.buttons,
-        //       deltaY: (e as WheelEvent).deltaY ?? 0,
-        //       deltaX: (e as WheelEvent).deltaX ?? 0
-        //     }
-        //   })
-        // );
-
-        for (const element of hitElements) {
+        for (const item of hitElements) {
+          const element = item.element;
           if (
             !element.silent &&
             element.visible &&
-            element.hasPointHint &&
-            element.hasPointHint(x, y)
+            element.hasPointHint?.(x, y)
           ) {
-            this.currentElement = element;
+            this.currentElement = item;
             return;
           }
         }
@@ -177,14 +172,13 @@ export class Root extends Node {
             this.container.style.cursor = this.isPanning ? "grabbing" : "grab";
           } else {
             this.container.style.cursor =
-              this.currentElement?.cursor || "default";
+              this.currentElement?.element.cursor || "default";
           }
 
           // 处理 MouseEnter / MouseLeave
-          if (this.currentElement !== prevElement) {
+          if (this.currentElement?.element !== prevElement?.element) {
             if (prevElement) this.notify(e, "mouseleave", prevElement);
-            if (this.currentElement)
-              this.notify(e, "mouseenter", this.currentElement);
+            if (this.currentElement) this.notify(e, "mouseenter");
           }
           this.notify(e, "pointermove");
         }
@@ -285,8 +279,11 @@ export class Root extends Node {
     if (this.isSpacePressed || this.isPanning) return;
 
     const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
+
+    const element = targetEl?.element;
+
     const detail = {
-      target: targetEl ?? null,
+      target: element ?? null,
       x,
       y,
       buttons: e.buttons,
@@ -294,17 +291,17 @@ export class Root extends Node {
       deltaX: (e as WheelEvent).deltaX ?? 0
     };
 
-    if (!targetEl) {
+    if (!element) {
       this.dispatchEvent(new CustomEvent(eventName, { detail }));
       return;
     }
 
-    targetEl.eventManage.notify(eventName, {
+    element.eventManage.notify(eventName, {
       ctrlKey: e.ctrlKey,
       originalClientX: e.clientX,
       originalClientY: e.clientY,
       ...detail,
-      target: targetEl
+      target: element
     });
   }
 

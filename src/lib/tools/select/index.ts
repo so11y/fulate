@@ -266,7 +266,8 @@ export class Select extends Group {
 
     const pointerdown = (e: FulateEvent) => {
       const hasSelection =
-        this.selectEls.length > 0 && this.root.currentElement === this;
+        this.selectEls.length > 0 &&
+        this.root.getCurrnetEelement()?.element === this;
 
       if (!hasSelection) {
         handleSelect(e);
@@ -407,7 +408,6 @@ export class Select extends Group {
     if (!this.selectEls.length) {
       return false;
     }
-    console.log('---');
     if (this.width === 0 || this.height === 0) {
       return false;
     }
