@@ -283,11 +283,6 @@ export class Select extends Group {
 
     this.root.addEventListener("pointerdown", pointerdown);
 
-    this.unmounted = () => {
-      this.root.removeEventListener("pointerdown", pointerdown);
-      super.unmounted();
-    };
-
     super.mounted();
   }
 
@@ -343,7 +338,9 @@ export class Select extends Group {
     const maxY = Math.max(...cornerPts.map((p) => p.y));
     const centerX = (minX + maxX) / 2;
 
-    const text = `x: ${Math.round(this.left)}  y: ${Math.round(this.top)}  ${Math.round(this.angle ?? 0)}°`;
+    const text = `x: ${Math.round(this.left)}  y: ${Math.round(
+      this.top
+    )}  ${Math.round(this.angle ?? 0)}°`;
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

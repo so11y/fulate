@@ -1,6 +1,7 @@
 import { Node } from "./node/node";
 import { Layer, RBushItem } from "./layer";
 import { Element } from "./node/element";
+import { CustomEvent } from "../util/event";
 
 export class Root extends Node {
   type = "root";
@@ -283,7 +284,7 @@ export class Root extends Node {
     const element = targetEl?.element;
 
     const detail = {
-      target: element ?? null,
+      target: element ?? this,
       x,
       y,
       buttons: e.buttons,

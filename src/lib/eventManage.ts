@@ -1,3 +1,4 @@
+import { CustomEvent } from "../util/event";
 import type { Element } from "./node/element";
 
 export type UserCanvasEvent = Event & { detail: CanvasPoint };
@@ -48,15 +49,11 @@ export class EventManage {
       if (this.hasMouseEnter) {
         return;
       }
-      // if (this.target.cursor) {
-      //   this.target.root.container.style.cursor = this.target.cursor;
-      // }
 
       this.hasMouseEnter = true;
     }
 
     if (eventName === "mouseleave" && this.hasMouseEnter) {
-      //@ts-ignore
       if (this.target.hasPointHint?.(event.x, event.y)) {
         return;
       }
@@ -82,7 +79,7 @@ export class EventManage {
     if (!parent) {
       return;
     }
-    //@ts-ignore
+
     while (parent !== this.target.root) {
       parent = parent?.parent;
     }
@@ -90,8 +87,4 @@ export class EventManage {
       parent.eventManage.notify(eventName, event, event?.target ?? this.target);
     }
   }
-
-  mounted() {}
-
-  unmounted() {}
 }

@@ -1,8 +1,13 @@
 import { EventManage, FulateEvent } from "../eventManage";
 import { type Root } from "../root";
 import { type Layer } from "../layer";
+import {
+  AddEventListenerOptions,
+  CustomEvent,
+  EventEmitter
+} from "../../util/event";
 
-export class Node extends EventTarget {
+export class Node extends EventEmitter {
   type = "node";
 
   static nextId = 1;
@@ -208,16 +213,17 @@ export class Node extends EventTarget {
     this.previousSibling = null;
     this.parent = undefined;
     this.isMounted = false;
+    this._provides = null;
+    this.clearEventListener();
   }
 
   addEventListener<T = FulateEvent>(
     type: string,
     callback: (ev: T) => void,
-    options?: AddEventListenerOptions | boolean
-  ): void {
+    options?: AddEventListenerOptions
+  ) {
     this.eventManage.hasUserEvent = true;
-    //@ts-ignore
-    super.addEventListener(type, callback, options);
+    return super.addEventListener(type, callback, options);
   }
 
   provide(key: string, value: any) {

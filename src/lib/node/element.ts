@@ -105,9 +105,6 @@ export class Element extends Transformable {
     return false;
   }
 
-  /**
-   * 纯净渲染函数（只负责绘制，不处理数学计算）
-   */
   paint(ctx = this.layer.ctx) {
     if (!this.visible) return;
 
@@ -224,5 +221,13 @@ export class Element extends Transformable {
     Object.assign(this, options);
     this.markDirty();
     return this;
+  }
+
+  unmounted(): void {
+    this._coords = null;
+    this._ownMatrixCache = null;
+    this._snapPoints = null;
+    this._boundingRectCache = null;
+    super.unmounted();
   }
 }

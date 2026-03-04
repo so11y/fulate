@@ -1,92 +1,134 @@
 // types/event-emitter.ts
+
+export interface CustomEventInit<T = any> {
+  detail?: T;
+  /** 是否处于捕获阶段 */
+  capture?: boolean;
+}
+
+export class CustomEvent<T = any> {
+  readonly type: string;
+  readonly detail: T;
+  readonly bubbles: boolean;
+  readonly capture: boolean;
+
+  /** @internal */
+  _stopPropagationFlag = false;
+  /** @internal */
+  _stopImmediatePropagationFlag = false;
+
+  /** 是否已取消冒泡（对应 stopPropagation，可写以兼容 DOM） */
+  get cancelBubble(): boolean {
+    return this._stopPropagationFlag;
+  }
+  set cancelBubble(value: boolean) {
+    this._stopPropagationFlag = value;
+  }
+
+  /** 阻止事件冒泡 */
+  stopPropagation(): void {
+    this._stopPropagationFlag = true;
+  }
+
+  /** 阻止冒泡并阻止同一事件的其他监听器被调用 */
+  stopImmediatePropagation(): void {
+    this._stopPropagationFlag = true;
+    this._stopImmediatePropagationFlag = true;
+  }
+
+  constructor(type: string, eventInitDict?: CustomEventInit<T>) {
+    this.type = type;
+    this.detail = eventInitDict?.detail as T;
+    this.capture = eventInitDict?.capture ?? false;
+  }
+}
+
 type EventCallback<T = any> = (data: T) => void;
-type EventMap = Record<string, EventCallback>;
+
+export interface AddEventListenerOptions {
+  /** 是否只触发一次后自动移除 */
+  once?: boolean;
+  /** 是否冒泡 */
+  bubbles?: boolean;
+  /** 是否处于捕获阶段 */
+  capture?: boolean;
+}
 
 export class EventEmitter {
-    private events: Map<string, Set<EventCallback>> = new Map();
+  private events: Map<string, Set<EventCallback>> = new Map();
 
-    /**
-     * 订阅事件
-     * @param eventName 事件名称
-     * @param callback 回调函数
-     * @returns 取消订阅的函数
-     */
-    on<T = any>(eventName: string, callback: EventCallback<T>): () => void {
-        if (!this.events.has(eventName)) {
-            this.events.set(eventName, new Set());
+  /**
+   * 订阅事件
+   * @param eventName 事件名称
+   * @param callback 回调函数
+   * @param options 第三个参数：如 { once: true }、{ bubbles: true }、{ capture: true }
+   * @returns 取消订阅的函数
+   */
+  addEventListener<T = any>(
+    eventName: string,
+    callback: EventCallback<T>,
+    options?: AddEventListenerOptions
+  ): () => void {
+    const once = options?.once ?? false;
+    const handler: EventCallback<T> = once
+      ? (data) => {
+          callback(data);
+          this.removeEventListener(eventName, handler);
         }
+      : callback;
 
-        const callbacks = this.events.get(eventName)!;
-        callbacks.add(callback);
-
-        // 返回取消订阅的函数
-        return () => this.off(eventName, callback);
+    if (!this.events.has(eventName)) {
+      this.events.set(eventName, new Set());
     }
 
-    /**
-     * 订阅一次事件（触发后自动取消订阅）
-     * @param eventName 事件名称
-     * @param callback 回调函数
-     * @returns 取消订阅的函数
-     */
-    once<T = any>(eventName: string, callback: EventCallback<T>): () => void {
-        const onceWrapper: EventCallback<T> = (data) => {
-            callback(data);
-            this.off(eventName, onceWrapper);
-        };
+    const callbacks = this.events.get(eventName)!;
+    callbacks.add(handler);
 
-        return this.on(eventName, onceWrapper);
+    return () => this.removeEventListener(eventName, handler);
+  }
+
+  /**
+   * 取消订阅事件
+   * @param eventName 事件名称
+   * @param callback 回调函数（可选，不传则取消该事件的所有订阅）
+   */
+  removeEventListener(eventName: string, callback?: EventCallback): void {
+    if (!this.events.has(eventName)) return;
+
+    if (callback) {
+      const callbacks = this.events.get(eventName)!;
+      callbacks.delete(callback);
+
+      // 如果没有回调了，删除事件
+      if (callbacks.size === 0) {
+        this.events.delete(eventName);
+      }
+    } else {
+      // 删除该事件的所有订阅
+      this.events.delete(eventName);
     }
+  }
 
-    /**
-     * 取消订阅事件
-     * @param eventName 事件名称
-     * @param callback 回调函数（可选，不传则取消该事件的所有订阅）
-     */
-    off(eventName: string, callback?: EventCallback): void {
-        if (!this.events.has(eventName)) return;
+  dispatchEvent<T = any>(event: CustomEvent<T>): void {
 
-        if (callback) {
-            const callbacks = this.events.get(eventName)!;
-            callbacks.delete(callback);
+    if (!this.events.has(event.type)) return;
 
-            // 如果没有回调了，删除事件
-            if (callbacks.size === 0) {
-                this.events.delete(eventName);
-            }
-        } else {
-            // 删除该事件的所有订阅
-            this.events.delete(eventName);
-        }
+    const callbacks = this.events.get(event.type)!;
+
+    for (const callback of callbacks) {
+      try {
+        callback(event);
+        if (event?._stopImmediatePropagationFlag) break;
+      } catch (error) {
+        console.error(`Error in event handler for "${event.type}":`, error);
+      }
     }
+  }
 
-    /**
-     * 发布/触发事件
-     * @param eventName 事件名称
-     * @param data 传递给回调函数的数据
-     */
-    emit<T = any>(eventName: string, data?: T): void {
-        if (!this.events.has(eventName)) return;
-
-        const callbacks = this.events.get(eventName)!;
-
-        // 复制回调集合，避免在遍历时修改导致的错误
-        const callbacksCopy = new Set(callbacks);
-
-        callbacksCopy.forEach(callback => {
-            try {
-                callback(data as T);
-            } catch (error) {
-                console.error(`Error in event handler for "${eventName}":`, error);
-            }
-        });
-    }
-
-
-    /**
-     * 清空所有事件订阅
-     */
-    clear(): void {
-        this.events.clear();
-    }
+  /**
+   * 清空所有事件订阅
+   */
+  clearEventListener(): void {
+    this.events.clear();
+  }
 }
