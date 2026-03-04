@@ -1,12 +1,12 @@
 import { Intersection } from "../../../util/Intersection";
 import { makeBoundingBoxFromPoints, Point } from "../../../util/point";
 import { degreesToRadians } from "../../../util/radiansDegreesConversion";
+import { qrDecompose } from "../../../util/math";
 import { BaseElementOption, Element } from "../../node/element";
 import { FulateEvent } from "../../eventManage";
-// import { Layer } from "../layer";
-// import { Element } from "../base";
 import { Controls, resizeObject, rotateCallback } from "./controls";
 import { Snap } from "./snap";
+import { Group } from "../../ui/group";
 
 const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
 
@@ -47,13 +47,60 @@ export class Select extends Element {
       artboard.children?.forEach((child) => {
         if (child !== this) {
           if (child.type !== "layer") {
-            callback(child);
+            if (!child.groupParent) callback(child);
           } else {
-            child.children.forEach((child) => callback(child));
+            child.children.forEach((child) => {
+              if (!child.groupParent) callback(child);
+            });
           }
         }
       });
     });
+  }
+
+  doGroup() {
+    if (this.selectEls.length <= 1) return null;
+
+    const firstEl = this.selectEls[0];
+    const parent = firstEl.parent;
+    if (!parent) return null;
+
+    const group = new Group({
+      left: this.left,
+      top: this.top,
+      width: this.width,
+      height: this.height,
+      angle: this.angle,
+      originX: "center",
+      originY: "center"
+    });
+
+    group.groupEls = [...this.selectEls];
+    group.groupEls.forEach((el) => (el.groupParent = group));
+
+    parent.append(group);
+    group.snapshotChildren();
+    this.selectEls = [group as any];
+  }
+
+  unGroup() {
+    if (this.selectEls.length !== 1 || this.selectEls[0].type !== "group") {
+      return;
+    }
+
+    const group = this.selectEls[0] as Group;
+
+    group.groupEls.forEach((el) => (el.groupParent = null));
+    this.selectEls = [...group.groupEls] as any;
+
+    if (group.parent) {
+      group.parent.removeChild(group as any);
+    }
+
+    const rect = makeBoundingBoxFromPoints(
+      this.selectEls.map((v) => v.getCoords()).flat(1)
+    );
+    this.setOptions(rect);
   }
 
   mounted() {
@@ -302,7 +349,6 @@ export class Select extends Element {
     const text = `x: ${Math.round(this.left)}  y: ${Math.round(this.top)}  ${Math.round(this.angle ?? 0)}°`;
 
     ctx.save();
-    // 彻底重置画笔，并使用 DPR 放大的物理像素坐标系
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.font = "12px Arial";
     const pw = ctx.measureText(text).width + 12;
@@ -376,7 +422,8 @@ export class Select extends Element {
       const point = coords[i];
 
       const distance = Math.sqrt(
-        Math.pow(hintPoint.x - point.x, 2) + Math.pow(hintPoint.y - point.y, 2)
+        Math.pow(hintPoint.x - point.x, 2) +
+          Math.pow(hintPoint.y - point.y, 2)
       );
 
       const scale = this.root.viewport.scale;
@@ -417,10 +464,10 @@ export class Select extends Element {
     const bl = map.get("bl");
 
     const edges = [
-      { start: tl, end: tr, type: "mt", cursor: "ns-resize" }, // 上边 (Middle Top)
-      { start: tr, end: br, type: "mr", cursor: "ew-resize" }, // 右边 (Middle Right)
-      { start: br, end: bl, type: "mb", cursor: "ns-resize" }, // 下边 (Middle Bottom)
-      { start: bl, end: tl, type: "ml", cursor: "ew-resize" } // 左边 (Middle Left)
+      { start: tl, end: tr, type: "mt", cursor: "ns-resize" },
+      { start: tr, end: br, type: "mr", cursor: "ew-resize" },
+      { start: br, end: bl, type: "mb", cursor: "ns-resize" },
+      { start: bl, end: tl, type: "ml", cursor: "ew-resize" }
     ];
 
     for (const edge of edges) {

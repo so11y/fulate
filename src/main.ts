@@ -44,6 +44,24 @@ const editerLayer = new Layer({
   children: [new Select(), new Snap()]
 });
 
+// 添加快捷键绑定：Ctrl+G 编组，Ctrl+Shift+G 解组
+window.addEventListener("keydown", (e) => {
+  const selectTool = root.keyElmenet.get("select") as Select;
+
+  if (!selectTool) return;
+
+  if (e.key.toLowerCase() === "g" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    if (e.shiftKey) {
+      console.log("执行解组");
+      selectTool.unGroup();
+    } else {
+      console.log("执行编组");
+      selectTool.doGroup();
+    }
+  }
+});
+
 const div1 = new Rectangle({
   key: "344",
   left: 300,

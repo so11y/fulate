@@ -37,6 +37,7 @@ export class Element extends Transformable {
   visible: boolean = true;
   selectctbale?: boolean;
   breakDirtyRectCheck = false;
+  groupParent?: any;
   declare children: this[];
   declare parent: this;
 
