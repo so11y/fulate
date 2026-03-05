@@ -145,9 +145,9 @@ root.append(
                 children: [
                   new Rectangle({
                     left: 10,
-                    top: 200,
+                    top: 20,
                     width: 30,
-                    height: 30,
+                    height: 70,
                     backgroundColor: "blue",
                     onclick: (e) => {
                       e.detail.target.setOptions({

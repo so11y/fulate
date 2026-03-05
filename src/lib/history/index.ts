@@ -30,7 +30,6 @@ export class HistoryManager {
     this.limit = limit;
   }
 
-  // 获取当前状态
   private getState(element: Element): ElementState {
     const parent = element.parent;
     const index =
@@ -44,7 +43,6 @@ export class HistoryManager {
     };
   }
 
-  // 1. 记录快照（操作前调用）
   snapshot(elements: Element[]) {
     this.snapshotMap.clear();
     elements.forEach((el) => {
@@ -52,10 +50,8 @@ export class HistoryManager {
     });
   }
 
-  // 2. 提交变更（操作后调用）
   commit() {
     if (this.snapshotMap.size === 0) return;
-
 
     const changes: HistoryRecord[] = [];
 
@@ -87,16 +83,15 @@ export class HistoryManager {
     if (changes.length > 0) {
       this.undoStack.push(changes);
       if (this.undoStack.length > this.limit) {
-        this.undoStack.shift(); // 超过限制，移除最旧的记录
+        this.undoStack.shift();
       }
-      this.redoStack = []; // 只要有了新操作，清空重做栈
+      this.redoStack = [];
       console.log("History saved:", changes.length, "changes");
     }
 
     this.snapshotMap.clear();
   }
 
-  // 辅助方法：将元素准确插入到旧位置
   private insertElementAt(parent: Node, element: Element, index: number) {
     if (!parent.children) return;
     if (index >= parent.children.length || index === -1) {
@@ -110,77 +105,76 @@ export class HistoryManager {
     }
   }
 
-  // 3. 撤销 (Undo)
-  undo() {
-    const records = this.undoStack.pop();
+  private executeHistory(config: {
+    sourceStack: any[];
+    targetStack: any[];
+    isReverse: boolean; // 控制遍历方向
+    getData: (record: any) => {
+      state: any;
+      isInsert: boolean;
+      isRemove: boolean;
+    };
+  }) {
+    const records = config.sourceStack.pop();
     if (!records) return;
 
-    this.redoStack.push(records);
+    config.targetStack.push(records);
 
     const selectedElements: Element[] = [];
-
     const layerPromise = new Set();
 
-    for (let i = records.length - 1; i >= 0; i--) {
-      const { element, prev, type } = records[i];
+    const start = config.isReverse ? records.length - 1 : 0;
+    const end = config.isReverse ? -1 : records.length;
+    const step = config.isReverse ? -1 : 1;
 
-      if (type === "create") {
-        // 撤销创建 -> 移除DOM
+    for (let i = start; i !== end; i += step) {
+      const record = records[i];
+      const { element, type } = record;
+      const { state, isInsert, isRemove } = config.getData(record);
+
+      if (isRemove) {
         element.parent?.removeChild(element);
-      } else if (type === "delete") {
-        // 撤销删除 -> 直接复用原对象插入回原父节点
-        if (prev.parent) {
-          this.insertElementAt(prev.parent, element, prev.index);
-        }
-        element.quickSetOptions(prev.props); // 恢复属性
+      } else if (isInsert) {
+        if (state.parent)
+          this.insertElementAt(state.parent, element, state.index);
+        element.quickSetOptions(state.props);
         selectedElements.push(element);
       } else {
-        // 撤销修改
-        element.quickSetOptions(prev.props);
+        element.quickSetOptions(state.props);
         selectedElements.push(element);
       }
       layerPromise.add(element.layer?._renderPromise ?? Promise.resolve());
     }
-
-    // this.root.requestRender();
 
     Promise.all(Array.from(layerPromise)).then(() => {
       this.root.find<Select>("select")?.select(selectedElements);
     });
   }
 
+  // 2. Undo 和 Redo 变成了简单的配置调用
+  undo() {
+    this.executeHistory({
+      sourceStack: this.undoStack,
+      targetStack: this.redoStack,
+      isReverse: true,
+      getData: (r) => ({
+        state: r.prev,
+        isInsert: r.type === "delete",
+        isRemove: r.type === "create"
+      })
+    });
+  }
+
   redo() {
-    const records = this.redoStack.pop();
-    if (!records) return;
-
-    this.undoStack.push(records);
-
-    const selectedElements: Element[] = [];
-    const layerPromise = new Set();
-
-    for (let i = 0; i < records.length; i++) {
-      const { element, next, type } = records[i];
-
-      if (type === "delete") {
-        element.parent?.removeChild(element);
-      } else if (type === "create") {
-        if (next.parent) {
-          this.insertElementAt(next.parent, element, next.index);
-        }
-        element.quickSetOptions(next.props);
-        selectedElements.push(element);
-      } else {
-        // 重做修改
-        element.quickSetOptions(next.props);
-        selectedElements.push(element);
-      }
-      layerPromise.add(element.layer?._renderPromise ?? Promise.resolve());
-    }
-
-    this.root.find<Select>("select")?.select(selectedElements);
-
-    Promise.all(Array.from(layerPromise)).then(() => {
-      this.root.find<Select>("select")?.select(selectedElements);
+    this.executeHistory({
+      sourceStack: this.redoStack,
+      targetStack: this.undoStack,
+      isReverse: false,
+      getData: (r) => ({
+        state: r.next,
+        isInsert: r.type === "create",
+        isRemove: r.type === "delete"
+      })
     });
   }
 }
