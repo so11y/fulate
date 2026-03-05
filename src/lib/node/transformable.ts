@@ -61,7 +61,6 @@ export class Transformable extends Node {
   protected _boundingRectCache: RectWithCenter | null = null;
   _lastBoundingRect: RectWithCenter | null = null;
 
-  isDirty = true;
 
   getRelativeTopLeftPoint() {
     return new Point(this.left, this.top);

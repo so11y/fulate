@@ -239,18 +239,18 @@ export class Element extends Transformable {
     return json;
   }
 
-  unmounted(): void {
-    const m = this._ownMatrixCache;
-    m.a = 1;
-    m.b = 0;
-    m.c = 0;
-    m.d = 1;
-    m.e = 0;
-    m.f = 0;
-    this._coords = null;
-    this._snapPoints = null;
-    this._boundingRectCache = null;
-    this._lastBoundingRect = null;
-    super.unmounted();
-  }
+  // unmounted(): void {
+  //   const m = this._ownMatrixCache;
+  //   m.a = 1;
+  //   m.b = 0;
+  //   m.c = 0;
+  //   m.d = 1;
+  //   m.e = 0;
+  //   m.f = 0;
+  //   this._coords = null;
+  //   this._snapPoints = null;
+  //   this._boundingRectCache = null;
+  //   this._lastBoundingRect = null;
+  //   super.unmounted();
+  // }
 }

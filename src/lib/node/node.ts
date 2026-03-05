@@ -49,6 +49,7 @@ export class Node extends EventEmitter {
   // 生命周期状态
   isMounted = false;
   isUnMounted = false;
+  isDirty = true;
   key: string;
 
   hasDirtyChild = false;
