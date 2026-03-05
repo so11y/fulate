@@ -43,7 +43,7 @@ export class Snap extends Element {
 
   silent = true;
 
-  private isActive = false;
+  isActive = false;
   private snapLines: SnapLine[] = [];
 
   private cacheX: Float32Array = new Float32Array(0);
@@ -67,7 +67,8 @@ export class Snap extends Element {
       const snapPoints = node.getSnapPoints();
       if (!snapPoints || snapPoints.length === 0) return;
 
-      const isAxisAligned = snapPoints.length === 4 &&
+      const isAxisAligned =
+        snapPoints.length === 4 &&
         Math.abs(snapPoints[0].x - snapPoints[3].x) < 0.01 &&
         Math.abs(snapPoints[1].x - snapPoints[2].x) < 0.01 &&
         Math.abs(snapPoints[0].y - snapPoints[1].y) < 0.01 &&
@@ -462,11 +463,18 @@ export class Snap extends Element {
     const scale = this.root.viewport.scale;
 
     ctx.save();
-    
+
     // 吸附线也需要加上 DPR 和视口矩阵的缩放
     const dpr = window.devicePixelRatio || 1;
     const vp = this.root.getViewPointMtrix();
-    ctx.setTransform(vp.a * dpr, vp.b * dpr, vp.c * dpr, vp.d * dpr, vp.e * dpr, vp.f * dpr);
+    ctx.setTransform(
+      vp.a * dpr,
+      vp.b * dpr,
+      vp.c * dpr,
+      vp.d * dpr,
+      vp.e * dpr,
+      vp.f * dpr
+    );
 
     ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = this.lineColor;

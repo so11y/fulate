@@ -24,7 +24,7 @@ export class Root extends Node {
   private isSpacePressed = false;
   private isPanning = false;
   private hasLockPoint = false;
-  private lastPointerPos = { x: 0, y: 0 };
+  lastPointerPos = { x: 0, y: 0 };
 
   width: number;
   height: number;
@@ -188,7 +188,7 @@ export class Root extends Node {
           this.viewport.y += dy;
           this.lastPointerPos = { x: e.clientX, y: e.clientY };
 
-          this.dispatchEvent(new CustomEvent("panzoom"));
+          this.dispatchEvent(new CustomEvent("translation"));
           this.requestRender();
         } else {
           // 执行正常的元素交互检测
@@ -279,7 +279,8 @@ export class Root extends Node {
         this.viewport.y = cy - ((cy - this.viewport.y) * newScale) / prevScale;
         this.viewport.scale = newScale;
 
-        this.dispatchEvent(new CustomEvent("panzoom"));
+        this.dispatchEvent(new CustomEvent("wheel"));
+
         this.requestRender();
 
         // 缩放后重新计算 hit
@@ -333,7 +334,7 @@ export class Root extends Node {
       return;
     }
 
-    if (element && !element.isMounted) {
+    if (element && !element.isActiveed) {
       return;
     }
 

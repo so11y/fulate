@@ -92,6 +92,7 @@ export class Element extends Transformable {
   }
 
   notInDitry() {
+    if (this.isDirtyPaintChild) return false;
     if (
       !this.breakDirtyRectCheck &&
       this.layer.finalDirtyRect &&
@@ -116,6 +117,7 @@ export class Element extends Transformable {
         }
       }
     }
+    this.isDirtyPaintChild = false;
   }
 
   hasPointHint(point: Point): boolean {
@@ -181,16 +183,16 @@ export class Element extends Transformable {
   setOptions(options?: BaseElementOption, syncCalc = false) {
     if (!options) return this;
 
-    if (options.children && this.isMounted) {
-      this.removeChild(...(this.children ?? []));
-      this.append(...options.children);
+    if (options.children && this.isActiveed) {
+      this.children = options.children as any;
+      this._afterMutate(this.children);
     }
 
     this.attrs(options);
 
     this.markDirty();
 
-    if (syncCalc && this.isMounted) {
+    if (syncCalc && this.isActiveed) {
       super.updateTransform(this.parent ? this.parent.isDirty : false);
     }
 

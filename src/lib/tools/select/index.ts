@@ -7,6 +7,7 @@ import { Controls, resizeObject, rotateCallback } from "./controls";
 import { Snap } from "./snap";
 import { Group } from "../../ui/group";
 import { Node } from "../../node/node";
+import { Layer } from "../../layer";
 
 const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
 
@@ -144,9 +145,23 @@ export class Select extends Group {
 
   mounted() {
     const checkElementIntersects = (object: Element) => {
-      if (object === this) {
+      /**
+       * 只考虑第一层和第二层的元素
+       * 如果是第二级别的元素，但是不是直接第二级的不考虑
+       */
+      if (object === this || object.groupParent) {
         return;
       }
+      if (object.inject("layer").type !== "artboard") {
+        if (
+          //他是第二级layer以下的元素，并且父元素不是画板
+          object.inject("layer").parent.type === "artboard" &&
+          !(object.parent as Layer).isLayer
+        ) {
+          return;
+        }
+      }
+
       const [tl, , br] = this.getControlCoords();
       if (
         object.visible &&
@@ -203,6 +218,7 @@ export class Select extends Group {
             this.root.searchArea(this, ({ element }) => {
               const intersected = checkElementIntersects(element);
               if (intersected) {
+                console.log(intersected);
                 selectEls.add(intersected);
               }
             });
@@ -370,7 +386,9 @@ export class Select extends Group {
     const maxY = Math.max(...cornerPts.map((p) => p.y));
     const centerX = (minX + maxX) / 2;
 
-    const text = `x: ${Math.round(this.left)}  y: ${Math.round(this.top)}  ${Math.round(this.angle ?? 0)}°`;
+    const text = `x: ${Math.round(this.left)}  y: ${Math.round(
+      this.top
+    )}  ${Math.round(this.angle ?? 0)}°`;
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -554,5 +572,7 @@ export class Select extends Group {
     this.select([]); // 立即更新框（隐藏掉）
     this.root.history.commit();
     this.root.requestRender();
+
+    this.root.container.style.cursor = "default";
   }
 }

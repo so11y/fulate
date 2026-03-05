@@ -26,12 +26,10 @@ export class Rule extends Element {
 
   mounted() {
     const root = this.root;
-    const onPanZoom = () => {
-      this.paint();
-    };
     this.root.viewport.x = 25;
     this.root.viewport.y = 25;
-    root.addEventListener("panzoom", onPanZoom);
+    root.addEventListener("wheel", () => this.paint());
+    root.addEventListener("translation", () => this.paint());
     super.mounted();
   }
 

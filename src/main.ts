@@ -6,13 +6,7 @@ import { Layer } from "./lib/layer";
 import { Snap } from "./lib/tools/select/snap";
 import { Artboard } from "./lib/ui/artboard";
 import { Workspace } from "./lib/ui/workspace";
-import {
-  Rectangle as Div,
-  Display,
-  FlexDirection,
-  Justify,
-  Align
-} from "./yoga/div";
+import { Div, Display, FlexDirection, Justify, Align } from "./yoga/div";
 import { Text } from "./lib/ui/text";
 import { Circle } from "./lib/ui/circle";
 import { Triangle } from "./lib/ui/triangle";
@@ -60,6 +54,20 @@ window.addEventListener("keydown", (e) => {
       console.log("执行编组");
       selectTool.doGroup();
     }
+  }
+  if (e.key === "Delete" || e.key === "Backspace") {
+    selectTool.delete();
+    return;
+  }
+});
+window.addEventListener("keydown", (e) => {
+  e.preventDefault();
+  if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+    root.history.undo();
+  }
+
+  if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+    root.history.redo();
   }
 });
 
@@ -133,7 +141,22 @@ root.append(
                 top: START_Y,
                 width: ITEM_SIZE,
                 height: ITEM_SIZE,
-                backgroundColor: "pink"
+                backgroundColor: "pink",
+                children: [
+                  new Rectangle({
+                    left: 10,
+                    top: 200,
+                    width: 30,
+                    height: 30,
+                    backgroundColor: "blue",
+                    onclick: (e) => {
+                      e.detail.target.setOptions({
+                        left: col(0) + 20,
+                        backgroundColor: "blue"
+                      });
+                    }
+                  })
+                ]
               }),
               new Circle({
                 left: col(4),

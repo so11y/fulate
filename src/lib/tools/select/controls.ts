@@ -127,13 +127,10 @@ export function rotateObjectWithSnapping(
 export function rotateCallback(
   selectEL: Select,
   point: Point,
-  {
-    theta,
-    angle: selectAngle,
-    worldCenterPoint
-  }: SelectState,
+  { theta }: SelectState,
   event: FulateEvent
 ) {
+  console.log("rotateCallback");
   const angle = rotateObjectWithSnapping(
     {
       target: selectEL,
@@ -170,7 +167,7 @@ export function resizeObject(
   let fixedLocalY = 0;
   if (type.includes("r")) fixedLocalX = 0;
   else if (type.includes("l")) fixedLocalX = pWidth;
-  
+
   if (type.includes("b")) fixedLocalY = 0;
   else if (type.includes("t")) fixedLocalY = pHeight;
 
@@ -214,12 +211,14 @@ export function resizeObject(
     .translate(-fixedLocalX, -fixedLocalY);
 
   const newWorldMatrix = matrix.multiply(localScaleMatrix);
-  
+
   // 5. 分解出新的 scaleX, scaleY, angle 等
   const { angle, scaleX, scaleY, skewX } = qrDecompose(newWorldMatrix);
-  
+
   // 6. 求出新的中心点世界坐标，并反算出 left 和 top
-  const newLocalCenter = new Point(pWidth / 2, pHeight / 2).matrixTransform(localScaleMatrix);
+  const newLocalCenter = new Point(pWidth / 2, pHeight / 2).matrixTransform(
+    localScaleMatrix
+  );
   const newWorldCenter = newLocalCenter.matrixTransform(matrix);
 
   const center = selectEL.getPositionByOrigin(newWorldCenter);

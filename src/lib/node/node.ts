@@ -6,6 +6,7 @@ import {
 } from "../../util/event";
 import { Root } from "../root";
 import { Layer } from "../layer";
+import { Element } from "./element";
 
 function linkNode(child: Node, parent: Node) {
   child.parent = parent;
@@ -37,7 +38,7 @@ export class Node extends EventEmitter {
   }
 
   id!: string;
-  uIndex: number;
+  uIndex!: number;
 
   parent: this | undefined;
   children: this[] | null = null;
@@ -46,23 +47,20 @@ export class Node extends EventEmitter {
   nextSibling: this | null = null;
   previousSibling: this | null = null;
 
-  // 生命周期状态
   isMounted = false;
-  isUnMounted = false;
-  hasMounteded = false;
+  isActiveed = false;
+  isUnmounted = false;
+  isDirtyChild = false;
+  isDirtyPaintChild = false;
   isDirty = true;
-  key: string;
 
-  hasDirtyChild = false;
-
+  key!: string;
   silent = false;
 
   // 事件管理器
   eventManage = new EventManage(this as any);
-
   _options: any = {};
-
-  _provides: Record<string, any>;
+  _provides: Record<string, any> = {};
 
   get layer(): Layer {
     return this.inject("layer");
@@ -83,17 +81,14 @@ export class Node extends EventEmitter {
 
   attrs(options: any) {}
 
-  /**
-   * 向上冒泡通知祖先"我的分支脏了"
-   * 性能优化：如果祖先已经标记为脏，立即停止冒泡
-   */
   markChildDirty() {
-    if (!this.isMounted || this.parent.hasDirtyChild) {
+    if (!this.isActiveed || this.parent?.isDirtyChild) {
       return;
     }
     let p = this.parent;
-    while (p && !p.hasDirtyChild) {
-      p.hasDirtyChild = true;
+    while (p && !p.isDirtyChild) {
+      p.isDirtyChild = true;
+      p.isDirtyPaintChild = true;
       p = p.parent;
     }
 
@@ -112,27 +107,31 @@ export class Node extends EventEmitter {
     }
   }
 
-  private _afterMutate(nodes: Node[]) {
-    if (this.isMounted) {
-      //先对节点进行move
-      //move需要调整provide
-      //然后在去_updateSiblings -> linkNode
+  _afterMutate<T extends Node>(nodes: T[]) {
+    // 如果当前父节点是活跃的，新增的节点也应该被挂载/激活
+    if (this.isActiveed) {
       nodes.forEach((child) => {
-        child.mountedMark();
-        this.move(child);
+        if (child.parent && child.parent !== (this as any)) {
+          child.parent.removeChild(child);
+          moveNode(child, this);
+        }
+        child.mounted(); // mount 内含 active 逻辑
       });
     }
     this._updateSiblings();
-    this.hasDirtyChild = true;
+    this.isDirtyChild = true;
+    this.isDirtyPaintChild = true;
     this.markChildDirty();
     if (this.root) {
       this.dispatchEvent(new CustomEvent("childrenchange"));
     }
   }
 
-  append(...children: Node[]) {
+  // ================= 结构操作 =================
+
+  append<T extends Node>(...children: T[]) {
     if (!this.children) this.children = [];
-    const added: Node[] = [];
+    const added: T[] = [];
     children.forEach((child) => {
       this.children!.push(child as any);
       added.push(child);
@@ -141,30 +140,18 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  move(node: Node) {
-    if (node.parent && node.parent !== this) {
-      node.unmounted();
-      moveNode(node, this);
-      node.layer.removeRbush(node);
-    }
-  }
-
-  prepend(...children: Node[]) {
+  prepend<T extends Node>(...children: T[]) {
     if (!this.children) this.children = [];
-    const added: Node[] = [];
-    children.forEach((child) => {
-      if (child.parent) return;
-      child.parent = this as any;
-      added.push(child);
-    });
+    const added: T[] = [];
+    children.forEach((child) => added.push(child));
     this.children.unshift(...(added as any[]));
     this._afterMutate(added);
     return this;
   }
 
-  insertBefore(newChild: Node, refChild: Node | null) {
+  insertBefore<T extends Node>(newChild: T, refChild: T | null) {
     if (!refChild) return this.append(newChild);
-    if (!this.children || newChild.parent) return this;
+    if (!this.children) return this;
     const idx = this.children.indexOf(refChild as any);
     if (idx === -1) return this;
     this.children.splice(idx, 0, newChild as any);
@@ -172,8 +159,8 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  insertAfter(newChild: Node, refChild: Node) {
-    if (!this.children || newChild.parent) return this;
+  insertAfter<T extends Node>(newChild: T, refChild: T) {
+    if (!this.children) return this;
     const idx = this.children.indexOf(refChild as any);
     if (idx === -1) return this;
     this.children.splice(idx + 1, 0, newChild as any);
@@ -181,27 +168,26 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  replaceChild(newChild: Node, oldChild: Node) {
+  replaceChild<T extends Node>(newChild: T, oldChild: T) {
     if (!this.children) return this;
     const idx = this.children.indexOf(oldChild as any);
     if (idx === -1) return this;
-    oldChild.unmounted();
-    this.children[idx] = newChild as any;
+
+    this.removeChild(oldChild); // 旧节点失活
+    this.children.splice(idx, 0, newChild as any);
     this._afterMutate([newChild]);
     return this;
   }
 
-  /** 在自身前面插入节点（操作父级children） */
-  before(...nodes: Node[]) {
+  before<T extends Node>(...nodes: T[]) {
     if (!this.parent) return this;
-    nodes.forEach((n) => this.parent!.insertBefore(n, this));
+    nodes.forEach((n) => this.parent!.insertBefore(n, this as any));
     return this;
   }
 
-  /** 在自身后面插入节点（操作父级children） */
-  after(...nodes: Node[]) {
+  after<T extends Node>(...nodes: T[]) {
     if (!this.parent) return this;
-    let ref: Node = this;
+    let ref: any = this;
     nodes.forEach((n) => {
       this.parent!.insertAfter(n, ref);
       ref = n;
@@ -209,92 +195,133 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  removeChild(...children: this[]) {
-    children.forEach((child) => child.unmounted());
-    this.hasDirtyChild = true;
+  /**
+   * 移除节点：仅从父级数组中剥离，并使其失活 (unactive)，不销毁。可以复用。
+   */
+  removeChild<T extends Node>(...children: T[]) {
+    if (!this.children) return this;
+    children.forEach((child) => {
+      const idx = this.children!.indexOf(child as any);
+      if (idx !== -1) {
+        this.children!.splice(idx, 1);
+        child.deactivate(); // 失活处理
+      }
+    });
+    this._updateSiblings();
+    this.isDirtyChild = true;
+    this.isDirtyPaintChild = true;
     this.markChildDirty();
     this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
+  // ================= 生命周期 (Lifecycle) =================
+
+  /**
+   * 挂载节点 (触发一次 mounted)
+   */
   mounted() {
-    this.uIndex = Node.uIndex++;
-    if (this.id === undefined) {
-      this.id = Node.genKey();
+    if (this.isUnmounted) return;
+
+    if (!this.isMounted) {
+      this.uIndex = Node.uIndex++;
+      if (this.id === undefined) {
+        this.id = Node.genKey();
+      }
+      this.isMounted = true;
+      this.dispatchEvent(new CustomEvent("mounted"));
     }
-    this.hasMounteded = true;
-    this.isMounted = true;
+
+    // 挂载后，自动使其进入活跃状态
+    this.activate();
+  }
+
+  /**
+   * 激活节点 (对应 Vue 的 onActivated)
+   */
+  activate() {
+    if (this.isActiveed || this.isUnmounted) return;
+
+    this.isActiveed = true;
+
+    // 添加到全局索引
     if (this.key && this.root) {
       this.root.keyElmenet.set(this.key, this as any);
     }
-    this.root.idElements?.set(this.key, this as any);
+    if (this.id && this.root?.idElements) {
+      this.root.idElements.set(this.id, this as any);
+    }
+
+    this.dispatchEvent(new CustomEvent("activated"));
+
+    // 递归激活子节点
     this.children?.forEach((child) => {
       linkNode(child, this);
-      child.mounted();
+      child.mounted(); // mount 内部会安全调用 activate
     });
   }
 
-  mountedMark() {
-    //没有挂载没有卸载
-    // if (!this.isMounted && !this.isUnMounted && !this.hasMounteded) {
-    //   this.mounted();
-    //   return;
-    // }
-    // //没有挂载，但是卸载过了
-    // if (!this.isMounted && this.isUnMounted) {
-    //   this.isMounted = true;
-    //   this.isUnMounted = false;
-    //   if (this.key && this.root) {
-    //     this.root.keyElmenet.set(this.key, this as any);
-    //   }
-    //   this.root.idElements?.set(this.key, this as any);
-    //   this.children?.forEach((v) => v.mountedMark());
-    // }
-  }
+  /**
+   * 失活节点 (对应 Vue 的 onDeactivated)
+   */
+  deactivate() {
+    if (!this.isActiveed) return;
 
-  unmounted() {
+    this.isActiveed = false;
+
     if (this.key && this.root) {
       this.root.keyElmenet.delete(this.key);
     }
     if (this.id && this.root?.idElements) {
       this.root.idElements.delete(this.id);
     }
+    this.layer?.removeRbush(this);
+
+    this.dispatchEvent(new CustomEvent("deactivated"));
+
+    // 递归失活子节点
+    this.children?.forEach((child) => child.deactivate());
+  }
+
+  /**
+   * 彻底卸载与销毁 (取代原 distory 方法)
+   */
+  unmounted() {
+    if (this.isUnmounted) return;
+
+    // 1. 确保节点处于失活状态
+    this.deactivate();
+
+    // 2. 标记卸载并触发事件
+    this.isUnmounted = true;
     this.dispatchEvent(new CustomEvent("unmounted"));
 
+    // 3. 将自身从父节点的结构中剔除
     const oldParent = this.parent;
     if (oldParent && oldParent.children?.length) {
       const index = oldParent.children.findIndex((v) => v === this);
       if (index !== -1) {
         oldParent.children.splice(index, 1);
         oldParent._updateSiblings?.();
-        oldParent.hasDirtyChild = true;
+        oldParent.isDirtyChild = true;
+        this.isDirtyPaintChild = true;
         oldParent.markChildDirty?.();
       }
     }
 
+    // 4. 递归销毁所有子节点
     this.children?.forEach((child) => child.unmounted());
 
-    this.isMounted = false;
-    this.isUnMounted = true;
-    this.nextSibling = null;
-    this.previousSibling = null;
-    this.layer?.removeRbush(this);
-    /**
-     * 保留_provides 因为move的时候用的到
-     * parent 保留用于判断
-     */
-  }
-
-  distory() {
-    this.children?.forEach((child) => child.distory());
+    // 5. 彻底清理内存 (取代 distory 逻辑)
     this.children = [];
     this.nextSibling = null;
     this.previousSibling = null;
     this.parent = undefined;
-    this.isMounted = false;
-    this._provides = null;
+    this._provides = null as any;
     this.clearEventListener();
   }
+
+  // ================= 事件与依赖注入 =================
 
   addEventListener<T = FulateEvent>(
     type: string,
@@ -315,6 +342,6 @@ export class Node extends EventEmitter {
   }
 
   inject<T = any>(key: string): T | undefined {
-    return this._provides[key];
+    return this._provides?.[key];
   }
 }

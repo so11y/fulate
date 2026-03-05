@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { Root } from "./lib/root";
 import { Select } from "./lib/tools/select";
 import { Rectangle } from "./lib/ui/rectangle";
@@ -6,7 +7,6 @@ import { Layer } from "./lib/layer";
 import { Snap } from "./lib/tools/select/snap";
 import { Artboard } from "./lib/ui/artboard";
 import { Workspace } from "./lib/ui/workspace";
-import { Rectangle as Div, Display, FlexDirection, Justify } from "./yoga/base";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,

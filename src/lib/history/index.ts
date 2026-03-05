@@ -7,6 +7,7 @@ interface ElementState {
   props: BaseElementOption;
   parent: Node | undefined;
   index: number;
+  isActiveed: boolean;
   isMounted: boolean;
 }
 
@@ -36,6 +37,7 @@ export class HistoryManager {
       parent && parent.children ? parent.children.indexOf(element) : -1;
     return {
       isMounted: element.isMounted,
+      isActiveed: element.isActiveed,
       props: JSON.parse(JSON.stringify(element.toJson())),
       parent,
       index
@@ -54,6 +56,7 @@ export class HistoryManager {
   commit() {
     if (this.snapshotMap.size === 0) return;
 
+
     const changes: HistoryRecord[] = [];
 
     this.snapshotMap.forEach((prevState, element) => {
@@ -66,7 +69,7 @@ export class HistoryManager {
 
       if (isPropsChanged || isParentChanged || isIndexChanged) {
         let type: "modify" | "delete" | "create" = "modify";
-        if (prevState.isMounted && !nextState.isMounted) {
+        if (prevState.isActiveed && !nextState.isActiveed) {
           type = "delete";
         } else if (!prevState.isMounted && nextState.isMounted) {
           type = "create";

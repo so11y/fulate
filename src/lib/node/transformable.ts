@@ -16,10 +16,8 @@ export interface RectWithCenter extends Rect {
   centerY?: number;
 }
 
-export interface RectPoint extends Omit<
-  RectWithCenter,
-  "centerX" | "centerY"
-> {}
+export interface RectPoint
+  extends Omit<RectWithCenter, "centerX" | "centerY"> {}
 
 export interface TransformableOptions {
   left?: number;
@@ -60,7 +58,6 @@ export class Transformable extends Node {
   protected _snapPoints: Array<Point> | null = null;
   protected _boundingRectCache: RectWithCenter | null = null;
   _lastBoundingRect: RectWithCenter | null = null;
-
 
   getRelativeTopLeftPoint() {
     return new Point(this.left, this.top);
@@ -381,16 +378,19 @@ export class Transformable extends Node {
       this.layer?.syncRbush(this as any);
     }
 
-    if (shouldUpdate || this.hasDirtyChild) {
+    if (shouldUpdate || this.isDirtyChild) {
       if (this.children) {
         for (let i = 0; i < this.children.length; i++) {
           const child = this.children[i] as any;
-          if (child.updateTransform && (child.isDirty || shouldUpdate)) {
+          if (
+            child.updateTransform &&
+            (child.isDirty || child.isDirtyChild || shouldUpdate)
+          ) {
             child.updateTransform(shouldUpdate);
           }
         }
       }
-      this.hasDirtyChild = false;
+      this.isDirtyChild = false;
     }
   }
 }

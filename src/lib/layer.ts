@@ -38,6 +38,10 @@ export class Layer extends Rectangle {
     options?: BaseElementOption & {
       zIndex?: number;
       silen?: boolean;
+      //如果开启了脏矩形 注意以下情况
+      //1. 如果父元素的包围盒没有包含子元素，但是子元素修改了是会被认为脏的，会让子在重新渲染
+      //2. 如果父是脏的需要重新渲染，但是包围盒没有包含子元素，rBush里是的清理范围不够，所以子不会渲染
+      //3. 如果是同一layer，可以将layer dirtyNodes 清空，然后在执行渲染，相当于全量渲染，避免了上面两种情况的困扰
       enableDirtyRect?: boolean;
     }
   ) {
@@ -275,6 +279,7 @@ export class Layer extends Rectangle {
     if (this.notInDitry()) {
       return;
     }
+    this.isDirtyPaintChild = false;
     this.requestRender();
   }
 

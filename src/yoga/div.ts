@@ -14,6 +14,7 @@ import Yoga, {
 import { Rectangle as BaseRectangle } from "../lib/ui/rectangle";
 import { BaseElementOption } from "../lib/node/element";
 import { FulateEvent } from "../lib/eventManage";
+import { Node } from "../lib/node/node";
 
 type YogaStyleSize = number | `${number}%`;
 type YogaStyleSizeAndAuto = YogaStyleSize | "auto";
@@ -33,17 +34,18 @@ export {
 
 const keysToSync = ["left", "top", "width", "height"];
 
-export interface YogaOption extends Omit<
-  BaseElementOption,
-  | "left"
-  | "top"
-  | "width"
-  | "height"
-  | "onclick"
-  | "onpointermove"
-  | "onpointerdown"
-  | "onpointerup"
-> {
+export interface YogaOption
+  extends Omit<
+    BaseElementOption,
+    | "left"
+    | "top"
+    | "width"
+    | "height"
+    | "onclick"
+    | "onpointermove"
+    | "onpointerdown"
+    | "onpointerup"
+  > {
   display?: Display;
   width?: YogaStyleSizeAndAuto;
   height?: YogaStyleSizeAndAuto;
@@ -84,10 +86,10 @@ export interface YogaOption extends Omit<
 
   children?: any[];
 
-  onclick?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
-  onpointermove?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
-  onpointerdown?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
-  onpointerup?: (v: FulateEvent<InstanceType<typeof Rectangle>>) => void;
+  onclick?: (v: FulateEvent<InstanceType<typeof Div>>) => void;
+  onpointermove?: (v: FulateEvent<InstanceType<typeof Div>>) => void;
+  onpointerdown?: (v: FulateEvent<InstanceType<typeof Div>>) => void;
+  onpointerup?: (v: FulateEvent<InstanceType<typeof Div>>) => void;
 }
 
 const ExtractKey = new Set([
@@ -136,8 +138,8 @@ const ExtractKey = new Set([
 export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
   Node: T
 ) {
-  class LayoutNode extends Node implements YogaOption {
-    yogaNode = Yoga.Node.create();
+  class Div extends Node implements YogaOption {
+    yogaNode? = Yoga.Node.create();
     declare children: any[];
 
     attrs(options: any): void {
@@ -175,7 +177,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     setOptions(options?: YogaOption, syncCalc = false) {
       super.setOptions(options as any, syncCalc);
       this.flushStyles();
-      if (this.isMounted) {
+      if (this.isActiveed) {
         this.inject("yoga-root").layout();
       }
       return this;
@@ -191,7 +193,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
 
     computedLayout() {
-      if (this.isMounted) {
+      if (this.isActiveed) {
         const layout = this.yogaNode.getComputedLayout();
         this.left = layout.left;
         this.top = layout.top;
@@ -203,10 +205,10 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return this;
     }
 
-    append(...childNode: this[]) {
+    append<T extends Node>(...children: T[]): this {
       let currentIndex = this.children?.length ?? 0;
-      super.append(...(childNode as any[]));
-      childNode.forEach((child) => {
+      super.append(...(children as any[]));
+      children.forEach((child: any) => {
         if (child.yogaNode) {
           this.yogaNode.insertChild(child.yogaNode, currentIndex++);
         }
@@ -214,7 +216,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return this;
     }
 
-    flushStyles(this: LayoutNode & YogaOption) {
+    flushStyles(this: Div & YogaOption) {
       const options = this._options;
       if (!isNil(options.display)) {
         this.yogaNode.setDisplay(options.display);
@@ -314,11 +316,11 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
   }
 
-  return LayoutNode as any as new (
+  return Div as any as new (
     ...args: ConstructorParameters<T>
-  ) => LayoutNode & InstanceType<T>;
+  ) => Div & InstanceType<T>;
 }
 
-export const Rectangle = withYoga<new (v: YogaOption) => BaseRectangle>(
+export const Div = withYoga<new (v: YogaOption) => BaseRectangle>(
   BaseRectangle as any
 );
