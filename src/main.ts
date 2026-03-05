@@ -212,7 +212,7 @@ root.append(
       })
     ]
   }),
-  ruleLayer,
+  ruleLayer, 
   editerLayer
 );
 

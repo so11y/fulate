@@ -10,10 +10,10 @@ export class Hover extends Element {
 
   mounted() {
     this.root.addEventListener("mouseenter", (e) => {
-      console.log(e.detail.target, "---mouseenter");
+      // console.log(e.detail.target, "---mouseenter");
     });
     this.root.addEventListener("mouseleave", (e) => {
-      console.log(e.detail.target, "---mouseleave");
+      // console.log(e.detail.target, "---mouseleave");
     });
   }
 

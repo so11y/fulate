@@ -4,6 +4,7 @@ import { Element } from "./node/element";
 import { CustomEvent } from "../util/event";
 import { Rule } from "./tools/rule";
 import { Point } from "../util/point";
+import { RectWithCenter } from "./node/transformable";
 
 export class Root extends Node {
   type = "root";
@@ -17,7 +18,6 @@ export class Root extends Node {
   idElements = new Map<string, Element>();
 
   _provides = Object.create(null);
-  private _renderPromise: Promise<void> | null = null;
 
   private isSpacePressed = false;
   private isPanning = false;
@@ -107,22 +107,41 @@ export class Root extends Node {
 
     this.currentElement = undefined;
 
+    this.searchHitElements(point, (element) => {
+      this.currentElement = element;
+      return true;
+    });
+  }
+
+  searchHitElements(point: Point, callback: (element: RBushItem) => any) {
+    const area = {
+      left: point.x,
+      top: point.y,
+      width: point.x,
+      height: point.y
+    };
+    return this.searchArea(area, (item) => {
+      const element = item.element;
+      if (element.hasPointHint?.(point)) {
+        console.log('---');
+        return callback(item);
+      }
+    });
+  }
+
+  searchArea(area: RectWithCenter, callback: (element: RBushItem) => any) {
     for (let i = this.layers.length - 1; i >= 0; i--) {
       const layer = this.layers[i];
-
-      const hitElements = layer.searchHitElements(point);
+      const hitElements = layer.searchAreaElements(area);
       if (hitElements.length > 0) {
         hitElements.sort((a, b) => b.element.uIndex - a.element.uIndex);
-
         for (const item of hitElements) {
           const element = item.element;
-          if (
-            !element.silent &&
-            element.visible &&
-            element.hasPointHint?.(point)
-          ) {
-            this.currentElement = item;
-            return;
+          if (!element.silent && element.visible) {
+            const result = callback(item);
+            if (result) {
+              return result;
+            }
           }
         }
       }

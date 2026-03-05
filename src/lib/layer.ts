@@ -1,7 +1,7 @@
 import { BaseElementOption, Element } from "./node/element";
 import RBush from "rbush";
 import { Rectangle } from "./ui/rectangle";
-import { Rect, RectPoint } from "./node/transformable";
+import { RectWithCenter, RectPoint } from "./node/transformable";
 import { Point } from "../util/point";
 
 export interface RBushItem {
@@ -98,6 +98,18 @@ export class Layer extends Rectangle {
     const x = point.x;
     const y = point.y;
     const hits = this.rbush.search({ minX: x, minY: y, maxX: x, maxY: y });
+    return hits;
+  }
+
+  searchAreaElements(point: RectWithCenter): RBushItem[] {
+    const x = point.left;
+    const y = point.top;
+    const hits = this.rbush.search({
+      minX: x,
+      minY: y,
+      maxX: x + point.width,
+      maxY: y + point.height
+    });
     return hits;
   }
 

@@ -6,7 +6,6 @@ import { FulateEvent } from "../../eventManage";
 import { Controls, resizeObject, rotateCallback } from "./controls";
 import { Snap } from "./snap";
 import { Group } from "../../ui/group";
-import { Node } from "../../node/node";
 
 const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
 
@@ -43,7 +42,7 @@ export class Select extends Group {
     return this.root.keyElmenet?.get("snap") as Snap;
   }
 
-  get targetElement(): Node {
+  get targetElement(): Element {
     return this.root.keyElmenet.get(this.targetKey) ?? this.root;
   }
 
@@ -129,8 +128,8 @@ export class Select extends Group {
         object.visible &&
         (object.intersectsWithRect(tl, br) ||
           object.isContainedWithinRect(tl, br) ||
-          object.hasPointHint(tl) ||
-          object.hasPointHint(br))
+          object.containsPoint(tl) ||
+          object.containsPoint(br))
       ) {
         return object;
       }
@@ -284,6 +283,11 @@ export class Select extends Group {
 
     this.root.addEventListener("pointerdown", pointerdown);
 
+    this.unmounted = () => {
+      this.root.removeEventListener("pointerdown", pointerdown);
+      super.unmounted();
+    };
+
     super.mounted();
   }
 
@@ -339,9 +343,7 @@ export class Select extends Group {
     const maxY = Math.max(...cornerPts.map((p) => p.y));
     const centerX = (minX + maxX) / 2;
 
-    const text = `x: ${Math.round(this.left)}  y: ${Math.round(
-      this.top
-    )}  ${Math.round(this.angle ?? 0)}°`;
+    const text = `x: ${Math.round(this.left)}  y: ${Math.round(this.top)}  ${Math.round(this.angle ?? 0)}°`;
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -402,7 +404,7 @@ export class Select extends Group {
     return this._boundingRectCache;
   }
 
-  hasPointHint(hintPoint: Point): boolean {
+  hasPointHint(x: number, y: number): boolean {
     if (!this.selectEls.length) {
       return false;
     }
@@ -410,16 +412,21 @@ export class Select extends Group {
       return false;
     }
     const coords = this.getControlCoords();
+    const hintPoint = new Point(x, y);
     this.currentControl = null;
     this.cursor = "default";
     for (let i = 0; i < coords.length; i++) {
       const point = coords[i];
 
+      const distance = Math.sqrt(
+        Math.pow(hintPoint.x - point.x, 2) + Math.pow(hintPoint.y - point.y, 2)
+      );
+
       const scale = this.root.viewport.scale;
       const scaledControlSize = this.controlSize / scale;
       const scaledRotatePadding = 8 / scale;
 
-      if (hintPoint.pointDistance(point, scaledControlSize)) {
+      if (distance <= scaledControlSize) {
         this.cursor = Controls[i].cursor;
         this.currentControl = {
           point: hintPoint,
@@ -427,11 +434,8 @@ export class Select extends Group {
         };
         return true;
       } else if (
-        hintPoint.pointDistance(
-          point,
-          scaledControlSize + scaledRotatePadding
-        ) &&
-        !super.hasPointHint(hintPoint)
+        distance <= scaledControlSize + scaledRotatePadding &&
+        !super.hasPointHint(x, y)
       ) {
         this.cursor = rotateCursor;
         this.currentControl = {
@@ -488,7 +492,7 @@ export class Select extends Group {
       }
     }
 
-    if (super.hasPointHint(hintPoint)) {
+    if (super.hasPointHint(x, y)) {
       this.cursor = "move";
       return true;
     }

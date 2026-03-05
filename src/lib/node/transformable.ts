@@ -9,11 +9,17 @@ export interface Rect {
   top: number;
   width: number;
   height: number;
-  centerX: number;
-  centerY: number;
 }
 
-export interface RectPoint extends Omit<Rect, "centerX" | "centerY"> {}
+export interface RectWithCenter extends Rect {
+  centerX?: number;
+  centerY?: number;
+}
+
+export interface RectPoint extends Omit<
+  RectWithCenter,
+  "centerX" | "centerY"
+> {}
 
 export interface TransformableOptions {
   left?: number;
@@ -52,8 +58,8 @@ export class Transformable extends Node {
   protected _inverseOwnMatrixCache: DOMMatrix | null;
   protected _coords: Array<Point> | null = null;
   protected _snapPoints: Array<Point> | null = null;
-  protected _boundingRectCache: Rect | null = null;
-  _lastBoundingRect: Rect | null = null;
+  protected _boundingRectCache: RectWithCenter | null = null;
+  _lastBoundingRect: RectWithCenter | null = null;
 
   isDirty = true;
 
@@ -154,7 +160,7 @@ export class Transformable extends Node {
 
   // --- 几何与碰撞检测 ---
 
-  getBoundingRect(): Rect {
+  getBoundingRect(): RectWithCenter {
     if (this._boundingRectCache) return this._boundingRectCache;
 
     const globalCorners = this.getCoords();
