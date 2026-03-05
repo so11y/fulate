@@ -393,4 +393,12 @@ export class Transformable extends Node {
       this.isDirtyChild = false;
     }
   }
+
+  unmounted(): void {
+    this._coords = null;
+    this._ownMatrixCache = null;
+    this._snapPoints = null;
+    this._boundingRectCache = null;
+    super.unmounted();
+  }
 }
