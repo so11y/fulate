@@ -49,6 +49,7 @@ export class Node extends EventEmitter {
   // 生命周期状态
   isMounted = false;
   isUnMounted = false;
+  hasMounteded = false;
   isDirty = true;
   key: string;
 
@@ -117,10 +118,8 @@ export class Node extends EventEmitter {
       //move需要调整provide
       //然后在去_updateSiblings -> linkNode
       nodes.forEach((child) => {
+        child.mountedMark();
         this.move(child);
-        if (!child.isMounted && !child.isUnMounted) {
-          child.mounted();
-        }
       });
     }
     this._updateSiblings();
@@ -223,6 +222,7 @@ export class Node extends EventEmitter {
     if (this.id === undefined) {
       this.id = Node.genKey();
     }
+    this.hasMounteded = true;
     this.isMounted = true;
     if (this.key && this.root) {
       this.root.keyElmenet.set(this.key, this as any);
@@ -234,15 +234,32 @@ export class Node extends EventEmitter {
     });
   }
 
-  unmounted() {
-    this.dispatchEvent(new CustomEvent("unmounted"));
+  mountedMark() {
+    //没有挂载没有卸载
+    // if (!this.isMounted && !this.isUnMounted && !this.hasMounteded) {
+    //   this.mounted();
+    //   return;
+    // }
+    // //没有挂载，但是卸载过了
+    // if (!this.isMounted && this.isUnMounted) {
+    //   this.isMounted = true;
+    //   this.isUnMounted = false;
+    //   if (this.key && this.root) {
+    //     this.root.keyElmenet.set(this.key, this as any);
+    //   }
+    //   this.root.idElements?.set(this.key, this as any);
+    //   this.children?.forEach((v) => v.mountedMark());
+    // }
+  }
 
+  unmounted() {
     if (this.key && this.root) {
       this.root.keyElmenet.delete(this.key);
     }
     if (this.id && this.root?.idElements) {
       this.root.idElements.delete(this.id);
     }
+    this.dispatchEvent(new CustomEvent("unmounted"));
 
     const oldParent = this.parent;
     if (oldParent && oldParent.children?.length) {
@@ -257,6 +274,7 @@ export class Node extends EventEmitter {
 
     this.children?.forEach((child) => child.unmounted());
 
+    this.isMounted = false;
     this.isUnMounted = true;
     this.nextSibling = null;
     this.previousSibling = null;

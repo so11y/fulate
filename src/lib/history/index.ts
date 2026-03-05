@@ -7,6 +7,7 @@ interface ElementState {
   props: BaseElementOption;
   parent: Node | undefined;
   index: number;
+  isMounted: boolean;
 }
 
 interface HistoryRecord {
@@ -34,6 +35,7 @@ export class HistoryManager {
     const index =
       parent && parent.children ? parent.children.indexOf(element) : -1;
     return {
+      isMounted: element.isMounted,
       props: JSON.parse(JSON.stringify(element.toJson())),
       parent,
       index
@@ -64,9 +66,9 @@ export class HistoryManager {
 
       if (isPropsChanged || isParentChanged || isIndexChanged) {
         let type: "modify" | "delete" | "create" = "modify";
-        if (prevState.parent && !nextState.parent) {
+        if (prevState.isMounted && !nextState.isMounted) {
           type = "delete";
-        } else if (!prevState.parent && nextState.parent) {
+        } else if (!prevState.isMounted && nextState.isMounted) {
           type = "create";
         }
 
