@@ -20,7 +20,6 @@ export class Layer extends Rectangle {
   enableDirtyRect: boolean = true;
   breakDirtyRectCheck = true;
   rbush = new RBush<RBushItem>();
-  hitTestRBush = new RBush<RBushItem>();
 
   finalDirtyRect: RectPoint;
 
@@ -98,13 +97,6 @@ export class Layer extends Rectangle {
   searchHitElements(point: Point): RBushItem[] {
     const x = point.x;
     const y = point.y;
-    const interactions = this.hitTestRBush.search({
-      minX: x,
-      minY: y,
-      maxX: x,
-      maxY: y
-    });
-    if (interactions.length > 0) return interactions;
     const hits = this.rbush.search({ minX: x, minY: y, maxX: x, maxY: y });
     return hits;
   }

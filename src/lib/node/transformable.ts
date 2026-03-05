@@ -49,6 +49,7 @@ export class Transformable extends Node {
 
   // 缓存（对象池化，避免 GC）
   protected _ownMatrixCache: DOMMatrix = new DOMMatrix();
+  protected _inverseOwnMatrixCache: DOMMatrix | null;
   protected _coords: Array<Point> | null = null;
   protected _snapPoints: Array<Point> | null = null;
   protected _boundingRectCache: Rect | null = null;
@@ -143,7 +144,11 @@ export class Transformable extends Node {
   }
 
   getGlobalToLocal(point: Point) {
+    if (this._inverseOwnMatrixCache) {
+      return new Point(this._inverseOwnMatrixCache.transformPoint(point));
+    }
     const inverseMatrix = this.getOwnMatrix().inverse();
+    this._inverseOwnMatrixCache = inverseMatrix;
     return new Point(inverseMatrix.transformPoint(point));
   }
 
@@ -348,6 +353,7 @@ export class Transformable extends Node {
     this._snapPoints = null;
     this._lastBoundingRect = cloneDeep(this._boundingRectCache);
     this._boundingRectCache = null;
+    this._inverseOwnMatrixCache = null;
     this.markChildDirty();
     if (this.layer) {
       this.layer.addDirtyNode(this as any);
