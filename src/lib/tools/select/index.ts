@@ -122,6 +122,26 @@ export class Select extends Group {
     this.snapshotChildren();
   }
 
+  select(children: Array<Element>) {
+    this.selectEls = children;
+    if (!this.selectEls.length) {
+      this.setOptions({ width: 0, height: 0 });
+      return;
+    }
+    const rect = makeBoundingBoxFromPoints(
+      this.selectEls.map((v) => v.getCoords()).flat(1)
+    );
+    this.setOptions({
+      ...rect,
+      angle: 0,
+      scaleX: 1,
+      scaleY: 1,
+      skewX: 0,
+      skewY: 0
+    });
+    this.snapshotChildren();
+  }
+
   mounted() {
     const checkElementIntersects = (object: Element) => {
       if (object === this) {
@@ -187,19 +207,7 @@ export class Select extends Group {
               }
             });
           }
-          this.selectEls = Array.from(selectEls);
-          const rect = makeBoundingBoxFromPoints(
-            this.selectEls?.map((v) => v.getCoords()).flat(1)
-          );
-          this.setOptions({
-            ...rect,
-            angle: 0,
-            scaleX: 1,
-            scaleY: 1,
-            skewX: 0,
-            skewY: 0
-          });
-          this.snapshotChildren();
+          this.select(Array.from(selectEls));
         },
         {
           once: true
@@ -209,6 +217,9 @@ export class Select extends Group {
 
     const handleControl = (e: FulateEvent) => {
       const { control, point } = this.currentControl;
+
+      this.root.history.snapshot(this.selectEls);
+
       const theta = degreesToRadians(this.angle ?? 0);
       const selectPrevState = {
         theta,
@@ -226,7 +237,10 @@ export class Select extends Group {
       this.root.addEventListener("pointermove", pointermove);
       this.root.addEventListener(
         "pointerup",
-        () => this.root.removeEventListener("pointermove", pointermove),
+        () => {
+          this.root.removeEventListener("pointermove", pointermove);
+          this.root.history.commit();
+        },
         {
           once: true
         }
@@ -235,6 +249,8 @@ export class Select extends Group {
 
     const handleSelectMove = (e: FulateEvent) => {
       const startPoint = new Point(e.detail.x, e.detail.y);
+
+      this.root.history.snapshot(this.selectEls);
 
       this.snapTool?.start(this.selectEls.concat(this as any));
 
@@ -269,6 +285,7 @@ export class Select extends Group {
         () => {
           this.root.removeEventListener("pointermove", pointermove);
           this.snapTool?.stop();
+          this.root.history.commit();
         },
         { once: true }
       );
@@ -526,5 +543,16 @@ export class Select extends Group {
 
   hasInView(): boolean {
     return true;
+  }
+
+  delete() {
+    if (!this.selectEls.length) return;
+    this.root.history.snapshot(this.selectEls);
+    this.selectEls.forEach((el) => {
+      el.parent?.removeChild(el);
+    });
+    this.select([]); // 立即更新框（隐藏掉）
+    this.root.history.commit();
+    this.root.requestRender();
   }
 }

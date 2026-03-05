@@ -210,11 +210,47 @@ export class Element extends Transformable {
     return this;
   }
 
+  toJson(includeChildren = false): BaseElementOption {
+    const json = {
+      left: this.left,
+      top: this.top,
+      width: this.width,
+      height: this.height,
+      angle: this.angle,
+      scaleX: this.scaleX,
+      scaleY: this.scaleY,
+      skewX: this.skewX,
+      skewY: this.skewY,
+      originX: this.originX,
+      originY: this.originY,
+      visible: this.visible,
+      backgroundColor: this.backgroundColor,
+      radius: this.radius,
+      cursor: this.cursor,
+      selectctbale: this.selectctbale,
+      silent: this.silent,
+      breakDirtyRectCheck: this.breakDirtyRectCheck
+    } as any;
+
+    if (includeChildren && this.children && this.children.length > 0) {
+      json.children = this.children.map((c) => c.toJson(true)) as any;
+    }
+
+    return json;
+  }
+
   unmounted(): void {
+    const m = this._ownMatrixCache;
+    m.a = 1;
+    m.b = 0;
+    m.c = 0;
+    m.d = 1;
+    m.e = 0;
+    m.f = 0;
     this._coords = null;
-    this._ownMatrixCache = null;
     this._snapPoints = null;
     this._boundingRectCache = null;
+    this._lastBoundingRect = null;
     super.unmounted();
   }
 }

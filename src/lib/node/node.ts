@@ -1,11 +1,31 @@
 import { EventManage, FulateEvent } from "../eventManage";
-import { type Root } from "../root";
-import { type Layer } from "../layer";
 import {
   AddEventListenerOptions,
   CustomEvent,
   EventEmitter
 } from "../../util/event";
+import { Root } from "../root";
+import { Layer } from "../layer";
+
+function linkNode(child: Node, parent: Node) {
+  child.parent = parent;
+  child._provides = parent._provides ?? parent.root._provides;
+}
+
+function moveNode(child: Node, parent: Node) {
+  child.parent = parent;
+
+  for (let key in parent._provides) {
+    if (Object.hasOwn(child._provides, key)) {
+      delete child._provides[key];
+    }
+  }
+
+  Object.setPrototypeOf(
+    child._provides,
+    parent._provides ?? parent.root._provides
+  );
+}
 
 export class Node extends EventEmitter {
   type = "node";
@@ -19,9 +39,6 @@ export class Node extends EventEmitter {
   id!: string;
   uIndex: number;
 
-  // 树结构关系
-  root: Root;
-  layer: Layer;
   parent: this | undefined;
   children: this[] | null = null;
 
@@ -31,6 +48,7 @@ export class Node extends EventEmitter {
 
   // 生命周期状态
   isMounted = false;
+  isUnMounted = false;
   key: string;
 
   hasDirtyChild = false;
@@ -43,6 +61,14 @@ export class Node extends EventEmitter {
   _options: any = {};
 
   _provides: Record<string, any>;
+
+  get layer(): Layer {
+    return this.inject("layer");
+  }
+
+  get root(): Root {
+    return this.inject("root");
+  }
 
   get firstChild(): this | null {
     return this.children?.[0] ?? null;
@@ -77,18 +103,28 @@ export class Node extends EventEmitter {
   private _updateSiblings() {
     if (!this.children?.length) return;
     for (let i = 0; i < this.children.length; i++) {
-      this.children[i].previousSibling = (this.children[i - 1] ?? null) as any;
-      this.children[i].nextSibling = (this.children[i + 1] ?? null) as any;
+      const cur = this.children[i];
+      cur.previousSibling = (this.children[i - 1] ?? null) as any;
+      cur.nextSibling = (this.children[i + 1] ?? null) as any;
+      linkNode(cur, this);
     }
   }
 
   private _afterMutate(nodes: Node[]) {
+    if (this.isMounted) {
+      //先对节点进行move
+      //move需要调整provide
+      //然后在去_updateSiblings -> linkNode
+      nodes.forEach((child) => {
+        this.move(child);
+        if (!child.isMounted && !child.isUnMounted) {
+          child.mounted();
+        }
+      });
+    }
     this._updateSiblings();
     this.hasDirtyChild = true;
     this.markChildDirty();
-    if (this.isMounted) {
-      nodes.forEach((v) => v.mounted());
-    }
     if (this.root) {
       this.dispatchEvent(new CustomEvent("childrenchange"));
     }
@@ -98,13 +134,19 @@ export class Node extends EventEmitter {
     if (!this.children) this.children = [];
     const added: Node[] = [];
     children.forEach((child) => {
-      if (child.parent) return;
-      child.parent = this as any;
       this.children!.push(child as any);
       added.push(child);
     });
     this._afterMutate(added);
     return this;
+  }
+
+  move(node: Node) {
+    if (node.parent && node.parent !== this) {
+      node.unmounted();
+      moveNode(node, this);
+      node.layer.removeRbush(node);
+    }
   }
 
   prepend(...children: Node[]) {
@@ -125,7 +167,6 @@ export class Node extends EventEmitter {
     if (!this.children || newChild.parent) return this;
     const idx = this.children.indexOf(refChild as any);
     if (idx === -1) return this;
-    newChild.parent = this as any;
     this.children.splice(idx, 0, newChild as any);
     this._afterMutate([newChild]);
     return this;
@@ -135,7 +176,6 @@ export class Node extends EventEmitter {
     if (!this.children || newChild.parent) return this;
     const idx = this.children.indexOf(refChild as any);
     if (idx === -1) return this;
-    newChild.parent = this as any;
     this.children.splice(idx + 1, 0, newChild as any);
     this._afterMutate([newChild]);
     return this;
@@ -146,7 +186,6 @@ export class Node extends EventEmitter {
     const idx = this.children.indexOf(oldChild as any);
     if (idx === -1) return this;
     oldChild.unmounted();
-    newChild.parent = this as any;
     this.children[idx] = newChild as any;
     this._afterMutate([newChild]);
     return this;
@@ -189,33 +228,46 @@ export class Node extends EventEmitter {
     }
     this.root.idElements?.set(this.key, this as any);
     this.children?.forEach((child) => {
-      child.parent = this;
-      child.root = this.root;
-      child._provides = this._provides ?? this.root._provides;
-      if (!child.layer && this.layer) child.layer = this.layer;
+      linkNode(child, this);
       child.mounted();
     });
   }
 
   unmounted() {
     this.dispatchEvent(new CustomEvent("unmounted"));
+
     if (this.key && this.root) {
       this.root.keyElmenet.delete(this.key);
     }
-    this.root.idElements?.delete(this.id);
-    const oldParent = this.parent;
+    if (this.id && this.root?.idElements) {
+      this.root.idElements.delete(this.id);
+    }
 
+    const oldParent = this.parent;
     if (oldParent && oldParent.children?.length) {
-      const index = oldParent.children?.findIndex((v) => v === this);
+      const index = oldParent.children.findIndex((v) => v === this);
       if (index !== -1) {
         oldParent.children.splice(index, 1);
-        oldParent._updateSiblings();
+        oldParent._updateSiblings?.();
         oldParent.hasDirtyChild = true;
-        oldParent.markChildDirty();
+        oldParent.markChildDirty?.();
       }
     }
 
     this.children?.forEach((child) => child.unmounted());
+
+    this.isUnMounted = true;
+    this.nextSibling = null;
+    this.previousSibling = null;
+    this.layer?.removeRbush(this);
+    /**
+     * 保留_provides 因为move的时候用的到
+     * parent 保留用于判断
+     */
+  }
+
+  distory() {
+    this.children?.forEach((child) => child.distory());
     this.children = [];
     this.nextSibling = null;
     this.previousSibling = null;

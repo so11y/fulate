@@ -5,6 +5,7 @@ import { CustomEvent } from "../util/event";
 import { Rule } from "./tools/rule";
 import { Point } from "../util/point";
 import { RectWithCenter } from "./node/transformable";
+import { HistoryManager } from "./history";
 
 export class Root extends Node {
   type = "root";
@@ -18,6 +19,7 @@ export class Root extends Node {
   idElements = new Map<string, Element>();
 
   _provides = Object.create(null);
+  history: HistoryManager;
 
   private isSpacePressed = false;
   private isPanning = false;
@@ -37,10 +39,11 @@ export class Root extends Node {
     this.container.style.position = "relative";
     this.container.style.userSelect = "none";
     this.container.style.touchAction = "none";
+    this.history = new HistoryManager(this);
+    this.provide("root", this);
   }
 
   mounted() {
-    this.root = this as any;
     super.mounted();
     this.mounteded();
     this.requestRender();
@@ -169,6 +172,7 @@ export class Root extends Node {
         this.container.style.cursor = "default";
       }
     };
+
     document.addEventListener("keydown", onKeyDown, { signal });
     document.addEventListener("keyup", onKeyUp, { signal });
 
@@ -326,6 +330,10 @@ export class Root extends Node {
 
     if (!element) {
       this.dispatchEvent(new CustomEvent(eventName, { detail }));
+      return;
+    }
+
+    if (element && !element.isMounted) {
       return;
     }
 

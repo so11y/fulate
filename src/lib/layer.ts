@@ -29,7 +29,7 @@ export class Layer extends Rectangle {
   isRender: boolean = false;
   isRenderDitryMode = false;
   private renderResolve: (() => void) | null = null;
-  private _renderPromise: Promise<void> | null = null;
+  _renderPromise: Promise<void> | null = null;
 
   private pendingSyncNodes = new Set<Element>();
   private syncTimeout: number | null = null;
@@ -45,7 +45,6 @@ export class Layer extends Rectangle {
     this.enableDirtyRect = options?.enableDirtyRect ?? true;
     this.canvasEl = document.createElement("canvas");
     this.ctx = (this.canvasEl as HTMLCanvasElement).getContext("2d")!;
-    this.layer = this;
     this.isRender = false;
   }
 
@@ -53,6 +52,7 @@ export class Layer extends Rectangle {
     if (!this.inject("layer-root")) {
       this.provide("layer-root", this);
     }
+    this.provide("layer", this);
     super.mounted();
     const root = this.root!;
     const width = this.width ?? this.root.width!;
@@ -83,7 +83,7 @@ export class Layer extends Rectangle {
     this.root?.unregisterLayer(this);
   }
 
-  syncNode(node: any) {
+  syncRbush(node: any) {
     if (node.isLayer || node.type === "root") return;
     this.pendingSyncNodes.add(node);
     if (this.syncTimeout === null) {
@@ -91,6 +91,13 @@ export class Layer extends Rectangle {
         this.flushSyncNodes();
         this.syncTimeout = null;
       }) as any;
+    }
+  }
+
+  removeRbush(node: any) {
+    if (node.rbushItem) {
+      this.rbush.remove(node.rbushItem);
+      node.rbushItem = null;
     }
   }
 

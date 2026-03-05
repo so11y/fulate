@@ -379,7 +379,7 @@ export class Transformable extends Node {
         this.setCoords();
       }
       this.isDirty = false;
-      this.layer?.syncNode(this as any);
+      this.layer?.syncRbush(this as any);
     }
 
     if (shouldUpdate || this.hasDirtyChild) {

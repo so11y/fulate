@@ -172,8 +172,8 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       }
     }
 
-    setOptions(options?: YogaOption) {
-      super.setOptions(options as any);
+    setOptions(options?: YogaOption, syncCalc = false) {
+      super.setOptions(options as any, syncCalc);
       this.flushStyles();
       if (this.isMounted) {
         this.inject("yoga-root").layout();

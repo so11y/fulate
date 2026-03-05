@@ -24,6 +24,12 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
   height: window.innerHeight
 });
 
+const wew = new Rectangle({
+  width: 100,
+  height: 100,
+  backgroundColor: "black"
+});
+
 const floorLayer = new Layer({
   children: [
     new Rectangle({
@@ -31,7 +37,8 @@ const floorLayer = new Layer({
       width: 1920,
       height: 900,
       silent: true
-    })
+    }),
+    wew
   ]
 });
 
@@ -45,12 +52,35 @@ const editerLayer = new Layer({
   children: [new Select(), new Hover(), new Snap()]
 });
 
+setTimeout(() => {
+  ruleLayer.append(wew);
+}, 500);
+
 // 添加快捷键绑定：Ctrl+G 编组，Ctrl+Shift+G 解组
 window.addEventListener("keydown", (e) => {
   const selectTool = root.keyElmenet.get("select") as Select;
 
   if (!selectTool) return;
 
+  console.log(e);
+  // Undo/Redo
+  if (e.code === "KeyZ") {
+    e.preventDefault();
+    root.history.undo();
+    root.requestRender();
+  } else if (e.code === "KeyY") {
+    e.preventDefault();
+    root.history.redo();
+    root.requestRender();
+  }
+
+  // Delete
+  if (e.code === "Delete" || e.code === "Backspace") {
+    console.log("---");
+    selectTool.delete();
+  }
+
+  // Group
   if (e.key.toLowerCase() === "g" && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     if (e.shiftKey) {
@@ -212,7 +242,7 @@ root.append(
       })
     ]
   }),
-  ruleLayer, 
+  ruleLayer,
   editerLayer
 );
 
