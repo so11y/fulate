@@ -117,13 +117,12 @@ export class Root extends Node {
     const area = {
       left: point.x,
       top: point.y,
-      width: point.x,
-      height: point.y
+      width: 0,
+      height: 0
     };
     return this.searchArea(area, (item) => {
       const element = item.element;
       if (element.hasPointHint?.(point)) {
-        console.log('---');
         return callback(item);
       }
     });

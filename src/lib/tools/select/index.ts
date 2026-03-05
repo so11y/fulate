@@ -6,6 +6,7 @@ import { FulateEvent } from "../../eventManage";
 import { Controls, resizeObject, rotateCallback } from "./controls";
 import { Snap } from "./snap";
 import { Group } from "../../ui/group";
+import { Node } from "../../node/node";
 
 const rotateCursor = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M21 13a9 9 0 1 1-3-7.7L21 8"></path></svg>') 9 9, crosshair`;
 
@@ -42,7 +43,7 @@ export class Select extends Group {
     return this.root.keyElmenet?.get("snap") as Snap;
   }
 
-  get targetElement(): Element {
+  get targetElement(): Node {
     return this.root.keyElmenet.get(this.targetKey) ?? this.root;
   }
 
@@ -123,13 +124,16 @@ export class Select extends Group {
 
   mounted() {
     const checkElementIntersects = (object: Element) => {
+      if (object === this) {
+        return;
+      }
       const [tl, , br] = this.getControlCoords();
       if (
         object.visible &&
         (object.intersectsWithRect(tl, br) ||
           object.isContainedWithinRect(tl, br) ||
-          object.containsPoint(tl) ||
-          object.containsPoint(br))
+          object.hasPointHint(tl) ||
+          object.hasPointHint(br))
       ) {
         return object;
       }
@@ -137,8 +141,6 @@ export class Select extends Group {
 
     const handleSelect = (e: FulateEvent) => {
       this.selectEls = [];
-      const directEl: Element[] = [];
-      this.forEachTarget((el) => directEl.push(el));
       const startPoint = new Point(e.detail.x, e.detail.y);
       this.setOptionsSync({
         left: startPoint.x,
@@ -152,9 +154,14 @@ export class Select extends Group {
         skewY: 0
       });
 
-      const selectEls = new Set(
-        [directEl.find(checkElementIntersects)].filter(Boolean)
-      );
+      const selectEls = new Set<Element>();
+
+      this.root.searchHitElements(startPoint, ({ element }) => {
+        const intersected = checkElementIntersects(element);
+        if (intersected) {
+          selectEls.add(intersected);
+        }
+      });
 
       let hasMove = false;
       const pointermove = (e: FulateEvent) => {
@@ -173,9 +180,12 @@ export class Select extends Group {
         () => {
           this.root.removeEventListener("pointermove", pointermove);
           if (hasMove) {
-            directEl
-              ?.filter(checkElementIntersects)
-              .forEach((child) => selectEls.add(child));
+            this.root.searchArea(this, ({ element }) => {
+              const intersected = checkElementIntersects(element);
+              if (intersected) {
+                selectEls.add(intersected);
+              }
+            });
           }
           this.selectEls = Array.from(selectEls);
           const rect = makeBoundingBoxFromPoints(
@@ -404,7 +414,7 @@ export class Select extends Group {
     return this._boundingRectCache;
   }
 
-  hasPointHint(x: number, y: number): boolean {
+  hasPointHint(hintPoint: Point): boolean {
     if (!this.selectEls.length) {
       return false;
     }
@@ -412,21 +422,16 @@ export class Select extends Group {
       return false;
     }
     const coords = this.getControlCoords();
-    const hintPoint = new Point(x, y);
     this.currentControl = null;
     this.cursor = "default";
     for (let i = 0; i < coords.length; i++) {
       const point = coords[i];
 
-      const distance = Math.sqrt(
-        Math.pow(hintPoint.x - point.x, 2) + Math.pow(hintPoint.y - point.y, 2)
-      );
-
       const scale = this.root.viewport.scale;
       const scaledControlSize = this.controlSize / scale;
       const scaledRotatePadding = 8 / scale;
 
-      if (distance <= scaledControlSize) {
+      if (hintPoint.pointDistance(point, scaledControlSize)) {
         this.cursor = Controls[i].cursor;
         this.currentControl = {
           point: hintPoint,
@@ -434,8 +439,11 @@ export class Select extends Group {
         };
         return true;
       } else if (
-        distance <= scaledControlSize + scaledRotatePadding &&
-        !super.hasPointHint(x, y)
+        hintPoint.pointDistance(
+          point,
+          scaledControlSize + scaledRotatePadding
+        ) &&
+        !super.hasPointHint(hintPoint)
       ) {
         this.cursor = rotateCursor;
         this.currentControl = {
@@ -492,7 +500,7 @@ export class Select extends Group {
       }
     }
 
-    if (super.hasPointHint(x, y)) {
+    if (super.hasPointHint(hintPoint)) {
       this.cursor = "move";
       return true;
     }
