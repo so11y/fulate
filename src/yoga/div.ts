@@ -155,12 +155,12 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       });
     }
 
-    mounted(): void {
+    mount(): void {
       const yogaRoot = this.inject("yoga-root");
       if (!yogaRoot) {
         this.provide("yoga-root", this);
       }
-      super.mounted();
+      super.mount();
       if (this.children) {
         this.children.forEach((child, index) => {
           if (child.yogaNode) {
@@ -316,9 +316,8 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
   }
 
-  return Div as any as new (
-    ...args: ConstructorParameters<T>
-  ) => Div & InstanceType<T>;
+  return Div as any as new (...args: ConstructorParameters<T>) => Div &
+    InstanceType<T>;
 }
 
 export const Div = withYoga<new (v: YogaOption) => BaseRectangle>(

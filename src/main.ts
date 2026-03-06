@@ -31,7 +31,7 @@ const floorLayer = new Layer({
       backgroundColor: "#E5E5E5",
       width: 1920,
       height: 900,
-      silent: true,
+      silent: true
       // children: [de]
     })
   ]
@@ -89,7 +89,7 @@ const div1 = new Rectangle({
   backgroundColor: "red",
   onclick: (e) => {
     e.detail.target.setOptions({
-      backgroundColor: "yellow",
+      backgroundColor: "yellow"
       // children: [de]
     });
   }
@@ -129,7 +129,7 @@ const GAP = 20; // 标准间距
 const col = (n) => START_X + (ITEM_SIZE + GAP) * n;
 
 root.append(
-  floorLayer,
+  // floorLayer,
   new Workspace({
     width: 1920,
     height: 900,
@@ -138,7 +138,7 @@ root.append(
         children: [
           div1,
           div2,
-          // dev3, // 保持原有引用
+          dev3, // 保持原有引用
 
           // // --- 第一行：基础几何图形与图片 (Row 0) ---
           new Layer({
@@ -151,6 +151,10 @@ root.append(
                 width: ITEM_SIZE,
                 height: ITEM_SIZE,
                 backgroundColor: "pink",
+                onclick(e) {
+                  e.detail.target.provide("qqq", 1);
+                  console.log(2);
+                },
                 children: [
                   new Rectangle({
                     left: 10,
@@ -159,6 +163,7 @@ root.append(
                     height: 70,
                     backgroundColor: "blue",
                     onclick: (e) => {
+                      console.log(e.detail.target.inject("qqq"), "--");
                       e.detail.target.setOptions({
                         left: col(0) + 20,
                         backgroundColor: "blue"
@@ -191,14 +196,14 @@ root.append(
                   });
                 }
               }),
-              // new Image({
-              //   left: col(3),
-              //   top: START_Y,
-              //   width: ITEM_SIZE,
-              //   height: ITEM_SIZE,
-              //   src: "https://picsum.photos/200/200",
-              //   radius: 10
-              // }),
+              new Image({
+                left: col(3),
+                top: START_Y,
+                width: ITEM_SIZE,
+                height: ITEM_SIZE,
+                src: "https://picsum.photos/200/200",
+                radius: 10
+              }),
 
               // --- 第二行：文本与功能组件 (Row 1) ---
               new Text({
@@ -244,8 +249,8 @@ root.append(
       })
     ]
   }),
-  ruleLayer,
-  editerLayer
+  ruleLayer
+  // editerLayer
 );
 
 // div1.addEventListener("click", (e) => {

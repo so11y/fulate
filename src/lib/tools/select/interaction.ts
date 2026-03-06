@@ -170,6 +170,7 @@ export function setupInteraction(select: Select): () => void {
     const hasSelection =
       select.selectEls.length > 0 &&
       select.root.getCurrnetEelement()?.element === select;
+    select.hoverElement = null;
 
     if (!hasSelection) {
       handleSelect(select, e);
@@ -184,18 +185,17 @@ export function setupInteraction(select: Select): () => void {
   };
 
   const mouseenter = (e: FulateEvent) => {
-    console.log("mouseenter", e.detail.target);
-    // if (!checkElement(e.detail.target, select)) {
-    //   select.hoverElement = null;
-    //   return;
-    // }
-    // select.hoverElement = e.detail.target;
+    select.hoverElement = e.detail.target;
+    console.log(333);
+    select.markDirty();
   };
 
-  const mouseleave = (e: FulateEvent) => {
-    console.log("mouseleave", e.detail.target);
-    // select.hoverElement = null;
-    // select.markDirty();
+  const mouseleave = () => {
+    const prev = select.hoverElement;
+    select.hoverElement = null;
+    if (prev) {
+      select.markDirty();
+    }
   };
 
   select.root.addEventListener("pointerdown", pointerdown);

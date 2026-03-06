@@ -25,6 +25,9 @@ export function doGroup(select: Select) {
 
   const children = [...select.selectEls];
   group.groupEls = children;
+  /**
+   * TODO 这里应该给子节点provode一个groupParent的注入，这样就不需要在group里去判断父节点了，直接用注入拿到groupParent就行了
+   */
   children.forEach((el) => (el.groupParent = group));
 
   parent.append(group);

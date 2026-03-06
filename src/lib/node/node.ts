@@ -9,7 +9,10 @@ import { Layer } from "../layer";
 
 function linkNode(child: Node, parent: Node) {
   child.parent = parent;
-  child._provides = parent._provides ?? parent.root._provides;
+  const parentProvides = parent._provides ?? parent.root._provides;
+  if (Object.getPrototypeOf(child._provides) !== parentProvides) {
+    child._provides = Object.create(parentProvides);
+  }
 }
 
 export class Node extends EventEmitter {
@@ -316,10 +319,6 @@ export class Node extends EventEmitter {
   }
 
   provide(key: string, value: any) {
-    const parentProvides = this.parent ? this.parent._provides : {};
-    if (this._provides === parentProvides) {
-      this._provides = Object.create(parentProvides);
-    }
     this._provides[key] = value;
     return this;
   }
