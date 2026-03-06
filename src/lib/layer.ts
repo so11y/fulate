@@ -28,8 +28,6 @@ export class Layer extends Rectangle {
   isLayer = true;
   isRender: boolean = false;
   isRenderDitryMode = false;
-  private renderResolve: (() => void) | null = null;
-  _renderPromise: Promise<void> | null = null;
 
   private pendingSyncNodes = new Set<Element>();
   private syncTimeout: number | null = null;
@@ -171,98 +169,7 @@ export class Layer extends Rectangle {
   }
 
   requestRender() {
-    if (this.isRender) return this._renderPromise;
-    this.isRender = true;
-
-    if (!this._renderPromise) {
-      this._renderPromise = new Promise<void>((resolve) => {
-        this.renderResolve = resolve;
-      });
-    }
-
-    requestAnimationFrame(() => {
-      this.updateTransform(false);
-
-      if (this.enableDirtyRect && this.dirtyNodes.size > 0) {
-        this.isRenderDitryMode = true;
-        let minX = Infinity;
-        let minY = Infinity;
-        let maxX = -Infinity;
-        let maxY = -Infinity;
-
-        this.dirtyNodes.forEach((node) => {
-          // getDirtyRect 应该返回该节点：上一次的包围盒 + 这一次的包围盒 的合并矩形
-          const rect = node.getDirtyRect();
-
-          minX = Math.min(minX, rect.left);
-          minY = Math.min(minY, rect.top);
-          maxX = Math.max(maxX, rect.left + rect.width);
-          maxY = Math.max(maxY, rect.top + rect.height);
-        });
-
-        const m = this.root.getViewPointMtrix();
-
-        const dpr = window.devicePixelRatio || 1;
-
-        // 转换为屏幕坐标，并立即乘以 DPR 得到物理坐标
-        let screenMinX = (minX * m.a + m.e) * dpr;
-        let screenMinY = (minY * m.d + m.f) * dpr;
-        let screenMaxX = (maxX * m.a + m.e) * dpr;
-        let screenMaxY = (maxY * m.d + m.f) * dpr;
-
-        // 增加一点 padding 防止抗锯齿残留边缘，并对齐到物理像素
-        const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
-        screenMinX = Math.floor(screenMinX) - padding;
-        screenMinY = Math.floor(screenMinY) - padding;
-        screenMaxX = Math.ceil(screenMaxX) + padding;
-        screenMaxY = Math.ceil(screenMaxY) + padding;
-
-        const screenWidth = screenMaxX - screenMinX;
-        const screenHeight = screenMaxY - screenMinY;
-
-        this.finalDirtyRect = {
-          left: (screenMinX / dpr - m.e) / m.a,
-          top: (screenMinY / dpr - m.f) / m.d,
-          width: screenWidth / dpr / m.a,
-          height: screenHeight / dpr / m.d
-        };
-
-        if (screenWidth > 0 && screenHeight > 0) {
-          this.ctx.save();
-          this.ctx.beginPath();
-          this.ctx.rect(screenMinX, screenMinY, screenWidth, screenHeight);
-          this.ctx.clip();
-          this.ctx.clearRect(screenMinX, screenMinY, screenWidth, screenHeight);
-          super.paint(this.ctx);
-          this.ctx.restore();
-        }
-
-        this.dirtyNodes.clear();
-      } else {
-        // Fallback or initial render (全量重绘)
-        this.clear();
-
-        // 全量重绘不需要传脏矩形
-        super.paint(this.ctx);
-      }
-
-      this.finalDirtyRect = null as any;
-
-      this.isRender = false;
-      this.isRenderDitryMode = false;
-      this.renderResolve?.();
-      this._renderPromise = null;
-      this.renderResolve = null;
-    });
-    return this._renderPromise;
-  }
-
-  nextTick(fn: () => void): void {
-    if (this._renderPromise) {
-      this._renderPromise.then(fn);
-    } else {
-      setTimeout(fn, 0);
-    }
+    this.root?.scheduleLayerRender(this);
   }
 
   notInDitry() {
@@ -275,12 +182,80 @@ export class Layer extends Rectangle {
     return false;
   }
 
+  flushUpdate() {
+    this.updateTransform(false);
+  }
+
+  flushPaint() {
+    this.paint();
+  }
+
   paint() {
     if (this.notInDitry()) {
       return;
     }
-    this.isDirtyPaintChild = false;
-    this.requestRender();
+
+    if (this.enableDirtyRect && this.dirtyNodes.size > 0) {
+      this.isRenderDitryMode = true;
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      this.dirtyNodes.forEach((node) => {
+        const rect = node.getDirtyRect();
+
+        minX = Math.min(minX, rect.left);
+        minY = Math.min(minY, rect.top);
+        maxX = Math.max(maxX, rect.left + rect.width);
+        maxY = Math.max(maxY, rect.top + rect.height);
+      });
+
+      const m = this.root.getViewPointMtrix();
+
+      const dpr = window.devicePixelRatio || 1;
+
+      let screenMinX = (minX * m.a + m.e) * dpr;
+      let screenMinY = (minY * m.d + m.f) * dpr;
+      let screenMaxX = (maxX * m.a + m.e) * dpr;
+      let screenMaxY = (maxY * m.d + m.f) * dpr;
+
+      const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
+      screenMinX = Math.floor(screenMinX) - padding;
+      screenMinY = Math.floor(screenMinY) - padding;
+      screenMaxX = Math.ceil(screenMaxX) + padding;
+      screenMaxY = Math.ceil(screenMaxY) + padding;
+
+      const screenWidth = screenMaxX - screenMinX;
+      const screenHeight = screenMaxY - screenMinY;
+
+      this.finalDirtyRect = {
+        left: (screenMinX / dpr - m.e) / m.a,
+        top: (screenMinY / dpr - m.f) / m.d,
+        width: screenWidth / dpr / m.a,
+        height: screenHeight / dpr / m.d
+      };
+
+      if (screenWidth > 0 && screenHeight > 0) {
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(screenMinX, screenMinY, screenWidth, screenHeight);
+        this.ctx.clip();
+        this.ctx.clearRect(screenMinX, screenMinY, screenWidth, screenHeight);
+        super.paint(this.ctx);
+        this.ctx.restore();
+      }
+
+      this.dirtyNodes.clear();
+    } else {
+      this.clear();
+      super.paint(this.ctx);
+    }
+
+    this.finalDirtyRect = null as any;
+
+    this.isRender = false;
+    this.isRenderDitryMode = false;
   }
 
   clear() {

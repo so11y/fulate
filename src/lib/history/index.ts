@@ -136,7 +136,6 @@ export class HistoryManager {
     config.targetStack.push(records);
 
     const selectedElements: Element[] = [];
-    const layerPromise = new Set();
 
     const start = config.isReverse ? records.length - 1 : 0;
     const end = config.isReverse ? -1 : records.length;
@@ -158,10 +157,9 @@ export class HistoryManager {
         element.quickSetOptions(state.props);
         selectedElements.push(element);
       }
-      layerPromise.add(element.layer?._renderPromise ?? Promise.resolve());
     }
 
-    Promise.all(Array.from(layerPromise)).then(() => {
+    this.root.nextTick().then(() => {
       this.root.find<Select>("select")?.select(selectedElements);
     });
   }

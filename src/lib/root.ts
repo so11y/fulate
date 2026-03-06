@@ -31,6 +31,11 @@ export class Root extends Node {
 
   layers: Layer[] = [];
 
+  private _pendingLayers = new Set<Layer>();
+  private _rafScheduled = false;
+  private _nextTickPromise: Promise<void> | null = null;
+  private _nextTickResolve: (() => void) | null = null;
+
   constructor(el: HTMLElement, options?: { width?: number; height?: number }) {
     super();
     this.container = el;
@@ -65,6 +70,40 @@ export class Root extends Node {
 
   requestRender() {
     this.layers.forEach((layer) => layer.requestRender());
+  }
+
+  scheduleLayerRender(layer: Layer) {
+    this._pendingLayers.add(layer);
+    if (this._rafScheduled) return;
+    this._rafScheduled = true;
+
+    requestAnimationFrame(() => {
+      for (const l of this._pendingLayers) {
+        l.flushUpdate();
+      }
+      for (const l of this._pendingLayers) {
+        l.flushPaint();
+      }
+      this._rafScheduled = false;
+      this._pendingLayers.clear();
+
+      const resolve = this._nextTickResolve;
+      this._nextTickPromise = null;
+      this._nextTickResolve = null;
+      resolve?.();
+    });
+  }
+
+  nextTick(): Promise<void> {
+    if (!this._rafScheduled && this._pendingLayers.size === 0) {
+      return Promise.resolve();
+    }
+    if (!this._nextTickPromise) {
+      this._nextTickPromise = new Promise<void>((resolve) => {
+        this._nextTickResolve = resolve;
+      });
+    }
+    return this._nextTickPromise;
   }
 
   getLogicalPosition(clientX: number, clientY: number) {

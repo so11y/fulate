@@ -5,11 +5,11 @@ import { FulateEvent } from "../../eventManage";
 import { Layer } from "../../layer";
 import type { Select } from "./index";
 
-function checkElementIntersects(select: Select, object: Element): Element | undefined {
-  if (object === (select as any)) return;
+function checkElement(object: Element, select: Select) {
+  if (object === select) return;
 
   if (object.groupParent) {
-    return checkElementIntersects(select, object.groupParent);
+    return checkElement(select, object.groupParent);
   }
 
   if (object.inject("layer").type !== "artboard") {
@@ -21,6 +21,16 @@ function checkElementIntersects(select: Select, object: Element): Element | unde
     }
   }
 
+  return true;
+}
+
+function checkElementIntersects(
+  select: Select,
+  object: Element
+): Element | undefined {
+  if (!checkElement(object, select)) {
+    return;
+  }
   const [tl, , br] = select.getControlCoords();
   if (
     object.visible &&
@@ -155,10 +165,6 @@ function handleSelectMove(select: Select, e: FulateEvent) {
   );
 }
 
-/**
- * Sets up all interaction event listeners for the Select tool.
- * Returns a cleanup function for unmounted().
- */
 export function setupInteraction(select: Select): () => void {
   const pointerdown = (e: FulateEvent) => {
     const hasSelection =
@@ -178,8 +184,11 @@ export function setupInteraction(select: Select): () => void {
   };
 
   const mouseenter = (e: FulateEvent) => {
+    if (!checkElement(e.detail.target, select)) {
+      select.hoverElement = null;
+      return;
+    }
     select.hoverElement = e.detail.target;
-    select.markDirty();
   };
 
   const mouseleave = () => {

@@ -9,6 +9,7 @@ export class Rectangle extends Element {
     if (this.notInDitry()) {
       return;
     }
+    console.count()
     ctx.save();
     ctx.beginPath();
     this.applyTransformToCtx(ctx);

@@ -32,7 +32,7 @@ const floorLayer = new Layer({
       width: 1920,
       height: 900,
       silent: true,
-      children: [de]
+      // children: [de]
     })
   ]
 });
@@ -90,7 +90,7 @@ const div1 = new Rectangle({
   onclick: (e) => {
     e.detail.target.setOptions({
       backgroundColor: "yellow",
-      children: [de]
+      // children: [de]
     });
   }
 });
@@ -138,9 +138,9 @@ root.append(
         children: [
           div1,
           div2,
-          dev3, // 保持原有引用
+          // dev3, // 保持原有引用
 
-          // --- 第一行：基础几何图形与图片 (Row 0) ---
+          // // --- 第一行：基础几何图形与图片 (Row 0) ---
           new Layer({
             zIndex: 2,
             enableDirtyRect: true,

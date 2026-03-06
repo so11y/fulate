@@ -38,7 +38,6 @@ export function doGroup(select: Select) {
       children.forEach((el) => (el.groupParent = null));
       group.parent?.removeChild(group as any);
       select.select(children);
-      select.root.requestRender();
     },
     () => {
       group.groupEls = children;
@@ -46,7 +45,6 @@ export function doGroup(select: Select) {
       parent.append(group);
       group.snapshotChildren();
       select.select([group as any]);
-      select.root.requestRender();
     }
   );
 }
@@ -99,7 +97,7 @@ export function unGroup(select: Select) {
       }
       group.snapshotChildren();
       select.select([group as any]);
-      select.root.requestRender();
+      // select.root.requestRender();
     },
     () => {
       children.forEach((el) => (el.groupParent = null));
@@ -107,7 +105,7 @@ export function unGroup(select: Select) {
         group.parent.removeChild(group as any);
       }
       select.select(children);
-      select.root.requestRender();
+      // select.root.requestRender();
     }
   );
 }

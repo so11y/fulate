@@ -133,7 +133,7 @@ export class Select extends Group {
     paintSelect(this);
   }
 
-  hasPointHint(hintPoint: Point): boolean {
+  hasPointHint(hintPoint: Point) {
     return selectHitTest(this, hintPoint);
   }
 
@@ -197,7 +197,7 @@ export class Select extends Group {
     return this._boundingRectCache;
   }
 
-  hasInView(): boolean {
+  hasInView() {
     return true;
   }
 }
