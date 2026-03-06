@@ -11,7 +11,6 @@ import { Text } from "./lib/ui/text";
 import { Circle } from "./lib/ui/circle";
 import { Triangle } from "./lib/ui/triangle";
 import { Image } from "./lib/ui/image";
-import { Hover } from "./lib/tools/hover";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,
@@ -45,7 +44,7 @@ const ruleLayer = new Layer({
 const editerLayer = new Layer({
   zIndex: 2,
   enableDirtyRect: false,
-  children: [new Select(), new Hover(), new Snap()]
+  children: [new Select(), new Snap()]
 });
 
 // 添加快捷键绑定：Ctrl+G 编组，Ctrl+Shift+G 解组
