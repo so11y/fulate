@@ -62,6 +62,12 @@ export class Select extends Group {
 
   select(children: Array<Element>) {
     this.selectEls = children;
+    //TODO 这里后面改为在怎么在走一次checkhit来让内部自己去判断当前control是什么
+    //鼠标是什么状态
+    this.currentControl = null as any;
+    this.hoverElement = null;
+    this.root.container.style.cursor = "default";
+
     if (!this.selectEls.length) {
       this.setOptions({ width: 0, height: 0 });
       return;
@@ -109,7 +115,6 @@ export class Select extends Group {
   }
 
   hasPointHint(hintPoint: Point) {
-    console.log(11);
     return selectHitTest(this, hintPoint);
   }
 
