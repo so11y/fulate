@@ -81,6 +81,9 @@ export class Root extends Node {
       for (const l of this._pendingLayers) {
         l.flushUpdate();
       }
+      for (const l of this.layers) {
+        l.flushSyncNodes();
+      }
       for (const l of this._pendingLayers) {
         l.flushPaint();
       }
@@ -94,16 +97,17 @@ export class Root extends Node {
     });
   }
 
-  nextTick(): Promise<void> {
+  nextTick(callback: () => void) {
     if (!this._rafScheduled && this._pendingLayers.size === 0) {
-      return Promise.resolve();
+      return Promise.resolve().then(callback);
     }
     if (!this._nextTickPromise) {
       this._nextTickPromise = new Promise<void>((resolve) => {
         this._nextTickResolve = resolve;
       });
     }
-    return this._nextTickPromise;
+
+    this._nextTickPromise.then(callback);
   }
 
   getLogicalPosition(clientX: number, clientY: number) {
@@ -134,7 +138,8 @@ export class Root extends Node {
   }
 
   /**
-   * 碰撞检测，不传 point 时默认使用 lastPointerPos 换算
+   * 碰撞检测，不传 point 时默认使用 lastPointerPos 换算。
+   * 内部同时处理 cursor 切换和 mouseenter / mouseleave 派发。
    */
   checkHit(point?: Point) {
     if (this.isSpacePressed || this.isPanning) return;
@@ -148,12 +153,47 @@ export class Root extends Node {
       );
     }
 
+    const prevElement = this.currentElement;
     this.currentElement = undefined;
 
     this.searchHitElements(point, (element) => {
       this.currentElement = element;
       return true;
     });
+
+    if (
+      this.currentElement &&
+      (this.currentElement.element?.eventManage.hasUserEvent ||
+        this.currentElement.element?.cursor)
+    ) {
+      this.container.style.cursor =
+        this.currentElement.element.cursor || "pointer";
+    } else {
+      this.container.style.cursor = "default";
+    }
+
+    if (this.currentElement?.element !== prevElement?.element) {
+      const detail = {
+        target: undefined as any,
+        x: point.x,
+        y: point.y,
+        buttons: 0,
+        deltaY: 0,
+        deltaX: 0
+      };
+
+      if (prevElement?.element && prevElement.element.isActiveed) {
+        detail.target = prevElement.element;
+        prevElement.element.eventManage.notify("mouseleave", detail);
+      }
+      if (
+        this.currentElement?.element &&
+        this.currentElement.element.isActiveed
+      ) {
+        detail.target = this.currentElement.element;
+        this.currentElement.element.eventManage.notify("mouseenter", detail);
+      }
+    }
   }
 
   searchHitElements(point: Point, callback: (element: RBushItem) => any) {
@@ -231,32 +271,7 @@ export class Root extends Node {
           this.requestRender();
         } else {
           this.lastPointerPos = { x: e.clientX, y: e.clientY };
-
-          const prevElement = this.currentElement;
           this.checkHit();
-
-          // 处理 cursor 切换
-          if (this.isSpacePressed) {
-            this.container.style.cursor = this.isPanning ? "grabbing" : "grab";
-          } else {
-            if (
-              this.currentElement &&
-              ((this.currentElement?.element &&
-                this.currentElement.element?.eventManage.hasUserEvent) ||
-                this.currentElement.element?.cursor)
-            ) {
-              this.container.style.cursor =
-                this.currentElement.element.cursor || "pointer";
-            } else {
-              this.container.style.cursor = "default";
-            }
-          }
-
-          // 处理 MouseEnter / MouseLeave
-          if (this.currentElement?.element !== prevElement?.element) {
-            if (prevElement) this.notify(e, "mouseleave", prevElement);
-            if (this.currentElement) this.notify(e, "mouseenter");
-          }
           this.notify(e, "pointermove");
         }
       },

@@ -62,30 +62,25 @@ export class Select extends Group {
 
   select(children: Array<Element>) {
     this.selectEls = children;
-    //TODO 这里后面改为在怎么在走一次checkhit来让内部自己去判断当前control是什么
-    //鼠标是什么状态
-    // this.currentControl = null as any;
-    // this.hoverElement = null;
-    // this.root.container.style.cursor = "default";
-
-    // this.root.checkHit();
+    this.currentControl = null as any;
+    this.hoverElement = null;
 
     if (!this.selectEls.length) {
       this.setOptions({ width: 0, height: 0 });
-      return;
+    } else {
+      const rect = makeBoundingBoxFromPoints(
+        this.selectEls.map((v) => v.getCoords()).flat(1)
+      );
+      this.setOptions({
+        ...rect,
+        angle: 0,
+        scaleX: 1,
+        scaleY: 1,
+        skewX: 0,
+        skewY: 0
+      });
+      this.snapshotChildren();
     }
-    const rect = makeBoundingBoxFromPoints(
-      this.selectEls.map((v) => v.getCoords()).flat(1)
-    );
-    this.setOptions({
-      ...rect,
-      angle: 0,
-      scaleX: 1,
-      scaleY: 1,
-      skewX: 0,
-      skewY: 0
-    });
-    this.snapshotChildren();
   }
 
   delete() {
@@ -95,9 +90,9 @@ export class Select extends Group {
       el.parent?.removeChild(el);
     });
     this.select([]);
+    //TODO 现在只是checkhit,还需要发送一个fakeclick事件
+    this.root.nextTick(() => this.root.checkHit());
     this.root.history.commit();
-    this.root.requestRender();
-    this.root.container.style.cursor = "default";
   }
 
   // --- Lifecycle ---

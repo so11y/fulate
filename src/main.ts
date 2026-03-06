@@ -191,14 +191,14 @@ root.append(
                   });
                 }
               }),
-              new Image({
-                left: col(3),
-                top: START_Y,
-                width: ITEM_SIZE,
-                height: ITEM_SIZE,
-                src: "https://picsum.photos/200/200",
-                radius: 10
-              }),
+              // new Image({
+              //   left: col(3),
+              //   top: START_Y,
+              //   width: ITEM_SIZE,
+              //   height: ITEM_SIZE,
+              //   src: "https://picsum.photos/200/200",
+              //   radius: 10
+              // }),
 
               // --- 第二行：文本与功能组件 (Row 1) ---
               new Text({

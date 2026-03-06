@@ -158,7 +158,7 @@ export class HistoryManager {
       }
     }
 
-    this.root.nextTick().then(() => {
+    this.root.nextTick(() => {
       this.root.find<Select>("select")?.select(selectedElements);
     });
   }

@@ -86,12 +86,6 @@ export class Layer extends Rectangle {
   syncRbush(node: any) {
     if (node.isLayer || node.type === "root") return;
     this.pendingSyncNodes.add(node);
-    if (this.syncTimeout === null) {
-      this.syncTimeout = requestAnimationFrame(() => {
-        this.flushSyncNodes();
-        this.syncTimeout = null;
-      }) as any;
-    }
   }
 
   removeRbush(node: any) {

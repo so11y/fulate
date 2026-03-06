@@ -184,16 +184,18 @@ export function setupInteraction(select: Select): () => void {
   };
 
   const mouseenter = (e: FulateEvent) => {
-    if (!checkElement(e.detail.target, select)) {
-      select.hoverElement = null;
-      return;
-    }
-    select.hoverElement = e.detail.target;
+    console.log("mouseenter", e.detail.target);
+    // if (!checkElement(e.detail.target, select)) {
+    //   select.hoverElement = null;
+    //   return;
+    // }
+    // select.hoverElement = e.detail.target;
   };
 
-  const mouseleave = () => {
-    select.hoverElement = null;
-    select.markDirty();
+  const mouseleave = (e: FulateEvent) => {
+    console.log("mouseleave", e.detail.target);
+    // select.hoverElement = null;
+    // select.markDirty();
   };
 
   select.root.addEventListener("pointerdown", pointerdown);

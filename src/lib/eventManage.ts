@@ -14,7 +14,7 @@ export type EventName =
   | "mouseleave"
   | "wheel"
   | "sizeUpdate";
-  
+
 export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 
 export interface FulateEvent<T = Element> extends Omit<PointerEvent, "detail"> {
@@ -38,7 +38,7 @@ export class EventManage {
 
   notify(eventName: string, event?: Partial<FulateEvent["detail"]>) {
     if (eventName === "mouseenter") {
-      if (this.hasMouseEnter) {
+      if (this.hasMouseEnter && event.target !== this.target) {
         return;
       }
 
