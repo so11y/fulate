@@ -134,14 +134,19 @@ export class Root extends Node {
   }
 
   /**
-   * 碰撞检测
+   * 碰撞检测，不传 point 时默认使用 lastPointerPos 换算
    */
-  checkHit(e: PointerEvent | MouseEvent) {
+  checkHit(point?: Point) {
     if (this.isSpacePressed || this.isPanning) return;
 
     if (this.hasLockPoint) return;
 
-    const point = this.getLogicalPosition(e.clientX, e.clientY);
+    if (!point) {
+      point = this.getLogicalPosition(
+        this.lastPointerPos.x,
+        this.lastPointerPos.y
+      );
+    }
 
     this.currentElement = undefined;
 
@@ -216,7 +221,6 @@ export class Root extends Node {
       "pointermove",
       (e) => {
         if (this.isPanning) {
-          // 执行视口平移
           const dx = e.clientX - this.lastPointerPos.x;
           const dy = e.clientY - this.lastPointerPos.y;
           this.viewport.x += dx;
@@ -226,9 +230,10 @@ export class Root extends Node {
           this.dispatchEvent(new CustomEvent("translation"));
           this.requestRender();
         } else {
-          // 执行正常的元素交互检测
+          this.lastPointerPos = { x: e.clientX, y: e.clientY };
+
           const prevElement = this.currentElement;
-          this.checkHit(e);
+          this.checkHit();
 
           // 处理 cursor 切换
           if (this.isSpacePressed) {
@@ -264,14 +269,13 @@ export class Root extends Node {
       (e) => {
         if (e.button !== 0) return; // 仅左键
 
+        this.lastPointerPos = { x: e.clientX, y: e.clientY };
+
         if (this.isSpacePressed) {
-          // 进入平移模式
           this.isPanning = true;
-          this.lastPointerPos = { x: e.clientX, y: e.clientY };
           this.container.setPointerCapture(e.pointerId);
         } else {
-          // 正常交互
-          this.checkHit(e);
+          this.checkHit();
           this.hasLockPoint = true;
           this.notify(e, "pointerdown");
         }
@@ -318,8 +322,8 @@ export class Root extends Node {
 
         this.requestRender();
 
-        // 缩放后重新计算 hit
-        this.checkHit(e);
+        this.lastPointerPos = { x: e.clientX, y: e.clientY };
+        this.checkHit();
       },
       { signal, passive: false }
     );

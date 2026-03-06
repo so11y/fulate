@@ -64,9 +64,11 @@ export class Select extends Group {
     this.selectEls = children;
     //TODO 这里后面改为在怎么在走一次checkhit来让内部自己去判断当前control是什么
     //鼠标是什么状态
-    this.currentControl = null as any;
-    this.hoverElement = null;
-    this.root.container.style.cursor = "default";
+    // this.currentControl = null as any;
+    // this.hoverElement = null;
+    // this.root.container.style.cursor = "default";
+
+    // this.root.checkHit();
 
     if (!this.selectEls.length) {
       this.setOptions({ width: 0, height: 0 });
@@ -133,8 +135,8 @@ export class Select extends Group {
     const schema = this.getActiveSchema();
     const el = this.selectEls.length === 1 ? this.selectEls[0] : null;
     super.setCoords();
-    this.controlCoords = schema.controls.map((cp) =>
-      new Point(finalMatrix.transformPoint(cp.localPosition(el, dim)))
+    this.controlCoords = schema.controls.map(
+      (cp) => new Point(finalMatrix.transformPoint(cp.localPosition(el, dim)))
     );
     return this;
   }
