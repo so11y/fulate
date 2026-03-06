@@ -172,6 +172,8 @@ export class Layer extends Rectangle {
 
   notInDitry() {
     const rootLayer = this.inject("layer-root");
+    //这里到时候在 super.paint中考虑 如果父节点循环的时候判断
+    //layer是不是已经在root的ditrylaery中，如果在跳过
     if (this.enableDirtyRect && rootLayer.isRenderDitryMode) {
       if (rootLayer !== this || this.dirtyNodes.size === 0) {
         return true;
