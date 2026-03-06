@@ -26,7 +26,6 @@ export class Layer extends Rectangle {
   dirtyNodes = new Set<Element>();
 
   isLayer = true;
-  isRender: boolean = false;
   isRenderDitryMode = false;
 
   private pendingSyncNodes = new Set<Element>();
@@ -47,7 +46,6 @@ export class Layer extends Rectangle {
     this.enableDirtyRect = options?.enableDirtyRect ?? true;
     this.canvasEl = document.createElement("canvas");
     this.ctx = (this.canvasEl as HTMLCanvasElement).getContext("2d")!;
-    this.isRender = false;
   }
 
   mounted() {
@@ -254,7 +252,6 @@ export class Layer extends Rectangle {
 
     this.finalDirtyRect = null as any;
 
-    this.isRender = false;
     this.isRenderDitryMode = false;
   }
 
