@@ -89,7 +89,6 @@ const div1 = new Rectangle({
   radius: 20,
   backgroundColor: "red",
   onclick: (e) => {
-    console.log('---');
     e.detail.target.setOptions({
       backgroundColor: "yellow",
       children: [de]

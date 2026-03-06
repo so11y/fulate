@@ -218,6 +218,7 @@ export class Node extends EventEmitter {
     if (this.id === undefined) {
       this.id = Node.genKey();
     }
+    this._updateSiblings();
     this.dispatchEvent(new CustomEvent("mounted"));
   }
 
@@ -242,7 +243,7 @@ export class Node extends EventEmitter {
     // 递归激活子节点
     this.children?.forEach((child) => {
       linkNode(child, this);
-      (child as any).mount(); // mount 内部会安全调用 activate
+      child.mount(); // mount 内部会安全调用 activate
     });
   }
 
@@ -301,7 +302,7 @@ export class Node extends EventEmitter {
     this.previousSibling = null;
     this.parent = undefined;
     this._provides = null as any;
-    // this.clearEventListener(); // 如果父类有此方法请取消注释
+    this.clearEventListener();
   }
 
   // ================= 事件与依赖注入 =================
