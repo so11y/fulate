@@ -249,8 +249,8 @@ root.append(
       })
     ]
   }),
-  ruleLayer
-  // editerLayer
+  ruleLayer,
+  editerLayer
 );
 
 // div1.addEventListener("click", (e) => {

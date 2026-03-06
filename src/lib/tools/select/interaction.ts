@@ -186,7 +186,6 @@ export function setupInteraction(select: Select): () => void {
 
   const mouseenter = (e: FulateEvent) => {
     select.hoverElement = e.detail.target;
-    console.log(333);
     select.markDirty();
   };
 
