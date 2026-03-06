@@ -85,14 +85,32 @@ export class Select extends Group {
       originY: "center"
     });
 
-    group.groupEls = [...this.selectEls];
-    group.groupEls.forEach((el) => (el.groupParent = group));
+    const children = [...this.selectEls];
+    group.groupEls = children;
+    children.forEach((el) => (el.groupParent = group));
 
     parent.append(group);
     group.snapshotChildren();
 
     this.selectEls = [group as any];
     this.snapshotChildren();
+
+    this.root.history.pushAction(
+      () => {
+        children.forEach((el) => (el.groupParent = null));
+        group.parent?.removeChild(group as any);
+        this.select(children);
+        this.root.requestRender();
+      },
+      () => {
+        group.groupEls = children;
+        children.forEach((el) => (el.groupParent = group));
+        parent.append(group);
+        group.snapshotChildren();
+        this.select([group as any]);
+        this.root.requestRender();
+      }
+    );
   }
 
   unGroup() {
@@ -101,12 +119,17 @@ export class Select extends Group {
     }
 
     const group = this.selectEls[0] as Group;
+    const groupParent = group.parent;
+    const groupIndex = groupParent?.children
+      ? groupParent.children.indexOf(group as any)
+      : -1;
+    const children = [...group.groupEls];
 
-    group.groupEls.forEach((el) => (el.groupParent = null));
-    this.selectEls = [...group.groupEls] as any;
+    children.forEach((el) => (el.groupParent = null));
+    this.selectEls = children as any;
 
-    if (group.parent) {
-      group.parent.removeChild(group as any);
+    if (groupParent) {
+      groupParent.removeChild(group as any);
     }
 
     const rect = makeBoundingBoxFromPoints(
@@ -121,6 +144,34 @@ export class Select extends Group {
       skewY: 0
     });
     this.snapshotChildren();
+
+    this.root.history.pushAction(
+      () => {
+        group.groupEls = children;
+        children.forEach((el) => (el.groupParent = group));
+        if (groupParent) {
+          if (groupIndex >= 0 && groupIndex < groupParent.children.length) {
+            groupParent.insertBefore(
+              group as any,
+              groupParent.children[groupIndex]
+            );
+          } else {
+            groupParent.append(group);
+          }
+        }
+        group.snapshotChildren();
+        this.select([group as any]);
+        this.root.requestRender();
+      },
+      () => {
+        children.forEach((el) => (el.groupParent = null));
+        if (group.parent) {
+          group.parent.removeChild(group as any);
+        }
+        this.select(children);
+        this.root.requestRender();
+      }
+    );
   }
 
   select(children: Array<Element>) {
@@ -149,8 +200,11 @@ export class Select extends Group {
        * 只考虑第一层和第二层的元素
        * 如果是第二级别的元素，但是不是直接第二级的不考虑
        */
-      if (object === this || object.groupParent) {
+      if (object === this) {
         return;
+      }
+      if (object.groupParent) {
+        return checkElementIntersects(object.groupParent);
       }
       if (object.inject("layer").type !== "artboard") {
         if (

@@ -18,9 +18,16 @@ interface HistoryRecord {
   type: "modify" | "delete" | "create";
 }
 
+interface ActionRecord {
+  undo: () => void;
+  redo: () => void;
+}
+
+type HistoryEntry = HistoryRecord[] | ActionRecord;
+
 export class HistoryManager {
-  private undoStack: HistoryRecord[][] = [];
-  private redoStack: HistoryRecord[][] = [];
+  private undoStack: HistoryEntry[] = [];
+  private redoStack: HistoryEntry[] = [];
   private snapshotMap = new Map<Element, ElementState>();
   private limit: number;
   root?: Root;
@@ -92,6 +99,14 @@ export class HistoryManager {
     this.snapshotMap.clear();
   }
 
+  pushAction(undo: () => void, redo: () => void) {
+    this.undoStack.push({ undo, redo });
+    if (this.undoStack.length > this.limit) {
+      this.undoStack.shift();
+    }
+    this.redoStack = [];
+  }
+
   private insertElementAt(parent: Node, element: Element, index: number) {
     if (!parent.children) return;
     if (index >= parent.children.length || index === -1) {
@@ -151,8 +166,17 @@ export class HistoryManager {
     });
   }
 
-  // 2. Undo 和 Redo 变成了简单的配置调用
   undo() {
+    const entry = this.undoStack[this.undoStack.length - 1];
+    if (!entry) return;
+
+    if (!Array.isArray(entry)) {
+      this.undoStack.pop();
+      this.redoStack.push(entry);
+      entry.undo();
+      return;
+    }
+
     this.executeHistory({
       sourceStack: this.undoStack,
       targetStack: this.redoStack,
@@ -166,6 +190,16 @@ export class HistoryManager {
   }
 
   redo() {
+    const entry = this.redoStack[this.redoStack.length - 1];
+    if (!entry) return;
+
+    if (!Array.isArray(entry)) {
+      this.redoStack.pop();
+      this.undoStack.push(entry);
+      entry.redo();
+      return;
+    }
+
     this.executeHistory({
       sourceStack: this.redoStack,
       targetStack: this.undoStack,
