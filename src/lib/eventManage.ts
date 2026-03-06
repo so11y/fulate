@@ -2,7 +2,7 @@ import { CustomEvent } from "../util/event";
 import { Point } from "../util/point";
 import type { Element } from "./node/element";
 
-export type UserCanvasEvent = Event & { detail: CanvasPoint };
+export type UserCanvasEvent = Event & FulateEvent;
 
 export type EventName =
   | "pointermove"
@@ -14,6 +14,7 @@ export type EventName =
   | "mouseleave"
   | "wheel"
   | "sizeUpdate";
+  
 export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 
 export interface FulateEvent<T = Element> extends Omit<PointerEvent, "detail"> {
@@ -24,19 +25,9 @@ export interface FulateEvent<T = Element> extends Omit<PointerEvent, "detail"> {
     buttons: number;
     deltaX: number;
     deltaY: number;
+    data?: any;
+    ctrlKey?: boolean;
   };
-}
-
-export interface CanvasPoint<T = Element> {
-  target: T;
-  x: number;
-  y: number;
-  buttons: number;
-  deltaY?: number;
-  deltaX?: number;
-  ctrlKey?: boolean;
-  originalClientX: number;
-  originalClientY: number;
 }
 
 export class EventManage {
@@ -45,7 +36,7 @@ export class EventManage {
   hasUserEvent = false;
   constructor(private target: Element) {}
 
-  notify(eventName: string, event: CanvasPoint) {
+  notify(eventName: string, event?: Partial<FulateEvent["detail"]>) {
     if (eventName === "mouseenter") {
       if (this.hasMouseEnter) {
         return;
@@ -70,7 +61,8 @@ export class EventManage {
         y: event?.y ?? 0,
         buttons: event?.buttons ?? 0,
         deltaY: event?.deltaY ?? 0,
-        deltaX: event?.deltaX ?? 0
+        deltaX: event?.deltaX ?? 0,
+        data: event?.data ?? null
       }
     });
     this.target.dispatchEvent(customEvent);

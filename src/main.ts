@@ -18,13 +18,22 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
   height: window.innerHeight
 });
 
+const de = new Rectangle({
+  width: 20,
+  height: 20,
+  left: 5,
+  top: 5,
+  backgroundColor: "black"
+});
+
 const floorLayer = new Layer({
   children: [
     new Rectangle({
       backgroundColor: "#E5E5E5",
       width: 1920,
       height: 900,
-      silent: true
+      silent: true,
+      children: [de]
     })
   ]
 });
@@ -80,8 +89,10 @@ const div1 = new Rectangle({
   radius: 20,
   backgroundColor: "red",
   onclick: (e) => {
+    console.log('---');
     e.detail.target.setOptions({
-      backgroundColor: "yellow"
+      backgroundColor: "yellow",
+      children: [de]
     });
   }
 });
@@ -99,7 +110,7 @@ const div2 = new Rectangle({
 
 const dev3 = new Rectangle({
   left: 0,
-  top: 0,
+  top: 15,
   width: 30,
   height: 30,
   backgroundColor: "yellow",
@@ -247,6 +258,6 @@ root.append(
 //     .layer.render();
 // });
 
-root.mounted();
+root.mount();
 
 console.log(root, "--");

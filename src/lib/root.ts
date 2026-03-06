@@ -43,9 +43,9 @@ export class Root extends Node {
     this.provide("root", this);
   }
 
-  mounted() {
-    super.mounted();
-    this.mounteded();
+  mount() {
+    super.mount();
+    this.initEvents();
     this.requestRender();
   }
 
@@ -61,10 +61,6 @@ export class Root extends Node {
     if (idx !== -1) {
       this.layers.splice(idx, 1);
     }
-  }
-
-  mounteded() {
-    this.initEvents();
   }
 
   requestRender() {
@@ -340,8 +336,8 @@ export class Root extends Node {
 
     element.eventManage.notify(eventName, {
       ctrlKey: e.ctrlKey,
-      originalClientX: e.clientX,
-      originalClientY: e.clientY,
+      // originalClientX: e.clientX,
+      // originalClientY: e.clientY,
       ...detail,
       target: element
     });

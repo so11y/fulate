@@ -6,31 +6,14 @@ import {
 } from "../../util/event";
 import { Root } from "../root";
 import { Layer } from "../layer";
-import { Element } from "./element";
 
 function linkNode(child: Node, parent: Node) {
   child.parent = parent;
   child._provides = parent._provides ?? parent.root._provides;
 }
 
-function moveNode(child: Node, parent: Node) {
-  child.parent = parent;
-
-  for (let key in parent._provides) {
-    if (Object.hasOwn(child._provides, key)) {
-      delete child._provides[key];
-    }
-  }
-
-  Object.setPrototypeOf(
-    child._provides,
-    parent._provides ?? parent.root._provides
-  );
-}
-
 export class Node extends EventEmitter {
   type = "node";
-
   static uIndex = 1;
   static _uidSeq = 0;
   static genKey(): string {
@@ -39,7 +22,6 @@ export class Node extends EventEmitter {
 
   id!: string;
   uIndex!: number;
-
   parent: this | undefined;
   children: this[] | null = null;
 
@@ -50,6 +32,7 @@ export class Node extends EventEmitter {
   isMounted = false;
   isActiveed = false;
   isUnmounted = false;
+
   isDirtyChild = false;
   isDirtyPaintChild = false;
   isDirty = true;
@@ -59,6 +42,7 @@ export class Node extends EventEmitter {
 
   // 事件管理器
   eventManage = new EventManage(this as any);
+
   _options: any = {};
   _provides: Record<string, any> = {};
 
@@ -91,7 +75,6 @@ export class Node extends EventEmitter {
       p.isDirtyPaintChild = true;
       p = p.parent;
     }
-
     if (this.layer) {
       this.layer.requestRender?.();
     }
@@ -108,27 +91,24 @@ export class Node extends EventEmitter {
   }
 
   _afterMutate<T extends Node>(nodes: T[]) {
-    // 如果当前父节点是活跃的，新增的节点也应该被挂载/激活
-    if (this.isActiveed) {
-      nodes.forEach((child) => {
-        if (child.parent && child.parent !== (this as any)) {
-          child.parent.removeChild(child);
-          moveNode(child, this);
-        }
-        child.mounted(); // mount 内含 active 逻辑
-      });
-    }
+    nodes.forEach((child) => {
+      if (child.parent && child.parent !== (this as any)) {
+        child.parent.removeChild(child);
+      }
+    });
+
     this._updateSiblings();
+
+    if (this.isActiveed) {
+      nodes.forEach((child) => child.mount());
+    }
+
     this.isDirtyChild = true;
     this.isDirtyPaintChild = true;
     this.markChildDirty();
-    if (this.root) {
-      this.dispatchEvent(new CustomEvent("childrenchange"));
-    }
   }
 
   // ================= 结构操作 =================
-
   append<T extends Node>(...children: T[]) {
     if (!this.children) this.children = [];
     const added: T[] = [];
@@ -172,7 +152,6 @@ export class Node extends EventEmitter {
     if (!this.children) return this;
     const idx = this.children.indexOf(oldChild as any);
     if (idx === -1) return this;
-
     this.removeChild(oldChild); // 旧节点失活
     this.children.splice(idx, 0, newChild as any);
     this._afterMutate([newChild]);
@@ -182,6 +161,7 @@ export class Node extends EventEmitter {
   before<T extends Node>(...nodes: T[]) {
     if (!this.parent) return this;
     nodes.forEach((n) => this.parent!.insertBefore(n, this as any));
+    this.eventManage.notify("childrenchange");
     return this;
   }
 
@@ -192,12 +172,13 @@ export class Node extends EventEmitter {
       this.parent!.insertAfter(n, ref);
       ref = n;
     });
+    this.eventManage.notify("childrenchange");
     return this;
   }
 
   /**
-   * 移除节点：仅从父级数组中剥离，并使其失活 (unactive)，不销毁。可以复用。
-   */
+   移除节点：仅从父级数组中剥离，并使其失活 (unactive)，不销毁。可以复用。
+  */
   removeChild<T extends Node>(...children: T[]) {
     if (!this.children) return this;
     children.forEach((child) => {
@@ -211,37 +192,41 @@ export class Node extends EventEmitter {
     this.isDirtyChild = true;
     this.isDirtyPaintChild = true;
     this.markChildDirty();
-    this.dispatchEvent(new CustomEvent("childrenchange"));
+    this.eventManage.notify("childrenchange");
     return this;
   }
 
   // ================= 生命周期 (Lifecycle) =================
-
   /**
-   * 挂载节点 (触发一次 mounted)
-   */
-  mounted() {
+   挂载节点 (触发一次 mounted)
+  */
+  mount() {
     if (this.isUnmounted) return;
-
     if (!this.isMounted) {
-      this.uIndex = Node.uIndex++;
-      if (this.id === undefined) {
-        this.id = Node.genKey();
-      }
-      this.isMounted = true;
-      this.dispatchEvent(new CustomEvent("mounted"));
+      this.mounted();
     }
-
     // 挂载后，自动使其进入活跃状态
     this.activate();
   }
 
-  /**
-   * 激活节点 (对应 Vue 的 onActivated)
-   */
-  activate() {
-    if (this.isActiveed || this.isUnmounted) return;
+  mounted() {
+    if (this.isMounted) {
+      return;
+    }
+    this.isMounted = true;
+    this.uIndex = Node.uIndex++;
+    if (this.id === undefined) {
+      this.id = Node.genKey();
+    }
+    this.dispatchEvent(new CustomEvent("mounted"));
+  }
 
+  /**
+   激活节点 (对应 Vue 的 onActivated)
+  */
+  activate() {
+    // 【重要拦截】这里保证了如果节点自身及其子节点本来就是活跃的，绝对不会被重复激活
+    if (this.isActiveed || this.isUnmounted) return;
     this.isActiveed = true;
 
     // 添加到全局索引
@@ -257,16 +242,15 @@ export class Node extends EventEmitter {
     // 递归激活子节点
     this.children?.forEach((child) => {
       linkNode(child, this);
-      child.mounted(); // mount 内部会安全调用 activate
+      (child as any).mount(); // mount 内部会安全调用 activate
     });
   }
 
   /**
-   * 失活节点 (对应 Vue 的 onDeactivated)
-   */
+   失活节点 (对应 Vue 的 onDeactivated)
+  */
   deactivate() {
     if (!this.isActiveed) return;
-
     this.isActiveed = false;
 
     if (this.key && this.root) {
@@ -275,7 +259,7 @@ export class Node extends EventEmitter {
     if (this.id && this.root?.idElements) {
       this.root.idElements.delete(this.id);
     }
-    this.layer?.removeRbush(this);
+    this.layer?.removeRbush(this as any);
 
     this.dispatchEvent(new CustomEvent("deactivated"));
 
@@ -284,11 +268,10 @@ export class Node extends EventEmitter {
   }
 
   /**
-   * 彻底卸载与销毁 (取代原 distory 方法)
-   */
+   彻底卸载与销毁 (取代原 distory 方法)
+  */
   unmounted() {
     if (this.isUnmounted) return;
-
     // 1. 确保节点处于失活状态
     this.deactivate();
 
@@ -302,10 +285,10 @@ export class Node extends EventEmitter {
       const index = oldParent.children.findIndex((v) => v === this);
       if (index !== -1) {
         oldParent.children.splice(index, 1);
-        oldParent._updateSiblings?.();
+        (oldParent as any)._updateSiblings?.();
         oldParent.isDirtyChild = true;
         this.isDirtyPaintChild = true;
-        oldParent.markChildDirty?.();
+        (oldParent as any).markChildDirty?.();
       }
     }
 
@@ -318,18 +301,17 @@ export class Node extends EventEmitter {
     this.previousSibling = null;
     this.parent = undefined;
     this._provides = null as any;
-    this.clearEventListener();
+    // this.clearEventListener(); // 如果父类有此方法请取消注释
   }
 
   // ================= 事件与依赖注入 =================
-
   addEventListener<T = FulateEvent>(
     type: string,
     callback: (ev: T) => void,
     options?: AddEventListenerOptions
   ) {
     this.eventManage.hasUserEvent = true;
-    return super.addEventListener(type, callback, options);
+    return super.addEventListener(type, callback as any, options);
   }
 
   provide(key: string, value: any) {
