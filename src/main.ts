@@ -69,7 +69,7 @@ window.addEventListener("keydown", (e) => {
   }
 });
 window.addEventListener("keydown", (e) => {
-  e.preventDefault();
+  // e.preventDefault();
   if ((e.ctrlKey || e.metaKey) && e.key === "z") {
     root.history.undo();
   }

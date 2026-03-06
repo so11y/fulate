@@ -112,7 +112,7 @@ function handleControl(select: Select, e: FulateEvent) {
   };
 
   const pointermove = (e: FulateEvent) => {
-    control.callback(select, point, selectPrevState, e);
+    control.onDrag(select, point, selectPrevState, e);
   };
 
   select.root.addEventListener("pointermove", pointermove);

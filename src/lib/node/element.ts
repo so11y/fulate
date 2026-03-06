@@ -120,6 +120,11 @@ export class Element extends Transformable {
     this.isDirtyPaintChild = false;
   }
 
+  /** Override to provide custom control points for selection. */
+  getControlSchema(): any {
+    return null;
+  }
+
   hasPointHint(point: Point): boolean {
     if (!this.visible) {
       return false;
@@ -203,9 +208,6 @@ export class Element extends Transformable {
     return this.setOptions(options, true);
   }
 
-  /**
-   * 快速更新变换属性（用于高频操作如拖拽）
-   */
   quickSetOptions(options: BaseElementOption) {
     Object.assign(this, options);
     this.markDirty();
@@ -240,19 +242,4 @@ export class Element extends Transformable {
 
     return json;
   }
-
-  // unmounted(): void {
-  //   const m = this._ownMatrixCache;
-  //   m.a = 1;
-  //   m.b = 0;
-  //   m.c = 0;
-  //   m.d = 1;
-  //   m.e = 0;
-  //   m.f = 0;
-  //   this._coords = null;
-  //   this._snapPoints = null;
-  //   this._boundingRectCache = null;
-  //   this._lastBoundingRect = null;
-  //   super.unmounted();
-  // }
 }

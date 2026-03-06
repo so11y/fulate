@@ -1,6 +1,6 @@
 import { makeBoundingBoxFromPoints, Point } from "../../../util/point";
 import { BaseElementOption, Element } from "../../node/element";
-import { Controls } from "./controls";
+import { DEFAULT_RECT_SCHEMA, type ControlSchema } from "./controls";
 import { Snap } from "./snap";
 import { Group } from "../../ui/group";
 import { Node } from "../../node/node";
@@ -17,7 +17,6 @@ export class Select extends Group {
   snapAngle = 45;
   snapThreshold = 5;
   controlCoords: Array<Point>;
-  targetKey = "workspace";
   hoverElement: Element | null = null;
 
   private _cleanupInteraction?: () => void;
@@ -45,37 +44,13 @@ export class Select extends Group {
     return this.root.keyElmenet?.get("snap") as Snap;
   }
 
-  get targetElement(): Node {
-    return this.root.keyElmenet.get(this.targetKey) ?? this.root;
-  }
-
-  forEachTarget(callback: (el: Element) => void) {
-    this.targetElement.children?.forEach((artboard) => {
-      artboard.children?.forEach((child: any) => {
-        if (child !== this) {
-          if (!child.isLayer) {
-            if (!child.groupParent) callback(child);
-          } else {
-            child.children.forEach((child: any) => {
-              if (!child.groupParent) callback(child);
-            });
-          }
-        }
-      });
-    });
-  }
-
-  /** Delegates to parent Group's hasPointHint (body-only check, no controls). */
   bodyHasPoint(point: Point): boolean {
     return super.hasPointHint(point);
   }
 
-  /** Exposes parent Group's getCoords for use by interaction module. */
   getParentCoords(): Point[] {
     return super.getCoords();
   }
-
-  // --- Delegation ---
 
   doGroup() {
     doGroup(this);
@@ -134,7 +109,15 @@ export class Select extends Group {
   }
 
   hasPointHint(hintPoint: Point) {
+    console.log(11);
     return selectHitTest(this, hintPoint);
+  }
+
+  // --- Schema ---
+
+  getActiveSchema(): ControlSchema {
+    if (this.selectEls.length !== 1) return DEFAULT_RECT_SCHEMA;
+    return this.selectEls[0].getControlSchema?.() ?? DEFAULT_RECT_SCHEMA;
   }
 
   // --- Coordinates & Bounds ---
@@ -142,12 +125,12 @@ export class Select extends Group {
   setCoords(): this {
     const finalMatrix = this.getOwnMatrix();
     const dim = this._getTransformedDimensions();
+    const schema = this.getActiveSchema();
+    const el = this.selectEls.length === 1 ? this.selectEls[0] : null;
     super.setCoords();
-    this.controlCoords = Controls.map((control) => {
-      const x = control.x * dim.x + (control.offsetX ?? 0);
-      const y = control.y * dim.y + (control.offsetY ?? 0);
-      return new Point(finalMatrix.transformPoint(new Point(x, y)));
-    });
+    this.controlCoords = schema.controls.map((cp) =>
+      new Point(finalMatrix.transformPoint(cp.localPosition(el, dim)))
+    );
     return this;
   }
 

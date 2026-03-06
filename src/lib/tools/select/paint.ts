@@ -24,6 +24,11 @@ function drawElementOutline(
 }
 
 function drawSelectionBox(select: Select, ctx: CanvasRenderingContext2D) {
+  const schema = select.getActiveSchema();
+  if (schema.paintFrame) {
+    schema.paintFrame(select, ctx);
+    return;
+  }
   const coords = select.getCoords();
   const scale = select.root.viewport.scale;
   drawElementOutline(ctx, coords, scale, STROKE_COLOR);
@@ -39,17 +44,33 @@ function drawChildBorders(select: Select, ctx: CanvasRenderingContext2D) {
 
 function drawControlPoints(select: Select, ctx: CanvasRenderingContext2D) {
   if (!select.selectEls.length) return;
+  const schema = select.getActiveSchema();
   const scale = select.root.viewport.scale;
   const size = select.controlSize / scale;
   const angle = degreesToRadians(select.angle ?? 0);
+  const coords = select.getControlCoords();
 
-  for (const point of select.getControlCoords()) {
+  for (let i = 0; i < coords.length; i++) {
+    const point = coords[i];
+    const cp = schema.controls[i];
+
+    if (schema.paintControl) {
+      schema.paintControl(ctx, point, cp, scale, angle);
+      continue;
+    }
+
     ctx.save();
     ctx.translate(point.x, point.y);
     ctx.rotate(angle);
     ctx.beginPath();
     ctx.fillStyle = STROKE_COLOR;
-    ctx.roundRect(-size / 2, -size / 2, size, size, 1 / scale);
+
+    if (cp.shape === "circle") {
+      ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+    } else {
+      ctx.roundRect(-size / 2, -size / 2, size, size, 1 / scale);
+    }
+
     ctx.fill();
     ctx.restore();
   }

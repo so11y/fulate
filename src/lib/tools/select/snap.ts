@@ -11,6 +11,7 @@
  */
 
 import { BaseElementOption, Element } from "../../node/element";
+import { Node } from "../../node/node";
 
 interface Point {
   x: number;
@@ -49,8 +50,24 @@ export class Snap extends Element {
   private cacheX: Float32Array = new Float32Array(0);
   private cacheY: Float32Array = new Float32Array(0);
 
-  private get selectTool() {
-    return this.root.keyElmenet.get("select") as import("./index").Select;
+  get targetElement(): Node {
+    return this.root.keyElmenet.get("workspace") ?? this.root;
+  }
+
+  forEachTarget(callback: (el: Element) => void) {
+    this.targetElement.children?.forEach((artboard) => {
+      artboard.children?.forEach((child: any) => {
+        if (child !== this) {
+          if (!child.isLayer) {
+            if (!child.groupParent) callback(child);
+          } else {
+            child.children.forEach((child: any) => {
+              if (!child.groupParent) callback(child);
+            });
+          }
+        }
+      });
+    });
   }
 
   start(excludeEls: Element[]) {
@@ -62,7 +79,7 @@ export class Snap extends Element {
     const yData: number[] = [];
     const excludes = new Set(excludeEls);
 
-    this.selectTool.forEachTarget((node) => {
+    this.forEachTarget((node) => {
       if (excludes.has(node)) return;
       const snapPoints = node.getSnapPoints();
       if (!snapPoints || snapPoints.length === 0) return;

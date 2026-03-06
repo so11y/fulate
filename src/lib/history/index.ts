@@ -93,7 +93,6 @@ export class HistoryManager {
         this.undoStack.shift();
       }
       this.redoStack = [];
-      console.log("History saved:", changes.length, "changes");
     }
 
     this.snapshotMap.clear();
