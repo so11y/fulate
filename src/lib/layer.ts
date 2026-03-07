@@ -18,7 +18,6 @@ export class Layer extends Rectangle {
   ctx: CanvasRenderingContext2D;
   zIndex: number;
   enableDirtyRect: boolean = true;
-  breakDirtyRectCheck = true;
   rbush = new RBush<RBushItem>();
 
   finalDirtyRects: RectPoint[] | null = null;
@@ -29,7 +28,6 @@ export class Layer extends Rectangle {
   isRenderDitryMode = false;
 
   private pendingSyncNodes = new Set<Element>();
-  private syncTimeout: number | null = null;
 
   private static GRID_COLS = 3;
   private static GRID_ROWS = 3;
@@ -53,9 +51,6 @@ export class Layer extends Rectangle {
   }
 
   mounted() {
-    if (!this.inject("layer-root")) {
-      this.provide("layer-root", this);
-    }
     this.provide("layer", this);
     super.mounted();
     const root = this.root!;
@@ -169,27 +164,10 @@ export class Layer extends Rectangle {
   }
 
   notInDitry() {
-    if (!this.enableDirtyRect) {
-      return false;
-    }
-    if (this.isRenderDitryMode === false || this.dirtyNodes.size) {
-      return false;
-    }
-
-      // if(this.root._pendingLayers.has(this)){
-
-      // }
-      // return  false;
+    if (this.root?._pendingLayers.has(this)) return false;
+    if (!this.enableDirtyRect) return false;
+    if (this.dirtyNodes.size) return false;
     return true;
-    // const rootLayer = this.inject("layer-root");
-    // //这里到时候在 super.paint中考虑 如果父节点循环的时候判断
-    // //layer是不是已经在root的ditrylaery中，如果在跳过
-    // if (this.enableDirtyRect && rootLayer.isRenderDitryMode) {
-    //   if (rootLayer !== this || this.dirtyNodes.size === 0) {
-    //     return true;
-    //   }
-    // }
-    // return false;
   }
 
   flushUpdate() {

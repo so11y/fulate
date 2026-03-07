@@ -11,7 +11,6 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   visible?: boolean;
   selectctbale?: boolean;
   silent?: boolean;
-  breakDirtyRectCheck?: boolean;
 
   onclick?: (e: FulateEvent<T>) => any;
   onpointermove?: (e: FulateEvent<T>) => any;
@@ -36,7 +35,6 @@ export class Element extends Transformable {
   cursor?: string;
   visible: boolean = true;
   selectctbale?: boolean;
-  breakDirtyRectCheck = false;
   groupParent?: any;
   declare children: this[];
   declare parent: this;
@@ -93,11 +91,7 @@ export class Element extends Transformable {
 
   notInDitry() {
     if (this.isDirtyPaintChild) return false;
-    if (
-      !this.breakDirtyRectCheck &&
-      this.layer.finalDirtyRects &&
-      this.layer.finalDirtyRects.length > 0
-    ) {
+    if (this.layer.finalDirtyRects && this.layer.finalDirtyRects.length > 0) {
       const bound = this.getBoundingRect();
       const hit = this.layer.finalDirtyRects.some((r) =>
         Intersection.intersectRect(bound, r)
@@ -113,6 +107,9 @@ export class Element extends Transformable {
     if (this.children) {
       for (let i = 0; i < this.children.length; i++) {
         const child = this.children[i];
+        if ((child as any).isLayer && this.root?._pendingLayers.has(child as any)) {
+          continue;
+        }
         if (child.hasInView()) {
           child.paint(ctx);
         }
@@ -225,8 +222,7 @@ export class Element extends Transformable {
       radius: this.radius,
       cursor: this.cursor,
       selectctbale: this.selectctbale,
-      silent: this.silent,
-      breakDirtyRectCheck: this.breakDirtyRectCheck
+      silent: this.silent
     } as any;
 
     if (includeChildren && this.children && this.children.length > 0) {
