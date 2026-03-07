@@ -113,9 +113,22 @@ const dev3 = new Rectangle({
   height: 30,
   backgroundColor: "#000000",
   onclick: (e) => {
-    e.detail.target.animate({
-      backgroundColor: "#523535",
-    });
+    e.detail.target.animate(
+      {
+        left: 100,
+        angle: 10,
+        backgroundColor: "#523535"
+      },
+      {
+        onUpdate(e) {
+          //onUpdate之后raf还没执行所以矩阵没更新,如果需要selct同步需要等待下一次
+          e.root.nextTick(() => e.root.find<Select>("select").select([e]));
+        }
+        // onComplete(e) {
+        // e.root.find<Select>("select").select([e]);
+        // }
+      }
+    );
   }
 });
 

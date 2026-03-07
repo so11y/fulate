@@ -3,6 +3,7 @@ import { Point } from "../../util/point";
 import { FulateEvent } from "../../util/event";
 import { Transformable, TransformableOptions } from "./transformable";
 import { Tween, Easing } from "@tweenjs/tween.js";
+import { ColorUtil } from "../../util/color";
 
 export interface BaseElementOption<T = Element> extends TransformableOptions {
   key?: string;
@@ -28,13 +29,14 @@ export const EVENT_KEYS = [
   "onpointerup"
 ];
 
-export interface AnimateOptions {
-  duration: number;
+export interface AnimateOptions<T = any> {
+  duration?: number;
   easing?: (amount: number) => number;
   delay?: number;
   repeat?: number;
   yoyo?: boolean;
-  onComplete?: () => void;
+  onComplete?: (v: T) => void;
+  onUpdate?: (v: T) => void;
 }
 
 export class Element extends Transformable {
@@ -219,12 +221,42 @@ export class Element extends Transformable {
   }
 
   animate(
-    to: Partial<TransformableOptions & { backgroundColor?: string }>,
-    options?: AnimateOptions
-  ): Promise<void> & { tween: Tween<Element> } {
-    const tween = new Tween(this as Element, this.layer.tweenGroup)
-      .to(to as any, options?.duration ?? 300)
-      .onUpdate(() => this.markDirty());
+    to: Partial<
+      TransformableOptions & { backgroundColor?: string; color?: string }
+    >,
+    options?: AnimateOptions<this>
+  ): Promise<void> & { tween: Tween<any> } {
+    const startState: any = {};
+    const endState: any = {};
+
+    for (const key in to) {
+      const isColor = key.toLowerCase().includes("color");
+      const targetValue = (to as any)[key];
+      const currentValue = (this as any)[key];
+
+      if (isColor) {
+        startState[key] = ColorUtil.parse(currentValue);
+        endState[key] = ColorUtil.parse(targetValue);
+      } else {
+        startState[key] = currentValue ?? 0;
+        endState[key] = targetValue;
+      }
+    }
+
+    const tween = new Tween(startState, this.layer.tweenGroup)
+      .to(endState, options?.duration ?? 300)
+      .onUpdate(() => {
+        for (const key in to) {
+          const isColor = key.toLowerCase().includes("color");
+          (this as any)[key] = isColor
+            ? ColorUtil.format(startState[key])
+            : startState[key];
+        }
+        this.markDirty();
+        if (options?.onUpdate) {
+          options.onUpdate(this as any); // 把当前元素抛出去给用户用
+        }
+      });
 
     if (options?.easing) tween.easing(options.easing);
     if (options?.delay) tween.delay(options.delay);
@@ -240,14 +272,14 @@ export class Element extends Transformable {
     const promise = new Promise<void>((resolve) => {
       tween.onComplete(() => {
         cleanup();
-        options?.onComplete?.();
+        options?.onComplete?.(this);
         resolve();
       });
       tween.onStop(() => {
         cleanup();
         resolve();
       });
-    }) as Promise<void> & { tween: Tween<Element> };
+    }) as Promise<void> & { tween: Tween<any> };
 
     promise.tween = tween;
 
