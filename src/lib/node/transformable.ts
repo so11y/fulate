@@ -353,7 +353,9 @@ export class Transformable extends Node {
     this.isDirty = true;
     this._coords = null;
     this._snapPoints = null;
-    this._lastBoundingRect = cloneDeep(this._boundingRectCache);
+    this._lastBoundingRect = {
+      ...this._boundingRectCache
+    };
     this._boundingRectCache = null;
     this._inverseOwnMatrixCache = null;
     this.markChildDirty();

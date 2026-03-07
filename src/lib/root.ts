@@ -69,7 +69,10 @@ export class Root extends Node {
   }
 
   requestRender() {
-    this.layers.forEach((layer) => layer.requestRender());
+    this.layers.forEach((layer) => {
+      layer.dirtyNodes.clear();
+      layer.requestRender();
+    });
   }
 
   scheduleLayerRender(layer: Layer) {

@@ -187,6 +187,7 @@ export class Layer extends Rectangle {
       this.isRenderDitryMode = true;
 
       const m = this.root.getViewPointMtrix();
+
       const dpr = window.devicePixelRatio || 1;
       const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
 
