@@ -108,13 +108,13 @@ const div2 = new Rectangle({
 
 const dev3 = new Rectangle({
   left: 0,
-  top: 0,
+  top: 15,
   width: 30,
   height: 30,
-  backgroundColor: "yellow",
+  backgroundColor: "#000000",
   onclick: (e) => {
-    e.detail.target.setOptions({
-      backgroundColor: "yellow"
+    e.detail.target.animate({
+      backgroundColor: "#523535",
     });
   }
 });
@@ -129,128 +129,128 @@ const GAP = 20; // 标准间距
 const col = (n) => START_X + (ITEM_SIZE + GAP) * n;
 
 root.append(
-  // floorLayer,
+  floorLayer,
   new Workspace({
     width: 1920,
     height: 900,
     children: [
       new Artboard({
         children: [
-          // div1
-          // div2,
-          dev3
+          div1,
+          div2,
+          dev3, // 保持原有引用
 
-          // // // --- 第一行：基础几何图形与图片 (Row 0) ---
-          // new Layer({
-          //   zIndex: 2,
-          //   enableDirtyRect: true,
-          //   children: [
-          //     new Rectangle({
-          //       left: col(0),
-          //       top: START_Y,
-          //       width: ITEM_SIZE,
-          //       height: ITEM_SIZE,
-          //       backgroundColor: "pink",
-          //       onclick(e) {
-          //         e.detail.target.provide("qqq", 1);
-          //         console.log(2);
-          //       },
-          //       children: [
-          //         new Rectangle({
-          //           left: 10,
-          //           top: 20,
-          //           width: 30,
-          //           height: 70,
-          //           backgroundColor: "blue",
-          //           onclick: (e) => {
-          //             console.log(e.detail.target.inject("qqq"), "--");
-          //             e.detail.target.setOptions({
-          //               left: col(0) + 20,
-          //               backgroundColor: "blue"
-          //             });
-          //           }
-          //         })
-          //       ]
-          //     }),
-          //     new Circle({
-          //       left: col(4),
-          //       top: START_Y,
-          //       width: ITEM_SIZE,
-          //       height: ITEM_SIZE,
-          //       backgroundColor: "green",
-          //       onclick: (e) => {
-          //         e.detail.target.setOptions({
-          //           backgroundColor: "yellow"
-          //         });
-          //       }
-          //     }),
-          //     new Triangle({
-          //       left: col(2),
-          //       top: START_Y,
-          //       width: ITEM_SIZE,
-          //       height: ITEM_SIZE,
-          //       backgroundColor: "orange",
-          //       onclick: (e) => {
-          //         e.detail.target.setOptions({
-          //           backgroundColor: "yellow"
-          //         });
-          //       }
-          //     }),
-          //     new Image({
-          //       left: col(3),
-          //       top: START_Y,
-          //       width: ITEM_SIZE,
-          //       height: ITEM_SIZE,
-          //       src: "https://picsum.photos/200/200",
-          //       radius: 10
-          //     }),
+          // // --- 第一行：基础几何图形与图片 (Row 0) ---
+          new Layer({
+            zIndex: 2,
+            enableDirtyRect: true,
+            children: [
+              new Rectangle({
+                left: col(0),
+                top: START_Y,
+                width: ITEM_SIZE,
+                height: ITEM_SIZE,
+                backgroundColor: "pink",
+                onclick(e) {
+                  e.detail.target.provide("qqq", 1);
+                  console.log(2);
+                },
+                children: [
+                  new Rectangle({
+                    left: 10,
+                    top: 20,
+                    width: 30,
+                    height: 70,
+                    backgroundColor: "blue",
+                    onclick: (e) => {
+                      console.log(e.detail.target.inject("qqq"), "--");
+                      e.detail.target.setOptions({
+                        left: col(0) + 20,
+                        backgroundColor: "blue"
+                      });
+                    }
+                  })
+                ]
+              }),
+              new Circle({
+                left: col(4),
+                top: START_Y,
+                width: ITEM_SIZE,
+                height: ITEM_SIZE,
+                backgroundColor: "green",
+                onclick: (e) => {
+                  e.detail.target.setOptions({
+                    backgroundColor: "yellow"
+                  });
+                }
+              }),
+              new Triangle({
+                left: col(2),
+                top: START_Y,
+                width: ITEM_SIZE,
+                height: ITEM_SIZE,
+                backgroundColor: "orange",
+                onclick: (e) => {
+                  e.detail.target.setOptions({
+                    backgroundColor: "yellow"
+                  });
+                }
+              }),
+              new Image({
+                left: col(3),
+                top: START_Y,
+                width: ITEM_SIZE,
+                height: ITEM_SIZE,
+                src: "https://picsum.photos/200/200",
+                radius: 10
+              }),
 
-          //     // --- 第二行：文本与功能组件 (Row 1) ---
-          //     new Text({
-          //       left: col(0),
-          //       top: START_Y + ITEM_SIZE + GAP, // 第一行下方
-          //       width: ITEM_SIZE,
-          //       height: 50,
-          //       textAlign: "center",
-          //       verticalAlign: "middle",
-          //       backgroundColor: "blue",
-          //       color: "#fff",
-          //       underline: true,
-          //       text: "测试文本"
-          //     }),
+              // --- 第二行：文本与功能组件 (Row 1) ---
+              new Text({
+                left: col(0),
+                top: START_Y + ITEM_SIZE + GAP, // 第一行下方
+                width: ITEM_SIZE,
+                height: 50,
+                textAlign: "center",
+                verticalAlign: "middle",
+                backgroundColor: "blue",
+                color: "#fff",
+                underline: true,
+                text: "测试文本"
+              }),
 
-          //     // 粉色 Flex 容器：放在 Text 右边，保持对齐
-          //     new Div({
-          //       left: col(1),
-          //       top: START_Y + ITEM_SIZE + GAP,
-          //       width: ITEM_SIZE,
-          //       height: ITEM_SIZE,
-          //       display: Display.Flex,
-          //       backgroundColor: "pink",
-          //       justifyContent: Justify.SpaceAround,
-          //       children: [
-          //         new Div({
-          //           width: 50,
-          //           height: 50,
-          //           backgroundColor: "black",
-          //           onclick(e) {
-          //             e.detail.target.setOptions({ width: 10 });
-          //           }
-          //         }),
-          //         new Div({
-          //           width: 10,
-          //           backgroundColor: "red"
-          //         })
-          //       ]
-          //     })
-          //   ]
-          // })
+              // 粉色 Flex 容器：放在 Text 右边，保持对齐
+              new Div({
+                left: col(1),
+                top: START_Y + ITEM_SIZE + GAP,
+                width: ITEM_SIZE,
+                height: ITEM_SIZE,
+                display: Display.Flex,
+                backgroundColor: "pink",
+                justifyContent: Justify.SpaceAround,
+                children: [
+                  new Div({
+                    width: 50,
+                    height: 50,
+                    backgroundColor: "black",
+                    onclick(e) {
+                      e.detail.target.setOptions({ width: 10 });
+                    }
+                  }),
+                  new Div({
+                    width: 10,
+                    backgroundColor: "red"
+                  })
+                ]
+              })
+            ]
+          })
         ]
       })
     ]
-  })
-  // ruleLayer,
-  // editerLayer
+  }),
+  ruleLayer,
+  editerLayer
 );
 
 // div1.addEventListener("click", (e) => {
@@ -262,12 +262,5 @@ root.append(
 // });
 
 root.mount();
-
-setTimeout(() => {
-  console.log(1);
-  dev3.setOptions({
-    backgroundColor: "blue"
-  });
-});
 
 console.log(root, "--");

@@ -3,6 +3,7 @@ import RBush from "rbush";
 import { Rectangle } from "./ui/rectangle";
 import { RectWithCenter, RectPoint } from "./node/transformable";
 import { Point } from "../util/point";
+import { Group } from "@tweenjs/tween.js";
 
 export interface RBushItem {
   minX: number;
@@ -19,6 +20,7 @@ export class Layer extends Rectangle {
   zIndex: number;
   enableDirtyRect: boolean = true;
   rbush = new RBush<RBushItem>();
+  tweenGroup = new Group();
 
   finalDirtyRects: RectPoint[] | null = null;
 

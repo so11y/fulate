@@ -10,6 +10,12 @@ export class Workspace extends Element {
 
   mounted() {
     super.mounted();
-    this.root.nextTick(() => this.root.focusNode(this));
+    this.root.nextTick(() =>
+      this.root.focusNode(this, {
+        animate: {
+          duration: 300
+        }
+      })
+    );
   }
 }

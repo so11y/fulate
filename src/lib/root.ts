@@ -6,6 +6,7 @@ import { Rule } from "./tools/rule";
 import { Point } from "../util/point";
 import { RectWithCenter } from "./node/transformable";
 import { HistoryManager } from "./history";
+import { Tween, Easing, Group } from "@tweenjs/tween.js";
 
 export class Root extends Node {
   type = "root";
@@ -35,6 +36,8 @@ export class Root extends Node {
   private _rafScheduled = false;
   private _nextTickPromise: Promise<void> | null = null;
   private _nextTickResolve: (() => void) | null = null;
+
+  private _viewportTweenGroup = new Group();
 
   constructor(el: HTMLElement, options?: { width?: number; height?: number }) {
     super();
@@ -80,7 +83,17 @@ export class Root extends Node {
     if (this._rafScheduled) return;
     this._rafScheduled = true;
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame((time) => {
+      if (this._viewportTweenGroup.getAll().length > 0) {
+        this._viewportTweenGroup.update(time);
+      }
+
+      for (const l of this.layers) {
+        if (l.tweenGroup.getAll().length > 0) {
+          l.tweenGroup.update(time);
+        }
+      }
+
       for (const l of this._pendingLayers) {
         l.flushUpdate();
       }
@@ -90,8 +103,16 @@ export class Root extends Node {
       for (const l of this._pendingLayers) {
         l.flushPaint();
       }
-      this._rafScheduled = false;
       this._pendingLayers.clear();
+      this._rafScheduled = false;
+
+      const hasActiveTweens =
+        this._viewportTweenGroup.getAll().length > 0 ||
+        this.layers.some((l) => l.tweenGroup.getAll().length > 0);
+
+      if (hasActiveTweens) {
+        this.requestRender();
+      }
 
       const resolve = this._nextTickResolve;
       this._nextTickPromise = null;
@@ -402,7 +423,16 @@ export class Root extends Node {
     });
   }
 
-  focusNode(node: Element, padding = 10) {
+  focusNode(
+    node: Element,
+    {
+      padding = 10,
+      animate
+    }: {
+      padding?: number;
+      animate?: { duration?: number; easing?: (amount: number) => number };
+    }
+  ): Promise<void> {
     const root = this.root;
     const RULER_SIZE = root.find<Rule>("rule")?.rulerSize ?? 0;
     const aabb = node.getBoundingRect();
@@ -417,10 +447,31 @@ export class Root extends Node {
     const visualCenterX = RULER_SIZE + activeWidth / 2;
     const visualCenterY = RULER_SIZE + activeHeight / 2;
 
-    root.viewport.scale = bestScale;
-    root.viewport.x = visualCenterX - aabb.centerX * bestScale;
-    root.viewport.y = visualCenterY - aabb.centerY * bestScale;
+    const targetX = visualCenterX - aabb.centerX * bestScale;
+    const targetY = visualCenterY - aabb.centerY * bestScale;
 
-    root.requestRender();
+    if (!animate) {
+      root.viewport.scale = bestScale;
+      root.viewport.x = targetX;
+      root.viewport.y = targetY;
+      root.requestRender();
+      return Promise.resolve();
+    }
+
+    this._viewportTweenGroup.removeAll();
+
+    const duration = animate.duration ?? 600;
+    const easing = animate.easing ?? Easing.Quadratic.InOut;
+
+    return new Promise<void>((resolve) => {
+      new Tween(root.viewport, this._viewportTweenGroup)
+        .to({ x: targetX, y: targetY, scale: bestScale }, duration)
+        .easing(easing)
+        .onUpdate(() => root.requestRender())
+        .onComplete(() => resolve())
+        .start();
+
+      root.requestRender();
+    });
   }
 }

@@ -2,6 +2,7 @@ import { Intersection } from "../../util/Intersection";
 import { Point } from "../../util/point";
 import { FulateEvent } from "../../util/event";
 import { Transformable, TransformableOptions } from "./transformable";
+import { Tween, Easing } from "@tweenjs/tween.js";
 
 export interface BaseElementOption<T = Element> extends TransformableOptions {
   key?: string;
@@ -27,6 +28,15 @@ export const EVENT_KEYS = [
   "onpointerup"
 ];
 
+export interface AnimateOptions {
+  duration: number;
+  easing?: (amount: number) => number;
+  delay?: number;
+  repeat?: number;
+  yoyo?: boolean;
+  onComplete?: () => void;
+}
+
 export class Element extends Transformable {
   type = "element";
 
@@ -36,6 +46,7 @@ export class Element extends Transformable {
   visible: boolean = true;
   selectctbale?: boolean;
   groupParent?: any;
+  private _activeTweens = new Set<Tween<Element>>();
   declare children: this[];
   declare parent: this;
 
@@ -107,7 +118,10 @@ export class Element extends Transformable {
     if (this.children) {
       for (let i = 0; i < this.children.length; i++) {
         const child = this.children[i];
-        if ((child as any).isLayer && this.root?._pendingLayers.has(child as any)) {
+        if (
+          (child as any).isLayer &&
+          this.root?._pendingLayers.has(child as any)
+        ) {
           continue;
         }
         if (child.hasInView()) {
@@ -202,6 +216,71 @@ export class Element extends Transformable {
     Object.assign(this, options);
     this.markDirty();
     return this;
+  }
+
+  animate(
+    to: Partial<TransformableOptions & { backgroundColor?: string }>,
+    options?: AnimateOptions
+  ): Promise<void> & { tween: Tween<Element> } {
+    const tween = new Tween(this as Element, this.layer.tweenGroup)
+      .to(to as any, options?.duration ?? 300)
+      .onUpdate(() => this.markDirty());
+
+    if (options?.easing) tween.easing(options.easing);
+    if (options?.delay) tween.delay(options.delay);
+    if (options?.repeat != null) tween.repeat(options.repeat);
+    if (options?.yoyo) tween.yoyo(true);
+
+    this._activeTweens.add(tween);
+
+    const cleanup = () => {
+      this._activeTweens.delete(tween);
+    };
+
+    const promise = new Promise<void>((resolve) => {
+      tween.onComplete(() => {
+        cleanup();
+        options?.onComplete?.();
+        resolve();
+      });
+      tween.onStop(() => {
+        cleanup();
+        resolve();
+      });
+    }) as Promise<void> & { tween: Tween<Element> };
+
+    promise.tween = tween;
+
+    tween.start();
+    this.layer.requestRender();
+
+    return promise;
+  }
+
+  stopAnimations() {
+    for (const tween of this._activeTweens) {
+      tween.stop();
+    }
+    this._activeTweens.clear();
+  }
+
+  finishAnimations() {
+    for (const tween of this._activeTweens) {
+      tween.end();
+    }
+  }
+
+  pauseAnimations() {
+    for (const tween of this._activeTweens) {
+      tween.pause();
+    }
+  }
+
+  resumeAnimations() {
+    for (const tween of this._activeTweens) {
+      tween.resume();
+    }
+    this.layer?.requestRender();
   }
 
   toJson(includeChildren = false): BaseElementOption {
