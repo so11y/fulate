@@ -31,7 +31,7 @@ export class Root extends Node {
 
   layers: Layer[] = [];
 
-  private _pendingLayers = new Set<Layer>();
+  _pendingLayers = new Set<Layer>();
   private _rafScheduled = false;
   private _nextTickPromise: Promise<void> | null = null;
   private _nextTickResolve: (() => void) | null = null;
@@ -163,7 +163,7 @@ export class Root extends Node {
 
     if (
       this.currentElement &&
-      (this.currentElement.element?.eventManage.hasUserEvent ||
+      (this.currentElement.element?.hasUserEvent ||
         this.currentElement.element?.cursor)
     ) {
       this.container.style.cursor =
@@ -184,14 +184,14 @@ export class Root extends Node {
 
       if (prevElement?.element && prevElement.element.isActiveed) {
         detail.target = prevElement.element;
-        prevElement.element.eventManage.notify("mouseleave", detail);
+        prevElement.element.dispatchEvent("mouseleave", detail);
       }
       if (
         this.currentElement?.element &&
         this.currentElement.element.isActiveed
       ) {
         detail.target = this.currentElement.element;
-        this.currentElement.element.eventManage.notify("mouseenter", detail);
+        this.currentElement.element.dispatchEvent("mouseenter", detail);
       }
     }
   }
@@ -392,10 +392,8 @@ export class Root extends Node {
       return;
     }
 
-    element.eventManage.notify(eventName, {
+    element.dispatchEvent(eventName, {
       ctrlKey: e.ctrlKey,
-      // originalClientX: e.clientX,
-      // originalClientY: e.clientY,
       ...detail,
       target: element
     });

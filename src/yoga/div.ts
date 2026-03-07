@@ -13,7 +13,7 @@ import Yoga, {
 } from "yoga-layout";
 import { Rectangle as BaseRectangle } from "../lib/ui/rectangle";
 import { BaseElementOption } from "../lib/node/element";
-import { FulateEvent } from "../lib/eventManage";
+import { FulateEvent } from "../util/event";
 import { Node } from "../lib/node/node";
 
 type YogaStyleSize = number | `${number}%`;

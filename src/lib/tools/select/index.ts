@@ -29,7 +29,7 @@ export class Select extends Group {
       originY: "center",
       ...options
     });
-    this.eventManage.hasUserEvent = true;
+    this.hasUserEvent = true;
   }
 
   get selectEls() {

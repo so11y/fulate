@@ -1,8 +1,34 @@
-// types/event-emitter.ts
+export type UserCanvasEvent = Event & FulateEvent;
+
+export type EventName =
+  | "pointermove"
+  | "click"
+  | "pointerdown"
+  | "pointerup"
+  | "contextmenu"
+  | "mouseenter"
+  | "mouseleave"
+  | "wheel"
+  | "sizeUpdate";
+
+export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
+
+export interface FulateEvent<T = any> extends Omit<PointerEvent, "detail"> {
+  detail: {
+    x: number;
+    y: number;
+    target: T;
+    buttons: number;
+    deltaX: number;
+    deltaY: number;
+    data?: any;
+    ctrlKey?: boolean;
+  };
+}
 
 export interface CustomEventInit<T = any> {
   detail?: T;
-  /** 是否处于捕获阶段 */
+  bubbles?: boolean;
   capture?: boolean;
 }
 
@@ -17,7 +43,6 @@ export class CustomEvent<T = any> {
   /** @internal */
   _stopImmediatePropagationFlag = false;
 
-  /** 是否已取消冒泡（对应 stopPropagation，可写以兼容 DOM） */
   get cancelBubble(): boolean {
     return this._stopPropagationFlag;
   }
@@ -25,12 +50,10 @@ export class CustomEvent<T = any> {
     this._stopPropagationFlag = value;
   }
 
-  /** 阻止事件冒泡 */
   stopPropagation(): void {
     this._stopPropagationFlag = true;
   }
 
-  /** 阻止冒泡并阻止同一事件的其他监听器被调用 */
   stopImmediatePropagation(): void {
     this._stopPropagationFlag = true;
     this._stopImmediatePropagationFlag = true;
@@ -39,6 +62,7 @@ export class CustomEvent<T = any> {
   constructor(type: string, eventInitDict?: CustomEventInit<T>) {
     this.type = type;
     this.detail = eventInitDict?.detail as T;
+    this.bubbles = eventInitDict?.bubbles ?? false;
     this.capture = eventInitDict?.capture ?? false;
   }
 }
@@ -46,24 +70,14 @@ export class CustomEvent<T = any> {
 type EventCallback<T = any> = (data: T) => void;
 
 export interface AddEventListenerOptions {
-  /** 是否只触发一次后自动移除 */
   once?: boolean;
-  /** 是否冒泡 */
-  bubbles?: boolean;
-  /** 是否处于捕获阶段 */
-  capture?: boolean;
 }
 
 export class EventEmitter {
+  parent?: EventEmitter;
+
   private events: Map<string, Set<EventCallback>> = new Map();
 
-  /**
-   * 订阅事件
-   * @param eventName 事件名称
-   * @param callback 回调函数
-   * @param options 第三个参数：如 { once: true }、{ bubbles: true }、{ capture: true }
-   * @returns 取消订阅的函数
-   */
   addEventListener<T = any>(
     eventName: string,
     callback: EventCallback<T>,
@@ -87,47 +101,38 @@ export class EventEmitter {
     return () => this.removeEventListener(eventName, handler);
   }
 
-  /**
-   * 取消订阅事件
-   * @param eventName 事件名称
-   * @param callback 回调函数（可选，不传则取消该事件的所有订阅）
-   */
   removeEventListener(eventName: string, callback?: EventCallback): void {
     if (!this.events.has(eventName)) return;
 
     if (callback) {
       const callbacks = this.events.get(eventName)!;
       callbacks.delete(callback);
-
-      // 如果没有回调了，删除事件
       if (callbacks.size === 0) {
         this.events.delete(eventName);
       }
     } else {
-      // 删除该事件的所有订阅
       this.events.delete(eventName);
     }
   }
 
   dispatchEvent<T = any>(event: CustomEvent<T>): void {
-
-    if (!this.events.has(event.type)) return;
-
-    const callbacks = this.events.get(event.type)!;
-
-    for (const callback of callbacks) {
-      try {
-        callback(event);
-        if (event?._stopImmediatePropagationFlag) break;
-      } catch (error) {
-        console.error(`Error in event handler for "${event.type}":`, error);
+    const callbacks = this.events.get(event.type);
+    if (callbacks) {
+      for (const callback of callbacks) {
+        try {
+          callback(event);
+          if (event._stopImmediatePropagationFlag) break;
+        } catch (error) {
+          console.error(`Error in event handler for "${event.type}":`, error);
+        }
       }
+    }
+
+    if (event.bubbles && !event.cancelBubble && this.parent) {
+      this.parent.dispatchEvent(event);
     }
   }
 
-  /**
-   * 清空所有事件订阅
-   */
   clearEventListener(): void {
     this.events.clear();
   }

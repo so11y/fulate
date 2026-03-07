@@ -1,7 +1,7 @@
 import { Point } from "../../../util/point";
 import { degreesToRadians } from "../../../util/radiansDegreesConversion";
 import { Element } from "../../node/element";
-import { FulateEvent } from "../../eventManage";
+import { FulateEvent } from "../../../util/event";
 import { Layer } from "../../layer";
 import type { Select } from "./index";
 

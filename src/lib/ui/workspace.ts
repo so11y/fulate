@@ -10,8 +10,10 @@ export class Workspace extends Element {
 
   mounted() {
     super.mounted();
-    this.nextTick(() => {
-      this.root.focusNode(this);
+    this.root.nextTick(() => {
+      setTimeout(() => {
+        this.root.focusNode(this);
+      });
     });
   }
 }

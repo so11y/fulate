@@ -1,6 +1,6 @@
 import { Intersection } from "../../util/Intersection";
 import { Point } from "../../util/point";
-import { FulateEvent } from "../eventManage";
+import { FulateEvent } from "../../util/event";
 import { Transformable, TransformableOptions } from "./transformable";
 
 export interface BaseElementOption<T = Element> extends TransformableOptions {
@@ -95,13 +95,14 @@ export class Element extends Transformable {
     if (this.isDirtyPaintChild) return false;
     if (
       !this.breakDirtyRectCheck &&
-      this.layer.finalDirtyRect &&
-      !Intersection.intersectRect(
-        this.getBoundingRect(),
-        this.layer.finalDirtyRect
-      )
+      this.layer.finalDirtyRects &&
+      this.layer.finalDirtyRects.length > 0
     ) {
-      return true;
+      const bound = this.getBoundingRect();
+      const hit = this.layer.finalDirtyRects.some((r) =>
+        Intersection.intersectRect(bound, r)
+      );
+      if (!hit) return true;
     }
     return false;
   }
@@ -171,14 +172,6 @@ export class Element extends Transformable {
       top + height > viewTop &&
       top < viewTop + vh
     );
-  }
-
-  nextTick(fn: () => void): void {
-    if (this.layer) {
-      this.layer.nextTick(fn);
-    } else {
-      setTimeout(fn, 0);
-    }
   }
 
   /**

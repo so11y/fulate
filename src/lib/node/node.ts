@@ -1,9 +1,10 @@
-import { EventManage, FulateEvent } from "../eventManage";
 import {
+  FulateEvent,
   AddEventListenerOptions,
   CustomEvent,
   EventEmitter
 } from "../../util/event";
+import { Point } from "../../util/point";
 import { Root } from "../root";
 import { Layer } from "../layer";
 
@@ -25,10 +26,9 @@ export class Node extends EventEmitter {
 
   id!: string;
   uIndex!: number;
-  parent: this | undefined;
+  declare parent: this | undefined;
   children: this[] | null = null;
 
-  // 链表指针
   nextSibling: this | null = null;
   previousSibling: this | null = null;
 
@@ -43,8 +43,8 @@ export class Node extends EventEmitter {
   key!: string;
   silent = false;
 
-  // 事件管理器
-  eventManage = new EventManage(this as any);
+  isHover = false;
+  hasUserEvent = false;
 
   _options: any = {};
   _provides: Record<string, any> = {};
@@ -155,7 +155,7 @@ export class Node extends EventEmitter {
     if (!this.children) return this;
     const idx = this.children.indexOf(oldChild as any);
     if (idx === -1) return this;
-    this.removeChild(oldChild); // 旧节点失活
+    this.removeChild(oldChild);
     this.children.splice(idx, 0, newChild as any);
     this._afterMutate([newChild]);
     return this;
@@ -164,7 +164,7 @@ export class Node extends EventEmitter {
   before<T extends Node>(...nodes: T[]) {
     if (!this.parent) return this;
     nodes.forEach((n) => this.parent!.insertBefore(n, this as any));
-    this.eventManage.notify("childrenchange");
+    this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
@@ -175,7 +175,7 @@ export class Node extends EventEmitter {
       this.parent!.insertAfter(n, ref);
       ref = n;
     });
-    this.eventManage.notify("childrenchange");
+    this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
@@ -188,27 +188,23 @@ export class Node extends EventEmitter {
       const idx = this.children!.indexOf(child as any);
       if (idx !== -1) {
         this.children!.splice(idx, 1);
-        child.deactivate(); // 失活处理
+        child.deactivate();
       }
     });
     this._updateSiblings();
     this.isDirtyChild = true;
     this.isDirtyPaintChild = true;
     this.markChildDirty();
-    this.eventManage.notify("childrenchange");
+    this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
   // ================= 生命周期 (Lifecycle) =================
-  /**
-   挂载节点 (触发一次 mounted)
-  */
   mount() {
     if (this.isUnmounted) return;
     if (!this.isMounted) {
       this.mounted();
     }
-    // 挂载后，自动使其进入活跃状态
     this.activate();
   }
 
@@ -225,15 +221,10 @@ export class Node extends EventEmitter {
     this.dispatchEvent(new CustomEvent("mounted"));
   }
 
-  /**
-   激活节点 (对应 Vue 的 onActivated)
-  */
   activate() {
-    // 【重要拦截】这里保证了如果节点自身及其子节点本来就是活跃的，绝对不会被重复激活
     if (this.isActiveed || this.isUnmounted) return;
     this.isActiveed = true;
 
-    // 添加到全局索引
     if (this.key && this.root) {
       this.root.keyElmenet.set(this.key, this as any);
     }
@@ -243,16 +234,12 @@ export class Node extends EventEmitter {
 
     this.dispatchEvent(new CustomEvent("activated"));
 
-    // 递归激活子节点
     this.children?.forEach((child) => {
       linkNode(child, this);
-      child.mount(); // mount 内部会安全调用 activate
+      child.mount();
     });
   }
 
-  /**
-   失活节点 (对应 Vue 的 onDeactivated)
-  */
   deactivate() {
     if (!this.isActiveed) return;
     this.isActiveed = false;
@@ -267,23 +254,16 @@ export class Node extends EventEmitter {
 
     this.dispatchEvent(new CustomEvent("deactivated"));
 
-    // 递归失活子节点
     this.children?.forEach((child) => child.deactivate());
   }
 
-  /**
-   彻底卸载与销毁 (取代原 distory 方法)
-  */
   unmounted() {
     if (this.isUnmounted) return;
-    // 1. 确保节点处于失活状态
     this.deactivate();
 
-    // 2. 标记卸载并触发事件
     this.isUnmounted = true;
     this.dispatchEvent(new CustomEvent("unmounted"));
 
-    // 3. 将自身从父节点的结构中剔除
     const oldParent = this.parent;
     if (oldParent && oldParent.children?.length) {
       const index = oldParent.children.findIndex((v) => v === this);
@@ -296,10 +276,8 @@ export class Node extends EventEmitter {
       }
     }
 
-    // 4. 递归销毁所有子节点
     this.children?.forEach((child) => child.unmounted());
 
-    // 5. 彻底清理内存 (取代 distory 逻辑)
     this.children = [];
     this.nextSibling = null;
     this.previousSibling = null;
@@ -309,12 +287,55 @@ export class Node extends EventEmitter {
   }
 
   // ================= 事件与依赖注入 =================
+
+  dispatchEvent(event: CustomEvent): void;
+  dispatchEvent(eventName: string, detail?: Partial<FulateEvent["detail"]>): void;
+  dispatchEvent(
+    eventOrName: CustomEvent | string,
+    detail?: Partial<FulateEvent["detail"]>
+  ) {
+    if (typeof eventOrName === "string") {
+      const eventName = eventOrName;
+
+      if (eventName === "mouseenter") {
+        if (this.isHover && detail?.target !== (this as any)) return;
+        this.isHover = true;
+      }
+
+      if (eventName === "mouseleave" && this.isHover) {
+        if ((this as any).hasPointHint?.(new Point(detail?.x, detail?.y))) {
+          return;
+        }
+        this.root?.container && (this.root.container.style.cursor = "default");
+        this.isHover = false;
+      }
+
+      const event = new CustomEvent(eventName, {
+        detail: {
+          target: detail?.target ?? this,
+          x: detail?.x ?? 0,
+          y: detail?.y ?? 0,
+          buttons: detail?.buttons ?? 0,
+          deltaY: detail?.deltaY ?? 0,
+          deltaX: detail?.deltaX ?? 0,
+          data: detail?.data ?? null,
+          ctrlKey: detail?.ctrlKey
+        },
+        bubbles: true
+      });
+
+      super.dispatchEvent(event);
+    } else {
+      super.dispatchEvent(eventOrName);
+    }
+  }
+
   addEventListener<T = FulateEvent>(
     type: string,
     callback: (ev: T) => void,
     options?: AddEventListenerOptions
   ) {
-    this.eventManage.hasUserEvent = true;
+    this.hasUserEvent = true;
     return super.addEventListener(type, callback as any, options);
   }
 

@@ -4,7 +4,7 @@ import {
 } from "../../../util/radiansDegreesConversion";
 import { Point } from "../../../util/point";
 import { type Select } from "./index";
-import { FulateEvent } from "../../eventManage";
+import { FulateEvent } from "../../../util/event";
 import { qrDecompose } from "../../../util/math";
 
 // ---------------------------------------------------------------------------

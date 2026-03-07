@@ -57,4 +57,4 @@ layer.append(...gridChildren);
 root.append(layer, editerLayer);
 
 console.time("渲染10w节点");
-root.mounted();
+root.mount();

@@ -21,7 +21,7 @@ export class Layer extends Rectangle {
   breakDirtyRectCheck = true;
   rbush = new RBush<RBushItem>();
 
-  finalDirtyRect: RectPoint;
+  finalDirtyRects: RectPoint[] | null = null;
 
   dirtyNodes = new Set<Element>();
 
@@ -30,6 +30,10 @@ export class Layer extends Rectangle {
 
   private pendingSyncNodes = new Set<Element>();
   private syncTimeout: number | null = null;
+
+  private static GRID_COLS = 3;
+  private static GRID_ROWS = 3;
+  private static FULL_REPAINT_RATIO = 0.5;
 
   constructor(
     options?: BaseElementOption & {
@@ -165,15 +169,27 @@ export class Layer extends Rectangle {
   }
 
   notInDitry() {
-    const rootLayer = this.inject("layer-root");
-    //这里到时候在 super.paint中考虑 如果父节点循环的时候判断
-    //layer是不是已经在root的ditrylaery中，如果在跳过
-    if (this.enableDirtyRect && rootLayer.isRenderDitryMode) {
-      if (rootLayer !== this || this.dirtyNodes.size === 0) {
-        return true;
-      }
+    if (!this.enableDirtyRect) {
+      return false;
     }
-    return false;
+    if (this.isRenderDitryMode === false || this.dirtyNodes.size) {
+      return false;
+    }
+
+      // if(this.root._pendingLayers.has(this)){
+
+      // }
+      // return  false;
+    return true;
+    // const rootLayer = this.inject("layer-root");
+    // //这里到时候在 super.paint中考虑 如果父节点循环的时候判断
+    // //layer是不是已经在root的ditrylaery中，如果在跳过
+    // if (this.enableDirtyRect && rootLayer.isRenderDitryMode) {
+    //   if (rootLayer !== this || this.dirtyNodes.size === 0) {
+    //     return true;
+    //   }
+    // }
+    // return false;
   }
 
   flushUpdate() {
@@ -191,63 +207,109 @@ export class Layer extends Rectangle {
 
     if (this.enableDirtyRect && this.dirtyNodes.size > 0) {
       this.isRenderDitryMode = true;
-      let minX = Infinity;
-      let minY = Infinity;
-      let maxX = -Infinity;
-      let maxY = -Infinity;
+
+      const m = this.root.getViewPointMtrix();
+      const dpr = window.devicePixelRatio || 1;
+      const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
+
+      const canvasW = this.width * dpr;
+      const canvasH = this.height * dpr;
+      const { GRID_COLS, GRID_ROWS, FULL_REPAINT_RATIO } = Layer;
+      const cellW = canvasW / GRID_COLS;
+      const cellH = canvasH / GRID_ROWS;
+
+      const buckets: RectPoint[] = Array.from(
+        { length: GRID_COLS * GRID_ROWS },
+        () => ({
+          left: Infinity,
+          top: Infinity,
+          width: 0,
+          height: 0
+        })
+      );
 
       this.dirtyNodes.forEach((node) => {
         const rect = node.getDirtyRect();
 
-        minX = Math.min(minX, rect.left);
-        minY = Math.min(minY, rect.top);
-        maxX = Math.max(maxX, rect.left + rect.width);
-        maxY = Math.max(maxY, rect.top + rect.height);
+        const sLeft = Math.floor((rect.left * m.a + m.e) * dpr) - padding;
+        const sTop = Math.floor((rect.top * m.d + m.f) * dpr) - padding;
+        const sRight =
+          Math.ceil(((rect.left + rect.width) * m.a + m.e) * dpr) + padding;
+        const sBottom =
+          Math.ceil(((rect.top + rect.height) * m.d + m.f) * dpr) + padding;
+
+        const c0 = Math.max(0, Math.floor(sLeft / cellW));
+        const c1 = Math.min(GRID_COLS - 1, Math.floor(sRight / cellW));
+        const r0 = Math.max(0, Math.floor(sTop / cellH));
+        const r1 = Math.min(GRID_ROWS - 1, Math.floor(sBottom / cellH));
+
+        for (let r = r0; r <= r1; r++) {
+          for (let c = c0; c <= c1; c++) {
+            const b = buckets[r * GRID_COLS + c];
+            const bRight = b.left === Infinity ? -Infinity : b.left + b.width;
+            const bBottom = b.top === Infinity ? -Infinity : b.top + b.height;
+            const newLeft = Math.min(b.left, sLeft);
+            const newTop = Math.min(b.top, sTop);
+            b.left = newLeft;
+            b.top = newTop;
+            b.width = Math.max(bRight, sRight) - newLeft;
+            b.height = Math.max(bBottom, sBottom) - newTop;
+          }
+        }
       });
 
-      const m = this.root.getViewPointMtrix();
+      const screenRects: RectPoint[] = [];
+      let totalArea = 0;
 
-      const dpr = window.devicePixelRatio || 1;
-
-      let screenMinX = (minX * m.a + m.e) * dpr;
-      let screenMinY = (minY * m.d + m.f) * dpr;
-      let screenMaxX = (maxX * m.a + m.e) * dpr;
-      let screenMaxY = (maxY * m.d + m.f) * dpr;
-
-      const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
-      screenMinX = Math.floor(screenMinX) - padding;
-      screenMinY = Math.floor(screenMinY) - padding;
-      screenMaxX = Math.ceil(screenMaxX) + padding;
-      screenMaxY = Math.ceil(screenMaxY) + padding;
-
-      const screenWidth = screenMaxX - screenMinX;
-      const screenHeight = screenMaxY - screenMinY;
-
-      this.finalDirtyRect = {
-        left: (screenMinX / dpr - m.e) / m.a,
-        top: (screenMinY / dpr - m.f) / m.d,
-        width: screenWidth / dpr / m.a,
-        height: screenHeight / dpr / m.d
-      };
-
-      if (screenWidth > 0 && screenHeight > 0) {
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.rect(screenMinX, screenMinY, screenWidth, screenHeight);
-        this.ctx.clip();
-        this.ctx.clearRect(screenMinX, screenMinY, screenWidth, screenHeight);
-        super.paint(this.ctx);
-        this.ctx.restore();
+      for (const b of buckets) {
+        if (b.left === Infinity) continue;
+        if (b.width > 0 && b.height > 0) {
+          screenRects.push(b);
+          totalArea += b.width * b.height;
+        }
       }
 
-      this.dirtyNodes.clear();
+      const canvasArea = canvasW * canvasH;
+
+      if (screenRects.length === 0) {
+        this.dirtyNodes.clear();
+        this.isRenderDitryMode = false;
+        return;
+      }
+
+      if (totalArea > canvasArea * FULL_REPAINT_RATIO) {
+        this.isRenderDitryMode = false;
+        this.dirtyNodes.clear();
+        this.clear();
+        super.paint(this.ctx);
+      } else {
+        this.finalDirtyRects = screenRects.map((r) => ({
+          left: (r.left / dpr - m.e) / m.a,
+          top: (r.top / dpr - m.f) / m.d,
+          width: r.width / dpr / m.a,
+          height: r.height / dpr / m.d
+        }));
+
+        this.ctx.save();
+        this.ctx.beginPath();
+        for (const r of screenRects) {
+          this.ctx.rect(r.left, r.top, r.width, r.height);
+        }
+        this.ctx.clip();
+        for (const r of screenRects) {
+          this.ctx.clearRect(r.left, r.top, r.width, r.height);
+        }
+        super.paint(this.ctx);
+        this.ctx.restore();
+
+        this.dirtyNodes.clear();
+      }
     } else {
       this.clear();
       super.paint(this.ctx);
     }
 
-    this.finalDirtyRect = null as any;
-
+    this.finalDirtyRects = null;
     this.isRenderDitryMode = false;
   }
 
