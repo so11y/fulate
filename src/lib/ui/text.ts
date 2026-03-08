@@ -182,7 +182,6 @@ export class Text extends Element {
     const localMatrix = this.getOwnMatrix();
     const matrix = vpMatrix.multiply(localMatrix);
 
-    // 1. 提取物理拉伸比例（非常关键：控制框的宽高等于原始宽高 * 这个比例）
     const stretchX = Math.sqrt(
       localMatrix.a * localMatrix.a + localMatrix.b * localMatrix.b
     );
@@ -204,7 +203,7 @@ export class Text extends Element {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
 
-    // 2. 构建干净矩阵（完全剔除了斜切和畸变，保证是直角）
+    //构建干净矩阵（完全剔除了斜切和畸变，保证是直角）
     const horizontalX = vpScale * cos;
     const horizontalY = vpScale * sin;
     const verticalX = -vpScale * flip * sin;

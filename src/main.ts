@@ -11,6 +11,7 @@ import { Text } from "./lib/ui/text";
 import { Circle } from "./lib/ui/circle";
 import { Triangle } from "./lib/ui/triangle";
 import { Image } from "./lib/ui/image";
+import { Pinned } from "./lib/ui/pinned";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,
@@ -89,10 +90,30 @@ const div1 = new Rectangle({
   backgroundColor: "red",
   onclick: (e) => {
     e.detail.target.setOptions({
-      backgroundColor: "yellow"
+      backgroundColor: "yellow",
       // children: [de]
     });
-  }
+  },
+  children: [
+    new Pinned({
+      width: 30,
+      height: 30,
+      target: (e) => e.parent,
+      inheritScale: false,
+      inheritSkew: false,
+      inheritRotation: false,
+      anchorX: 1,
+      // isPin: true,
+      children: [
+        new Image({
+          width: 30,
+          height: 30,
+          src: "https://picsum.photos/200/200",
+          radius: 10
+        })
+      ]
+    })
+  ]
 });
 
 const div2 = new Rectangle({
@@ -166,7 +187,6 @@ root.append(
                 backgroundColor: "pink",
                 onclick(e) {
                   e.detail.target.provide("qqq", 1);
-                  console.log(2);
                 },
                 children: [
                   new Rectangle({

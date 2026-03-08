@@ -11,7 +11,10 @@ import { Layer } from "../layer";
 function linkNode(child: Node, parent: Node) {
   child.parent = parent;
   const parentProvides = parent._provides ?? parent.root._provides;
-  if (Object.getPrototypeOf(child._provides) !== parentProvides) {
+  if (
+    !child._provides ||
+    Object.getPrototypeOf(child._provides) !== parentProvides
+  ) {
     child._provides = Object.create(parentProvides);
   }
 }
@@ -47,7 +50,7 @@ export class Node extends EventEmitter {
   hasUserEvent = false;
 
   _options: any = {};
-  _provides: Record<string, any> = {};
+  _provides: Record<string, any>;
 
   get layer(): Layer {
     return this.inject("layer");
@@ -289,7 +292,10 @@ export class Node extends EventEmitter {
   // ================= 事件与依赖注入 =================
 
   dispatchEvent(event: CustomEvent): void;
-  dispatchEvent(eventName: string, detail?: Partial<FulateEvent["detail"]>): void;
+  dispatchEvent(
+    eventName: string,
+    detail?: Partial<FulateEvent["detail"]>
+  ): void;
   dispatchEvent(
     eventOrName: CustomEvent | string,
     detail?: Partial<FulateEvent["detail"]>

@@ -6,7 +6,12 @@ import { Layer } from "../../layer";
 import type { Select } from "./index";
 
 function checkElement(object: Element, select: Select) {
-  if (object === select) return;
+  if (
+    object === select ||
+    object.selectctbale === false ||
+    object.inject("selectctbale") === false
+  )
+    return;
 
   if (object.inject("group")) {
     return;

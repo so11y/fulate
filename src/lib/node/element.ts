@@ -273,6 +273,7 @@ export class Element extends Transformable {
       tween.onComplete(() => {
         cleanup();
         options?.onComplete?.(this);
+        this.layer.tweenGroup.remove(tween);
         resolve();
       });
       tween.onStop(() => {

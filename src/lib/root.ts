@@ -111,6 +111,7 @@ export class Root extends Node {
         this.layers.some((l) => l.tweenGroup.getAll().length > 0);
 
       if (hasActiveTweens) {
+        this._viewportTweenGroup.update(time);
         this.requestRender();
       }
 
@@ -468,7 +469,10 @@ export class Root extends Node {
         .to({ x: targetX, y: targetY, scale: bestScale }, duration)
         .easing(easing)
         .onUpdate(() => root.requestRender())
-        .onComplete(() => resolve())
+        .onComplete(() => {
+          resolve();
+            this._viewportTweenGroup.removeAll()
+        })
         .start();
 
       root.requestRender();
