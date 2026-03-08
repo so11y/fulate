@@ -111,7 +111,7 @@ const dev3 = new Rectangle({
   top: 15,
   width: 30,
   height: 30,
-  backgroundColor: "#000000",
+  backgroundColor: "#6a6262",
   onclick: (e) => {
     e.detail.target.animate(
       {

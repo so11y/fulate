@@ -25,10 +25,10 @@ export function doGroup(select: Select) {
 
   const children = [...select.selectEls];
   group.groupEls = children;
-  /**
-   * TODO 这里应该给子节点provode一个groupParent的注入，这样就不需要在group里去判断父节点了，直接用注入拿到groupParent就行了
-   */
-  children.forEach((el) => (el.groupParent = group));
+  children.forEach((el) => {
+    el.groupParent = group;
+    el.provide("group", group);
+  });
 
   parent.append(group);
   group.snapshotChildren();
@@ -38,13 +38,19 @@ export function doGroup(select: Select) {
 
   select.root.history.pushAction(
     () => {
-      children.forEach((el) => (el.groupParent = null));
+      children.forEach((el) => {
+        el.groupParent = null;
+        delete el._provides.group;
+      });
       group.parent?.removeChild(group as any);
       select.select(children);
     },
     () => {
       group.groupEls = children;
-      children.forEach((el) => (el.groupParent = group));
+      children.forEach((el) => {
+        el.groupParent = group;
+        el.provide("group", group);
+      });
       parent.append(group);
       group.snapshotChildren();
       select.select([group as any]);
@@ -64,7 +70,10 @@ export function unGroup(select: Select) {
     : -1;
   const children = [...group.groupEls];
 
-  children.forEach((el) => (el.groupParent = null));
+  children.forEach((el) => {
+    el.groupParent = null;
+    delete el._provides.group;
+  });
   select.selectEls = children as any;
 
   if (groupParent) {
@@ -87,7 +96,10 @@ export function unGroup(select: Select) {
   select.root.history.pushAction(
     () => {
       group.groupEls = children;
-      children.forEach((el) => (el.groupParent = group));
+      children.forEach((el) => {
+        el.groupParent = group;
+        el.provide("group", group);
+      });
       if (groupParent) {
         if (groupIndex >= 0 && groupIndex < groupParent.children.length) {
           groupParent.insertBefore(
@@ -100,10 +112,12 @@ export function unGroup(select: Select) {
       }
       group.snapshotChildren();
       select.select([group as any]);
-      // select.root.requestRender();
     },
     () => {
-      children.forEach((el) => (el.groupParent = null));
+      children.forEach((el) => {
+        el.groupParent = null;
+        delete el._provides.group;
+      });
       if (group.parent) {
         group.parent.removeChild(group as any);
       }

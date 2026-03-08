@@ -8,8 +8,8 @@ import type { Select } from "./index";
 function checkElement(object: Element, select: Select) {
   if (object === select) return;
 
-  if (object.groupParent) {
-    return checkElement(select, object.groupParent);
+  if (object.inject("group")) {
+    return;
   }
 
   if (object.inject("layer").type !== "artboard") {
