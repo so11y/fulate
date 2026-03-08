@@ -111,7 +111,6 @@ export class Root extends Node {
         this.layers.some((l) => l.tweenGroup.getAll().length > 0);
 
       if (hasActiveTweens) {
-        this._viewportTweenGroup.update(time);
         this.requestRender();
       }
 
