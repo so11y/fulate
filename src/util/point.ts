@@ -1,3 +1,5 @@
+import { Rect } from "../lib/node/transformable";
+
 type XY = {
   x: number;
   y: number;
@@ -92,6 +94,26 @@ export function makeBoundingBoxFromPoints(points: Point[]) {
     top,
     width: width - left,
     height: height - top
+  };
+}
+
+export function makeBoundingBoxFromRects(rects: Rect[]) {
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (let i = 0; i < rects.length; i++) {
+    const r = rects[i];
+    if (r.left < minX) minX = r.left;
+    if (r.top < minY) minY = r.top;
+    if (r.left + r.width > maxX) maxX = r.left + r.width;
+    if (r.top + r.height > maxY) maxY = r.top + r.height;
+  }
+  return {
+    left: minX,
+    top: minY,
+    width: maxX - minX,
+    height: maxY - minY
   };
 }
 

@@ -40,6 +40,8 @@ export class Pinned extends Rectangle {
   declare inheritScale: boolean;
   declare inheritSkew: boolean;
 
+  selectctbale = false
+
   constructor(options: BaseElementOption & PinnedAABB);
   constructor(options: BaseElementOption & PinnedMatrix);
   constructor(options: any) {

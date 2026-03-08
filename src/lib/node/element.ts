@@ -14,10 +14,10 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   selectctbale?: boolean;
   silent?: boolean;
 
-  onclick?: (e: FulateEvent<T>) => any;
-  onpointermove?: (e: FulateEvent<T>) => any;
-  onpointerdown?: (e: FulateEvent<T>) => any;
-  onpointerup?: (e: FulateEvent<T>) => any;
+  onclick?: (this: T, e: FulateEvent<T>) => any;
+  onpointermove?: (this: T, e: FulateEvent<T>) => any;
+  onpointerdown?: (this: T, e: FulateEvent<T>) => any;
+  onpointerup?: (this: T, e: FulateEvent<T>) => any;
 
   children?: Array<Element>;
 }
@@ -66,7 +66,7 @@ export class Element extends Transformable {
 
     EVENT_KEYS.forEach((v) => {
       if (options[v]) {
-        this.addEventListener(v.slice(2), options[v]);
+        this.addEventListener(v.slice(2), (e) => options[v].call(this, e));
       }
     });
 
@@ -78,18 +78,18 @@ export class Element extends Transformable {
   }
 
   getDirtyRect() {
-    const current = this.getBoundingRect();
-    if (!this._lastBoundingRect) return current;
+    const current = this.getUnionBoundingRect();
+    if (!this._lastUnionBounds) return current;
 
-    const minX = Math.min(current.left, this._lastBoundingRect.left);
-    const minY = Math.min(current.top, this._lastBoundingRect.top);
+    const minX = Math.min(current.left, this._lastUnionBounds.left);
+    const minY = Math.min(current.top, this._lastUnionBounds.top);
     const maxX = Math.max(
       current.left + current.width,
-      this._lastBoundingRect.left + this._lastBoundingRect.width
+      this._lastUnionBounds.left + this._lastUnionBounds.width
     );
     const maxY = Math.max(
       current.top + current.height,
-      this._lastBoundingRect.top + this._lastBoundingRect.height
+      this._lastUnionBounds.top + this._lastUnionBounds.height
     );
 
     return {
@@ -103,9 +103,8 @@ export class Element extends Transformable {
   }
 
   notInDitry() {
-    if (this.isDirtyPaintChild) return false;
     if (this.layer.finalDirtyRects && this.layer.finalDirtyRects.length > 0) {
-      const bound = this.getBoundingRect();
+      const bound = this.getUnionBoundingRect();
       const hit = this.layer.finalDirtyRects.some((r) =>
         Intersection.intersectRect(bound, r)
       );
@@ -131,7 +130,6 @@ export class Element extends Transformable {
         }
       }
     }
-    this.isDirtyPaintChild = false;
   }
 
   /** Override to provide custom control points for selection. */

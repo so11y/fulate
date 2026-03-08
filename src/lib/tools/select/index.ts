@@ -1,4 +1,8 @@
-import { makeBoundingBoxFromPoints, Point } from "../../../util/point";
+import {
+  makeBoundingBoxFromPoints,
+  makeBoundingBoxFromRects,
+  Point
+} from "../../../util/point";
 import { BaseElementOption, Element } from "../../node/element";
 import { DEFAULT_RECT_SCHEMA, type ControlSchema } from "./controls";
 import { Snap } from "./snap";
@@ -68,8 +72,8 @@ export class Select extends Group {
     if (!this.selectEls.length) {
       this.setOptions({ width: 0, height: 0 });
     } else {
-      const rect = makeBoundingBoxFromPoints(
-        this.selectEls.map((v) => v.getCoords()).flat(1)
+      const rect = makeBoundingBoxFromRects(
+        this.selectEls.map((v) => v.getUnionBoundingRect())
       );
       this.setOptions({
         ...rect,

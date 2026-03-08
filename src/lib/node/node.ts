@@ -40,7 +40,6 @@ export class Node extends EventEmitter {
   isUnmounted = false;
 
   isDirtyChild = false;
-  isDirtyPaintChild = false;
   isDirty = true;
 
   key!: string;
@@ -78,7 +77,6 @@ export class Node extends EventEmitter {
     let p = this.parent;
     while (p && !p.isDirtyChild) {
       p.isDirtyChild = true;
-      p.isDirtyPaintChild = true;
       p = p.parent;
     }
     if (this.layer) {
@@ -110,7 +108,6 @@ export class Node extends EventEmitter {
     }
 
     this.isDirtyChild = true;
-    this.isDirtyPaintChild = true;
     this.markChildDirty();
   }
 
@@ -196,7 +193,6 @@ export class Node extends EventEmitter {
     });
     this._updateSiblings();
     this.isDirtyChild = true;
-    this.isDirtyPaintChild = true;
     this.markChildDirty();
     this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
@@ -274,7 +270,6 @@ export class Node extends EventEmitter {
         oldParent.children.splice(index, 1);
         (oldParent as any)._updateSiblings?.();
         oldParent.isDirtyChild = true;
-        this.isDirtyPaintChild = true;
         (oldParent as any).markChildDirty?.();
       }
     }
@@ -318,6 +313,7 @@ export class Node extends EventEmitter {
 
       const event = new CustomEvent(eventName, {
         detail: {
+          self: this,
           target: detail?.target ?? this,
           x: detail?.x ?? 0,
           y: detail?.y ?? 0,
