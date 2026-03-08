@@ -99,11 +99,11 @@ const div1 = new Rectangle({
       width: 30,
       height: 30,
       target: (e) => e.parent,
-      inheritScale: false,
-      inheritSkew: false,
-      inheritRotation: false,
+      // inheritScale: false,
+      // inheritSkew: false,
+      // inheritRotation: false,
       anchorX: 1,
-      // isPin: true,
+      isPin: true,
       children: [
         new Image({
           width: 30,
