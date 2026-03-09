@@ -500,10 +500,7 @@ export class Snap extends Element {
           y: p.y
         }));
       } else {
-        // 普通元素用 8 个锚点，排除 center
-        anchors = getElementAnchorPoints(node).filter(
-          (a) => a.type !== "center"
-        );
+        anchors = getElementAnchorPoints(node);
       }
 
       for (const a of anchors) {

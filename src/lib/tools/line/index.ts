@@ -292,7 +292,6 @@ export class LineTool extends Element {
 
         const anchors = getElementAnchorPoints(child);
         for (const a of anchors) {
-          if (a.type === "center") continue;
           const isNearest =
             this.nearestAnchor &&
             Math.abs(a.x - this.nearestAnchor.x) < 0.1 &&
