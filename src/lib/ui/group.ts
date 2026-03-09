@@ -1,6 +1,5 @@
 import { BaseElementOption, Element } from "../node/element";
 import { makeBoundingBoxFromPoints, Point } from "../../util/point";
-import { qrDecompose } from "../../util/math";
 
 export interface GroupOption extends BaseElementOption {
   /** 导入时用：通过 root.idElements 查找并还原 groupEls */
@@ -41,6 +40,7 @@ export class Group extends Element {
 
     this.groupEls.forEach((child) => {
       child.calcWorldMatrix();
+      child.snapshotForGroup();
       this._childrenSnapshots.set(child, {
         localMatrix: groupWorldInv.multiply(child.getOwnMatrix()),
         localCenter: new Point(
@@ -71,21 +71,8 @@ export class Group extends Element {
       if (!snapshot) return;
 
       const { localMatrix, localCenter } = snapshot;
-
       const targetMatrix = groupWorldMatrix.multiply(localMatrix);
-      const { angle, scaleX, scaleY, skewX } = qrDecompose(targetMatrix);
-
-      const newWorldCenter = localCenter.matrixTransform(groupWorldMatrix);
-      const center = child.getPositionByOrigin(newWorldCenter);
-
-      child.quickSetOptions({
-        angle,
-        scaleX,
-        scaleY,
-        skewX,
-        left: center.x,
-        top: center.y
-      });
+      child.applyGroupTransform(targetMatrix, localCenter, groupWorldMatrix);
     });
   }
 

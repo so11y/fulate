@@ -4,6 +4,7 @@ import { FulateEvent } from "../../util/event";
 import { Transformable, TransformableOptions } from "./transformable";
 import { Tween, Easing } from "@tweenjs/tween.js";
 import { ColorUtil } from "../../util/color";
+import { qrDecompose } from "../../util/math";
 
 export interface BaseElementOption<T = Element> extends TransformableOptions {
   key?: string;
@@ -48,6 +49,8 @@ export class Element extends Transformable {
   visible: boolean = true;
   selectctbale?: boolean;
   groupParent?: any;
+  /** Lines that have an anchor point connected to this element */
+  connectedLines: Set<any> = new Set();
   private _activeTweens = new Set<Tween<Element>>();
   declare children: this[];
   declare parent: this;
@@ -135,6 +138,40 @@ export class Element extends Transformable {
   /** Override to provide custom control points for selection. */
   getControlSchema(): any {
     return null;
+  }
+
+  /**
+   * Override to provide custom anchor points for snapping and line connections.
+   * Returns null to use DEFAULT_ANCHOR_SCHEMA (8 edge/corner points, no center).
+   */
+  getAnchorSchema(): any[] | null {
+    return null;
+  }
+
+  /** Called by Group before a drag to let the element snapshot internal state. */
+  snapshotForGroup(): void {}
+
+  /**
+   * Apply a group transform. Default: decompose the target matrix and set
+   * angle/scale/position via quickSetOptions. Elements that store data in
+   * world coordinates (e.g. Line) should override this.
+   */
+  applyGroupTransform(
+    targetMatrix: DOMMatrix,
+    localCenter: Point,
+    groupWorldMatrix: DOMMatrix
+  ): void {
+    const { angle, scaleX, scaleY, skewX } = qrDecompose(targetMatrix);
+    const newWorldCenter = localCenter.matrixTransform(groupWorldMatrix);
+    const center = this.getPositionByOrigin(newWorldCenter);
+    this.quickSetOptions({
+      angle,
+      scaleX,
+      scaleY,
+      skewX,
+      left: center.x,
+      top: center.y
+    });
   }
 
   hasPointHint(point: Point): boolean {

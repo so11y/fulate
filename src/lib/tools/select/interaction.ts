@@ -103,6 +103,7 @@ function handleControl(select: Select, e: FulateEvent) {
   const { control, point } = select.currentControl;
 
   select.root.history.snapshot(select.selectEls);
+  (select as any)._lineVertexSnapStarted = false;
 
   const theta = degreesToRadians(select.angle ?? 0);
   const selectPrevState = {
@@ -125,6 +126,10 @@ function handleControl(select: Select, e: FulateEvent) {
     "pointerup",
     () => {
       select.root.removeEventListener("pointermove", pointermove);
+      if ((select as any)._lineVertexSnapStarted) {
+        select.snapTool?.stop();
+        (select as any)._lineVertexSnapStarted = false;
+      }
       select.root.history.commit();
     },
     { once: true }
@@ -172,6 +177,9 @@ function handleSelectMove(select: Select, e: FulateEvent) {
 
 export function setupInteraction(select: Select): () => void {
   const pointerdown = (e: FulateEvent) => {
+    const lineTool = select.root.keyElmenet?.get("lineTool") as any;
+    if (lineTool?.isDrawingMode) return;
+
     const hasSelection =
       select.selectEls.length > 0 &&
       select.root.getCurrnetEelement()?.element === select;
@@ -190,16 +198,16 @@ export function setupInteraction(select: Select): () => void {
   };
 
   const mouseenter = (e: FulateEvent) => {
-    select.hoverElement = e.detail.target;
-    select.markDirty();
+    // select.hoverElement = e.detail.target;
+    // select.markDirty();
   };
 
   const mouseleave = () => {
-    const prev = select.hoverElement;
-    select.hoverElement = null;
-    if (prev) {
-      select.markDirty();
-    }
+    // const prev = select.hoverElement;
+    // select.hoverElement = null;
+    // if (prev) {
+    //   select.markDirty();
+    // }
   };
 
   select.root.addEventListener("pointerdown", pointerdown);

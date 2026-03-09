@@ -1,17 +1,6 @@
-/**
- * TODO
- * 后面修改为worker，使用Float32Array
- * 在element得append中添加事件触发给root，然后snap中监听事件
- * 在更新中添加事件触发到root，然后snap接受事件，
- * 将坐标提供给rbush，rbush中直接操作canvas进行绘制线条然后返回吸附结果
- * 提供给rbush查找附件500px，根据缩放进行调整。
- *
- * TODO
- * 后面得脏矩形局部渲染也可以使用类似的方式
- */
-
 import { BaseElementOption, Element } from "../../node/element";
 import { Node } from "../../node/node";
+import { getElementAnchorPoints } from "../../ui/line";
 
 interface Point {
   x: number;
@@ -470,11 +459,90 @@ export class Snap extends Element {
   stop() {
     this.isActive = false;
     this.snapLines = [];
+    this.anchorHighlights = [];
     this.layer.requestRender();
   }
 
+  private anchorHighlights: Array<{
+    x: number;
+    y: number;
+    matched: boolean;
+  }> = [];
+
+  detectAnchorSnap(
+    worldX: number,
+    worldY: number,
+    excludeEls: Element[] = []
+  ): { x: number; y: number; elementId: string; anchorType: string } | null {
+    const threshold = 10 / this.root.viewport.scale;
+    const threshold2 = threshold * threshold;
+    let best: {
+      x: number;
+      y: number;
+      elementId: string;
+      anchorType: string;
+    } | null = null;
+    let bestDist = threshold2;
+
+    const excludes = new Set(excludeEls);
+    this.anchorHighlights = [];
+
+    this.forEachTarget((node) => {
+      if (excludes.has(node)) return;
+
+      let anchors: { type: string; x: number; y: number }[];
+      if (node.type === "line") {
+        // 线条只用 linePoints 作为吸附参考点
+        const pts = (node as any).getSnapPoints?.() ?? [];
+        anchors = pts.map((p: { x: number; y: number }, i: number) => ({
+          type: `p${i}`,
+          x: p.x,
+          y: p.y
+        }));
+      } else {
+        // 普通元素用 8 个锚点，排除 center
+        anchors = getElementAnchorPoints(node).filter(
+          (a) => a.type !== "center"
+        );
+      }
+
+      for (const a of anchors) {
+        const dx = a.x - worldX;
+        const dy = a.y - worldY;
+        const d2 = dx * dx + dy * dy;
+
+        this.anchorHighlights.push({ x: a.x, y: a.y, matched: false });
+
+        if (d2 < bestDist) {
+          bestDist = d2;
+          best = {
+            x: a.x,
+            y: a.y,
+            elementId: node.id,
+            anchorType: a.type
+          };
+        }
+      }
+    });
+
+    if (best) {
+      for (const h of this.anchorHighlights) {
+        if (Math.abs(h.x - best.x) < 0.1 && Math.abs(h.y - best.y) < 0.1) {
+          h.matched = true;
+        }
+      }
+    }
+
+    this.layer.requestRender();
+    return best;
+  }
+
   paint() {
-    if (!this.isActive || this.snapLines.length === 0) return;
+    if (
+      (!this.isActive || this.snapLines.length === 0) &&
+      this.anchorHighlights.length === 0
+    )
+      return;
 
     const ctx = this.layer.ctx;
     const scale = this.root.viewport.scale;
@@ -527,6 +595,26 @@ export class Snap extends Element {
       if (line.distanceText && line.textPos) {
         ctx.textAlign = line.type === "vertical" ? "left" : "center";
         ctx.fillText(line.distanceText, line.textPos.x, line.textPos.y);
+      }
+    }
+
+    // Draw anchor highlights
+    if (this.anchorHighlights.length > 0) {
+      for (const h of this.anchorHighlights) {
+        if (h.matched) {
+          ctx.strokeStyle = "#4F81FF";
+          ctx.lineWidth = 2 / scale;
+          ctx.fillStyle = "rgba(79, 129, 255, 0.2)";
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, 6 / scale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(79, 129, 255, 0.4)";
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, 3 / scale, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
 
