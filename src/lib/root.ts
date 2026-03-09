@@ -16,7 +16,6 @@ export class Root extends Node {
   viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
   currentElement?: RBushItem;
   keyElmenet = new Map<string, Element>();
-  /** 按稳定 key 索引元素，用于导出/导入时 groupElIds 查找 */
   idElements = new Map<string, Element>();
 
   _provides = Object.create(null);
@@ -33,6 +32,7 @@ export class Root extends Node {
   layers: Layer[] = [];
 
   _pendingLayers = new Set<Layer>();
+  
   private _rafScheduled = false;
   private _nextTickPromise: Promise<void> | null = null;
   private _nextTickResolve: (() => void) | null = null;
@@ -470,7 +470,7 @@ export class Root extends Node {
         .onUpdate(() => root.requestRender())
         .onComplete(() => {
           resolve();
-            this._viewportTweenGroup.removeAll()
+          this._viewportTweenGroup.removeAll();
         })
         .start();
 

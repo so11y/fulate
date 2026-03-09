@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -51,18 +51,26 @@
       <div id="fps-meter">FPS: --</div>
       <button onclick="runTest(1000)">1千</button>
       <button onclick="runTest(50000)">5万</button>
-      <button onclick="runTest(100000)" style="border-color: red; color: red">
+      <button
+        onclick="runTest(100000)"
+        style="border-color: red; color: red"
+      >
         10万极限
       </button>
-      <div id="status" class="status-box">准备就绪</div>
+      <div
+        id="status"
+        class="status-box"
+      >
+        准备就绪
+      </div>
     </div>
     <div id="app"></div>
 
     <script type="module">
-      import { Meta2d } from '@meta2d/core';
-      const meta2d = new Meta2d('app', { rule: false, grid: false });
-      const statusEl = document.getElementById('status');
-      const fpsEl = document.getElementById('fps-meter');
+      import { Meta2d } from "@meta2d/core";
+      const meta2d = new Meta2d("app", { rule: false, grid: false });
+      const statusEl = document.getElementById("status");
+      const fpsEl = document.getElementById("fps-meter");
 
       // --- FPS 监控逻辑 ---
       let frameCount = 0;
@@ -93,14 +101,14 @@
 
           for (let i = 0; i < count; i++) {
             pens.push({
-              id: 'p' + i,
-              name: 'rectangle',
+              id: "p" + i,
+              name: "rectangle",
               x: (i % cols) * (size + 5),
               y: Math.floor(i / cols) * (size + 5),
               width: size,
               height: size,
-              fillStyle: '#e6a23c',
-              strokeStyle: '#333',
+              fillStyle: "#e6a23c",
+              strokeStyle: "#333"
             });
           }
 

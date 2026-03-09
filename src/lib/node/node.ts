@@ -10,12 +10,14 @@ import { Layer } from "../layer";
 
 function linkNode(child: Node, parent: Node) {
   child.parent = parent;
-  const parentProvides = parent._provides ?? parent.root._provides;
-  if (
-    !child._provides ||
-    Object.getPrototypeOf(child._provides) !== parentProvides
-  ) {
-    child._provides = Object.create(parentProvides);
+  if (parent.isActiveed) {
+    const parentProvides = parent._provides ?? parent.root._provides;
+    if (
+      !child._provides ||
+      Object.getPrototypeOf(child._provides) !== parentProvides
+    ) {
+      child._provides = Object.create(parentProvides);
+    }
   }
 }
 
