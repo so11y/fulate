@@ -38,7 +38,24 @@ function drawChildBorders(select: Select, ctx: CanvasRenderingContext2D) {
   if (select.selectEls.length <= 1) return;
   const scale = select.root.viewport.scale;
   for (const el of select.selectEls) {
-    drawElementOutline(ctx, el.getCoords(), scale, STROKE_COLOR);
+    const schema = el.getControlSchema?.();
+    if (schema?.paintHover) {
+      const dpr = window.devicePixelRatio || 1;
+      const vp = select.root.getViewPointMtrix();
+      ctx.save();
+      ctx.setTransform(
+        vp.a * dpr,
+        vp.b * dpr,
+        vp.c * dpr,
+        vp.d * dpr,
+        vp.e * dpr,
+        vp.f * dpr
+      );
+      schema.paintHover(el, ctx, scale);
+      ctx.restore();
+    } else {
+      drawElementOutline(ctx, el.getCoords(), scale, STROKE_COLOR);
+    }
   }
 }
 
@@ -111,7 +128,25 @@ function drawHoverBorder(select: Select, ctx: CanvasRenderingContext2D) {
   const el = select.hoverElement;
   if (!el || select.selectEls.includes(el)) return;
   const scale = select.root.viewport.scale;
-  drawElementOutline(ctx, el.getCoords(), scale, STROKE_COLOR);
+
+  const schema = el.getControlSchema?.();
+  if (schema?.paintHover) {
+    const dpr = window.devicePixelRatio || 1;
+    const vp = select.root.getViewPointMtrix();
+    ctx.save();
+    ctx.setTransform(
+      vp.a * dpr,
+      vp.b * dpr,
+      vp.c * dpr,
+      vp.d * dpr,
+      vp.e * dpr,
+      vp.f * dpr
+    );
+    schema.paintHover(el, ctx, scale);
+    ctx.restore();
+  } else {
+    drawElementOutline(ctx, el.getCoords(), scale, STROKE_COLOR);
+  }
 }
 
 export function paintSelect(select: Select) {

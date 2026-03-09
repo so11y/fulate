@@ -34,6 +34,8 @@ export interface ControlPoint {
     selectState: SelectState,
     event: FulateEvent
   ): void;
+  /** Called when Delete key is pressed while this control is focused. Return true if handled. */
+  onDelete?(select: Select): boolean;
 }
 
 export interface EdgeDefinition {
@@ -53,7 +55,9 @@ export interface ControlSchema {
   edges?: EdgeDefinition[];
   enableRotation?: boolean;
   enableBodyMove?: boolean;
+  bodyHitTest?(select: Select, point: Point): boolean;
   paintFrame?(select: Select, ctx: CanvasRenderingContext2D): void;
+  paintHover?(el: any, ctx: CanvasRenderingContext2D, scale: number): void;
   paintControl?(
     ctx: CanvasRenderingContext2D,
     point: Point,

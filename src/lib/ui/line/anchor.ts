@@ -1,83 +1,31 @@
 import { Element } from "../../node/element";
+import { Point } from "../../../util/point";
 
 /** A single named anchor point on an element. */
 export interface AnchorPoint {
   /** Unique id within the schema (e.g. "tl", "top", "right", …). */
   id: string;
-  /** Returns the anchor's world-space position for the given element. */
-  getPosition(el: Element): { x: number; y: number };
+  /** Return the anchor position in the element's local coordinate space. */
+  localPosition(element: any, dim: Point): Point;
 }
 
 /** Default 8-point anchor schema (no center). Elements may override via getAnchorSchema(). */
 export const DEFAULT_ANCHOR_SCHEMA: AnchorPoint[] = [
-  {
-    id: "tl",
-    getPosition(el) {
-      const c = el.getCoords();
-      return c?.[0] ?? fallbackCenter(el);
-    }
-  },
-  {
-    id: "top",
-    getPosition(el) {
-      const c = el.getCoords();
-      if (!c || c.length < 4) return fallbackCenter(el);
-      return { x: (c[0].x + c[1].x) / 2, y: (c[0].y + c[1].y) / 2 };
-    }
-  },
-  {
-    id: "tr",
-    getPosition(el) {
-      const c = el.getCoords();
-      return c?.[1] ?? fallbackCenter(el);
-    }
-  },
-  {
-    id: "right",
-    getPosition(el) {
-      const c = el.getCoords();
-      if (!c || c.length < 4) return fallbackCenter(el);
-      return { x: (c[1].x + c[2].x) / 2, y: (c[1].y + c[2].y) / 2 };
-    }
-  },
-  {
-    id: "br",
-    getPosition(el) {
-      const c = el.getCoords();
-      return c?.[2] ?? fallbackCenter(el);
-    }
-  },
-  {
-    id: "bottom",
-    getPosition(el) {
-      const c = el.getCoords();
-      if (!c || c.length < 4) return fallbackCenter(el);
-      return { x: (c[2].x + c[3].x) / 2, y: (c[2].y + c[3].y) / 2 };
-    }
-  },
-  {
-    id: "bl",
-    getPosition(el) {
-      const c = el.getCoords();
-      return c?.[3] ?? fallbackCenter(el);
-    }
-  },
-  {
-    id: "left",
-    getPosition(el) {
-      const c = el.getCoords();
-      if (!c || c.length < 4) return fallbackCenter(el);
-      return { x: (c[3].x + c[0].x) / 2, y: (c[3].y + c[0].y) / 2 };
-    }
-  }
+  { id: "top", localPosition: (_el, dim) => new Point(dim.x * 0.5, 0) },
+  { id: "right", localPosition: (_el, dim) => new Point(dim.x, dim.y * 0.5) },
+  { id: "bottom", localPosition: (_el, dim) => new Point(dim.x * 0.5, dim.y) },
+  { id: "left", localPosition: (_el, dim) => new Point(0, dim.y * 0.5) }
 ];
 
-function fallbackCenter(el: Element): { x: number; y: number } {
-  const r = el.getBoundingRect();
-  return {
-    x: r.centerX ?? r.left + r.width / 2,
-    y: r.centerY ?? r.top + r.height / 2
-  };
+function anchorToWorld(
+  el: Element,
+  anchor: AnchorPoint
+): { x: number; y: number } {
+  const dim = (el as any)._getTransformedDimensions();
+  const m = el.getOwnMatrix();
+  const local = anchor.localPosition(el, dim);
+  const pt = m.transformPoint(local);
+  return { x: pt.x, y: pt.y };
 }
 
 /**
@@ -91,8 +39,12 @@ export function getElementAnchorPoint(
   const schema: AnchorPoint[] =
     (el as any).getAnchorSchema?.() ?? DEFAULT_ANCHOR_SCHEMA;
   const anchor = schema.find((a) => a.id === anchorType);
-  if (anchor) return anchor.getPosition(el);
-  return fallbackCenter(el);
+  if (anchor) return anchorToWorld(el, anchor);
+  const r = el.getBoundingRect();
+  return {
+    x: r.centerX ?? r.left + r.width / 2,
+    y: r.centerY ?? r.top + r.height / 2
+  };
 }
 
 /**
@@ -104,5 +56,5 @@ export function getElementAnchorPoints(
 ): Array<{ type: string; x: number; y: number }> {
   const schema: AnchorPoint[] =
     (el as any).getAnchorSchema?.() ?? DEFAULT_ANCHOR_SCHEMA;
-  return schema.map((a) => ({ type: a.id, ...a.getPosition(el) }));
+  return schema.map((a) => ({ type: a.id, ...anchorToWorld(el, a) }));
 }

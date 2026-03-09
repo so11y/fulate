@@ -1,13 +1,11 @@
 import { BaseElementOption, Element } from "../../node/element";
 import { FulateEvent } from "../../../util/event";
-import { Point } from "../../../util/point";
 import {
   Line,
-  LineAnchor,
   LinePointData,
   getElementAnchorPoints
 } from "../../ui/line";
-import { Node } from "../../node/node";
+import { checkElement } from "../select/checkElement";
 
 export class LineTool extends Element {
   type = "lineTool";
@@ -31,22 +29,6 @@ export class LineTool extends Element {
     super({ width: 0, height: 0, ...options });
   }
 
-  get targetParent(): Node {
-    const workspace = this.root.keyElmenet.get("workspace");
-    if (workspace?.children?.length) {
-      for (const child of workspace.children) {
-        if ((child as any).type === "artboard") {
-          if (child.children?.length) {
-            for (const c of child.children) {
-              if ((c as any).isLayer) return c;
-            }
-          }
-          return child;
-        }
-      }
-    }
-    return workspace ?? this.root;
-  }
 
   startDrawing() {
     this.isDrawingMode = true;
@@ -152,28 +134,29 @@ export class LineTool extends Element {
     );
   }
 
+  private get _excludes() {
+    const select = this.root.keyElmenet.get("select");
+    return select ? [this, select] : [this];
+  }
+
   private _detectAnchor(mx: number, my: number) {
     this.nearestAnchor = null;
     const threshold = this._anchorThreshold / this.root.viewport.scale;
     let bestDist = threshold * threshold;
+    const excludes = this._excludes;
 
-    const workspace = this.root.keyElmenet.get("workspace");
-    if (!workspace) return;
+    this.root.searchArea(
+      {
+        left: mx - threshold,
+        top: my - threshold,
+        width: threshold * 2,
+        height: threshold * 2
+      },
+      ({ element }) => {
+        const resolved = checkElement(element, excludes);
+        if (!resolved || resolved.type === "line") return;
 
-    const visitChildren = (node: any) => {
-      if (!node.children) return;
-      for (const child of node.children) {
-        if (child === this || child.type === "line" || child.silent) {
-          if ((child as any).isLayer) visitChildren(child);
-          continue;
-        }
-        if (child.type === "artboard" || (child as any).isLayer) {
-          visitChildren(child);
-          continue;
-        }
-        if (!child.visible || !child.width || !child.height) continue;
-
-        const anchors = getElementAnchorPoints(child);
+        const anchors = getElementAnchorPoints(element);
         for (const a of anchors) {
           if (a.type === "center") continue;
           const dx = a.x - mx;
@@ -184,15 +167,30 @@ export class LineTool extends Element {
             this.nearestAnchor = {
               x: a.x,
               y: a.y,
-              elementId: child.id,
+              elementId: element.id,
               anchorType: a.type
             };
           }
         }
       }
-    };
+    );
+  }
 
-    visitChildren(workspace);
+  private _getDefaultContentLayer() {
+    const workspace = this.root.keyElmenet.get("workspace");
+    if (workspace?.children?.length) {
+      for (const child of workspace.children) {
+        if ((child as any).type === "artboard") {
+          if (child.children?.length) {
+            for (const c of child.children) {
+              if ((c as any).isLayer) return c;
+            }
+          }
+          return child;
+        }
+      }
+    }
+    return workspace ?? this.root;
   }
 
   private _createLine() {
@@ -202,8 +200,14 @@ export class LineTool extends Element {
       strokeWidth: 2
     });
 
-    const parent = this.targetParent;
+    const startAnchor = this.tempPoints[0]?.anchor;
+    const startEl = startAnchor
+      ? this.root.idElements.get(startAnchor.elementId)
+      : null;
+    const parent = startEl?.layer ?? this._getDefaultContentLayer();
+    this.root.history.snapshot([line]);
     parent.append(line);
+    this.root.history.commit();
   }
 
   paint() {
@@ -272,25 +276,21 @@ export class LineTool extends Element {
   private _drawAllAnchors(ctx: CanvasRenderingContext2D, scale: number) {
     if (!this.isDrawingMode) return;
 
-    const workspace = this.root.keyElmenet.get("workspace");
-    if (!workspace) return;
-
     const size = 3 / scale;
+    const { x: vx, y: vy } = this.root.viewport;
+    const vw = this.root.width / scale;
+    const vh = this.root.height / scale;
+    const viewLeft = -vx / scale;
+    const viewTop = -vy / scale;
 
-    const visitChildren = (node: any) => {
-      if (!node.children) return;
-      for (const child of node.children) {
-        if (child === this || child.type === "line" || child.silent) {
-          if ((child as any).isLayer) visitChildren(child);
-          continue;
-        }
-        if (child.type === "artboard" || (child as any).isLayer) {
-          visitChildren(child);
-          continue;
-        }
-        if (!child.visible || !child.width || !child.height) continue;
+    const excludes = this._excludes;
+    this.root.searchArea(
+      { left: viewLeft, top: viewTop, width: vw, height: vh },
+      ({ element }) => {
+        const resolved = checkElement(element, excludes);
+        if (!resolved || resolved.type === "line") return;
 
-        const anchors = getElementAnchorPoints(child);
+        const anchors = getElementAnchorPoints(element);
         for (const a of anchors) {
           const isNearest =
             this.nearestAnchor &&
@@ -304,9 +304,7 @@ export class LineTool extends Element {
           ctx.fill();
         }
       }
-    };
-
-    visitChildren(workspace);
+    );
   }
 
   hasInView(): boolean {

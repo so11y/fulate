@@ -48,7 +48,7 @@ export abstract class BaseLine extends Element {
     this.markDirty();
     if (anchor && this.root) {
       const el = this.root.idElements.get(anchor.elementId);
-      if (el) el.connectedLines.add(this);
+      if (el) el.connectedLines.add(this.id);
     }
   }
 
@@ -88,7 +88,7 @@ export abstract class BaseLine extends Element {
     );
     if (!stillConnected) {
       const el = this.root.idElements.get(elementId);
-      if (el) el.connectedLines.delete(this);
+      if (el) el.connectedLines.delete(this.id);
     }
   }
 
@@ -131,8 +131,25 @@ export abstract class BaseLine extends Element {
 
   // --- Options (translation + history restore) ---
 
+  private _syncConnectedLines(
+    oldPoints: LinePointData[],
+    newPoints: LinePointData[]
+  ) {
+    if (!this.root) return;
+    for (const p of oldPoints) {
+      if (p.anchor) this._unregisterAnchor(p.anchor.elementId);
+    }
+    for (const p of newPoints) {
+      if (p.anchor) {
+        const el = this.root.idElements.get(p.anchor.elementId);
+        if (el) el.connectedLines.add(this.id);
+      }
+    }
+  }
+
   quickSetOptions(options: BaseElementOption) {
     if ((options as any).linePoints) {
+      const oldPoints = this.linePoints;
       super.quickSetOptions(options);
       this.linePoints = (options as any).linePoints.map((p: any) => ({
         x: p.x,
@@ -140,6 +157,7 @@ export abstract class BaseLine extends Element {
         anchor: p.anchor ? { ...p.anchor } : undefined
       }));
       this._syncBoundsFromPoints();
+      this._syncConnectedLines(oldPoints, this.linePoints);
       return this;
     }
 
@@ -161,6 +179,7 @@ export abstract class BaseLine extends Element {
 
   setOptions(options?: any, syncCalc = false) {
     if (options?.linePoints) {
+      const oldPoints = this.linePoints;
       super.setOptions(options, syncCalc);
       this.linePoints = options.linePoints.map((p: any) => ({
         x: p.x,
@@ -168,6 +187,7 @@ export abstract class BaseLine extends Element {
         anchor: p.anchor ? { ...p.anchor } : undefined
       }));
       this._syncBoundsFromPoints();
+      this._syncConnectedLines(oldPoints, this.linePoints);
       return this;
     }
 
@@ -272,7 +292,7 @@ export abstract class BaseLine extends Element {
 
   hasInView(): boolean {
     if (this.linePoints.length < 2) return false;
-    return true;
+    return super.hasInView();
   }
 
   // --- Group transform protocol ---
@@ -328,7 +348,7 @@ export abstract class BaseLine extends Element {
     for (const p of this.linePoints) {
       if (p.anchor) {
         const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) el.connectedLines.add(this);
+        if (el) el.connectedLines.add(this.id);
       }
     }
   }
@@ -337,7 +357,7 @@ export abstract class BaseLine extends Element {
     for (const p of this.linePoints) {
       if (p.anchor) {
         const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) el.connectedLines.delete(this);
+        if (el) el.connectedLines.delete(this.id);
       }
     }
     super.unmounted();

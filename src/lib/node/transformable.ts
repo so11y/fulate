@@ -429,11 +429,13 @@ export class Transformable extends Node {
       this.isDirty = false;
       this.layer?.syncRbush(this as any);
 
-      // Sync connected lines: update their endpoints and rbush entry
-      const connLines = (this as any).connectedLines as Set<any> | undefined;
-      if (connLines?.size) {
-        for (const line of connLines) {
-          if (line.syncAnchors?.()) {
+      const connLineIds = (this as any).connectedLines as
+        | Set<string>
+        | undefined;
+      if (connLineIds?.size) {
+        for (const lineId of connLineIds) {
+          const line = (this as any).root?.idElements?.get(lineId);
+          if (line?.syncAnchors?.()) {
             line.markDirty?.();
             this.layer?.syncRbush(line);
           }

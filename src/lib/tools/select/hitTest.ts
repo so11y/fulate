@@ -78,9 +78,14 @@ export function selectHitTest(select: Select, hintPoint: Point): boolean {
     }
   }
 
-  if (schema.enableBodyMove !== false && select.bodyHasPoint(hintPoint)) {
-    select.cursor = "move";
-    return true;
+  if (schema.enableBodyMove !== false) {
+    const bodyHit = schema.bodyHitTest
+      ? schema.bodyHitTest(select, hintPoint)
+      : select.bodyHasPoint(hintPoint);
+    if (bodyHit) {
+      select.cursor = "move";
+      return true;
+    }
   }
 
   return false;

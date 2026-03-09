@@ -1,6 +1,7 @@
 import { Intersection } from "../../util/Intersection";
 import { Point } from "../../util/point";
 import { Element } from "../node/element";
+import { AnchorPoint } from "./line/anchor";
 
 export class Triangle extends Element {
   type = "triangle";
@@ -49,5 +50,13 @@ export class Triangle extends Element {
 
   hasPointHint(point: Point): boolean {
     return Intersection.isPointInPolygon(point, this.getCoords());
+  }
+
+  getAnchorSchema(): AnchorPoint[] {
+    return [
+      { id: "left", localPosition: (_el, dim) => new Point(dim.x * 0.25, dim.y * 0.5) },
+      { id: "right", localPosition: (_el, dim) => new Point(dim.x * 0.75, dim.y * 0.5) },
+      { id: "bottom", localPosition: (_el, dim) => new Point(dim.x * 0.5, dim.y) }
+    ];
   }
 }

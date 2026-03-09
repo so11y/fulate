@@ -63,6 +63,7 @@ function getLineControlSchema(line: Line): ControlSchema {
 
   for (let i = 0; i < line.linePoints.length; i++) {
     const ptIndex = i;
+    const isEndpoint = ptIndex === 0 || ptIndex === line.linePoints.length - 1;
     controls.push({
       id: `v${i}`,
       cursor: "move",
@@ -72,6 +73,13 @@ function getLineControlSchema(line: Line): ControlSchema {
         const p = el.linePoints[ptIndex];
         return new Point(p.x - rect.left, p.y - rect.top);
       },
+      onDelete: isEndpoint
+        ? undefined
+        : (select) => {
+            const lineEl = select.selectEls[0] as Line;
+            lineEl.removePoint(ptIndex);
+            return true;
+          },
       onDrag: (select, _point, _state, event) => {
         const lineEl = select.selectEls[0] as Line;
         const snap = select.snapTool;
@@ -130,7 +138,7 @@ function getLineControlSchema(line: Line): ControlSchema {
           }
           if (newAnchor) {
             const el = lineEl.root.idElements.get(newAnchor.elementId);
-            if (el) el.connectedLines.add(lineEl);
+            if (el) el.connectedLines.add(lineEl.id);
           }
         }
 
@@ -219,6 +227,23 @@ function getLineControlSchema(line: Line): ControlSchema {
     controls,
     enableRotation: false,
     enableBodyMove: true,
+    bodyHitTest: (_select, point) => line.hasPointHint(point),
+    paintHover: (el, ctx, scale) => {
+      const lineEl = el as Line;
+      if (lineEl.linePoints.length < 2) return;
+      ctx.save();
+      ctx.strokeStyle = "#4F81FF";
+      ctx.lineWidth = Math.max(lineEl.strokeWidth, 1) / scale;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(lineEl.linePoints[0].x, lineEl.linePoints[0].y);
+      for (let i = 1; i < lineEl.linePoints.length; i++) {
+        ctx.lineTo(lineEl.linePoints[i].x, lineEl.linePoints[i].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    },
     paintFrame: (select, ctx) => {
       const el = select.selectEls[0] as Line;
       if (!el || el.linePoints.length < 2) return;
@@ -258,27 +283,6 @@ function getLineControlSchema(line: Line): ControlSchema {
       }
       ctx.stroke();
       ctx.setLineDash([]);
-
-      const snap = (select as any).snapTool;
-      if (snap?.anchorHighlights?.length) {
-        const hlSize = 3 / scale;
-        for (const h of snap.anchorHighlights) {
-          if (h.matched) {
-            ctx.strokeStyle = "#4F81FF";
-            ctx.lineWidth = 2 / scale;
-            ctx.fillStyle = "rgba(79, 129, 255, 0.2)";
-            ctx.beginPath();
-            ctx.arc(h.x, h.y, hlSize * 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          } else {
-            ctx.fillStyle = "rgba(79, 129, 255, 0.5)";
-            ctx.beginPath();
-            ctx.arc(h.x, h.y, hlSize, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-      }
 
       ctx.restore();
     },

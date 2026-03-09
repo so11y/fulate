@@ -2,40 +2,15 @@ import { Point } from "../../../util/point";
 import { degreesToRadians } from "../../../util/radiansDegreesConversion";
 import { Element } from "../../node/element";
 import { FulateEvent } from "../../../util/event";
-import { Layer } from "../../layer";
 import type { Select } from "./index";
-
-function checkElement(object: Element, select: Select) {
-  if (
-    object === select ||
-    object.selectctbale === false ||
-    object.inject("selectctbale") === false
-  )
-    return;
-
-  if (object.inject("group")) {
-    return;
-  }
-
-  if (object.inject("layer").type !== "artboard") {
-    if (
-      object.inject("layer").parent.type === "artboard" &&
-      !(object.parent as Layer).isLayer
-    ) {
-      return;
-    }
-  }
-
-  return true;
-}
+import { checkElement } from "./checkElement";
 
 function checkElementIntersects(
   select: Select,
   object: Element
 ): Element | undefined {
-  if (!checkElement(object, select)) {
-    return;
-  }
+  const resolved = checkElement(object, [select]);
+  if (!resolved) return;
   const [tl, , br] = select.getControlCoords();
   if (
     object.visible &&
@@ -44,7 +19,7 @@ function checkElementIntersects(
       object.hasPointHint(tl) ||
       object.hasPointHint(br))
   ) {
-    return object;
+    return resolved;
   }
 }
 
@@ -144,7 +119,10 @@ function handleSelectMove(select: Select, e: FulateEvent) {
 
   const originalSelectLeft = select.left;
   const originalSelectTop = select.top;
-  const coords = select.getParentCoords();
+  const coords =
+    select.selectEls.length === 1
+      ? select.selectEls[0].getSnapPoints()
+      : select.getParentCoords();
 
   const pointermove = (ev: FulateEvent) => {
     const current = new Point(ev.detail.x, ev.detail.y);

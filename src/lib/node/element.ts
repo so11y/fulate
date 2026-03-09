@@ -49,8 +49,8 @@ export class Element extends Transformable {
   visible: boolean = true;
   selectctbale?: boolean;
   groupParent?: any;
-  /** Lines that have an anchor point connected to this element */
-  connectedLines: Set<any> = new Set();
+  /** IDs of lines that have an anchor point connected to this element */
+  connectedLines: Set<string> = new Set();
   private _activeTweens = new Set<Tween<Element>>();
   declare children: this[];
   declare parent: this;

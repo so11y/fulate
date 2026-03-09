@@ -89,12 +89,47 @@ export class Select extends Group {
 
   delete() {
     if (!this.selectEls.length) return;
-    this.root.history.snapshot(this.selectEls);
+
+    if (this.currentControl?.control?.onDelete) {
+      this.root.history.snapshot(this.selectEls);
+      const handled = this.currentControl.control.onDelete(this);
+      if (handled) {
+        this.root.history.commit();
+        this.select(this.selectEls);
+        return;
+      }
+    }
+
+    const affected = [...this.selectEls];
+    const deletingIds = new Set(this.selectEls.map((el) => el.id));
+    for (const el of this.selectEls) {
+      for (const lineId of el.connectedLines) {
+        if (deletingIds.has(lineId)) continue;
+        const line = this.root.idElements.get(lineId);
+        if (line && !affected.includes(line)) affected.push(line);
+      }
+    }
+
+    this.root.history.snapshot(affected);
+
+    for (const el of this.selectEls) {
+      for (const lineId of el.connectedLines) {
+        if (deletingIds.has(lineId)) continue;
+        const line = this.root.idElements.get(lineId) as any;
+        if (!line?.linePoints) continue;
+        for (const p of line.linePoints) {
+          if (p.anchor?.elementId === el.id) {
+            p.anchor = undefined;
+          }
+        }
+        line.markDirty();
+      }
+    }
+
     this.selectEls.forEach((el) => {
       el.parent?.removeChild(el);
     });
     this.select([]);
-    //TODO 现在只是checkhit,还需要发送一个fakeclick事件
     this.root.nextTick(() => this.root.checkHit());
     this.root.history.commit();
   }
