@@ -129,7 +129,7 @@ function getLineControlSchema(line: Line): ControlSchema {
           }
           if (newAnchor) {
             const el = lineEl.root.idElements.get(newAnchor.elementId);
-            if (el) el.connectedLines.add(lineEl.id);
+            if (el) (el.connectedLines ??= new Set()).add(lineEl.id);
           }
         }
 

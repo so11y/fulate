@@ -101,30 +101,17 @@ export class Select extends Group {
     }
 
     const affected = [...this.selectEls];
+    const passive = new Set<Element>();
     const deletingIds = new Set(this.selectEls.map((el) => el.id));
     for (const el of this.selectEls) {
-      for (const lineId of el.connectedLines) {
-        if (deletingIds.has(lineId)) continue;
-        const line = this.root.idElements.get(lineId);
-        if (line && !affected.includes(line)) affected.push(line);
+      for (const dep of el.getAffectedElements()) {
+        if (deletingIds.has(dep.id) || affected.includes(dep)) continue;
+        affected.push(dep);
+        passive.add(dep);
       }
     }
 
-    this.root.history.snapshot(affected);
-
-    for (const el of this.selectEls) {
-      for (const lineId of el.connectedLines) {
-        if (deletingIds.has(lineId)) continue;
-        const line = this.root.idElements.get(lineId) as any;
-        if (!line?.linePoints) continue;
-        for (const p of line.linePoints) {
-          if (p.anchor?.elementId === el.id) {
-            p.anchor = undefined;
-          }
-        }
-        line.markDirty();
-      }
-    }
+    this.root.history.snapshot(affected, passive);
 
     this.selectEls.forEach((el) => {
       el.parent?.removeChild(el);

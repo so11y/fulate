@@ -48,7 +48,7 @@ export abstract class BaseLine extends Element {
     this.markDirty();
     if (anchor && this.root) {
       const el = this.root.idElements.get(anchor.elementId);
-      if (el) el.connectedLines.add(this.id);
+      if (el) (el.connectedLines ??= new Set()).add(this.id);
     }
   }
 
@@ -88,7 +88,7 @@ export abstract class BaseLine extends Element {
     );
     if (!stillConnected) {
       const el = this.root.idElements.get(elementId);
-      if (el) el.connectedLines.delete(this.id);
+      if (el) el.connectedLines?.delete(this.id);
     }
   }
 
@@ -142,7 +142,7 @@ export abstract class BaseLine extends Element {
     for (const p of newPoints) {
       if (p.anchor) {
         const el = this.root.idElements.get(p.anchor.elementId);
-        if (el) el.connectedLines.add(this.id);
+        if (el) (el.connectedLines ??= new Set()).add(this.id);
       }
     }
   }
@@ -338,12 +338,32 @@ export abstract class BaseLine extends Element {
 
   // --- Connected-lines lifecycle ---
 
+  activate() {
+    super.activate();
+    for (const p of this.linePoints) {
+      if (p.anchor) {
+        const el = this.root?.idElements.get(p.anchor.elementId);
+        if (el) (el.connectedLines ??= new Set()).add(this.id);
+      }
+    }
+  }
+
+  deactivate() {
+    for (const p of this.linePoints) {
+      if (p.anchor) {
+        const el = this.root?.idElements.get(p.anchor.elementId);
+        if (el) el.connectedLines?.delete(this.id);
+      }
+    }
+    super.deactivate();
+  }
+
   mounted() {
     super.mounted();
     for (const p of this.linePoints) {
       if (p.anchor) {
         const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) el.connectedLines.add(this.id);
+        if (el) (el.connectedLines ??= new Set()).add(this.id);
       }
     }
   }
@@ -352,7 +372,7 @@ export abstract class BaseLine extends Element {
     for (const p of this.linePoints) {
       if (p.anchor) {
         const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) el.connectedLines.delete(this.id);
+        if (el) el.connectedLines?.delete(this.id);
       }
     }
     super.unmounted();

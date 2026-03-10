@@ -51,9 +51,8 @@ export class Element extends Transformable {
   selectctbale?: boolean;
   groupParent?: any;
   /** IDs of lines that have an anchor point connected to this element */
-  /** 不应该上来就new set */
-  connectedLines: Set<string> = new Set();
-  private _activeTweens = new Set<Tween<Element>>();
+  connectedLines?: Set<string>;
+  private _activeTweens?: Set<Tween<Element>>;
   declare children: this[];
   declare parent: this;
 
@@ -64,6 +63,39 @@ export class Element extends Transformable {
       this.attrs(props);
       if (children) this.children = children as any;
     }
+  }
+
+  // deactivate() {
+  //   for (const lineId of [...(this.connectedLines ?? [])]) {
+  //     console.log('d-d-');
+  //     const line = this.root?.idElements.get(lineId) as any;
+  //     if (!line?.linePoints) continue;
+
+  //     for (const p of line.linePoints) {
+  //       if (p.anchor?.elementId === this.id) {
+  //         p.anchor = undefined;
+  //       }
+  //     }
+
+  //     const hasRemainingAnchor = line.linePoints.some((p: any) => p.anchor);
+  //     if (!hasRemainingAnchor) {
+  //       line.parent?.removeChild(line);
+  //     } else {
+  //       line.markDirty();
+  //     }
+  //   }
+
+  //   super.deactivate();
+  // }
+
+  getAffectedElements(): Element[] {
+    if (!this.connectedLines) return [];
+    const result: Element[] = [];
+    for (const lineId of this.connectedLines) {
+      const line = this.root?.idElements.get(lineId);
+      if (line) result.push(line);
+    }
+    return result;
   }
 
   attrs(options: any, O: { target?: any; assign?: boolean } = {}): void {
@@ -300,10 +332,10 @@ export class Element extends Transformable {
     if (options?.repeat != null) tween.repeat(options.repeat);
     if (options?.yoyo) tween.yoyo(true);
 
-    this._activeTweens.add(tween);
+    (this._activeTweens ??= new Set()).add(tween);
 
     const cleanup = () => {
-      this._activeTweens.delete(tween);
+      this._activeTweens?.delete(tween);
     };
 
     const promise = new Promise<void>((resolve) => {
@@ -328,6 +360,7 @@ export class Element extends Transformable {
   }
 
   stopAnimations() {
+    if (!this._activeTweens) return;
     for (const tween of this._activeTweens) {
       tween.stop();
     }
@@ -335,18 +368,21 @@ export class Element extends Transformable {
   }
 
   finishAnimations() {
+    if (!this._activeTweens) return;
     for (const tween of this._activeTweens) {
       tween.end();
     }
   }
 
   pauseAnimations() {
+    if (!this._activeTweens) return;
     for (const tween of this._activeTweens) {
       tween.pause();
     }
   }
 
   resumeAnimations() {
+    if (!this._activeTweens) return;
     for (const tween of this._activeTweens) {
       tween.resume();
     }

@@ -16,6 +16,7 @@ interface HistoryRecord {
   prev: ElementState;
   next: ElementState;
   type: "modify" | "delete" | "create";
+  passive?: boolean;
 }
 
 interface ActionRecord {
@@ -29,6 +30,7 @@ export class HistoryManager {
   private undoStack: HistoryEntry[] = [];
   private redoStack: HistoryEntry[] = [];
   private snapshotMap = new Map<Element, ElementState>();
+  private _passiveElements?: Set<Element>;
   private limit: number;
   root?: Root;
 
@@ -50,8 +52,9 @@ export class HistoryManager {
     };
   }
 
-  snapshot(elements: Element[]) {
+  snapshot(elements: Element[], passiveElements?: Set<Element>) {
     this.snapshotMap.clear();
+    this._passiveElements = passiveElements;
     elements.forEach((el) => {
       this.snapshotMap.set(el, this.getState(el));
     });
@@ -82,7 +85,8 @@ export class HistoryManager {
           element,
           prev: prevState,
           next: nextState,
-          type
+          type,
+          passive: this._passiveElements?.has(element) || undefined
         });
       }
     });
@@ -96,6 +100,7 @@ export class HistoryManager {
     }
 
     this.snapshotMap.clear();
+    this._passiveElements = undefined;
   }
 
   pushAction(undo: () => void, redo: () => void) {
@@ -151,10 +156,10 @@ export class HistoryManager {
         if (state.parent)
           this.insertElementAt(state.parent, element, state.index);
         element.quickSetOptions(state.props);
-        selectedElements.push(element);
+        if (!record.passive) selectedElements.push(element);
       } else {
         element.quickSetOptions(state.props);
-        selectedElements.push(element);
+        if (!record.passive) selectedElements.push(element);
       }
     }
 

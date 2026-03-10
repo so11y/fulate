@@ -40,7 +40,7 @@ export class Node extends EventEmitter {
 
   key!: string;
   silent = false;
-  pickable = true //false 事件跳过这个节点，继续往上冒
+  pickable = true; //false 事件跳过这个节点，继续往上冒
 
   _options: any = {};
   _provides: Record<string, any>;
@@ -243,9 +243,14 @@ export class Node extends EventEmitter {
     if (this.id && this.root?.idElements) {
       this.root.idElements.delete(this.id);
     }
+    this.layer?.addDirtyNode(this as any);
     this.layer?.removeRbush(this as any);
 
-    this.dispatchEvent(new CustomEvent("deactivated"));
+    this.dispatchEvent(
+      new CustomEvent("deactivated", {
+        bubbles: false
+      })
+    );
 
     this.children?.forEach((child) => child.deactivate());
   }
@@ -255,7 +260,11 @@ export class Node extends EventEmitter {
     this.deactivate();
 
     this.isUnmounted = true;
-    this.dispatchEvent(new CustomEvent("unmounted"));
+    this.dispatchEvent(
+      new CustomEvent("unmounted", {
+        bubbles: false
+      })
+    );
 
     const oldParent = this.parent;
     if (oldParent && oldParent.children?.length) {
