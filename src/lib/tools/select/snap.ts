@@ -59,7 +59,10 @@ export class Snap extends Element {
     });
   }
 
-  start(excludeEls: Element[]) {
+  start(
+    excludeEls: Element[],
+    excludePoints?: { element: Element; indices: number[] }[]
+  ) {
     if (!this.root) return;
     this.isActive = true;
     this.snapLines = [];
@@ -67,10 +70,23 @@ export class Snap extends Element {
     const xData: number[] = [];
     const yData: number[] = [];
     const excludes = new Set(excludeEls);
+    const partialExcludes = new Map<Element, Set<number>>();
+    if (excludePoints) {
+      for (const ep of excludePoints) {
+        partialExcludes.set(ep.element, new Set(ep.indices));
+      }
+    }
 
     this.forEachTarget((node) => {
       if (excludes.has(node)) return;
-      const snapPoints = node.getSnapPoints();
+      let snapPoints = node.getSnapPoints();
+      if (!snapPoints || snapPoints.length === 0) return;
+
+      const skipIndices = partialExcludes.get(node);
+      if (skipIndices) {
+        snapPoints = snapPoints.filter((_, i) => !skipIndices.has(i));
+        if (snapPoints.length === 0) return;
+      }
       if (!snapPoints || snapPoints.length === 0) return;
 
       const isAxisAligned =
@@ -133,9 +149,41 @@ export class Snap extends Element {
           );
         }
 
+        const xGroups = new Map<number, { min: number; max: number }>();
+        const yGroups = new Map<number, { min: number; max: number }>();
+        const eps = 0.5;
+
         for (const p of points) {
-          xData.push(p.x, p.y, p.y);
-          yData.push(p.y, p.x, p.x);
+          let xKey: number | undefined;
+          for (const k of xGroups.keys()) {
+            if (Math.abs(k - p.x) < eps) { xKey = k; break; }
+          }
+          if (xKey !== undefined) {
+            const g = xGroups.get(xKey)!;
+            g.min = Math.min(g.min, p.y);
+            g.max = Math.max(g.max, p.y);
+          } else {
+            xGroups.set(p.x, { min: p.y, max: p.y });
+          }
+
+          let yKey: number | undefined;
+          for (const k of yGroups.keys()) {
+            if (Math.abs(k - p.y) < eps) { yKey = k; break; }
+          }
+          if (yKey !== undefined) {
+            const g = yGroups.get(yKey)!;
+            g.min = Math.min(g.min, p.x);
+            g.max = Math.max(g.max, p.x);
+          } else {
+            yGroups.set(p.y, { min: p.x, max: p.x });
+          }
+        }
+
+        for (const [x, range] of xGroups) {
+          xData.push(x, range.min, range.max);
+        }
+        for (const [y, range] of yGroups) {
+          yData.push(y, range.min, range.max);
         }
       }
     });

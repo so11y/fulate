@@ -1,4 +1,5 @@
 import { BaseElementOption, Element } from "../node/element";
+import { extractPhysicalTransform } from "../../util/matrix";
 
 export interface TextOption extends BaseElementOption {
   text?: string;
@@ -182,43 +183,24 @@ export class Text extends Element {
     const localMatrix = this.getOwnMatrix();
     const matrix = vpMatrix.multiply(localMatrix);
 
-    const stretchX = Math.sqrt(
-      localMatrix.a * localMatrix.a + localMatrix.b * localMatrix.b
+    const local = extractPhysicalTransform(localMatrix);
+    const renderWidth = (this.width || 0) * local.stretchX;
+
+    const combined = extractPhysicalTransform(matrix);
+    const vpScale = Math.sqrt(vpMatrix.a * vpMatrix.a + vpMatrix.b * vpMatrix.b);
+
+    const cos = Math.cos(combined.angle);
+    const sin = Math.sin(combined.angle);
+
+    const d = this.root.dpr;
+    ctx.setTransform(
+      vpScale * cos * d,
+      vpScale * sin * d,
+      -vpScale * combined.flip * sin * d,
+      vpScale * combined.flip * cos * d,
+      matrix.e * d,
+      matrix.f * d
     );
-    const stretchY = Math.sqrt(
-      localMatrix.c * localMatrix.c + localMatrix.d * localMatrix.d
-    );
-
-    // 计算实际应该占据的宽度
-    const renderWidth = (this.width || 0) * stretchX;
-
-    const { a, b, c, d, e, f } = matrix as any;
-    const angle = Math.atan2(b, a); // 提取纯粹的旋转角度
-    const det = a * d - b * c;
-    const flip = det < 0 ? -1 : 1;
-    const vpScale = Math.sqrt(
-      vpMatrix.a * vpMatrix.a + vpMatrix.b * vpMatrix.b
-    );
-
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-
-    //构建干净矩阵（完全剔除了斜切和畸变，保证是直角）
-    const horizontalX = vpScale * cos;
-    const horizontalY = vpScale * sin;
-    const verticalX = -vpScale * flip * sin;
-    const verticalY = vpScale * flip * cos;
-
-    // 应用干净矩阵
-    const pureMatrix = new DOMMatrix([
-      horizontalX,
-      horizontalY,
-      verticalX,
-      verticalY,
-      e,
-      f
-    ]);
-    this.applyTransformToCtx(ctx, pureMatrix);
 
     ctx.font = this.fontString;
     ctx.fillStyle = this.color;
@@ -226,11 +208,10 @@ export class Text extends Element {
     ctx.textBaseline = this.textBaseline;
 
     // 计算文字行
-    this.computeLines(ctx, renderWidth, stretchY);
+    this.computeLines(ctx, renderWidth, local.stretchY);
 
-    // 如果有设置高度，就必须用 高度 * stretchY，这正是外面蓝色控制框的实际高度！
     const renderHeight =
-      this.height !== undefined ? this.height * stretchY : this.textHeight;
+      this.height !== undefined ? this.height * local.stretchY : this.textHeight;
 
     // 绘制背景
     if (this.backgroundColor) {

@@ -15,23 +15,25 @@ export interface RectPoint
 
 export function makeBoundingBoxFromPoints(
   points: { x: number; y: number }[]
-): RectPoint {
-  let left = 0,
-    top = 0,
-    width = 0,
-    height = 0;
-  for (let i = 0, len = points.length; i < len; i++) {
+): RectWithCenter {
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (let i = 0; i < points.length; i++) {
     const { x, y } = points[i];
-    if (x > width || !i) width = x;
-    if (x < left || !i) left = x;
-    if (y > height || !i) height = y;
-    if (y < top || !i) top = y;
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
   }
   return {
-    left,
-    top,
-    width: width - left,
-    height: height - top
+    left: minX,
+    top: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+    centerX: (minX + maxX) / 2,
+    centerY: (minY + maxY) / 2
   };
 }
 

@@ -2,9 +2,7 @@ import { Node } from "./node";
 import { Point, PointType, TOriginX, TOriginY } from "../../util/point";
 import { resolveOrigin } from "../../util/resolveOrigin";
 import { Intersection } from "../../util/Intersection";
-import { Rect, RectWithCenter, RectPoint } from "../../util/rect";
-
-export type { Rect, RectWithCenter, RectPoint };
+import { RectWithCenter, makeBoundingBoxFromPoints } from "../../util/rect";
 
 export interface TransformableOptions {
   left?: number;
@@ -48,17 +46,23 @@ export class Transformable extends Node {
   _unionBoundsCache: RectWithCenter | null = null;
   _lastUnionBounds: RectWithCenter | null = null;
 
+  private _tempTopLeft = new Point(0, 0);
+  private _tempCenter = new Point(0, 0);
+
   getRelativeTopLeftPoint() {
-    return new Point(this.left, this.top);
+    this._tempTopLeft.x = this.left;
+    this._tempTopLeft.y = this.top;
+    return this._tempTopLeft;
   }
 
   getRelativeCenterPoint(point = this.getRelativeTopLeftPoint()) {
     return this.translateToGivenOrigin(
       point,
-      "left", // 从左上角开始
+      "left",
       "top",
-      this.originX, // 到用户指定的原点
-      this.originY
+      this.originX,
+      this.originY,
+      this._tempCenter
     );
   }
 
@@ -113,11 +117,8 @@ export class Transformable extends Node {
     return m;
   }
 
-  applyTransformToCtx(ctx: CanvasRenderingContext2D, customMatrix?: DOMMatrix) {
-    const matrix =
-      customMatrix ??
-      this.root.getViewPointMtrix().multiply(this.getOwnMatrix());
-    this.root.applyViewPointTransform(ctx, matrix);
+  applyTransformToCtx(ctx: CanvasRenderingContext2D) {
+    this.root.applyViewPointTransform(ctx, this._ownMatrixCache);
   }
 
   getWorldPoint(point: Point) {
@@ -138,31 +139,7 @@ export class Transformable extends Node {
 
   getBoundingRect(): RectWithCenter {
     if (this._boundingRectCache) return this._boundingRectCache;
-
-    const globalCorners = this.getCoords();
-
-    // 计算 min/max
-    let minX = Infinity,
-      minY = Infinity;
-    let maxX = -Infinity,
-      maxY = -Infinity;
-
-    globalCorners.forEach(({ x, y }) => {
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-    });
-
-    this._boundingRectCache = {
-      left: minX,
-      top: minY,
-      width: maxX - minX,
-      height: maxY - minY,
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2
-    };
-
+    this._boundingRectCache = makeBoundingBoxFromPoints(this.getCoords());
     return this._boundingRectCache;
   }
 
@@ -298,7 +275,8 @@ export class Transformable extends Node {
     fromOriginX: TOriginX,
     fromOriginY: TOriginY,
     toOriginX: TOriginX = this.originX,
-    toOriginY: TOriginY = this.originY
+    toOriginY: TOriginY = this.originY,
+    out?: Point
   ) {
     let x = point.x,
       y = point.y;
@@ -308,6 +286,11 @@ export class Transformable extends Node {
       const dim = this._getTransformedDimensions();
       x += offsetX * dim.x;
       y += offsetY * dim.y;
+    }
+    if (out) {
+      out.x = x;
+      out.y = y;
+      return out;
     }
     return new Point(x, y);
   }
@@ -378,12 +361,8 @@ export class Transformable extends Node {
     this.isDirty = true;
     this._coords = null;
     this._snapPoints = null;
-    this._lastBoundingRect = {
-      ...this._boundingRectCache
-    };
-    this._lastUnionBounds = this._unionBoundsCache
-      ? { ...this._unionBoundsCache }
-      : this._lastUnionBounds;
+    this._lastBoundingRect = this._boundingRectCache;
+    this._lastUnionBounds = this._unionBoundsCache ?? this._lastUnionBounds;
     this._boundingRectCache = null;
     this._unionBoundsCache = null;
     this._inverseOwnMatrixCache = null;

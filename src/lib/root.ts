@@ -28,6 +28,7 @@ export class Root extends Node {
 
   width: number;
   height: number;
+  dpr = window.devicePixelRatio || 1;
 
   private _containerRect!: DOMRect;
 
@@ -57,7 +58,10 @@ export class Root extends Node {
     super.mount();
     this._updateContainerRect();
 
-    const onRectChange = () => this._updateContainerRect();
+    const onRectChange = () => {
+      this._updateContainerRect();
+      this.dpr = window.devicePixelRatio || 1;
+    };
     window.addEventListener("resize", onRectChange);
     window.addEventListener("scroll", onRectChange, true);
     this.addEventListener("unmounted", () => {
@@ -173,16 +177,21 @@ export class Root extends Node {
     return m;
   }
 
-  applyViewPointTransform(ctx: CanvasRenderingContext2D, matrix?: DOMMatrix) {
-    const dpr = window.devicePixelRatio || 1;
-    const m = matrix ?? this.getViewPointMtrix();
+  applyViewPointTransform(ctx: CanvasRenderingContext2D, ownMatrix?: DOMMatrix) {
+    const d = this.dpr;
+    const vp = this.getViewPointMtrix();
+    if (!ownMatrix) {
+      ctx.setTransform(vp.a * d, vp.b * d, vp.c * d, vp.d * d, vp.e * d, vp.f * d);
+      return;
+    }
+    const m = ownMatrix;
     ctx.setTransform(
-      m.a * dpr,
-      m.b * dpr,
-      m.c * dpr,
-      m.d * dpr,
-      m.e * dpr,
-      m.f * dpr
+      (vp.a * m.a + vp.c * m.b) * d,
+      (vp.b * m.a + vp.d * m.b) * d,
+      (vp.a * m.c + vp.c * m.d) * d,
+      (vp.b * m.c + vp.d * m.d) * d,
+      (vp.a * m.e + vp.c * m.f + vp.e) * d,
+      (vp.b * m.e + vp.d * m.f + vp.f) * d
     );
   }
 
@@ -322,12 +331,14 @@ export class Root extends Node {
           const dy = e.clientY - this.lastPointerPos.y;
           this.viewport.x += dx;
           this.viewport.y += dy;
-          this.lastPointerPos = { x: e.clientX, y: e.clientY };
+          this.lastPointerPos.x = e.clientX;
+          this.lastPointerPos.y = e.clientY;
 
           this.dispatchEvent(new CustomEvent("translation"));
           this.requestRender();
         } else {
-          this.lastPointerPos = { x: e.clientX, y: e.clientY };
+          this.lastPointerPos.x = e.clientX;
+          this.lastPointerPos.y = e.clientY;
           this.checkHit();
           this.notify(e, "pointermove");
         }
@@ -341,7 +352,8 @@ export class Root extends Node {
       (e) => {
         if (e.button !== 0) return; // 仅左键
 
-        this.lastPointerPos = { x: e.clientX, y: e.clientY };
+        this.lastPointerPos.x = e.clientX;
+        this.lastPointerPos.y = e.clientY;
 
         if (this.isSpacePressed) {
           this.isPanning = true;
@@ -394,7 +406,8 @@ export class Root extends Node {
 
         this.requestRender();
 
-        this.lastPointerPos = { x: e.clientX, y: e.clientY };
+        this.lastPointerPos.x = e.clientX;
+        this.lastPointerPos.y = e.clientY;
         this.checkHit();
       },
       { signal, passive: false }

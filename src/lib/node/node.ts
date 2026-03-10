@@ -45,12 +45,15 @@ export class Node extends EventEmitter {
   _options: any = {};
   _provides: Record<string, any>;
 
+  _root: Root | null = null;
+  _layer: Layer | null = null;
+
   get layer(): Layer {
-    return this.inject("layer");
+    return this._layer ?? this.inject("layer");
   }
 
   get root(): Root {
-    return this.inject("root");
+    return this._root ?? this.inject("root");
   }
 
   get firstChild(): this | null {
@@ -218,11 +221,14 @@ export class Node extends EventEmitter {
     if (this.isActiveed || this.isUnmounted) return;
     this.isActiveed = true;
 
-    if (this.key && this.root) {
-      this.root.keyElmenet.set(this.key, this as any);
+    this._root = this.inject("root") ?? null;
+    this._layer = this.inject("layer") ?? null;
+
+    if (this.key && this._root) {
+      this._root.keyElmenet.set(this.key, this as any);
     }
-    if (this.id && this.root?.idElements) {
-      this.root.idElements.set(this.id, this as any);
+    if (this.id && this._root?.idElements) {
+      this._root.idElements.set(this.id, this as any);
     }
 
     this.dispatchEvent(new CustomEvent("activated"));
@@ -237,14 +243,14 @@ export class Node extends EventEmitter {
     if (!this.isActiveed) return;
     this.isActiveed = false;
 
-    if (this.key && this.root) {
-      this.root.keyElmenet.delete(this.key);
+    if (this.key && this._root) {
+      this._root.keyElmenet.delete(this.key);
     }
-    if (this.id && this.root?.idElements) {
-      this.root.idElements.delete(this.id);
+    if (this.id && this._root?.idElements) {
+      this._root.idElements.delete(this.id);
     }
-    this.layer?.addDirtyNode(this as any);
-    this.layer?.removeRbush(this as any);
+    this._layer?.addDirtyNode(this as any);
+    this._layer?.removeRbush(this as any);
 
     this.dispatchEvent(
       new CustomEvent("deactivated", {
@@ -253,6 +259,9 @@ export class Node extends EventEmitter {
     );
 
     this.children?.forEach((child) => child.deactivate());
+
+    this._root = null;
+    this._layer = null;
   }
 
   unmounted() {

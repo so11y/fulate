@@ -25,8 +25,8 @@ export class Group extends Element {
   updateBoundingBox() {
     if (!this.groupEls.length) return;
     const allPoints = this.groupEls.map((v) => v.getCoords()).flat(1);
-    const rect = makeBoundingBoxFromPoints(allPoints);
-    Object.assign(this, rect);
+    const { left, top, width, height } = makeBoundingBoxFromPoints(allPoints);
+    Object.assign(this, { left, top, width, height });
     this.markDirty();
     this.snapshotChildren();
   }

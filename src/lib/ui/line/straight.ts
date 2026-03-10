@@ -30,7 +30,9 @@ export class Line extends BaseLine {
     ctx.stroke();
 
     const pointSize = 3 / scale;
-    for (const p of this.linePoints) {
+    const first = this.linePoints[0];
+    const last = this.linePoints[this.linePoints.length - 1];
+    for (const p of [first, last]) {
       ctx.fillStyle = p.anchor ? "#4F81FF" : this.strokeColor;
       ctx.beginPath();
       ctx.arc(p.x, p.y, pointSize, 0, Math.PI * 2);
@@ -76,19 +78,16 @@ function getLineControlSchema(line: Line): ControlSchema {
         const snap = select.snapTool;
 
         if (!(select as any)._lineVertexSnapStarted) {
-          snap?.start([lineEl, select as any]);
+          snap?.start(
+            [select as any],
+            [{ element: lineEl, indices: [ptIndex] }]
+          );
           (select as any)._lineVertexSnapStarted = true;
         }
 
         let targetX = event.detail.x;
         let targetY = event.detail.y;
 
-        // Only the first and last points of a line may be anchored to a node.
-        // Middle vertices only get alignment-guide snapping.
-        //
-        // TODO: future line-to-line merging — when two line endpoints meet,
-        //       detect type==="line" snap targets and merge or create a
-        //       line-to-line anchor reference here.
         const isEndpoint =
           ptIndex === 0 || ptIndex === lineEl.linePoints.length - 1;
         let newAnchor: LineAnchor | undefined;

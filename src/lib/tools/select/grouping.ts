@@ -80,11 +80,14 @@ export function unGroup(select: Select) {
     groupParent.removeChild(group as any);
   }
 
-  const rect = makeBoundingBoxFromPoints(
+  const { left, top, width, height } = makeBoundingBoxFromPoints(
     select.selectEls.map((v) => v.getCoords()).flat(1)
   );
   select.setOptions({
-    ...rect,
+    left,
+    top,
+    width,
+    height,
     angle: 0,
     scaleX: 1,
     scaleY: 1,

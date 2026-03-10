@@ -36,7 +36,16 @@ export class Triangle extends Element {
   }
 
   getLocalSnapPoints() {
-    return super.getLocalPoints();
+    const dim = this._getTransformedDimensions();
+    const w = dim.x, h = dim.y;
+    return [
+      new Point(w / 2, 0),
+      new Point(w, h),
+      new Point(0, h),
+      new Point(w * 0.25, h * 0.5),
+      new Point(w * 0.75, h * 0.5),
+      new Point(w * 0.5, h)
+    ];
   }
 
   getLocalPoints() {

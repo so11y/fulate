@@ -86,11 +86,15 @@ function drawControlPoints(select: Select, ctx: CanvasRenderingContext2D) {
 
 function drawInfoPanel(select: Select, ctx: CanvasRenderingContext2D) {
   const vp = select.root.getViewPointMtrix();
-  const dpr = window.devicePixelRatio || 1;
-  const cornerPts = select.getControlCoords().map((p) => p.matrixTransform(vp));
-  const minX = Math.min(...cornerPts.map((p) => p.x));
-  const maxX = Math.max(...cornerPts.map((p) => p.x));
-  const maxY = Math.max(...cornerPts.map((p) => p.y));
+  const dpr = select.root.dpr;
+  const controlCoords = select.getControlCoords();
+  let minX = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of controlCoords) {
+    const tp = p.matrixTransform(vp);
+    if (tp.x < minX) minX = tp.x;
+    if (tp.x > maxX) maxX = tp.x;
+    if (tp.y > maxY) maxY = tp.y;
+  }
   const centerX = (minX + maxX) / 2;
 
   const text = `x: ${Math.round(select.left)}  y: ${Math.round(

@@ -218,26 +218,14 @@ export abstract class BaseLine extends Element {
     if (this._boundingRectCache) return this._boundingRectCache;
     if (this.linePoints.length < 2) return super.getBoundingRect();
 
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    for (const p of this.linePoints) {
-      minX = Math.min(minX, p.x);
-      minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x);
-      maxY = Math.max(maxY, p.y);
-    }
-
+    const rect = makeBoundingBoxFromPoints(this.linePoints);
     const pad = this._getVisualPadding();
-    this._boundingRectCache = {
-      left: minX - pad,
-      top: minY - pad,
-      width: maxX - minX + pad * 2 || 1,
-      height: maxY - minY + pad * 2 || 1,
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2
-    };
+    rect.left -= pad;
+    rect.top -= pad;
+    rect.width = (rect.width + pad * 2) || 1;
+    rect.height = (rect.height + pad * 2) || 1;
+
+    this._boundingRectCache = rect;
     return this._boundingRectCache;
   }
 

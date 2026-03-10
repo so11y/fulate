@@ -35,6 +35,11 @@ export class Layer extends Rectangle {
   private static GRID_ROWS = 3;
   private static FULL_REPAINT_RATIO = 0.5;
 
+  private _buckets: RectPoint[] = Array.from(
+    { length: Layer.GRID_COLS * Layer.GRID_ROWS },
+    () => ({ left: Infinity, top: Infinity, width: 0, height: 0 })
+  );
+
   constructor(
     options?: BaseElementOption & {
       zIndex?: number;
@@ -58,7 +63,7 @@ export class Layer extends Rectangle {
     this.width = width;
     this.height = height;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = root.dpr;
     this.canvasEl.width = this.width * dpr;
     this.canvasEl.height = this.height * dpr;
 
@@ -186,7 +191,7 @@ export class Layer extends Rectangle {
 
       const m = this.root.getViewPointMtrix();
 
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = this.root.dpr;
       const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
 
       const canvasW = this.width * dpr;
@@ -195,15 +200,11 @@ export class Layer extends Rectangle {
       const cellW = canvasW / GRID_COLS;
       const cellH = canvasH / GRID_ROWS;
 
-      const buckets: RectPoint[] = Array.from(
-        { length: GRID_COLS * GRID_ROWS },
-        () => ({
-          left: Infinity,
-          top: Infinity,
-          width: 0,
-          height: 0
-        })
-      );
+      const buckets = this._buckets;
+      for (const b of buckets) {
+        b.left = Infinity; b.top = Infinity;
+        b.width = 0; b.height = 0;
+      }
 
       this.dirtyNodes.forEach((node) => {
         const rect = node.getDirtyRect();
@@ -293,8 +294,7 @@ export class Layer extends Rectangle {
   clear() {
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const dpr = window.devicePixelRatio || 1;
-    this.ctx.clearRect(0, 0, this.width * dpr, this.height * dpr);
+    this.ctx.clearRect(0, 0, this.width * this.root.dpr, this.height * this.root.dpr);
     this.ctx.restore();
   }
 }
