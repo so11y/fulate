@@ -136,7 +136,7 @@ export class EventEmitter {
       const eventName = eventOrName;
 
       if (eventName === "mouseenter") {
-        if (this.isHover && detail?.target !== (this as any)) return;
+        if (this.isHover) return;
         this.isHover = true;
       }
 
@@ -151,7 +151,6 @@ export class EventEmitter {
 
       event = new CustomEvent(eventName, {
         detail: {
-          self: this,
           target: detail?.target ?? this,
           x: detail?.x ?? 0,
           y: detail?.y ?? 0,

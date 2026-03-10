@@ -176,6 +176,10 @@ export function setupInteraction(select: Select): () => void {
   };
 
   const mouseenter = (e: FulateEvent) => {
+    // const element = checkElement(e.detail.target);
+    if (e.detail.target === select) {
+      return;
+    }
     select.hoverElement = e.detail.target;
     select.markDirty();
   };
