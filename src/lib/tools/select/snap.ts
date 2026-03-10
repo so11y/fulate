@@ -31,7 +31,7 @@ export class Snap extends Element {
   lineWidth = 1;
   dashPattern = [4, 4];
 
-  silent = true;
+  selectctbale = false;
 
   isActive = false;
   private snapLines: SnapLine[] = [];
@@ -546,17 +546,7 @@ export class Snap extends Element {
 
     ctx.save();
 
-    // 吸附线也需要加上 DPR 和视口矩阵的缩放
-    const dpr = window.devicePixelRatio || 1;
-    const vp = this.root.getViewPointMtrix();
-    ctx.setTransform(
-      vp.a * dpr,
-      vp.b * dpr,
-      vp.c * dpr,
-      vp.d * dpr,
-      vp.e * dpr,
-      vp.f * dpr
-    );
+    this.root.applyViewPointTransform(ctx);
 
     ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = this.lineColor;

@@ -14,6 +14,7 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   visible?: boolean;
   selectctbale?: boolean;
   silent?: boolean;
+  pickable?: boolean;
 
   onclick?: (this: T, e: FulateEvent<T>) => any;
   onpointermove?: (this: T, e: FulateEvent<T>) => any;
@@ -50,6 +51,7 @@ export class Element extends Transformable {
   selectctbale?: boolean;
   groupParent?: any;
   /** IDs of lines that have an anchor point connected to this element */
+  /** 不应该上来就new set */
   connectedLines: Set<string> = new Set();
   private _activeTweens = new Set<Tween<Element>>();
   declare children: this[];
@@ -369,7 +371,8 @@ export class Element extends Transformable {
       radius: this.radius,
       cursor: this.cursor,
       selectctbale: this.selectctbale,
-      silent: this.silent
+      silent: this.silent,
+      pickable: this.pickable
     } as any;
 
     if (includeChildren && this.children && this.children.length > 0) {

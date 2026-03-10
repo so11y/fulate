@@ -33,7 +33,7 @@ export class Select extends Group {
       originY: "center",
       ...options
     });
-    this.hasUserEvent = true;
+    this.isSubscribed = true;
   }
 
   get selectEls() {

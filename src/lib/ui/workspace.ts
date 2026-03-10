@@ -7,6 +7,8 @@ export interface WorkspaceOption extends BaseElementOption {
 export class Workspace extends Element {
   type = "workspace";
   key = "workspace";
+  selectctbale = false;
+  pickable = false;
 
   mounted() {
     super.mounted();

@@ -12,7 +12,6 @@ export function checkElement(
 ): Element | undefined {
   if (
     excludes.includes(object) ||
-    object.silent ||
     object.selectctbale === false ||
     object.inject("selectctbale") === false
   )

@@ -13,16 +13,7 @@ export class Line extends BaseLine {
     if (this.linePoints.length < 2 || !this.visible) return;
 
     ctx.save();
-    const dpr = window.devicePixelRatio || 1;
-    const vp = this.root.getViewPointMtrix();
-    ctx.setTransform(
-      vp.a * dpr,
-      vp.b * dpr,
-      vp.c * dpr,
-      vp.d * dpr,
-      vp.e * dpr,
-      vp.f * dpr
-    );
+    this.root.applyViewPointTransform(ctx);
 
     const scale = this.root.viewport.scale;
 
@@ -250,16 +241,7 @@ function getLineControlSchema(line: Line): ControlSchema {
       const scale = select.root.viewport.scale;
 
       ctx.save();
-      const dpr = window.devicePixelRatio || 1;
-      const vp = select.root.getViewPointMtrix();
-      ctx.setTransform(
-        vp.a * dpr,
-        vp.b * dpr,
-        vp.c * dpr,
-        vp.d * dpr,
-        vp.e * dpr,
-        vp.f * dpr
-      );
+      select.root.applyViewPointTransform(ctx);
 
       ctx.strokeStyle = el.strokeColor;
       ctx.lineWidth = el.strokeWidth / scale;

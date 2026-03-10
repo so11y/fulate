@@ -1,3 +1,5 @@
+import { Point } from "./point";
+
 export type UserCanvasEvent = Event & FulateEvent;
 
 export type EventName =
@@ -76,13 +78,17 @@ export interface AddEventListenerOptions {
 export class EventEmitter {
   parent?: EventEmitter;
 
+  isHover = false;
+  isSubscribed = false;
+
   private events: Map<string, Set<EventCallback>> = new Map();
 
-  addEventListener<T = any>(
+  addEventListener<T = FulateEvent>(
     eventName: string,
     callback: EventCallback<T>,
     options?: AddEventListenerOptions
   ): () => void {
+    this.isSubscribed = true;
     const once = options?.once ?? false;
     const handler: EventCallback<T> = once
       ? (data) => {
@@ -115,21 +121,78 @@ export class EventEmitter {
     }
   }
 
-  dispatchEvent<T = any>(event: CustomEvent<T>): void {
-    const callbacks = this.events.get(event.type);
-    if (callbacks) {
-      for (const callback of callbacks) {
-        try {
-          callback(event);
-          if (event._stopImmediatePropagationFlag) break;
-        } catch (error) {
-          console.error(`Error in event handler for "${event.type}":`, error);
-        }
+  dispatchEvent(event: CustomEvent): void;
+  dispatchEvent(
+    eventName: string,
+    detail?: Partial<FulateEvent["detail"]>
+  ): void;
+  dispatchEvent(
+    eventOrName: CustomEvent | string,
+    detail?: Partial<FulateEvent["detail"]>
+  ) {
+    let event: CustomEvent;
+
+    if (typeof eventOrName === "string") {
+      const eventName = eventOrName;
+
+      if (eventName === "mouseenter") {
+        if (this.isHover && detail?.target !== (this as any)) return;
+        this.isHover = true;
       }
+
+      if (eventName === "mouseleave" && this.isHover) {
+        if ((this as any).hasPointHint?.(new Point(detail?.x, detail?.y))) {
+          return;
+        }
+        const root = (this as any).root;
+        root?.container && (root.container.style.cursor = "default");
+        this.isHover = false;
+      }
+
+      event = new CustomEvent(eventName, {
+        detail: {
+          self: this,
+          target: detail?.target ?? this,
+          x: detail?.x ?? 0,
+          y: detail?.y ?? 0,
+          buttons: detail?.buttons ?? 0,
+          deltaY: detail?.deltaY ?? 0,
+          deltaX: detail?.deltaX ?? 0,
+          data: detail?.data ?? null,
+          ctrlKey: detail?.ctrlKey
+        },
+        bubbles: true
+      });
+    } else {
+      event = eventOrName;
     }
 
-    if (event.bubbles && !event.cancelBubble && this.parent) {
-      this.parent.dispatchEvent(event);
+    this._fireCallbacks(event);
+
+    if (event.bubbles && !event.cancelBubble) {
+      let target = this.parent;
+      while (target && !event.cancelBubble) {
+        if ((target as any).isLayer || !(target as any).pickable) {
+          target = target.parent;
+          continue;
+        }
+        target._fireCallbacks(event);
+        target = target.parent;
+      }
+    }
+  }
+
+  /** @internal */
+  _fireCallbacks(event: CustomEvent) {
+    const callbacks = this.events.get(event.type);
+    if (!callbacks) return;
+    for (const callback of callbacks) {
+      try {
+        callback(event);
+        if (event._stopImmediatePropagationFlag) break;
+      } catch (error) {
+        console.error(`Error in event handler for "${event.type}":`, error);
+      }
     }
   }
 

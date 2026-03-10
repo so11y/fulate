@@ -34,18 +34,17 @@ export {
 
 const keysToSync = ["left", "top", "width", "height"];
 
-export interface YogaOption
-  extends Omit<
-    BaseElementOption,
-    | "left"
-    | "top"
-    | "width"
-    | "height"
-    | "onclick"
-    | "onpointermove"
-    | "onpointerdown"
-    | "onpointerup"
-  > {
+export interface YogaOption extends Omit<
+  BaseElementOption,
+  | "left"
+  | "top"
+  | "width"
+  | "height"
+  | "onclick"
+  | "onpointermove"
+  | "onpointerdown"
+  | "onpointerup"
+> {
   display?: Display;
   width?: YogaStyleSizeAndAuto;
   height?: YogaStyleSizeAndAuto;
@@ -205,7 +204,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return this;
     }
 
-    append<T extends Node>(...children: T[]): this {
+    append(...children: Node[]): this {
       let currentIndex = this.children?.length ?? 0;
       super.append(...(children as any[]));
       children.forEach((child: any) => {
@@ -316,8 +315,9 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
   }
 
-  return Div as any as new (...args: ConstructorParameters<T>) => Div &
-    InstanceType<T>;
+  return Div as any as new (
+    ...args: ConstructorParameters<T>
+  ) => Div & InstanceType<T>;
 }
 
 export const Div = withYoga<new (v: YogaOption) => BaseRectangle>(

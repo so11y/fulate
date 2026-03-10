@@ -1,16 +1,12 @@
 import { BaseElementOption, Element } from "../../node/element";
 import { FulateEvent } from "../../../util/event";
-import {
-  Line,
-  LinePointData,
-  getElementAnchorPoints
-} from "../../ui/line";
+import { Line, LinePointData, getElementAnchorPoints } from "../../ui/line";
 import { checkElement } from "../select/checkElement";
 
 export class LineTool extends Element {
   type = "lineTool";
   key = "lineTool";
-  silent = true;
+  selectctbale = false;
 
   isDrawingMode = false;
   tempPoints: LinePointData[] = [];
@@ -28,7 +24,6 @@ export class LineTool extends Element {
   constructor(options?: BaseElementOption) {
     super({ width: 0, height: 0, ...options });
   }
-
 
   startDrawing() {
     this.isDrawingMode = true;
@@ -181,16 +176,10 @@ export class LineTool extends Element {
     if (workspace?.children?.length) {
       for (const child of workspace.children) {
         if ((child as any).type === "artboard") {
-          if (child.children?.length) {
-            for (const c of child.children) {
-              if ((c as any).isLayer) return c;
-            }
-          }
           return child;
         }
       }
     }
-    return workspace ?? this.root;
   }
 
   private _createLine() {
@@ -214,17 +203,8 @@ export class LineTool extends Element {
     if (!this.isDrawingMode) return;
 
     const ctx = this.layer.ctx;
-    const dpr = window.devicePixelRatio || 1;
-    const vp = this.root.getViewPointMtrix();
     ctx.save();
-    ctx.setTransform(
-      vp.a * dpr,
-      vp.b * dpr,
-      vp.c * dpr,
-      vp.d * dpr,
-      vp.e * dpr,
-      vp.f * dpr
-    );
+    this.root.applyViewPointTransform(ctx);
 
     const scale = this.root.viewport.scale;
     const pointSize = 4 / scale;

@@ -1,10 +1,4 @@
-import {
-  FulateEvent,
-  AddEventListenerOptions,
-  CustomEvent,
-  EventEmitter
-} from "../../util/event";
-import { Point } from "../../util/point";
+import { CustomEvent, EventEmitter } from "../../util/event";
 import { Root } from "../root";
 import { Layer } from "../layer";
 
@@ -46,9 +40,7 @@ export class Node extends EventEmitter {
 
   key!: string;
   silent = false;
-
-  isHover = false;
-  hasUserEvent = false;
+  pickable = true //false 事件跳过这个节点，继续往上冒
 
   _options: any = {};
   _provides: Record<string, any>;
@@ -114,9 +106,9 @@ export class Node extends EventEmitter {
   }
 
   // ================= 结构操作 =================
-  append<T extends Node>(...children: T[]) {
+  append(...children: Node[]) {
     if (!this.children) this.children = [];
-    const added: T[] = [];
+    const added: Node[] = [];
     children.forEach((child) => {
       this.children!.push(child as any);
       added.push(child);
@@ -125,16 +117,16 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  prepend<T extends Node>(...children: T[]) {
+  prepend(...children: Node[]) {
     if (!this.children) this.children = [];
-    const added: T[] = [];
+    const added: Node[] = [];
     children.forEach((child) => added.push(child));
     this.children.unshift(...(added as any[]));
     this._afterMutate(added);
     return this;
   }
 
-  insertBefore<T extends Node>(newChild: T, refChild: T | null) {
+  insertBefore(newChild: Node, refChild: Node | null) {
     if (!refChild) return this.append(newChild);
     if (!this.children) return this;
     const idx = this.children.indexOf(refChild as any);
@@ -144,7 +136,7 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  insertAfter<T extends Node>(newChild: T, refChild: T) {
+  insertAfter(newChild: Node, refChild: Node) {
     if (!this.children) return this;
     const idx = this.children.indexOf(refChild as any);
     if (idx === -1) return this;
@@ -153,7 +145,7 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  replaceChild<T extends Node>(newChild: T, oldChild: T) {
+  replaceChild(newChild: Node, oldChild: Node) {
     if (!this.children) return this;
     const idx = this.children.indexOf(oldChild as any);
     if (idx === -1) return this;
@@ -163,14 +155,14 @@ export class Node extends EventEmitter {
     return this;
   }
 
-  before<T extends Node>(...nodes: T[]) {
+  before(...nodes: Node[]) {
     if (!this.parent) return this;
     nodes.forEach((n) => this.parent!.insertBefore(n, this as any));
     this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
-  after<T extends Node>(...nodes: T[]) {
+  after(...nodes: Node[]) {
     if (!this.parent) return this;
     let ref: any = this;
     nodes.forEach((n) => {
@@ -184,7 +176,7 @@ export class Node extends EventEmitter {
   /**
    移除节点：仅从父级数组中剥离，并使其失活 (unactive)，不销毁。可以复用。
   */
-  removeChild<T extends Node>(...children: T[]) {
+  removeChild(...children: Node[]) {
     if (!this.children) return this;
     children.forEach((child) => {
       const idx = this.children!.indexOf(child as any);
@@ -286,62 +278,7 @@ export class Node extends EventEmitter {
     this.clearEventListener();
   }
 
-  // ================= 事件与依赖注入 =================
-
-  dispatchEvent(event: CustomEvent): void;
-  dispatchEvent(
-    eventName: string,
-    detail?: Partial<FulateEvent["detail"]>
-  ): void;
-  dispatchEvent(
-    eventOrName: CustomEvent | string,
-    detail?: Partial<FulateEvent["detail"]>
-  ) {
-    if (typeof eventOrName === "string") {
-      const eventName = eventOrName;
-
-      if (eventName === "mouseenter") {
-        if (this.isHover && detail?.target !== (this as any)) return;
-        this.isHover = true;
-      }
-
-      if (eventName === "mouseleave" && this.isHover) {
-        if ((this as any).hasPointHint?.(new Point(detail?.x, detail?.y))) {
-          return;
-        }
-        this.root?.container && (this.root.container.style.cursor = "default");
-        this.isHover = false;
-      }
-
-      const event = new CustomEvent(eventName, {
-        detail: {
-          self: this,
-          target: detail?.target ?? this,
-          x: detail?.x ?? 0,
-          y: detail?.y ?? 0,
-          buttons: detail?.buttons ?? 0,
-          deltaY: detail?.deltaY ?? 0,
-          deltaX: detail?.deltaX ?? 0,
-          data: detail?.data ?? null,
-          ctrlKey: detail?.ctrlKey
-        },
-        bubbles: true
-      });
-
-      super.dispatchEvent(event);
-    } else {
-      super.dispatchEvent(eventOrName);
-    }
-  }
-
-  addEventListener<T = FulateEvent>(
-    type: string,
-    callback: (ev: T) => void,
-    options?: AddEventListenerOptions
-  ) {
-    this.hasUserEvent = true;
-    return super.addEventListener(type, callback as any, options);
-  }
+  // ================= 依赖注入 =================
 
   provide(key: string, value: any) {
     this._provides[key] = value;

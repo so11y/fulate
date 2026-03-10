@@ -40,17 +40,8 @@ function drawChildBorders(select: Select, ctx: CanvasRenderingContext2D) {
   for (const el of select.selectEls) {
     const schema = el.getControlSchema?.();
     if (schema?.paintHover) {
-      const dpr = window.devicePixelRatio || 1;
-      const vp = select.root.getViewPointMtrix();
       ctx.save();
-      ctx.setTransform(
-        vp.a * dpr,
-        vp.b * dpr,
-        vp.c * dpr,
-        vp.d * dpr,
-        vp.e * dpr,
-        vp.f * dpr
-      );
+      select.root.applyViewPointTransform(ctx);
       schema.paintHover(el, ctx, scale);
       ctx.restore();
     } else {
@@ -131,17 +122,8 @@ function drawHoverBorder(select: Select, ctx: CanvasRenderingContext2D) {
 
   const schema = el.getControlSchema?.();
   if (schema?.paintHover) {
-    const dpr = window.devicePixelRatio || 1;
-    const vp = select.root.getViewPointMtrix();
     ctx.save();
-    ctx.setTransform(
-      vp.a * dpr,
-      vp.b * dpr,
-      vp.c * dpr,
-      vp.d * dpr,
-      vp.e * dpr,
-      vp.f * dpr
-    );
+    select.root.applyViewPointTransform(ctx);
     schema.paintHover(el, ctx, scale);
     ctx.restore();
   } else {

@@ -256,14 +256,9 @@ export abstract class BaseLine extends Element {
       if (dist <= threshold) return true;
     }
 
-    const vertexThreshold = Math.max(
-      6 / (this.root?.viewport?.scale || 1),
-      4
-    );
+    const vertexThreshold = Math.max(6 / (this.root?.viewport?.scale || 1), 4);
     for (const p of this.linePoints) {
-      const dx = point.x - p.x;
-      const dy = point.y - p.y;
-      if (dx * dx + dy * dy <= vertexThreshold * vertexThreshold) return true;
+      if (point.pointDistance(p, vertexThreshold)) return true;
     }
     return false;
   }

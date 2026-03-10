@@ -126,19 +126,10 @@ export class Transformable extends Node {
   }
 
   applyTransformToCtx(ctx: CanvasRenderingContext2D, customMatrix?: DOMMatrix) {
-    const dpr = window.devicePixelRatio || 1;
     const matrix =
       customMatrix ??
       this.root.getViewPointMtrix().multiply(this.getOwnMatrix());
-
-    ctx.setTransform(
-      matrix.a * dpr,
-      matrix.b * dpr,
-      matrix.c * dpr,
-      matrix.d * dpr,
-      matrix.e * dpr,
-      matrix.f * dpr
-    );
+    this.root.applyViewPointTransform(ctx, matrix);
   }
 
   getWorldPoint(point: Point) {

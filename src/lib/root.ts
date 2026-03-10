@@ -29,10 +29,12 @@ export class Root extends Node {
   width: number;
   height: number;
 
+  private _containerRect!: DOMRect;
+
   layers: Layer[] = [];
 
   _pendingLayers = new Set<Layer>();
-  
+
   private _rafScheduled = false;
   private _nextTickPromise: Promise<void> | null = null;
   private _nextTickResolve: (() => void) | null = null;
@@ -53,8 +55,26 @@ export class Root extends Node {
 
   mount() {
     super.mount();
+    this._updateContainerRect();
+
+    const onRectChange = () => this._updateContainerRect();
+    window.addEventListener("resize", onRectChange);
+    window.addEventListener("scroll", onRectChange, true);
+    this.addEventListener("unmounted", () => {
+      window.removeEventListener("resize", onRectChange);
+      window.removeEventListener("scroll", onRectChange, true);
+    });
+
     this.initEvents();
     this.requestRender();
+  }
+
+  private _updateContainerRect() {
+    this._containerRect = this.container.getBoundingClientRect();
+  }
+
+  get containerRect(): DOMRect {
+    return this._containerRect;
   }
 
   registerLayer(layer: Layer) {
@@ -135,7 +155,7 @@ export class Root extends Node {
   }
 
   getLogicalPosition(clientX: number, clientY: number) {
-    const rect = this.container.getBoundingClientRect();
+    const rect = this._containerRect;
     return new Point(
       (clientX - rect.left - this.viewport.x) / this.viewport.scale,
       (clientY - rect.top - this.viewport.y) / this.viewport.scale
@@ -151,6 +171,19 @@ export class Root extends Node {
     m.e = this.viewport.x;
     m.f = this.viewport.y;
     return m;
+  }
+
+  applyViewPointTransform(ctx: CanvasRenderingContext2D, matrix?: DOMMatrix) {
+    const dpr = window.devicePixelRatio || 1;
+    const m = matrix ?? this.getViewPointMtrix();
+    ctx.setTransform(
+      m.a * dpr,
+      m.b * dpr,
+      m.c * dpr,
+      m.d * dpr,
+      m.e * dpr,
+      m.f * dpr
+    );
   }
 
   getCurrnetEelement() {
@@ -187,7 +220,7 @@ export class Root extends Node {
 
     if (
       this.currentElement &&
-      (this.currentElement.element?.hasUserEvent ||
+      (this.currentElement.element?.isSubscribed ||
         this.currentElement.element?.cursor)
     ) {
       this.container.style.cursor =
@@ -243,7 +276,7 @@ export class Root extends Node {
         hitElements.sort((a, b) => b.element.uIndex - a.element.uIndex);
         for (const item of hitElements) {
           const element = item.element;
-          if (!element.silent && element.visible) {
+          if (element.selectctbale !== false && element.visible) {
             const result = callback(item);
             if (result) {
               return result;
@@ -344,7 +377,7 @@ export class Root extends Node {
         e.preventDefault();
 
         // 如果按住了空格，执行缩放；也可以不判断空格，直接支持缩放
-        const rect = this.container.getBoundingClientRect();
+        const rect = this._containerRect;
         const cx = e.clientX - rect.left;
         const cy = e.clientY - rect.top;
 
@@ -371,14 +404,14 @@ export class Root extends Node {
     document.addEventListener("click", (e) => this.notify(e, "click"), {
       signal
     });
-    document.addEventListener(
-      "contextmenu",
-      (e) => {
-        e.preventDefault();
-        this.notify(e, "contextmenu");
-      },
-      { signal }
-    );
+    // document.addEventListener(
+    //   "contextmenu",
+    //   (e) => {
+    //     e.preventDefault();
+    //     this.notify(e, "contextmenu");
+    //   },
+    //   { signal }
+    // );
 
     this.addEventListener("unmounted", () => abortController.abort());
   }

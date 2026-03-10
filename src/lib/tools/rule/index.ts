@@ -18,7 +18,7 @@ export class Rule extends Element {
   key = "rule";
   rulerSize = 25;
 
-  silent = true;
+  selectctbale = false;
 
   hasInView() {
     return true;

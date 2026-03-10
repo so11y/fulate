@@ -70,7 +70,10 @@ export class Point extends DOMPoint {
     return this;
   }
 
-  pointDistance(p1: Point, threshold: number) {
+  pointDistance<T extends { x: number; y: number }>(
+    p1: T,
+    threshold: number
+  ) {
     const dx = this.x - p1.x;
     const dy = this.y - p1.y;
     return dx * dx + dy * dy <= threshold ** 2;

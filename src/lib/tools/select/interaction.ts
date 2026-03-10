@@ -176,16 +176,16 @@ export function setupInteraction(select: Select): () => void {
   };
 
   const mouseenter = (e: FulateEvent) => {
-    // select.hoverElement = e.detail.target;
-    // select.markDirty();
+    select.hoverElement = e.detail.target;
+    select.markDirty();
   };
 
   const mouseleave = () => {
-    // const prev = select.hoverElement;
-    // select.hoverElement = null;
-    // if (prev) {
-    //   select.markDirty();
-    // }
+    const prev = select.hoverElement;
+    select.hoverElement = null;
+    if (prev) {
+      select.markDirty();
+    }
   };
 
   select.root.addEventListener("pointerdown", pointerdown);
