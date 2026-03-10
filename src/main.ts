@@ -4,7 +4,7 @@ import { Rectangle } from "./lib/ui/rectangle";
 import { Rule } from "./lib/tools/rule";
 import { Layer } from "./lib/layer";
 import { Snap } from "./lib/tools/select/snap";
-import { Artboard } from "./lib/ui/artboard";
+import { Artboard } from "./lib/layer/artboard";
 import { Workspace } from "./lib/ui/workspace";
 import { Div, Display, FlexDirection, Justify, Align } from "./yoga/div";
 import { Text } from "./lib/ui/text";

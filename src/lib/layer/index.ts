@@ -1,8 +1,8 @@
-import { BaseElementOption, Element } from "./node/element";
+import { BaseElementOption, Element } from "../node/element";
 import RBush from "rbush";
-import { Rectangle } from "./ui/rectangle";
-import { RectWithCenter, RectPoint } from "../util/rect";
-import { Point } from "../util/point";
+import { Rectangle } from "../ui/rectangle";
+import { RectWithCenter, RectPoint } from "../../util/rect";
+import { Point } from "../../util/point";
 import { Group } from "@tweenjs/tween.js";
 
 export interface RBushItem {
@@ -19,6 +19,7 @@ export class Layer extends Rectangle {
   ctx: CanvasRenderingContext2D;
   zIndex: number;
   enableDirtyRect: boolean = true;
+  cssTransformable: boolean = true;
   rbush = new RBush<RBushItem>();
   tweenGroup = new Group();
 
@@ -45,10 +46,12 @@ export class Layer extends Rectangle {
       zIndex?: number;
       silen?: boolean;
       enableDirtyRect?: boolean;
+      cssTransformable?: boolean;
     }
   ) {
     super(options);
     this.enableDirtyRect = options?.enableDirtyRect ?? true;
+    this.cssTransformable = options?.cssTransformable ?? true;
     this.canvasEl = document.createElement("canvas");
     this.ctx = (this.canvasEl as HTMLCanvasElement).getContext("2d")!;
   }
