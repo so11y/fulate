@@ -1,8 +1,8 @@
+import { Point } from "../../../util/point";
 import {
   makeBoundingBoxFromPoints,
-  makeBoundingBoxFromRects,
-  Point
-} from "../../../util/point";
+  makeBoundingBoxFromRects
+} from "../../../util/rect";
 import { BaseElementOption, Element } from "../../node/element";
 import { DEFAULT_RECT_SCHEMA, type ControlSchema } from "./controls";
 import { Snap } from "./snap";

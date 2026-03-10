@@ -2,21 +2,9 @@ import { Node } from "./node";
 import { Point, PointType, TOriginX, TOriginY } from "../../util/point";
 import { resolveOrigin } from "../../util/resolveOrigin";
 import { Intersection } from "../../util/Intersection";
+import { Rect, RectWithCenter, RectPoint } from "../../util/rect";
 
-export interface Rect {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-export interface RectWithCenter extends Rect {
-  centerX?: number;
-  centerY?: number;
-}
-
-export interface RectPoint
-  extends Omit<RectWithCenter, "centerX" | "centerY"> {}
+export type { Rect, RectWithCenter, RectPoint };
 
 export interface TransformableOptions {
   left?: number;

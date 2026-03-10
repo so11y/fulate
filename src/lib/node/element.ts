@@ -4,7 +4,7 @@ import { FulateEvent } from "../../util/event";
 import { Transformable, TransformableOptions } from "./transformable";
 import { Tween, Easing } from "@tweenjs/tween.js";
 import { ColorUtil } from "../../util/color";
-import { qrDecompose } from "../../util/math";
+import { qrDecompose } from "../../util/matrix";
 
 export interface BaseElementOption<T = Element> extends TransformableOptions {
   key?: string;

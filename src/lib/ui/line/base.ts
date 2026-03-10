@@ -1,7 +1,7 @@
 import { Intersection } from "../../../util/Intersection";
-import { makeBoundingBoxFromPoints, Point } from "../../../util/point";
+import { Point } from "../../../util/point";
+import { makeBoundingBoxFromPoints, RectWithCenter } from "../../../util/rect";
 import { BaseElementOption, Element } from "../../node/element";
-import { RectWithCenter } from "../../node/transformable";
 import { getElementAnchorPoint } from "./anchor";
 
 export interface LineAnchor {

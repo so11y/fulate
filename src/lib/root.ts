@@ -4,7 +4,7 @@ import { Element } from "./node/element";
 import { CustomEvent } from "../util/event";
 import { Rule } from "./tools/rule";
 import { Point } from "../util/point";
-import { RectWithCenter } from "./node/transformable";
+import { RectWithCenter } from "../util/rect";
 import { HistoryManager } from "./history";
 import { Tween, Easing, Group } from "@tweenjs/tween.js";
 

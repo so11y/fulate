@@ -1,5 +1,3 @@
-import { Rect } from "../lib/node/transformable";
-
 type XY = {
   x: number;
   y: number;
@@ -30,14 +28,6 @@ export class Point extends DOMPoint {
       _y = y;
     }
     super(_x, _y);
-  }
-
-  rotate(angleInRadians: number, center = ZERO): DOMPoint {
-    const cos = Math.cos(angleInRadians);
-    const sin = Math.sin(angleInRadians);
-    const nx = cos * (this.x - center.x) - sin * (this.y - center.y) + center.x;
-    const ny = sin * (this.x - center.x) + cos * (this.y - center.y) + center.y;
-    return new DOMPoint(nx, ny);
   }
 
   subtract(that: XY) {
@@ -79,45 +69,3 @@ export class Point extends DOMPoint {
     return dx * dx + dy * dy <= threshold ** 2;
   }
 }
-
-export function makeBoundingBoxFromPoints(points: Point[]) {
-  let left = 0,
-    top = 0,
-    width = 0,
-    height = 0;
-  for (let i = 0, len = points.length; i < len; i++) {
-    const { x, y } = points[i];
-    if (x > width || !i) width = x;
-    if (x < left || !i) left = x;
-    if (y > height || !i) height = y;
-    if (y < top || !i) top = y;
-  }
-  return {
-    left,
-    top,
-    width: width - left,
-    height: height - top
-  };
-}
-
-export function makeBoundingBoxFromRects(rects: Rect[]) {
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (let i = 0; i < rects.length; i++) {
-    const r = rects[i];
-    if (r.left < minX) minX = r.left;
-    if (r.top < minY) minY = r.top;
-    if (r.left + r.width > maxX) maxX = r.left + r.width;
-    if (r.top + r.height > maxY) maxY = r.top + r.height;
-  }
-  return {
-    left: minX,
-    top: minY,
-    width: maxX - minX,
-    height: maxY - minY
-  };
-}
-
-export const ZERO = new Point(0, 0);

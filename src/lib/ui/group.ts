@@ -1,5 +1,6 @@
 import { BaseElementOption, Element } from "../node/element";
-import { makeBoundingBoxFromPoints, Point } from "../../util/point";
+import { Point } from "../../util/point";
+import { makeBoundingBoxFromPoints } from "../../util/rect";
 
 export interface GroupOption extends BaseElementOption {
   /** 导入时用：通过 root.idElements 查找并还原 groupEls */

@@ -1,6 +1,6 @@
 import { Rectangle } from "./rectangle";
 import { BaseElementOption, Element } from "../node/element";
-import { qrDecompose } from "../../util/math";
+import { qrDecompose } from "../../util/matrix";
 
 interface PinnedOptions {
   /** 目标元素 */

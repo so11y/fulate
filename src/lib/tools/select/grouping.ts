@@ -1,4 +1,4 @@
-import { makeBoundingBoxFromPoints } from "../../../util/point";
+import { makeBoundingBoxFromPoints } from "../../../util/rect";
 import { Group } from "../../ui/group";
 import type { Select } from "./index";
 

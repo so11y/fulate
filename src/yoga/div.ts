@@ -92,11 +92,11 @@ export interface YogaOption extends Omit<
 }
 
 const ExtractKey = new Set([
+  "display",
   "left",
   "top",
-  "width",
-  "height",
-  "display",
+  "bottom",
+  "right",
   "width",
   "height",
   "minWidth",
@@ -107,12 +107,12 @@ const ExtractKey = new Set([
   "alignItems",
   "alignSelf",
   "aspectRatio",
-  "flexg",
+  "flex",
   "flexBasis",
   "flexDirection",
   "flexGrow",
   "flexShrink",
-  "flexWrapg",
+  "flexWrap",
   "justifyContent",
   "paddingTop",
   "paddingLeft",
@@ -125,10 +125,6 @@ const ExtractKey = new Set([
   "marginBottom",
   "margin",
   "position",
-  "left",
-  "top",
-  "bottom",
-  "right",
   "gap",
   "inset",
   "boxSizing"
@@ -161,9 +157,10 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       }
       super.mount();
       if (this.children) {
-        this.children.forEach((child, index) => {
+        let yogaIndex = 0;
+        this.children.forEach((child) => {
           if (child.yogaNode) {
-            this.yogaNode.insertChild(child.yogaNode, index);
+            this.yogaNode.insertChild(child.yogaNode, yogaIndex++);
           }
         });
       }
@@ -205,13 +202,23 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
 
     append(...children: Node[]): this {
-      let currentIndex = this.children?.length ?? 0;
       super.append(...(children as any[]));
+      let yogaIndex = this.yogaNode.getChildCount();
       children.forEach((child: any) => {
         if (child.yogaNode) {
-          this.yogaNode.insertChild(child.yogaNode, currentIndex++);
+          this.yogaNode.insertChild(child.yogaNode, yogaIndex++);
         }
       });
+      return this;
+    }
+
+    removeChild(...children: Node[]): this {
+      children.forEach((child: any) => {
+        if (child.yogaNode && this.yogaNode) {
+          this.yogaNode.removeChild(child.yogaNode);
+        }
+      });
+      super.removeChild(...(children as any[]));
       return this;
     }
 
@@ -310,8 +317,15 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
 
     unmounted() {
+      if (this.yogaNode) {
+        this.children?.forEach((child: any) => {
+          if (child.yogaNode) {
+            this.yogaNode.removeChild(child.yogaNode);
+          }
+        });
+      }
       super.unmounted();
-      this.yogaNode.free();
+      this.yogaNode?.free();
     }
   }
 

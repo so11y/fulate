@@ -5,7 +5,7 @@ import {
 import { Point } from "../../../util/point";
 import { type Select } from "./index";
 import { FulateEvent } from "../../../util/event";
-import { qrDecompose } from "../../../util/math";
+import { qrDecompose } from "../../../util/matrix";
 
 // ---------------------------------------------------------------------------
 //  Interfaces

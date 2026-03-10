@@ -1,7 +1,7 @@
 import { BaseElementOption, Element } from "./node/element";
 import RBush from "rbush";
 import { Rectangle } from "./ui/rectangle";
-import { RectWithCenter, RectPoint } from "./node/transformable";
+import { RectWithCenter, RectPoint } from "../util/rect";
 import { Point } from "../util/point";
 import { Group } from "@tweenjs/tween.js";
 
