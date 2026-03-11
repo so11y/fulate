@@ -1,16 +1,18 @@
 {
+  "private": true,
+  "workspaces": ["packages/*"],
   "scripts": {
     "dev": "vite"
   },
   "devDependencies": {
     "ac": "https://github.com/so11y/ac.git",
-    "lodash-es": "^4.17.22",
-    "vite": "^6.0.7",
-    "yoga-layout": "^3.2.1"
+    "vite": "^6.0.7"
   },
   "dependencies": {
-    "@tweenjs/tween.js": "^25.0.0",
-    "@types/rbush": "^4.0.0",
-    "rbush": "^4.0.1"
+    "@fulate/util": "*",
+    "@fulate/core": "*",
+    "@fulate/ui": "*",
+    "@fulate/tools": "*",
+    "@fulate/yoga": "*"
   }
 }

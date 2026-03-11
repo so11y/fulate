@@ -2,6 +2,19 @@
   "compilerOptions": {
     "target": "ESNext",
     "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@fulate/util": ["packages/util/src/index.ts"],
+      "@fulate/util/*": ["packages/util/src/*"],
+      "@fulate/core": ["packages/core/src/index.ts"],
+      "@fulate/core/*": ["packages/core/src/*"],
+      "@fulate/ui": ["packages/ui/src/index.ts"],
+      "@fulate/ui/*": ["packages/ui/src/*"],
+      "@fulate/tools": ["packages/tools/src/index.ts"],
+      "@fulate/tools/*": ["packages/tools/src/*"],
+      "@fulate/yoga": ["packages/yoga/src/index.ts"],
+      "@fulate/yoga/*": ["packages/yoga/src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "vite.config.ts"]
+  "include": ["main.ts", "src/**/*.ts", "packages/*/src/**/*.ts", "vite.config.ts"]
 }
