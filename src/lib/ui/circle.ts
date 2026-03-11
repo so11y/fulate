@@ -12,9 +12,6 @@ export class Circle extends Element {
   }
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-    if (this.notInDitry()) {
-      return;
-    }
     ctx.save();
     ctx.beginPath();
     this.applyTransformToCtx(ctx);

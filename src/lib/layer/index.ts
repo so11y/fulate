@@ -28,7 +28,7 @@ export class Layer extends Rectangle {
   dirtyNodes = new Set<Element>();
 
   isLayer = true;
-  isRenderDitryMode = false;
+  isRenderDirtyMode = false;
 
   private pendingSyncNodes = new Set<Element>();
 
@@ -169,10 +169,10 @@ export class Layer extends Rectangle {
     this.root?.scheduleLayerRender(this);
   }
 
-  notInDitry() {
-    if (this.root?._pendingLayers.has(this)) return false;
-    if (!this.enableDirtyRect) return false;
-    if (this.dirtyNodes.size) return false;
+  shouldRepaint() {
+    if (this.enableDirtyRect) {
+      return this.dirtyNodes.size > 0;
+    }
     return true;
   }
 
@@ -181,16 +181,16 @@ export class Layer extends Rectangle {
   }
 
   flushPaint() {
+    if (this.shouldRepaint() === false) {
+      return;
+    }
+
     this.paint();
   }
 
   paint() {
-    if (this.notInDitry()) {
-      return;
-    }
-
     if (this.enableDirtyRect && this.dirtyNodes.size > 0) {
-      this.isRenderDitryMode = true;
+      this.isRenderDirtyMode = true;
 
       const m = this.root.getViewPointMtrix();
 
@@ -205,8 +205,10 @@ export class Layer extends Rectangle {
 
       const buckets = this._buckets;
       for (const b of buckets) {
-        b.left = Infinity; b.top = Infinity;
-        b.width = 0; b.height = 0;
+        b.left = Infinity;
+        b.top = Infinity;
+        b.width = 0;
+        b.height = 0;
       }
 
       this.dirtyNodes.forEach((node) => {
@@ -254,12 +256,12 @@ export class Layer extends Rectangle {
 
       if (screenRects.length === 0) {
         this.dirtyNodes.clear();
-        this.isRenderDitryMode = false;
+        this.isRenderDirtyMode = false;
         return;
       }
 
       if (totalArea > canvasArea * FULL_REPAINT_RATIO) {
-        this.isRenderDitryMode = false;
+        this.isRenderDirtyMode = false;
         this.dirtyNodes.clear();
         this.clear();
         super.paint(this.ctx);
@@ -291,13 +293,18 @@ export class Layer extends Rectangle {
     }
 
     this.finalDirtyRects = null;
-    this.isRenderDitryMode = false;
+    this.isRenderDirtyMode = false;
   }
 
   clear() {
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.ctx.clearRect(0, 0, this.width * this.root.dpr, this.height * this.root.dpr);
+    this.ctx.clearRect(
+      0,
+      0,
+      this.width * this.root.dpr,
+      this.height * this.root.dpr
+    );
     this.ctx.restore();
   }
 }

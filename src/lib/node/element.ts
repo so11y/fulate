@@ -138,15 +138,15 @@ export class Element extends Transformable {
     };
   }
 
-  notInDitry() {
+  shouldRepaint() {
     if (this.layer.finalDirtyRects && this.layer.finalDirtyRects.length > 0) {
       const bound = this.getUnionBoundingRect();
       const hit = this.layer.finalDirtyRects.some((r) =>
         Intersection.intersectRect(bound, r)
       );
-      if (!hit) return true;
+      return hit;
     }
-    return false;
+    return true;
   }
 
   paint(ctx = this.layer.ctx) {
@@ -161,7 +161,7 @@ export class Element extends Transformable {
         ) {
           continue;
         }
-        if (child.hasInView()) {
+        if (child.hasInView() && child.shouldRepaint()) {
           child.paint(ctx);
         }
       }
