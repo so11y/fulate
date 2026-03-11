@@ -76,9 +76,9 @@ function handleSelect(select: Select, e: FulateEvent) {
 
 function handleControl(select: Select, e: FulateEvent) {
   const { control, point } = select.currentControl;
+  const schema = select.getActiveSchema();
 
   select.root.history.snapshot(select.selectEls);
-  (select as any)._lineVertexSnapStarted = false;
 
   const theta = degreesToRadians(select.angle ?? 0);
   const selectPrevState = {
@@ -92,7 +92,12 @@ function handleControl(select: Select, e: FulateEvent) {
     matrix: DOMMatrix.fromMatrix(select.getOwnMatrix())
   };
 
+  let dragStarted = false;
   const pointermove = (e: FulateEvent) => {
+    if (!dragStarted) {
+      schema.onDragStart?.(select, control);
+      dragStarted = true;
+    }
     control.onDrag(select, point, selectPrevState, e);
   };
 
@@ -101,9 +106,8 @@ function handleControl(select: Select, e: FulateEvent) {
     "pointerup",
     () => {
       select.root.removeEventListener("pointermove", pointermove);
-      if ((select as any)._lineVertexSnapStarted) {
-        select.snapTool?.stop();
-        (select as any)._lineVertexSnapStarted = false;
+      if (dragStarted) {
+        schema.onDragEnd?.(select, control);
       }
       select.root.history.commit();
     },
@@ -115,7 +119,12 @@ function handleSelectMove(select: Select, e: FulateEvent) {
   const startPoint = new Point(e.detail.x, e.detail.y);
 
   select.root.history.snapshot(select.selectEls);
-  select.snapTool?.start(select.selectEls.concat(select as any));
+  const schema = select.getActiveSchema();
+  const snapExcludes = schema.getSnapExcludes?.(select);
+  select.snapTool?.start(
+    select.selectEls.concat(select as any),
+    snapExcludes?.excludePoints
+  );
 
   const originalSelectLeft = select.left;
   const originalSelectTop = select.top;

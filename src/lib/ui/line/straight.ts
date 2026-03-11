@@ -77,14 +77,6 @@ function getLineControlSchema(line: Line): ControlSchema {
         const lineEl = select.selectEls[0] as Line;
         const snap = select.snapTool;
 
-        if (!(select as any)._lineVertexSnapStarted) {
-          snap?.start(
-            [select as any],
-            [{ element: lineEl, indices: [ptIndex] }]
-          );
-          (select as any)._lineVertexSnapStarted = true;
-        }
-
         let targetX = event.detail.x;
         let targetY = event.detail.y;
 
@@ -173,11 +165,6 @@ function getLineControlSchema(line: Line): ControlSchema {
         const lineEl = select.selectEls[0] as Line;
         const snap = select.snapTool;
 
-        if (!(select as any)._lineVertexSnapStarted) {
-          snap?.start([lineEl, select as any]);
-          (select as any)._lineVertexSnapStarted = true;
-        }
-
         let targetX = event.detail.x;
         let targetY = event.detail.y;
 
@@ -217,6 +204,21 @@ function getLineControlSchema(line: Line): ControlSchema {
     controls,
     enableRotation: false,
     enableBodyMove: true,
+    onDragStart(select, control) {
+      const lineEl = select.selectEls[0] as Line;
+      if (control.id.startsWith("v")) {
+        const idx = parseInt(control.id.slice(1), 10);
+        select.snapTool?.start(
+          [select as any],
+          [{ element: lineEl, indices: [idx] }]
+        );
+      } else {
+        select.snapTool?.start([lineEl, select as any]);
+      }
+    },
+    onDragEnd(select) {
+      select.snapTool?.stop();
+    },
     bodyHitTest: (_select, point) => line.hasPointHint(point),
     paintHover: (el, ctx, scale) => {
       const lineEl = el as Line;

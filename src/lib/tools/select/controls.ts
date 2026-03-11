@@ -55,6 +55,11 @@ export interface ControlSchema {
   edges?: EdgeDefinition[];
   enableRotation?: boolean;
   enableBodyMove?: boolean;
+  onDragStart?(select: Select, control: ControlPoint): void;
+  onDragEnd?(select: Select, control: ControlPoint): void;
+  getSnapExcludes?(select: Select): {
+    excludePoints?: { element: any; indices: number[] }[];
+  };
   bodyHitTest?(select: Select, point: Point): boolean;
   paintFrame?(select: Select, ctx: CanvasRenderingContext2D): void;
   paintHover?(el: any, ctx: CanvasRenderingContext2D, scale: number): void;
@@ -72,6 +77,22 @@ export interface ControlSchema {
 // ---------------------------------------------------------------------------
 
 export const DEFAULT_RECT_SCHEMA: ControlSchema = {
+  getSnapExcludes(select) {
+    if (select.selectEls.length !== 1) return {};
+    const el = select.selectEls[0];
+    if (!el.connectedLines?.size) return {};
+    const excludePoints: { element: any; indices: number[] }[] = [];
+    for (const lineId of el.connectedLines) {
+      const line = el.root?.idElements.get(lineId) as any;
+      if (!line?.linePoints) continue;
+      const indices: number[] = [];
+      for (let i = 0; i < line.linePoints.length; i++) {
+        if (line.linePoints[i].anchor?.elementId === el.id) indices.push(i);
+      }
+      if (indices.length > 0) excludePoints.push({ element: line, indices });
+    }
+    return excludePoints.length > 0 ? { excludePoints } : {};
+  },
   controls: [
     {
       id: "tl",
@@ -217,11 +238,7 @@ export function resizeObject(
   event: any,
   type: string
 ) {
-  const {
-    width: pWidth,
-    height: pHeight,
-    matrix
-  } = preState;
+  const { width: pWidth, height: pHeight, matrix } = preState;
 
   let fixedLocalX = 0;
   let fixedLocalY = 0;
