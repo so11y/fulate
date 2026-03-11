@@ -147,22 +147,25 @@ function buildAxisSnapLines(
     }
   }
 
-  for (let i = 0; i < allRanges.length - 1; i++) {
-    const curr = allRanges[i];
-    const next = allRanges[i + 1];
-    if (curr.max < next.min) {
-      const distance = next.min - curr.max;
-      if (distance > 0) {
-        lines.push({
-          type,
-          value: val,
-          start: curr.max,
-          end: next.min,
-          points: [mkPt(curr.max), mkPt(next.min)],
-          distanceText: `${Math.round(distance)}`,
-          textPos: mkTextPos((curr.max + next.min) / 2)
-        });
+  if (allRanges.length > 0) {
+    let maxReach = allRanges[0].max;
+    for (let i = 1; i < allRanges.length; i++) {
+      const next = allRanges[i];
+      if (next.min > maxReach) {
+        const distance = next.min - maxReach;
+        if (distance > 0) {
+          lines.push({
+            type,
+            value: val,
+            start: maxReach,
+            end: next.min,
+            points: [mkPt(maxReach), mkPt(next.min)],
+            distanceText: `${Math.round(distance)}`,
+            textPos: mkTextPos((maxReach + next.min) / 2)
+          });
+        }
       }
+      maxReach = Math.max(maxReach, next.max);
     }
   }
 

@@ -54,6 +54,7 @@ export class Root extends Node {
   _paintedViewport = { x: 0, y: 0, scale: 1 };
   _cssTransformTimer: ReturnType<typeof setTimeout> | null = null;
   _isCssTransforming = false;
+  cssTransformThreshold = 0.45;
 
   constructor(el: HTMLElement, options?: { width?: number; height?: number }) {
     super();

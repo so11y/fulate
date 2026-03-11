@@ -13,6 +13,7 @@ import { Triangle } from "./lib/ui/triangle";
 import { Image } from "./lib/ui/image";
 import { Pinned } from "./lib/ui/pinned";
 import { LineTool } from "./lib/tools/line";
+import { EditerLayer } from "./lib/layer/editer-layer";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
   width: window.innerWidth,
@@ -40,6 +41,7 @@ const floorLayer = new Layer({
 });
 
 const ruleLayer = new Layer({
+  cssTransformable: false,
   children: [new Rule()]
 });
 

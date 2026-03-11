@@ -4,6 +4,12 @@ import { Rule } from "../tools/rule";
 import { Tween, Easing } from "@tweenjs/tween.js";
 
 export function applyCssTransform(root: Root) {
+  if (root.viewport.scale >= root.cssTransformThreshold) {
+    syncPaintedViewport(root);
+    root.requestRender();
+    return;
+  }
+
   const pv = root._paintedViewport;
   const vp = root.viewport;
 
