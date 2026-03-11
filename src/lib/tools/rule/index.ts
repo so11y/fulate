@@ -59,9 +59,9 @@ export class Rule extends Element {
     ctx.fillRect(rulerSize, 0, Math.max(0, w - rulerSize), rulerSize);
 
     const stepX = niceStep(pxPerTick, viewport.scale);
-    // 修复缩放空隙：从 0 点对应的世界坐标开始算起
-    const startWorldX = (0 - viewport.x) / viewport.scale;
-    const endWorldX = (w - viewport.x) / viewport.scale;
+    const vpRect = this.root.getViewportRect();
+    const startWorldX = vpRect.left;
+    const endWorldX = vpRect.left + vpRect.width;
     const firstTickX = Math.floor(startWorldX / stepX) * stepX;
     const precisionX = Math.max(0, -Math.floor(Math.log10(stepX)));
 
@@ -138,8 +138,8 @@ export class Rule extends Element {
     ctx.fillRect(0, rulerSize, rulerSize, Math.max(0, h - rulerSize));
 
     const stepY = niceStep(pxPerTick, viewport.scale);
-    const startWorldY = (0 - viewport.y) / viewport.scale;
-    const endWorldY = (h - viewport.y) / viewport.scale;
+    const startWorldY = vpRect.top;
+    const endWorldY = vpRect.top + vpRect.height;
     const firstTickY = Math.floor(startWorldY / stepY) * stepY;
     const precisionY = Math.max(0, -Math.floor(Math.log10(stepY)));
 

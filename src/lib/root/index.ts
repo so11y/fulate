@@ -179,6 +179,18 @@ export class Root extends Node {
 
   // ================= 坐标变换 =================
 
+  getViewportRect() {
+    const { x, y, scale } = this.viewport;
+    const left = -x / scale;
+    const top = -y / scale;
+    return {
+      left,
+      top,
+      width: this.width / scale,
+      height: this.height / scale
+    };
+  }
+
   getLogicalPosition(clientX: number, clientY: number) {
     const rect = this._containerRect;
     return new Point(

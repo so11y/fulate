@@ -37,6 +37,20 @@ export function makeBoundingBoxFromPoints(
   };
 }
 
+export interface BoundingBox {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+export function makeBoundsFromPoints(
+  points: { x: number; y: number }[]
+): BoundingBox {
+  const r = makeBoundingBoxFromPoints(points);
+  return { minX: r.left, minY: r.top, maxX: r.left + r.width, maxY: r.top + r.height };
+}
+
 export function makeBoundingBoxFromRects(rects: Rect[]): RectPoint {
   let minX = Infinity,
     minY = Infinity,

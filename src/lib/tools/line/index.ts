@@ -257,15 +257,10 @@ export class LineTool extends Element {
     if (!this.isDrawingMode) return;
 
     const size = 3 / scale;
-    const { x: vx, y: vy } = this.root.viewport;
-    const vw = this.root.width / scale;
-    const vh = this.root.height / scale;
-    const viewLeft = -vx / scale;
-    const viewTop = -vy / scale;
 
     const excludes = this._excludes;
     this.root.searchArea(
-      { left: viewLeft, top: viewTop, width: vw, height: vh },
+      this.root.getViewportRect(),
       ({ element }) => {
         const resolved = checkElement(element, excludes);
         if (!resolved || resolved.type === "line") return;
