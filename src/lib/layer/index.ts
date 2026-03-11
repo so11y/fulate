@@ -170,6 +170,7 @@ export class Layer extends Rectangle {
   }
 
   shouldRepaint() {
+    if (this.root?._pendingLayers.has(this)) return true;
     if (this.enableDirtyRect) {
       return this.dirtyNodes.size > 0;
     }
