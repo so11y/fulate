@@ -47,6 +47,16 @@ export abstract class BaseLine extends Element {
     this._syncBoundsFromPoints();
   }
 
+  // --- Anchor endpoint access ---
+
+  get headPoint(): LinePointData {
+    return this.linePoints[0];
+  }
+
+  get tailPoint(): LinePointData {
+    return this.linePoints[this.linePoints.length - 1];
+  }
+
   // --- Anchor connection helpers ---
 
   private _connectToElement(el: Element) {
@@ -102,10 +112,9 @@ export abstract class BaseLine extends Element {
 
   _unregisterAnchor(elementId: string) {
     if (!this.root) return;
-    const pts = this.linePoints;
     const stillConnected =
-      pts[0]?.anchor?.elementId === elementId ||
-      (pts.length > 1 && pts[pts.length - 1]?.anchor?.elementId === elementId);
+      this.headPoint.anchor?.elementId === elementId ||
+      this.tailPoint.anchor?.elementId === elementId;
     if (!stillConnected) {
       const el = this.root.idElements.get(elementId);
       if (el) this._disconnectFromElement(el);
@@ -129,25 +138,24 @@ export abstract class BaseLine extends Element {
     this.height = rect.height || 1;
   }
 
+  private _syncAnchorPoint(p: LinePointData): boolean {
+    if (!p.anchor) return false;
+    const el = this.root!.idElements.get(p.anchor.elementId);
+    if (!el) return false;
+    const pos = getElementAnchorPoint(el, p.anchor.anchorType);
+    if (Math.abs(pos.x - p.x) > 0.01 || Math.abs(pos.y - p.y) > 0.01) {
+      p.x = pos.x;
+      p.y = pos.y;
+      return true;
+    }
+    return false;
+  }
+
   syncAnchors(): boolean {
-    if (!this.root || this.linePoints.length < 2) return false;
-    let changed = false;
-    const pts = this.linePoints;
-    const ends = [pts[0], pts[pts.length - 1]];
-    for (const p of ends) {
-      if (!p.anchor) continue;
-      const el = this.root.idElements.get(p.anchor.elementId);
-      if (!el) continue;
-      const pos = getElementAnchorPoint(el, p.anchor.anchorType);
-      if (Math.abs(pos.x - p.x) > 0.01 || Math.abs(pos.y - p.y) > 0.01) {
-        p.x = pos.x;
-        p.y = pos.y;
-        changed = true;
-      }
-    }
-    if (changed) {
-      this._syncBoundsFromPoints();
-    }
+    if (!this.root) return false;
+    let changed = this._syncAnchorPoint(this.headPoint);
+    changed = this._syncAnchorPoint(this.tailPoint) || changed;
+    if (changed) this._syncBoundsFromPoints();
     return changed;
   }
 
@@ -158,22 +166,14 @@ export abstract class BaseLine extends Element {
     newPoints: LinePointData[]
   ) {
     if (!this.root) return;
-    const oldEnds =
-      oldPoints.length >= 2
-        ? [oldPoints[0], oldPoints[oldPoints.length - 1]]
-        : oldPoints;
-    for (const p of oldEnds) {
-      if (p.anchor) this._unregisterAnchor(p.anchor.elementId);
-    }
-    const newEnds =
-      newPoints.length >= 2
-        ? [newPoints[0], newPoints[newPoints.length - 1]]
-        : newPoints;
-    for (const p of newEnds) {
-      if (p.anchor) {
-        const el = this.root.idElements.get(p.anchor.elementId);
-        if (el) this._connectToElement(el);
-      }
+    if (oldPoints[0]?.anchor) this._unregisterAnchor(oldPoints[0].anchor.elementId);
+    const oldTail = oldPoints.length > 1 ? oldPoints[oldPoints.length - 1] : undefined;
+    if (oldTail?.anchor) this._unregisterAnchor(oldTail.anchor.elementId);
+
+    for (const p of [newPoints[0], newPoints.length > 1 ? newPoints[newPoints.length - 1] : undefined]) {
+      if (!p?.anchor) continue;
+      const el = this.root.idElements.get(p.anchor.elementId);
+      if (el) this._connectToElement(el);
     }
   }
 
@@ -357,33 +357,34 @@ export abstract class BaseLine extends Element {
 
   // --- Connected-lines lifecycle ---
 
-  private _forEachAnchoredElement(callback: (el: Element) => void) {
-    const pts = this.linePoints;
-    if (pts.length < 2) return;
-    for (const p of [pts[0], pts[pts.length - 1]]) {
+  private _bindEndpoints(connect: boolean) {
+    const action = connect
+      ? (el: Element) => this._connectToElement(el)
+      : (el: Element) => this._disconnectFromElement(el);
+    for (const p of [this.headPoint, this.tailPoint]) {
       if (!p.anchor) continue;
       const el = this.root?.idElements.get(p.anchor.elementId);
-      if (el) callback(el);
+      if (el) action(el);
     }
   }
 
   activate() {
     super.activate();
-    this._forEachAnchoredElement((el) => this._connectToElement(el));
+    this._bindEndpoints(true);
   }
 
   deactivate() {
-    this._forEachAnchoredElement((el) => this._disconnectFromElement(el));
+    this._bindEndpoints(false);
     super.deactivate();
   }
 
   mounted() {
     super.mounted();
-    this._forEachAnchoredElement((el) => this._connectToElement(el));
+    this._bindEndpoints(true);
   }
 
   unmounted() {
-    this._forEachAnchoredElement((el) => this._disconnectFromElement(el));
+    this._bindEndpoints(false);
     super.unmounted();
   }
 }

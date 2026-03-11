@@ -200,10 +200,16 @@ export class Transformable extends Node {
     return this._snapPoints;
   }
 
+  /**
+   * 专用来复写， 绘制吸附点位 默认复用getLocalPoints
+   */
   getLocalSnapPoints() {
     return this.getLocalPoints();
   }
 
+  /**
+   * 专用来复写， 绘制图形的顶点，默认矩形
+   */
   getLocalPoints() {
     const dim = this._getTransformedDimensions();
     return [
