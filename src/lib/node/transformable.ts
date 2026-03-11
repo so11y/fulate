@@ -3,6 +3,7 @@ import { Point, PointType, TOriginX, TOriginY } from "../../util/point";
 import { resolveOrigin } from "../../util/resolveOrigin";
 import { Intersection } from "../../util/Intersection";
 import { RectWithCenter, makeBoundingBoxFromPoints } from "../../util/rect";
+import { CustomEvent } from "../../util/event";
 
 export interface TransformableOptions {
   left?: number;
@@ -355,10 +356,7 @@ export class Transformable extends Node {
     this.isDirty = false;
   }
 
-  markDirty() {
-    if (this.isDirty) return this;
-
-    this.isDirty = true;
+  private invalidateCache() {
     this._coords = null;
     this._snapPoints = null;
     this._lastBoundingRect = this._boundingRectCache;
@@ -366,6 +364,13 @@ export class Transformable extends Node {
     this._boundingRectCache = null;
     this._unionBoundsCache = null;
     this._inverseOwnMatrixCache = null;
+  }
+
+  markDirty() {
+    if (this.isDirty) return this;
+
+    this.isDirty = true;
+    this.invalidateCache();
     this.markChildDirty();
     if (this.layer) {
       this.layer.addDirtyNode(this as any);
@@ -380,24 +385,14 @@ export class Transformable extends Node {
 
     if (shouldUpdate) {
       this.calcWorldMatrix();
-      this._boundingRectCache = null;
-      if (this.width && this.height) {
-        this.setCoords();
-      }
-      this.isDirty = false;
+      this.invalidateCache();
       this.layer?.syncRbush(this as any);
+      this.isDirty = false;
 
-      const connLineIds = (this as any).connectedLines as
-        | Set<string>
-        | undefined;
-      if (connLineIds?.size) {
-        for (const lineId of connLineIds) {
-          const line = (this as any).root?.idElements?.get(lineId);
-          if (line?.syncAnchors?.()) {
-            line.markDirty?.();
-            this.layer?.syncRbush(line);
-          }
-        }
+      if ((this as any).connectedLines?.size) {
+        this.dispatchEvent(
+          new CustomEvent("transformUpdated", { bubbles: false })
+        );
       }
     }
 

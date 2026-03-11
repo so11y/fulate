@@ -45,9 +45,8 @@ const ruleLayer = new Layer({
   children: [new Rule()]
 });
 
-const editerLayer = new Layer({
+const editerLayer = new EditerLayer({
   zIndex: 2,
-  enableDirtyRect: false,
   children: [new Select(), new Snap(), new LineTool()]
 });
 

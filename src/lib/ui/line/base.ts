@@ -1,6 +1,6 @@
 import { Intersection } from "../../../util/Intersection";
 import { Point } from "../../../util/point";
-import { makeBoundingBoxFromPoints, RectWithCenter } from "../../../util/rect";
+import { makeBoundingBoxFromPoints, makeBoundsFromPoints, RectWithCenter } from "../../../util/rect";
 import { BaseElementOption, Element } from "../../node/element";
 import { getElementAnchorPoint } from "./anchor";
 
@@ -32,12 +32,31 @@ export abstract class BaseLine extends Element {
   strokeColor = "#333333";
   strokeWidth = 2;
 
+  private _handleTransformUpdated = () => {
+    if (this.syncAnchors()) {
+      this.markDirty();
+      this.layer?.syncRbush(this as any);
+    }
+  };
+
   constructor(options?: LineOption) {
     super(options);
     if (options?.linePoints) this.linePoints = options.linePoints;
     if (options?.strokeColor) this.strokeColor = options.strokeColor;
     if (options?.strokeWidth != null) this.strokeWidth = options.strokeWidth;
     this._syncBoundsFromPoints();
+  }
+
+  // --- Anchor connection helpers ---
+
+  private _connectToElement(el: Element) {
+    (el.connectedLines ??= new Set()).add(this.id);
+    el.addEventListener("transformUpdated", this._handleTransformUpdated);
+  }
+
+  private _disconnectFromElement(el: Element) {
+    el.connectedLines?.delete(this.id);
+    el.removeEventListener("transformUpdated", this._handleTransformUpdated);
   }
 
   // --- Point management ---
@@ -48,7 +67,7 @@ export abstract class BaseLine extends Element {
     this.markDirty();
     if (anchor && this.root) {
       const el = this.root.idElements.get(anchor.elementId);
-      if (el) (el.connectedLines ??= new Set()).add(this.id);
+      if (el) this._connectToElement(el);
     }
   }
 
@@ -83,12 +102,13 @@ export abstract class BaseLine extends Element {
 
   _unregisterAnchor(elementId: string) {
     if (!this.root) return;
-    const stillConnected = this.linePoints.some(
-      (p) => p.anchor?.elementId === elementId
-    );
+    const pts = this.linePoints;
+    const stillConnected =
+      pts[0]?.anchor?.elementId === elementId ||
+      (pts.length > 1 && pts[pts.length - 1]?.anchor?.elementId === elementId);
     if (!stillConnected) {
       const el = this.root.idElements.get(elementId);
-      if (el) el.connectedLines?.delete(this.id);
+      if (el) this._disconnectFromElement(el);
     }
   }
 
@@ -110,9 +130,11 @@ export abstract class BaseLine extends Element {
   }
 
   syncAnchors(): boolean {
-    if (!this.root) return false;
+    if (!this.root || this.linePoints.length < 2) return false;
     let changed = false;
-    for (const p of this.linePoints) {
+    const pts = this.linePoints;
+    const ends = [pts[0], pts[pts.length - 1]];
+    for (const p of ends) {
       if (!p.anchor) continue;
       const el = this.root.idElements.get(p.anchor.elementId);
       if (!el) continue;
@@ -136,13 +158,21 @@ export abstract class BaseLine extends Element {
     newPoints: LinePointData[]
   ) {
     if (!this.root) return;
-    for (const p of oldPoints) {
+    const oldEnds =
+      oldPoints.length >= 2
+        ? [oldPoints[0], oldPoints[oldPoints.length - 1]]
+        : oldPoints;
+    for (const p of oldEnds) {
       if (p.anchor) this._unregisterAnchor(p.anchor.elementId);
     }
-    for (const p of newPoints) {
+    const newEnds =
+      newPoints.length >= 2
+        ? [newPoints[0], newPoints[newPoints.length - 1]]
+        : newPoints;
+    for (const p of newEnds) {
       if (p.anchor) {
         const el = this.root.idElements.get(p.anchor.elementId);
-        if (el) (el.connectedLines ??= new Set()).add(this.id);
+        if (el) this._connectToElement(el);
       }
     }
   }
@@ -253,12 +283,13 @@ export abstract class BaseLine extends Element {
 
   getCoords() {
     if (this._coords) return this._coords;
-    const rect = this.getBoundingRect();
+    if (this.linePoints.length < 2) return super.getCoords();
+    const { minX, minY, maxX, maxY } = makeBoundsFromPoints(this.linePoints);
     this._coords = [
-      new Point(rect.left, rect.top),
-      new Point(rect.left + rect.width, rect.top),
-      new Point(rect.left + rect.width, rect.top + rect.height),
-      new Point(rect.left, rect.top + rect.height)
+      new Point(minX, minY),
+      new Point(maxX, minY),
+      new Point(maxX, maxY),
+      new Point(minX, maxY)
     ];
     return this._coords;
   }
@@ -326,43 +357,33 @@ export abstract class BaseLine extends Element {
 
   // --- Connected-lines lifecycle ---
 
-  activate() {
-    super.activate();
-    for (const p of this.linePoints) {
-      if (p.anchor) {
-        const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) (el.connectedLines ??= new Set()).add(this.id);
-      }
+  private _forEachAnchoredElement(callback: (el: Element) => void) {
+    const pts = this.linePoints;
+    if (pts.length < 2) return;
+    for (const p of [pts[0], pts[pts.length - 1]]) {
+      if (!p.anchor) continue;
+      const el = this.root?.idElements.get(p.anchor.elementId);
+      if (el) callback(el);
     }
   }
 
+  activate() {
+    super.activate();
+    this._forEachAnchoredElement((el) => this._connectToElement(el));
+  }
+
   deactivate() {
-    for (const p of this.linePoints) {
-      if (p.anchor) {
-        const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) el.connectedLines?.delete(this.id);
-      }
-    }
+    this._forEachAnchoredElement((el) => this._disconnectFromElement(el));
     super.deactivate();
   }
 
   mounted() {
     super.mounted();
-    for (const p of this.linePoints) {
-      if (p.anchor) {
-        const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) (el.connectedLines ??= new Set()).add(this.id);
-      }
-    }
+    this._forEachAnchoredElement((el) => this._connectToElement(el));
   }
 
   unmounted() {
-    for (const p of this.linePoints) {
-      if (p.anchor) {
-        const el = this.root?.idElements.get(p.anchor.elementId);
-        if (el) el.connectedLines?.delete(this.id);
-      }
-    }
+    this._forEachAnchoredElement((el) => this._disconnectFromElement(el));
     super.unmounted();
   }
 }
