@@ -8,8 +8,6 @@ import { qrDecompose } from "@fulate/util";
 
 export interface BaseElementOption<T = Element> extends TransformableOptions {
   key?: string;
-  backgroundColor?: string | null;
-  radius?: number | null;
   cursor?: string;
   visible?: boolean;
   selectctbale?: boolean;
@@ -44,8 +42,6 @@ export interface AnimateOptions<T = any> {
 export class Element extends Transformable {
   type = "element";
 
-  backgroundColor: string | null = null;
-  radius: number | null = null;
   cursor?: string;
   visible: boolean = true;
   selectctbale?: boolean;
@@ -149,21 +145,38 @@ export class Element extends Transformable {
     return true;
   }
 
-  paint(ctx = this.layer.ctx) {
+  paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
     if (!this.visible) return;
+    this.paintChildren(ctx);
+  }
 
-    if (this.children) {
-      for (let i = 0; i < this.children.length; i++) {
-        const child = this.children[i];
-        if (
-          (child as any).isLayer &&
-          this.root?._pendingLayers.has(child as any)
-        ) {
-          continue;
-        }
-        if (child.hasInView() && child.shouldRepaint()) {
-          child.paint(ctx);
-        }
+  paintHover(ctx: CanvasRenderingContext2D, scale: number) {
+    const coords = this.getCoords();
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(coords[0].x, coords[0].y);
+    for (let i = 1; i < coords.length; i++) {
+      ctx.lineTo(coords[i].x, coords[i].y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = "#4F81FF";
+    ctx.lineWidth = 1 / scale;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  protected paintChildren(ctx: CanvasRenderingContext2D) {
+    if (!this.children) return;
+    for (let i = 0; i < this.children.length; i++) {
+      const child = this.children[i];
+      if (
+        (child as any).isLayer &&
+        this.root?._pendingLayers.has(child as any)
+      ) {
+        continue;
+      }
+      if (child.hasInView() && child.shouldRepaint()) {
+        child.paint(ctx);
       }
     }
   }
@@ -227,7 +240,6 @@ export class Element extends Transformable {
 
     const m = this._ownMatrixCache;
 
-    // 无旋转无skew时，直接用矩阵平移分量做快速判断
     if (m.b === 0 && m.c === 0) {
       const sx = m.a;
       const sy = m.d;
@@ -244,7 +256,6 @@ export class Element extends Transformable {
       );
     }
 
-    // 有旋转/skew时走完整包围盒计算
     const { left, top, width, height } = this.getBoundingRect();
 
     return (
@@ -322,7 +333,7 @@ export class Element extends Transformable {
         }
         this.markDirty();
         if (options?.onUpdate) {
-          options.onUpdate(this as any); // 把当前元素抛出去给用户用
+          options.onUpdate(this as any);
         }
       });
 
@@ -402,8 +413,6 @@ export class Element extends Transformable {
       originX: this.originX,
       originY: this.originY,
       visible: this.visible,
-      backgroundColor: this.backgroundColor,
-      radius: this.radius,
       cursor: this.cursor,
       selectctbale: this.selectctbale,
       silent: this.silent,

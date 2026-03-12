@@ -1,11 +1,11 @@
-import { BaseElementOption, Element } from "@fulate/core";
+import { ShapeOption, Shape } from "@fulate/core";
 
-export interface ImageOption extends BaseElementOption {
+export interface ImageOption extends ShapeOption {
   src?: string;
   image?: HTMLImageElement | HTMLCanvasElement;
 }
 
-export class Image extends Element {
+export class Image extends Shape {
   type = "image";
   src?: string;
   image?: HTMLImageElement | HTMLCanvasElement;
@@ -36,17 +36,7 @@ export class Image extends Element {
     };
   }
 
-  paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-    ctx.save();
-    ctx.beginPath();
-    this.applyTransformToCtx(ctx);
-
-    if (this.backgroundColor) {
-      ctx.fillStyle = this.backgroundColor;
-      ctx.roundRect(0, 0, this.width || 0, this.height || 0, this.radius ?? 0);
-      ctx.fill();
-    }
-
+  protected paintContent(ctx: CanvasRenderingContext2D) {
     if (this._isLoaded && this.image) {
       ctx.drawImage(
         this.image,
@@ -56,10 +46,5 @@ export class Image extends Element {
         this.height || this.image.height
       );
     }
-
-    if (this.children?.length) {
-      super.paint(ctx);
-    }
-    ctx.restore();
   }
 }

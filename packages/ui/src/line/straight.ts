@@ -42,6 +42,22 @@ export class Line extends BaseLine {
     ctx.restore();
   }
 
+  paintHover(ctx: CanvasRenderingContext2D, scale: number) {
+    if (this.linePoints.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = "#4F81FF";
+    ctx.lineWidth = Math.max(this.strokeWidth, 1) / scale;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(this.linePoints[0].x, this.linePoints[0].y);
+    for (let i = 1; i < this.linePoints.length; i++) {
+      ctx.lineTo(this.linePoints[i].x, this.linePoints[i].y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
   getControlSchema(): ControlSchema {
     return getLineControlSchema(this);
   }
@@ -220,22 +236,6 @@ function getLineControlSchema(line: Line): ControlSchema {
       select.snapTool?.stop();
     },
     bodyHitTest: (_select, point) => line.hasPointHint(point),
-    paintHover: (el, ctx, scale) => {
-      const lineEl = el as Line;
-      if (lineEl.linePoints.length < 2) return;
-      ctx.save();
-      ctx.strokeStyle = "#4F81FF";
-      ctx.lineWidth = Math.max(lineEl.strokeWidth, 1) / scale;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(lineEl.linePoints[0].x, lineEl.linePoints[0].y);
-      for (let i = 1; i < lineEl.linePoints.length; i++) {
-        ctx.lineTo(lineEl.linePoints[i].x, lineEl.linePoints[i].y);
-      }
-      ctx.stroke();
-      ctx.restore();
-    },
     paintFrame: (select, ctx) => {
       const el = select.selectEls[0] as Line;
       if (!el || el.linePoints.length < 2) return;

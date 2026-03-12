@@ -1,5 +1,5 @@
 import { Rectangle } from "./rectangle";
-import { BaseElementOption, Element } from "@fulate/core";
+import { ShapeOption, Element } from "@fulate/core";
 import { qrDecompose } from "@fulate/util";
 
 interface PinnedOptions {
@@ -42,8 +42,8 @@ export class Pinned extends Rectangle {
 
   selectctbale = false
 
-  constructor(options: BaseElementOption & PinnedAABB);
-  constructor(options: BaseElementOption & PinnedMatrix);
+  constructor(options: ShapeOption & PinnedAABB);
+  constructor(options: ShapeOption & PinnedMatrix);
   constructor(options: any) {
     super(options);
     this.target = options.target;

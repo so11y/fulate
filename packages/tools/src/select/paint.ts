@@ -38,15 +38,10 @@ function drawChildBorders(select: Select, ctx: CanvasRenderingContext2D) {
   if (select.selectEls.length <= 1) return;
   const scale = select.root.viewport.scale;
   for (const el of select.selectEls) {
-    const schema = el.getControlSchema?.();
-    if (schema?.paintHover) {
-      ctx.save();
-      select.root.applyViewPointTransform(ctx);
-      schema.paintHover(el, ctx, scale);
-      ctx.restore();
-    } else {
-      drawElementOutline(ctx, el.getCoords(), scale, STROKE_COLOR);
-    }
+    ctx.save();
+    select.root.applyViewPointTransform(ctx);
+    el.paintHover(ctx, scale);
+    ctx.restore();
   }
 }
 
@@ -124,15 +119,10 @@ function drawHoverBorder(select: Select, ctx: CanvasRenderingContext2D) {
   if (!el || select.selectEls.includes(el)) return;
   const scale = select.root.viewport.scale;
 
-  const schema = el.getControlSchema?.();
-  if (schema?.paintHover) {
-    ctx.save();
-    select.root.applyViewPointTransform(ctx);
-    schema.paintHover(el, ctx, scale);
-    ctx.restore();
-  } else {
-    drawElementOutline(ctx, el.getCoords(), scale, STROKE_COLOR);
-  }
+  ctx.save();
+  select.root.applyViewPointTransform(ctx);
+  el.paintHover(ctx, scale);
+  ctx.restore();
 }
 
 export function paintSelect(select: Select) {

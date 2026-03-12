@@ -1,35 +1,19 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
-import { Element } from "@fulate/core";
+import { Shape } from "@fulate/core";
 import { AnchorPoint } from "./line/anchor";
 
-export class Triangle extends Element {
+export class Triangle extends Shape {
   type = "triangle";
 
-  paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-    ctx.save();
-    ctx.beginPath();
-    this.applyTransformToCtx(ctx);
-
-    if (this.backgroundColor) {
-      ctx.fillStyle = this.backgroundColor;
-    }
-
+  protected buildPath(ctx: CanvasRenderingContext2D) {
     const w = this.width || 0;
     const h = this.height || 0;
-
+    ctx.beginPath();
     ctx.moveTo(w / 2, 0);
     ctx.lineTo(w, h);
     ctx.lineTo(0, h);
     ctx.closePath();
-
-    if (this.backgroundColor) {
-      ctx.fill();
-    }
-    if (this.children?.length) {
-      super.paint(ctx);
-    }
-    ctx.restore();
   }
 
   getLocalSnapPoints() {

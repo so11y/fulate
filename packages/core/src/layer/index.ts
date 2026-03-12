@@ -295,7 +295,7 @@ export class Layer extends Element {
   paint(ctx = this.ctx) {
     ctx.save();
     this.applyTransformToCtx(ctx);
-    super.paint();
+    this.paintChildren(ctx);
     ctx.restore();
   }
 

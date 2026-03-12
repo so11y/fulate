@@ -1,39 +1,38 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
-import { BaseElementOption, Element } from "@fulate/core";
+import { ShapeOption, Shape } from "@fulate/core";
 
-export class Circle extends Element {
+export class Circle extends Shape {
   type = "circle";
 
-  constructor(options?: BaseElementOption & { radius?: number }) {
+  constructor(options?: ShapeOption & { radius?: number }) {
     super(options);
     this.radius =
       options?.radius ?? Math.min(this.width ?? 0, this.height ?? 0) / 2;
   }
 
-  paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
-    ctx.save();
+  protected buildPath(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();
-    this.applyTransformToCtx(ctx);
+    ctx.arc(
+      (this.width || 0) / 2,
+      (this.height || 0) / 2,
+      this.radius,
+      0,
+      Math.PI * 2
+    );
+  }
 
-    const w = this.width || 0;
-    const h = this.height || 0;
-    const cx = w / 2;
-    const cy = h / 2;
-
-    if (this.backgroundColor) {
-      ctx.fillStyle = this.backgroundColor;
-    }
-
-    ctx.arc(cx, cy, this.radius, 0, Math.PI * 2);
-
-    if (this.backgroundColor) {
-      ctx.fill();
-    }
-    if (this.children?.length) {
-      super.paint(ctx);
-    }
-    ctx.restore();
+  protected buildBorderPath(ctx: CanvasRenderingContext2D) {
+    const half = this.borderWidth / 2;
+    const offset = this.borderPosition === "inside" ? -half : half;
+    ctx.beginPath();
+    ctx.arc(
+      (this.width || 0) / 2,
+      (this.height || 0) / 2,
+      this.radius + offset,
+      0,
+      Math.PI * 2
+    );
   }
 
   hasPointHint(point: Point) {

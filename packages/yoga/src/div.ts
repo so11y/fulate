@@ -11,7 +11,8 @@ import Yoga, {
   PositionType,
   Wrap
 } from "yoga-layout";
-import { BaseElementOption, Node } from "@fulate/core";
+import { Node } from "@fulate/core";
+import type { ShapeOption } from "@fulate/core";
 import { Rectangle as BaseRectangle } from "@fulate/ui";
 import { FulateEvent } from "@fulate/util";
 
@@ -34,7 +35,7 @@ export {
 const keysToSync = ["left", "top", "width", "height"];
 
 export interface YogaOption extends Omit<
-  BaseElementOption,
+  ShapeOption,
   | "left"
   | "top"
   | "width"
@@ -129,9 +130,18 @@ const ExtractKey = new Set([
   "boxSizing"
 ]);
 
+export interface DivMixin {
+  yogaNode?: ReturnType<typeof Yoga.Node.create>;
+  layout(): this;
+  computedLayout(): this;
+  flushStyles(): this;
+  setOptions(options?: YogaOption, syncCalc?: boolean): this;
+  quickSetOptions(options: ShapeOption): this;
+}
+
 export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
   Node: T
-) {
+): new (...args: ConstructorParameters<T>) => DivMixin & InstanceType<T> {
   class Div extends Node implements YogaOption {
     yogaNode? = Yoga.Node.create();
     declare children: any[];
@@ -295,12 +305,14 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
 
       !isNil(options.boxSizing) &&
         this.yogaNode.setBoxSizing(options.boxSizing);
+
+      this.yogaNode.setBorder(Edge.All, this.borderWidth ?? 0);
       // !isNil(this.overflow) && this.yogaNode.setOverflow(this.overflow);
 
       return this;
     }
 
-    quickSetOptions(options: BaseElementOption): this {
+    quickSetOptions(options: ShapeOption): this {
       super.quickSetOptions(options);
       let needFlush = false;
       for (const key of keysToSync) {
@@ -328,9 +340,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
   }
 
-  return Div as any as new (
-    ...args: ConstructorParameters<T>
-  ) => Div & InstanceType<T>;
+  return Div as any;
 }
 
 export const Div = withYoga<new (v: YogaOption) => BaseRectangle>(
