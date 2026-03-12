@@ -104,7 +104,11 @@ export function searchArea(
       hitElements.sort((a, b) => b.element.uIndex - a.element.uIndex);
       for (const item of hitElements) {
         const element = item.element;
-        if (element.selectctbale !== false && element.visible) {
+        if (
+          element.isActiveed &&
+          element.selectctbale !== false &&
+          element.visible
+        ) {
           const sc = element.inject("scrollContainer");
           if (sc && sc !== element && !sc.isChildInScrollView(element)) {
             continue;

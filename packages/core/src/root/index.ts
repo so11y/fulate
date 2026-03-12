@@ -65,6 +65,10 @@ export class Root extends Node {
     this.container.style.touchAction = "none";
     this.container.style.overflow = "hidden";
     this.provide("root", this);
+    this.provide("textDefaults", {
+      color: "#000000",
+      fontSize: 14
+    });
   }
 
   mount() {

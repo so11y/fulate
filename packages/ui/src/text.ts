@@ -13,14 +13,34 @@ export interface TextOption extends ShapeOption {
   underline?: boolean;
   lineHeight?: number;
   wordWrap?: boolean;
+  maxLines?: number;
   autoScale?: boolean;
   editable?: boolean;
 }
+
+const TEXT_STYLE_KEYS = [
+  "color",
+  "fontSize",
+  "fontFamily",
+  "fontWeight",
+  "fontStyle",
+  "textAlign",
+  "textBaseline",
+  "verticalAlign",
+  "underline",
+  "lineHeight",
+  "wordWrap",
+  "maxLines"
+] as const;
+
+type TextStyleKey = (typeof TEXT_STYLE_KEYS)[number];
+type TextDefaultsContext = Pick<TextOption, TextStyleKey>;
 
 export class Text extends Shape {
   type = "text";
 
   static charWidthCache: Record<string, number> = {};
+  private static measureCtx: CanvasRenderingContext2D | null = null;
 
   text: string = "";
   fontSize: number = 14;
@@ -34,12 +54,16 @@ export class Text extends Shape {
   underline: boolean = false;
   lineHeight: number = 1.5;
   wordWrap: boolean = true;
+  maxLines?: number;
   editable: boolean = false;
+  fitWidth = true;
+  fitHeight = true;
 
   isEditing: boolean = false;
   private _textarea: HTMLTextAreaElement | null = null;
   private _editAbort: AbortController | null = null;
 
+  private _explicitTextStyle = new Set<TextStyleKey>();
   private lines: string[] = [];
   private textHeight: number = 0;
 
@@ -51,7 +75,61 @@ export class Text extends Shape {
   }
 
   get fontString() {
-    return `${this.fontStyle} ${this.fontWeight} ${this.fontSize}px ${this.fontFamily}`;
+    return this.getFontString();
+  }
+
+  private getMeasureContext() {
+    if (Text.measureCtx) return Text.measureCtx;
+    const canvas = document.createElement("canvas");
+    Text.measureCtx = canvas.getContext("2d")!;
+    return Text.measureCtx;
+  }
+
+  private syncExplicitTextStyle(options: any) {
+    if (!options) return;
+    this._explicitTextStyle ??= new Set<TextStyleKey>();
+    for (const key of TEXT_STYLE_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(options, key)) {
+        if (options[key] === undefined || options[key] === null) {
+          this._explicitTextStyle.delete(key);
+        } else {
+          this._explicitTextStyle.add(key);
+        }
+      }
+    }
+  }
+
+  private getResolvedTextStyle(): Required<TextDefaultsContext> {
+    this._explicitTextStyle ??= new Set<TextStyleKey>();
+    const defaults = this.inject<TextDefaultsContext>("textDefaults") ?? {};
+    const resolved = {} as Required<TextDefaultsContext>;
+
+    for (const key of TEXT_STYLE_KEYS) {
+      const currentValue = this[key];
+      const defaultValue = defaults[key];
+      //@ts-ignore
+      resolved[key] = (
+        this._explicitTextStyle.has(key) || defaultValue === undefined
+          ? currentValue
+          : defaultValue
+      ) as Required<TextDefaultsContext>[TextStyleKey];
+    }
+
+    return resolved;
+  }
+
+  private getFontString(style = this.getResolvedTextStyle()) {
+    return `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
+  }
+
+  attrs(options: any, O: { target?: any; assign?: boolean } = {}) {
+    this.syncExplicitTextStyle(options);
+    super.attrs(options, O);
+  }
+
+  quickSetOptions(options: TextOption) {
+    this.syncExplicitTextStyle(options);
+    return super.quickSetOptions(options);
   }
 
   private preCalculateChars(ctx: CanvasRenderingContext2D, font: string) {
@@ -117,62 +195,178 @@ export class Text extends Shape {
     return best;
   }
 
-  private computeLines(ctx: CanvasRenderingContext2D) {
-    const font = this.fontString;
+  private resolveWidth(ctx: CanvasRenderingContext2D, font: string) {
+    if (this._hasExplicitWidth || this.fitWidth) {
+      return Math.max(this.width ?? 0, 0);
+    }
+
+    if (!this.text) return 0;
+
+    ctx.font = font;
+    return Math.max(
+      ...this.text
+        .split(/\r?\n/)
+        .map((line) => this.measureStringWidth(ctx, line, font)),
+      0
+    );
+  }
+
+  private wrapText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number,
+    font: string,
+    wordWrap: boolean
+  ) {
+    const paragraphs = text.split(/\r?\n/);
+    const lines: string[] = [];
+
+    for (const paragraph of paragraphs) {
+      if (!wordWrap || maxWidth <= 0) {
+        lines.push(paragraph);
+        continue;
+      }
+
+      if (paragraph.length === 0) {
+        lines.push("");
+        continue;
+      }
+
+      let remainingText = paragraph;
+      while (remainingText.length > 0) {
+        const wrapIndex = this.findWrapIndexBinary(
+          ctx,
+          remainingText,
+          maxWidth,
+          font
+        );
+
+        if (wrapIndex === 0) {
+          lines.push(remainingText[0]);
+          remainingText = remainingText.slice(1);
+        } else {
+          lines.push(remainingText.slice(0, wrapIndex));
+          remainingText = remainingText.slice(wrapIndex);
+        }
+      }
+    }
+
+    return lines;
+  }
+
+  private fitLineWithEllipsis(
+    ctx: CanvasRenderingContext2D,
+    line: string,
+    maxWidth: number,
+    font: string
+  ) {
+    const ellipsis = "...";
+    if (maxWidth <= 0) return "";
+
+    if (this.measureStringWidth(ctx, `${line}${ellipsis}`, font) <= maxWidth) {
+      return `${line}${ellipsis}`;
+    }
+
+    const ellipsisWidth = this.measureStringWidth(ctx, ellipsis, font);
+    if (ellipsisWidth > maxWidth) return "";
+
+    let left = 0;
+    let right = line.length;
+    let best = "";
+
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const subText = line.slice(0, mid);
+      if (
+        this.measureStringWidth(ctx, subText, font) + ellipsisWidth <=
+        maxWidth
+      ) {
+        best = subText;
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+
+    return `${best}${ellipsis}`;
+  }
+
+  private getResolvedHeight(lineHeightPx: number) {
+    if (this._hasExplicitHeight || this.fitHeight) {
+      return this.height ?? 0;
+    }
+    return undefined;
+  }
+
+  private syncTextLayout(ctx = this.getMeasureContext()) {
+    const style = this.getResolvedTextStyle();
+    const font = this.getFontString(style);
     ctx.font = font;
     this.preCalculateChars(ctx, font);
 
-    this.lines = [];
-    const lineHeightPx = this.fontSize * this.lineHeight;
-    const w = this.width || 0;
+    const lineHeightPx = style.fontSize * style.lineHeight;
+    const width = this.resolveWidth(ctx, font);
+    this.width = width;
 
     if (!this.text) {
+      this.lines = [];
       this.textHeight = 0;
-      return;
-    }
-
-    if (!this.wordWrap || !w || w <= 0) {
-      this.lines = [this.text];
-      this.textHeight = lineHeightPx;
-      if (this.height === undefined) {
-        this.height = this.textHeight;
+      if (!this._hasExplicitHeight && !this.fitHeight) {
+        this.height = 0;
       }
       return;
     }
 
-    let remainingText = this.text;
-    while (remainingText.length > 0) {
-      const wrapIndex = this.findWrapIndexBinary(
-        ctx,
-        remainingText,
-        w,
-        font
-      );
+    const rawLines = this.wrapText(ctx, this.text, width, font, style.wordWrap);
+    const resolvedHeight = this.getResolvedHeight(lineHeightPx);
 
-      if (wrapIndex === 0) {
-        this.lines.push(remainingText[0]);
-        remainingText = remainingText.slice(1);
-      } else {
-        this.lines.push(remainingText.slice(0, wrapIndex));
-        remainingText = remainingText.slice(wrapIndex);
+    const heightLimit = resolvedHeight !== undefined
+      ? Math.max(Math.floor(resolvedHeight / lineHeightPx), 0)
+      : Infinity;
+    const maxLinesLimit =
+      style.maxLines && style.maxLines > 0 ? style.maxLines : Infinity;
+    const visibleLineLimit = Math.min(heightLimit, maxLinesLimit);
+
+    let lines = rawLines;
+    const isTruncated =
+      Number.isFinite(visibleLineLimit) && rawLines.length > visibleLineLimit;
+
+    if (Number.isFinite(visibleLineLimit)) {
+      lines = rawLines.slice(0, visibleLineLimit);
+      if (isTruncated && lines.length > 0) {
+        lines[lines.length - 1] = this.fitLineWithEllipsis(
+          ctx,
+          lines[lines.length - 1],
+          width,
+          font
+        );
       }
     }
 
-    this.textHeight = this.lines.length * lineHeightPx;
-    if (this.height === undefined) {
+    this.lines = lines;
+    this.textHeight = lines.length * lineHeightPx;
+    if (resolvedHeight !== undefined) {
+      this.height = resolvedHeight;
+    } else {
       this.height = this.textHeight;
     }
+  }
+
+  updateTransform(parentWorldDirty: boolean = false) {
+    this.resolveFitSize();
+    this.syncTextLayout();
+    super.updateTransform(parentWorldDirty);
   }
 
   protected applyPaintTransform(ctx: CanvasRenderingContext2D) {
     this.applyTransformToCtx(ctx);
     ctx.font = this.fontString;
-    this.computeLines(ctx);
   }
 
   enterEditing() {
     if (!this.editable || this.isEditing) return;
     this.isEditing = true;
+    const style = this.getResolvedTextStyle();
 
     const root = this.root;
     const { scale } = root.viewport;
@@ -190,9 +384,15 @@ export class Text extends Shape {
     const left = m.e * scale + root.viewport.x;
     const top = m.f * scale + root.viewport.y;
     const w = (this.width || 100) * sx * scale;
+    const resolvedHeight = this.getResolvedHeight(
+      style.fontSize * style.lineHeight
+    );
+
     const h =
-      (this.height || this.fontSize * this.lineHeight) * sy * scale;
-    const fs = this.fontSize * sx * scale;
+      ((resolvedHeight ?? this.height) || style.fontSize * style.lineHeight) *
+      sy *
+      scale;
+    const fs = style.fontSize * sx * scale;
 
     Object.assign(textarea.style, {
       position: "absolute",
@@ -201,12 +401,12 @@ export class Text extends Shape {
       width: `${w}px`,
       height: `${h}px`,
       fontSize: `${fs}px`,
-      fontFamily: this.fontFamily,
-      fontWeight: String(this.fontWeight),
-      fontStyle: this.fontStyle,
-      color: this.color,
-      textAlign: this.textAlign,
-      lineHeight: String(this.lineHeight),
+      fontFamily: style.fontFamily,
+      fontWeight: String(style.fontWeight),
+      fontStyle: style.fontStyle,
+      color: style.color,
+      textAlign: style.textAlign,
+      lineHeight: String(style.lineHeight),
       background: this.backgroundColor || "transparent",
       border: "1px solid #4F81FF",
       borderRadius: this.radius ? `${this.radius * sx * scale}px` : "0",
@@ -278,42 +478,50 @@ export class Text extends Shape {
     this.markDirty();
   }
 
-  deactivate(destroying = false) {
+  deactivate() {
     this.exitEditing();
-    super.deactivate(destroying);
+    super.deactivate();
   }
 
   protected paintContent(ctx: CanvasRenderingContext2D) {
-    ctx.font = this.fontString;
-    ctx.fillStyle = this.color;
-    ctx.textAlign = this.textAlign;
-    ctx.textBaseline = this.textBaseline;
+    const style = this.getResolvedTextStyle();
+    ctx.font = this.getFontString(style);
+    ctx.fillStyle = style.color;
+    ctx.textAlign = style.textAlign;
+    ctx.textBaseline = style.textBaseline;
+    this.syncTextLayout(ctx);
 
     const w = this.width || 0;
     const h = this.height || 0;
-    const lineHeightPx = this.fontSize * this.lineHeight;
+    const lineHeightPx = style.fontSize * style.lineHeight;
 
+    const intraLineOffset = (lineHeightPx - style.fontSize) / 2;
     let verticalOffset = 0;
-    if (this.verticalAlign === "middle") {
-      verticalOffset = (h - this.textHeight) / 2;
-    } else if (this.verticalAlign === "bottom") {
-      verticalOffset = h - this.textHeight;
+    if (style.verticalAlign === "middle") {
+      verticalOffset = (h - this.textHeight) / 2 + intraLineOffset;
+    } else if (style.verticalAlign === "bottom") {
+      verticalOffset = h - this.textHeight + intraLineOffset;
     }
 
     let startY = 0;
-    if (this.textBaseline === "middle") {
+    if (style.textBaseline === "middle") {
       startY = lineHeightPx / 2;
-    } else if (this.textBaseline === "bottom") {
+    } else if (style.textBaseline === "bottom") {
       startY = lineHeightPx;
     }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    ctx.clip();
 
     for (let i = 0; i < this.lines.length; i++) {
       const line = this.lines[i];
       let x = 0;
 
-      if (this.textAlign === "center") {
+      if (style.textAlign === "center") {
         x = w / 2;
-      } else if (this.textAlign === "right") {
+      } else if (style.textAlign === "right") {
         x = w;
       }
 
@@ -321,27 +529,29 @@ export class Text extends Shape {
 
       ctx.fillText(line, x, y);
 
-      if (this.underline) {
+      if (style.underline) {
         const lineWidth = this.measureStringWidth(ctx, line, this.fontString);
         let lineX = x;
-        if (this.textAlign === "center") {
+        if (style.textAlign === "center") {
           lineX = x - lineWidth / 2;
-        } else if (this.textAlign === "right") {
+        } else if (style.textAlign === "right") {
           lineX = x - lineWidth;
         }
 
         const underlineY =
           y +
-          this.fontSize * 0.1 +
-          (this.textBaseline === "top" ? this.fontSize : 0);
+          style.fontSize * 0.1 +
+          (style.textBaseline === "top" ? style.fontSize : 0);
 
         ctx.beginPath();
         ctx.moveTo(lineX, underlineY);
         ctx.lineTo(lineX + lineWidth, underlineY);
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = Math.max(1, this.fontSize / 15);
+        ctx.strokeStyle = style.color;
+        ctx.lineWidth = Math.max(1, style.fontSize / 15);
         ctx.stroke();
       }
     }
+
+    ctx.restore();
   }
 }

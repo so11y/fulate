@@ -17,6 +17,8 @@ export interface TransformableOptions {
   originY?: TOriginY;
   skewX?: number;
   skewY?: number;
+  fitWidth?: boolean;
+  fitHeight?: boolean;
   [P: string]: any;
 }
 
@@ -36,6 +38,10 @@ export class Transformable extends Node {
   // 尺寸 (用于计算包围盒)
   width: number | undefined;
   height: number | undefined;
+  fitWidth = false;
+  fitHeight = false;
+  _hasExplicitWidth = false;
+  _hasExplicitHeight = false;
   // strokeWidth = 0;
 
   // 缓存（对象池化，避免 GC）
@@ -393,10 +399,22 @@ export class Transformable extends Node {
     return this;
   }
 
+  resolveFitSize() {
+    if (this.parent) {
+      if (this.fitWidth && !this._hasExplicitWidth && this.parent.width !== undefined) {
+        this.width = this.parent.width;
+      }
+      if (this.fitHeight && !this._hasExplicitHeight && this.parent.height !== undefined) {
+        this.height = this.parent.height;
+      }
+    }
+  }
+
   updateTransform(parentWorldDirty: boolean = false) {
     const shouldUpdate = parentWorldDirty || this.isDirty;
 
     if (shouldUpdate) {
+      this.resolveFitSize();
       this.calcWorldMatrix();
       this.invalidateCache();
       this.layer?.syncRbush(this as any);

@@ -373,11 +373,11 @@ export abstract class BaseLine extends Element {
     this._bindEndpoints(true);
   }
 
-  deactivate(destroying = false) {
-    if (!destroying) {
+  deactivate() {
+    if (!this.shouldFastDeactivate()) {
       this._bindEndpoints(false);
     }
-    super.deactivate(destroying);
+    super.deactivate();
   }
 
   mounted() {

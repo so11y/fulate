@@ -67,8 +67,8 @@ export class Element extends Transformable {
     }
   }
 
-  deactivate(destroying = false) {
-    if (!destroying) {
+  deactivate() {
+    if (!this.shouldFastDeactivate()) {
       for (const lineId of [...(this.connectedLines ?? [])]) {
         const line = this.root?.idElements.get(lineId) as any;
         if (!line?.linePoints) continue;
@@ -88,7 +88,7 @@ export class Element extends Transformable {
       }
     }
 
-    super.deactivate(destroying);
+    super.deactivate();
   }
 
   getAffectedElements(): Element[] {
@@ -103,6 +103,9 @@ export class Element extends Transformable {
 
   attrs(options: any, O: { target?: any; assign?: boolean } = {}): void {
     const { target = this, assign = false } = O;
+
+    if (options.width !== undefined) this._hasExplicitWidth = true;
+    if (options.height !== undefined) this._hasExplicitHeight = true;
 
     EVENT_KEYS.forEach((v) => {
       if (options[v]) {
@@ -348,6 +351,8 @@ export class Element extends Transformable {
   }
 
   quickSetOptions(options: BaseElementOption) {
+    if (options.width !== undefined) this._hasExplicitWidth = true;
+    if (options.height !== undefined) this._hasExplicitHeight = true;
     Object.assign(this, options);
     this.markDirty();
     return this;
