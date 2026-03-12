@@ -67,26 +67,28 @@ export class Element extends Transformable {
     }
   }
 
-  deactivate() {
-    for (const lineId of [...(this.connectedLines ?? [])]) {
-      const line = this.root?.idElements.get(lineId) as any;
-      if (!line?.linePoints) continue;
+  deactivate(destroying = false) {
+    if (!destroying) {
+      for (const lineId of [...(this.connectedLines ?? [])]) {
+        const line = this.root?.idElements.get(lineId) as any;
+        if (!line?.linePoints) continue;
 
-      for (const p of line.linePoints) {
-        if (p.anchor?.elementId === this.id) {
-          p.anchor = undefined;
+        for (const p of line.linePoints) {
+          if (p.anchor?.elementId === this.id) {
+            p.anchor = undefined;
+          }
         }
-      }
 
-      const hasRemainingAnchor = line.linePoints.some((p: any) => p.anchor);
-      if (!hasRemainingAnchor) {
-        line.parent?.removeChild(line);
-      } else {
-        line.markDirty();
+        const hasRemainingAnchor = line.linePoints.some((p: any) => p.anchor);
+        if (!hasRemainingAnchor) {
+          line.parent?.removeChild(line);
+        } else {
+          line.markDirty();
+        }
       }
     }
 
-    super.deactivate();
+    super.deactivate(destroying);
   }
 
   getAffectedElements(): Element[] {

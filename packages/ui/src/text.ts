@@ -278,9 +278,9 @@ export class Text extends Shape {
     this.markDirty();
   }
 
-  deactivate() {
+  deactivate(destroying = false) {
     this.exitEditing();
-    super.deactivate();
+    super.deactivate(destroying);
   }
 
   protected paintContent(ctx: CanvasRenderingContext2D) {

@@ -236,13 +236,13 @@ export class Node extends EventEmitter {
     });
   }
 
-  deactivate() {
+  deactivate(destroying = false) {
     if (!this.isActiveed) return;
     this.isActiveed = false;
 
-    const destroying = this._root?.isUnmounted;
+    const isDestroying = destroying || this.isUnmounted || (this._root?.isUnmounted ?? false);
 
-    if (!destroying) {
+    if (!isDestroying) {
       if (this.key && this._root) {
         this._root.keyElmenet.delete(this.key);
       }
@@ -259,7 +259,7 @@ export class Node extends EventEmitter {
       );
     }
 
-    this.children?.forEach((child) => child.deactivate());
+    this.children?.forEach((child) => child.deactivate(isDestroying));
 
     this._root = null;
     this._layer = null;
