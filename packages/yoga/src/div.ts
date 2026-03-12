@@ -200,8 +200,14 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     computedLayout() {
       if (this.isActiveed) {
         const layout = this.yogaNode.getComputedLayout();
-        this.left = layout.left;
-        this.top = layout.top;
+        const isRoot = this.inject("yoga-root") === this;
+        if (isRoot) {
+          this.left = this._options.left ?? 0;
+          this.top = this._options.top ?? 0;
+        } else {
+          this.left = layout.left;
+          this.top = layout.top;
+        }
         this.width = layout.width;
         this.height = layout.height;
         this.markDirty();
@@ -312,17 +318,24 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return this;
     }
 
+    onParentResize() {}
+
     quickSetOptions(options: ShapeOption): this {
       super.quickSetOptions(options);
       let needFlush = false;
+      let sizeChanged = false;
       for (const key of keysToSync) {
         if (options[key] !== undefined) {
           this._options[key] = options[key];
           needFlush = true;
+          if (key === "width" || key === "height") sizeChanged = true;
         }
       }
       if (needFlush) {
         this.flushStyles();
+        if (sizeChanged && this.isActiveed) {
+          this.inject("yoga-root").layout();
+        }
       }
       return this;
     }

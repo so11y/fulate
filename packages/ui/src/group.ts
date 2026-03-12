@@ -1,6 +1,6 @@
 import { BaseElementOption, Element } from "@fulate/core";
 import { Point } from "@fulate/util";
-import { makeBoundingBoxFromPoints } from "@fulate/util";
+import { makeBoundingBoxFromPoints, qrDecompose } from "@fulate/util";
 
 export interface GroupOption extends BaseElementOption {
   /** 导入时用：通过 root.idElements 查找并还原 groupEls */
@@ -29,6 +29,28 @@ export class Group extends Element {
     Object.assign(this, { left, top, width, height });
     this.markDirty();
     this.snapshotChildren();
+  }
+
+  applyGroupTransform(
+    targetMatrix: DOMMatrix,
+    localCenter: Point,
+    groupWorldMatrix: DOMMatrix
+  ): void {
+    const snap = (this as any)._groupSnapshot;
+    if (!snap) return;
+
+    const { angle, scaleX, scaleY, skewX } = qrDecompose(targetMatrix);
+    const worldCenter = localCenter.matrixTransform(groupWorldMatrix);
+    const pos = this.getPositionByOrigin(worldCenter);
+
+    this.quickSetOptions({
+      angle,
+      scaleX,
+      scaleY,
+      skewX,
+      left: pos.x,
+      top: pos.y
+    });
   }
 
   paint(ctx?: CanvasRenderingContext2D): void {

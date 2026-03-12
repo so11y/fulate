@@ -38,6 +38,10 @@ export class Image extends Shape {
 
   protected paintContent(ctx: CanvasRenderingContext2D) {
     if (this._isLoaded && this.image) {
+      if (this.radius) {
+        this.buildPath(ctx);
+        ctx.clip();
+      }
       ctx.drawImage(
         this.image,
         0,

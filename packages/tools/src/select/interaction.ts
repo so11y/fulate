@@ -185,20 +185,32 @@ export function setupInteraction(select: Select): () => void {
   };
 
   const mouseenter = (e: FulateEvent) => {
-    // const element = checkElement(e.detail.target);
-    if (e.detail.target === select) {
-      return;
+    if (e.detail.target === select) return;
+
+    let resolved = checkElement(e.detail.target, [select]);
+
+    if (!resolved) {
+      let p = e.detail.target.parent;
+      while (p) {
+        if ((p as any).isLayer || p === (select as any)) break;
+        resolved = checkElement(p as Element, [select]);
+        if (resolved) break;
+        p = p.parent;
+      }
     }
-    select.hoverElement = e.detail.target;
-    select.markDirty();
+
+    const prev = select.hoverElement;
+    select.hoverElement = resolved ?? null;
+    if (select.hoverElement !== prev) {
+      select.markDirty();
+    }
   };
 
   const mouseleave = () => {
-    const prev = select.hoverElement;
+    if (!select.hoverElement) return;
+    if (select.root.getCurrnetEelement()) return;
     select.hoverElement = null;
-    if (prev) {
-      select.markDirty();
-    }
+    select.markDirty();
   };
 
   select.root.addEventListener("pointerdown", pointerdown);

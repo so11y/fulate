@@ -103,7 +103,7 @@ const div1 = new Rectangle({
       // inheritSkew: false,
       // inheritRotation: false,
       anchorX: 1,
-      isPin: true,
+      // isPin: true,
       children: [
         new Image({
           width: 30,

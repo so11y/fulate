@@ -48,6 +48,12 @@ export class Element extends Transformable {
   groupParent?: any;
   /** IDs of lines that have an anchor point connected to this element */
   connectedLines?: Set<string>;
+  private _groupSnapshot: {
+    width: number;
+    height: number;
+    scaleX: number;
+    scaleY: number;
+  } | null = null;
   private _activeTweens?: Set<Tween<Element>>;
   declare children: this[];
   declare parent: this;
@@ -194,29 +200,64 @@ export class Element extends Transformable {
     return null;
   }
 
-  /** Called by Group before a drag to let the element snapshot internal state. */
-  snapshotForGroup(): void {}
+  snapshotForGroup(): void {
+    this._groupSnapshot = {
+      width: this.width,
+      height: this.height,
+      scaleX: this.scaleX,
+      scaleY: this.scaleY
+    };
+  }
 
-  /**
-   * Apply a group transform. Default: decompose the target matrix and set
-   * angle/scale/position via quickSetOptions. Elements that store data in
-   * world coordinates (e.g. Line) should override this.
-   */
   applyGroupTransform(
     targetMatrix: DOMMatrix,
     localCenter: Point,
     groupWorldMatrix: DOMMatrix
   ): void {
+    const snap = this._groupSnapshot;
+    if (!snap) return;
+
     const { angle, scaleX, scaleY, skewX } = qrDecompose(targetMatrix);
-    const newWorldCenter = localCenter.matrixTransform(groupWorldMatrix);
-    const center = this.getPositionByOrigin(newWorldCenter);
+    const oldWidth = this.width;
+    const oldHeight = this.height;
+
+    const ratioX = Math.abs(scaleX) / Math.abs(snap.scaleX);
+    const ratioY = Math.abs(scaleY) / Math.abs(snap.scaleY);
+    const newWidth = snap.width * ratioX;
+    const newHeight = snap.height * ratioY;
+
+    this.width = newWidth;
+    this.height = newHeight;
+
+    const worldCenter = localCenter.matrixTransform(groupWorldMatrix);
+    const pos = this.getPositionByOrigin(worldCenter);
+
     this.quickSetOptions({
       angle,
-      scaleX,
-      scaleY,
+      width: newWidth,
+      height: newHeight,
+      scaleX: Math.sign(scaleX) * Math.abs(snap.scaleX),
+      scaleY: Math.sign(scaleY) * Math.abs(snap.scaleY),
       skewX,
-      left: center.x,
-      top: center.y
+      left: pos.x,
+      top: pos.y
+    });
+
+    if (this.children?.length && oldWidth && oldHeight) {
+      const rx = newWidth / oldWidth;
+      const ry = newHeight / oldHeight;
+      for (const child of this.children) {
+        child.onParentResize(rx, ry);
+      }
+    }
+  }
+
+  onParentResize(rx: number, ry: number) {
+    this.quickSetOptions({
+      width: this.width * rx,
+      height: this.height * ry,
+      left: this.left * rx,
+      top: this.top * ry
     });
   }
 

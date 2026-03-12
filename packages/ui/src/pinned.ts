@@ -62,6 +62,10 @@ export class Pinned extends Rectangle {
     this.provide("selectctbale", this.selectctbale);
   }
 
+  applyGroupTransform() {}
+
+  onParentResize() {}
+
   calcWorldMatrix() {
     const m = this._ownMatrixCache;
 

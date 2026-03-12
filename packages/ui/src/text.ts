@@ -1,5 +1,4 @@
 import { ShapeOption, Shape } from "@fulate/core";
-import { extractPhysicalTransform } from "@fulate/util";
 
 export interface TextOption extends ShapeOption {
   text?: string;
@@ -37,8 +36,6 @@ export class Text extends Shape {
 
   private lines: string[] = [];
   private textHeight: number = 0;
-  private _renderWidth: number = 0;
-  private _renderHeight: number = 0;
 
   constructor(options?: TextOption) {
     super(options);
@@ -114,29 +111,25 @@ export class Text extends Shape {
     return best;
   }
 
-  private computeLines(
-    ctx: CanvasRenderingContext2D,
-    renderWidth: number,
-    stretchY: number
-  ) {
+  private computeLines(ctx: CanvasRenderingContext2D) {
     const font = this.fontString;
     ctx.font = font;
     this.preCalculateChars(ctx, font);
 
     this.lines = [];
     const lineHeightPx = this.fontSize * this.lineHeight;
+    const w = this.width || 0;
 
     if (!this.text) {
       this.textHeight = 0;
       return;
     }
 
-    const maxWidth = renderWidth;
-    if (!this.wordWrap || !maxWidth || maxWidth <= 0) {
+    if (!this.wordWrap || !w || w <= 0) {
       this.lines = [this.text];
       this.textHeight = lineHeightPx;
       if (this.height === undefined) {
-        this.height = stretchY === 0 ? 0 : this.textHeight / stretchY;
+        this.height = this.textHeight;
       }
       return;
     }
@@ -146,7 +139,7 @@ export class Text extends Shape {
       const wrapIndex = this.findWrapIndexBinary(
         ctx,
         remainingText,
-        maxWidth,
+        w,
         font
       );
 
@@ -161,43 +154,14 @@ export class Text extends Shape {
 
     this.textHeight = this.lines.length * lineHeightPx;
     if (this.height === undefined) {
-      this.height = stretchY === 0 ? 0 : this.textHeight / stretchY;
+      this.height = this.textHeight;
     }
   }
 
-  protected buildPath(ctx: CanvasRenderingContext2D) {
-    ctx.beginPath();
-    ctx.roundRect(0, 0, this._renderWidth, this._renderHeight, this.radius ?? 0);
-  }
-
   protected applyPaintTransform(ctx: CanvasRenderingContext2D) {
-    const vpMatrix = this.root.getViewPointMtrix();
-    const localMatrix = this.getOwnMatrix();
-    const matrix = vpMatrix.multiply(localMatrix);
-
-    const local = extractPhysicalTransform(localMatrix);
-    this._renderWidth = (this.width || 0) * local.stretchX;
-
-    const combined = extractPhysicalTransform(matrix);
-    const vpScale = Math.sqrt(vpMatrix.a * vpMatrix.a + vpMatrix.b * vpMatrix.b);
-
-    const cos = Math.cos(combined.angle);
-    const sin = Math.sin(combined.angle);
-
-    const d = this.root.dpr;
-    ctx.setTransform(
-      vpScale * cos * d,
-      vpScale * sin * d,
-      -vpScale * combined.flip * sin * d,
-      vpScale * combined.flip * cos * d,
-      matrix.e * d,
-      matrix.f * d
-    );
-
+    this.applyTransformToCtx(ctx);
     ctx.font = this.fontString;
-    this.computeLines(ctx, this._renderWidth, local.stretchY);
-    this._renderHeight =
-      this.height !== undefined ? this.height * local.stretchY : this.textHeight;
+    this.computeLines(ctx);
   }
 
   protected paintContent(ctx: CanvasRenderingContext2D) {
@@ -206,13 +170,15 @@ export class Text extends Shape {
     ctx.textAlign = this.textAlign;
     ctx.textBaseline = this.textBaseline;
 
+    const w = this.width || 0;
+    const h = this.height || 0;
     const lineHeightPx = this.fontSize * this.lineHeight;
 
     let verticalOffset = 0;
     if (this.verticalAlign === "middle") {
-      verticalOffset = (this._renderHeight - this.textHeight) / 2;
+      verticalOffset = (h - this.textHeight) / 2;
     } else if (this.verticalAlign === "bottom") {
-      verticalOffset = this._renderHeight - this.textHeight;
+      verticalOffset = h - this.textHeight;
     }
 
     let startY = 0;
@@ -227,9 +193,9 @@ export class Text extends Shape {
       let x = 0;
 
       if (this.textAlign === "center") {
-        x = this._renderWidth / 2;
+        x = w / 2;
       } else if (this.textAlign === "right") {
-        x = this._renderWidth;
+        x = w;
       }
 
       const y = startY + i * lineHeightPx + verticalOffset;
