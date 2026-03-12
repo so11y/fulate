@@ -240,20 +240,24 @@ export class Node extends EventEmitter {
     if (!this.isActiveed) return;
     this.isActiveed = false;
 
-    if (this.key && this._root) {
-      this._root.keyElmenet.delete(this.key);
-    }
-    if (this.id && this._root?.idElements) {
-      this._root.idElements.delete(this.id);
-    }
-    this._layer?.addDirtyNode(this as any);
-    this._layer?.removeRbush(this as any);
+    const destroying = this._root?.isUnmounted;
 
-    this.dispatchEvent(
-      new CustomEvent("deactivated", {
-        bubbles: false
-      })
-    );
+    if (!destroying) {
+      if (this.key && this._root) {
+        this._root.keyElmenet.delete(this.key);
+      }
+      if (this.id && this._root?.idElements) {
+        this._root.idElements.delete(this.id);
+      }
+      this._layer?.addDirtyNode(this as any);
+      this._layer?.removeRbush(this as any);
+
+      this.dispatchEvent(
+        new CustomEvent("deactivated", {
+          bubbles: false
+        })
+      );
+    }
 
     this.children?.forEach((child) => child.deactivate());
 
@@ -263,29 +267,31 @@ export class Node extends EventEmitter {
 
   unmounted() {
     if (this.isUnmounted) return;
+    this.isUnmounted = true;
     this.deactivate();
 
-    this.isUnmounted = true;
     this.dispatchEvent(
       new CustomEvent("unmounted", {
         bubbles: false
       })
     );
 
-    const oldParent = this.parent;
-    if (oldParent && oldParent.children?.length) {
-      const index = oldParent.children.findIndex((v) => v === this);
-      if (index !== -1) {
-        oldParent.children.splice(index, 1);
-        (oldParent as any)._updateSiblings?.();
-        oldParent.isDirtyChild = true;
-        (oldParent as any).markChildDirty?.();
+    if (!this.parent?.isUnmounted) {
+      const oldParent = this.parent;
+      if (oldParent && oldParent.children?.length) {
+        const index = oldParent.children.findIndex((v) => v === this);
+        if (index !== -1) {
+          oldParent.children.splice(index, 1);
+          (oldParent as any)._updateSiblings?.();
+          oldParent.isDirtyChild = true;
+          (oldParent as any).markChildDirty?.();
+        }
       }
     }
 
     this.children?.forEach((child) => child.unmounted());
 
-    this.children = [];
+    this.children = null;
     this.nextSibling = null;
     this.previousSibling = null;
     this.parent = undefined;
