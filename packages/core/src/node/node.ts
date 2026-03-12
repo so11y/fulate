@@ -161,7 +161,6 @@ export class Node extends EventEmitter {
   before(...nodes: Node[]) {
     if (!this.parent) return this;
     nodes.forEach((n) => this.parent!.insertBefore(n, this as any));
-    this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
@@ -172,7 +171,6 @@ export class Node extends EventEmitter {
       this.parent!.insertAfter(n, ref);
       ref = n;
     });
-    this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 
@@ -191,7 +189,6 @@ export class Node extends EventEmitter {
     this._updateSiblings();
     this.isDirtyChild = true;
     this.markChildDirty();
-    this.dispatchEvent(new CustomEvent("childrenchange"));
     return this;
   }
 

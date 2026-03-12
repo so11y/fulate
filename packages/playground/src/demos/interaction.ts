@@ -5,6 +5,8 @@ import { Select } from "@fulate/tools";
 
 registerDemo("interaction", {
   title: "交互事件",
+  group: "基础",
+  order: 2,
   setup(el, { width, height }) {
     const root = new Root(el, { width, height });
 

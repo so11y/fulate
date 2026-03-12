@@ -4,6 +4,8 @@ import { Rectangle, Circle, Text } from "@fulate/ui";
 
 registerDemo("nesting", {
   title: "嵌套层级",
+  group: "基础",
+  order: 4,
   setup(el, { width, height }) {
     const root = new Root(el, { width, height });
 

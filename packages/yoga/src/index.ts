@@ -12,3 +12,8 @@ export {
   PositionType,
   Wrap
 } from "./div";
+
+import { registerElement } from "@fulate/core";
+import { Div } from "./div";
+
+registerElement("f-div", Div);

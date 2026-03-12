@@ -4,6 +4,8 @@ import { Rectangle, Text } from "@fulate/ui";
 
 registerDemo("animation", {
   title: "动画",
+  group: "基础",
+  order: 3,
   setup(el, { width, height }) {
     const root = new Root(el, { width, height });
 

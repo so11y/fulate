@@ -116,6 +116,9 @@ export class Element extends Transformable {
   }
 
   getDirtyRect() {
+    if (!this._ownMatrixCache) {
+      return this._lastUnionBounds ?? { left: 0, top: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
+    }
     const current = this.getUnionBoundingRect();
     if (!this._lastUnionBounds) return current;
 
@@ -397,11 +400,13 @@ export class Element extends Transformable {
       this._activeTweens?.delete(tween);
     };
 
+    const layer = this.layer;
+
     const promise = new Promise<void>((resolve) => {
       tween.onComplete(() => {
         cleanup();
         options?.onComplete?.(this);
-        this.layer.tweenGroup.remove(tween);
+        layer.tweenGroup.remove(tween);
         resolve();
       });
       tween.onStop(() => {
@@ -450,6 +455,7 @@ export class Element extends Transformable {
 
   toJson(includeChildren = false): BaseElementOption {
     const json = {
+      type: this.type,
       left: this.left,
       top: this.top,
       width: this.width,

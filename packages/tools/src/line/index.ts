@@ -260,27 +260,24 @@ export class LineTool extends Element {
     const size = 3 / scale;
 
     const excludes = this._excludes;
-    this.root.searchArea(
-      this.root.getViewportRect(),
-      ({ element }) => {
-        const resolved = checkElement(element, excludes);
-        if (!resolved || resolved.type === "line") return;
+    this.root.searchArea(this.root.getViewportRect(), ({ element }) => {
+      const resolved = checkElement(element, excludes);
+      if (!resolved || resolved.type === "line") return;
 
-        const anchors = getElementAnchorPoints(element);
-        for (const a of anchors) {
-          const isNearest =
-            this.nearestAnchor &&
-            Math.abs(a.x - this.nearestAnchor.x) < 0.1 &&
-            Math.abs(a.y - this.nearestAnchor.y) < 0.1;
-          if (isNearest) continue;
+      const anchors = getElementAnchorPoints(element);
+      for (const a of anchors) {
+        const isNearest =
+          this.nearestAnchor &&
+          Math.abs(a.x - this.nearestAnchor.x) < 0.1 &&
+          Math.abs(a.y - this.nearestAnchor.y) < 0.1;
+        if (isNearest) continue;
 
-          ctx.fillStyle = "rgba(79, 129, 255, 0.5)";
-          ctx.beginPath();
-          ctx.arc(a.x, a.y, size, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.fillStyle = "rgba(79, 129, 255, 0.5)";
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, size, 0, Math.PI * 2);
+        ctx.fill();
       }
-    );
+    });
   }
 
   hasInView(): boolean {

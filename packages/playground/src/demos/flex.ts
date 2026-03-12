@@ -4,6 +4,8 @@ import { Div, Display, Justify, Align, FlexDirection } from "@fulate/yoga";
 
 registerDemo("flex", {
   title: "Flex 布局",
+  group: "布局",
+  order: 1,
   setup(el, { width, height }) {
     const root = new Root(el, { width, height });
 

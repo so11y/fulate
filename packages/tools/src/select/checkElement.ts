@@ -34,6 +34,10 @@ export function checkElement(
     ) {
       return;
     }
+  } else {
+    if (object.parent !== layer) {
+      return;
+    }
   }
 
   return resolved;

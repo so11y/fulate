@@ -28,3 +28,24 @@ export type {
   LineOption,
   AnchorPoint
 } from "./line/index";
+
+import { registerElement } from "@fulate/core";
+import { Rectangle } from "./rectangle";
+import { Circle } from "./circle";
+import { Triangle } from "./triangle";
+import { Text } from "./text";
+import { Image } from "./image";
+import { Workspace } from "./workspace";
+import { Group } from "./group";
+import { ScrollView } from "./scrollview";
+import { Line } from "./line/index";
+
+registerElement("f-rectangle", Rectangle);
+registerElement("f-circle", Circle);
+registerElement("f-triangle", Triangle);
+registerElement("f-text", Text);
+registerElement("f-image", Image);
+registerElement("f-workspace", Workspace);
+registerElement("f-group", Group);
+registerElement("f-scrollview", ScrollView);
+registerElement("f-line", Line);

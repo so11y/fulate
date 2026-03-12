@@ -226,7 +226,6 @@ export function setupInteraction(select: Select): () => void {
 
   const keydown = (e: KeyboardEvent) => {
     const isCtrl = e.ctrlKey || e.metaKey;
-    console.log(33);
     if (isCtrl && e.key === "z") {
       e.preventDefault();
       if (e.shiftKey) {

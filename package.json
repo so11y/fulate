@@ -8,6 +8,8 @@
     "playground": "vite --config packages/playground/vite.config.ts"
   },
   "devDependencies": {
+    "@types/node": "^25.4.0",
+    "@vitejs/plugin-vue-jsx": "^5.1.4",
     "ac": "https://github.com/so11y/ac.git",
     "vite": "^6.0.7"
   },

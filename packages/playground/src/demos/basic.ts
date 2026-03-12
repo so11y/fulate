@@ -4,6 +4,8 @@ import { Rectangle, Circle, Triangle, Text, Image } from "@fulate/ui";
 
 registerDemo("basic", {
   title: "基础图形",
+  group: "基础",
+  order: 1,
   setup(el, { width, height }) {
     const root = new Root(el, { width, height });
 

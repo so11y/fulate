@@ -5,6 +5,61 @@ import type { Select } from "./index";
 const CLIPBOARD_MARKER = "__fulate_clipboard__";
 const PASTE_OFFSET = 20;
 
+function deserializeElement(data: any): Element | undefined {
+  const { type, children, ...props } = data;
+  const tag = type.startsWith("f-") ? type : `f-${type}`;
+  const Ctor = getElementCtor(tag);
+  if (!Ctor) return;
+  delete props.key;
+  const el = new Ctor(props);
+  if (children?.length) {
+    (el as any).children = children
+      .map((c: any) => deserializeElement(c))
+      .filter(Boolean);
+  }
+  return el;
+}
+
+function applyOffset(data: any, dx: number, dy: number) {
+  if (data.left != null) data.left += dx;
+  if (data.top != null) data.top += dy;
+  if (data.linePoints) {
+    for (const p of data.linePoints) {
+      p.x += dx;
+      p.y += dy;
+    }
+  }
+}
+
+function collectIds(el: Element): Set<string> {
+  const ids = new Set<string>();
+  ids.add(el.id);
+  if (el.children) {
+    for (const c of el.children) {
+      for (const id of collectIds(c)) ids.add(id);
+    }
+  }
+  return ids;
+}
+
+function remapAnchors(newEls: Element[], idMap: Map<string, string>) {
+  for (const el of newEls) {
+    const lp = (el as any).linePoints as
+      | Array<{ anchor?: { elementId: string } }>
+      | undefined;
+    if (!lp) continue;
+    for (const p of lp) {
+      if (!p.anchor) continue;
+      const newId = idMap.get(p.anchor.elementId);
+      if (newId) {
+        p.anchor.elementId = newId;
+      } else {
+        p.anchor = undefined;
+      }
+    }
+  }
+}
+
 let memClipboard: Element[] | null = null;
 
 export async function copyElements(select: Select) {
@@ -16,6 +71,7 @@ export async function copyElements(select: Select) {
     [CLIPBOARD_MARKER]: true,
     elements: select.selectEls.map((el) => ({
       type: el.type,
+      id: el.id,
       props: el.toJson(true)
     }))
   };
@@ -48,51 +104,58 @@ export async function pasteElements(select: Select) {
 function pasteFromMemory(select: Select, sources: Element[], offset: number) {
   const newEls: Element[] = [];
   const parents: any[] = [];
+  const idMap = new Map<string, string>();
+
+  const oldIds = new Set<string>();
+  for (const src of sources) {
+    for (const id of collectIds(src)) oldIds.add(id);
+  }
 
   for (const src of sources) {
-    const props = JSON.parse(JSON.stringify(src.toJson(true)));
-    if (props.left != null) props.left += offset;
-    if (props.top != null) props.top += offset;
-    delete props.key;
+    const data = JSON.parse(JSON.stringify(src.toJson(true)));
+    applyOffset(data, offset, offset);
 
-    const clone = new (src.constructor as any)(props);
+    const clone = deserializeElement(data);
+    if (!clone) continue;
+
     const layer = src.layer ?? select.root.layers[0];
     if (layer) {
       layer.append(clone);
       newEls.push(clone);
       parents.push(layer);
+      idMap.set(src.id, clone.id);
     }
   }
 
+  remapAnchors(newEls, idMap);
   commitPaste(select, newEls, parents);
 }
 
 function pasteFromClipboardData(
   select: Select,
-  entries: { type: string; props: any }[],
+  entries: { type: string; id?: string; props: any }[],
   offset: number
 ) {
   const newEls: Element[] = [];
   const parents: any[] = [];
+  const idMap = new Map<string, string>();
 
   for (const entry of entries) {
-    const Ctor = getElementCtor(entry.type);
-    if (!Ctor) continue;
+    const data = { ...entry.props, type: entry.type };
+    applyOffset(data, offset, offset);
 
-    const props = { ...entry.props };
-    if (props.left != null) props.left += offset;
-    if (props.top != null) props.top += offset;
-    delete props.key;
-
-    const el = new Ctor(props);
+    const el = deserializeElement(data);
+    if (!el) continue;
     const layer = select.root.layers[0];
     if (layer) {
       layer.append(el);
       newEls.push(el);
       parents.push(layer);
+      if (entry.id) idMap.set(entry.id, el.id);
     }
   }
 
+  remapAnchors(newEls, idMap);
   commitPaste(select, newEls, parents);
 }
 

@@ -44,6 +44,8 @@ function createListItem(index: number, y: number, w = 256) {
 
 registerDemo("scrollview", {
   title: "滚动条",
+  group: "布局",
+  order: 2,
   setup(el, { width, height }) {
     const root = new Root(el, { width, height });
 

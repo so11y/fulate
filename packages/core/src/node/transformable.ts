@@ -427,6 +427,8 @@ export class Transformable extends Node {
   }
 
   unmounted(): void {
+    this._lastBoundingRect = this._boundingRectCache ?? this._lastBoundingRect;
+    this._lastUnionBounds = this._unionBoundsCache ?? this._lastUnionBounds;
     this._coords = null;
     this._ownMatrixCache = null;
     this._snapPoints = null;

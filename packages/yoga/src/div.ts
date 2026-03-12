@@ -216,14 +216,28 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return this;
     }
 
+    insertBefore(newChild: Node, refChild: Node | null): this {
+      if (!refChild) return this.append(newChild);
+      super.insertBefore(newChild, refChild);
+      if (this.isActiveed && (newChild as any).yogaNode) {
+        const idx = this.children?.indexOf(newChild as any) ?? -1;
+        if (idx !== -1) {
+          this.yogaNode.insertChild((newChild as any).yogaNode, idx);
+        }
+      }
+      return this;
+    }
+
     append(...children: Node[]): this {
       super.append(...(children as any[]));
-      let yogaIndex = this.yogaNode.getChildCount();
-      children.forEach((child: any) => {
-        if (child.yogaNode) {
-          this.yogaNode.insertChild(child.yogaNode, yogaIndex++);
-        }
-      });
+      if (this.isActiveed) {
+        let yogaIndex = this.yogaNode.getChildCount();
+        children.forEach((child: any) => {
+          if (child.yogaNode) {
+            this.yogaNode.insertChild(child.yogaNode, yogaIndex++);
+          }
+        });
+      }
       return this;
     }
 

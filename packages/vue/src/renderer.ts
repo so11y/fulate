@@ -1,5 +1,5 @@
 import { createRenderer, type RendererOptions } from "@vue/runtime-core";
-import { getElementCtor } from "@fulate/core";
+import { Element, getElementCtor } from "@fulate/core";
 
 function isEventProp(key: string): boolean {
   return /^on[A-Z]/.test(key);
@@ -9,11 +9,14 @@ function toEventName(key: string): string {
   return key.slice(2).toLowerCase();
 }
 
-class NoopNode {
-  _isNoop = true as const;
-  parent: any = null;
-  nextSibling: any = null;
-  previousSibling: any = null;
+function createPlaceholder() {
+  const el = new Element();
+  el.width = 0;
+  el.height = 0;
+  el.silent = true;
+  el.pickable = false;
+  (el as any)._isPlaceholder = true;
+  return el;
 }
 
 const nodeOps: RendererOptions<any, any> = {
@@ -24,15 +27,14 @@ const nodeOps: RendererOptions<any, any> = {
         `[fulate-vue] Unknown element: "${type}". ` +
           `Did you forget registerElement("${type}", YourClass)?`
       );
-      return new NoopNode();
+      return createPlaceholder();
     }
     return new Ctor();
   },
 
   insert(child, parent, anchor) {
-    if (!parent || child._isNoop || parent._isNoop) return;
-
-    if (anchor && !anchor._isNoop) {
+    if (!parent) return;
+    if (anchor) {
       parent.insertBefore(child, anchor);
     } else {
       parent.append(child);
@@ -40,12 +42,15 @@ const nodeOps: RendererOptions<any, any> = {
   },
 
   remove(child) {
-    if (child._isNoop) return;
-    child.parent?.removeChild(child);
+    if ((child as any)._isPlaceholder) {
+      child.parent?.removeChild(child);
+    } else {
+      child.unmounted();
+    }
   },
 
   patchProp(el, key, prevValue, nextValue) {
-    if (el._isNoop) return;
+    if ((el as any)._isPlaceholder) return;
 
     if (isEventProp(key)) {
       const eventName = toEventName(key);
@@ -57,22 +62,22 @@ const nodeOps: RendererOptions<any, any> = {
     if (el.isActiveed) {
       el.setOptions({ [key]: nextValue });
     } else {
-      el[key] = nextValue;
+      el.attrs({ [key]: nextValue });
     }
   },
 
   createText() {
-    return new NoopNode();
+    return createPlaceholder();
   },
 
   createComment() {
-    return new NoopNode();
+    return createPlaceholder();
   },
 
   setText() {},
 
   setElementText(el, text) {
-    if (el._isNoop) return;
+    if ((el as any)._isPlaceholder) return;
     if (el.type === "text") {
       el.setOptions({ text });
     }

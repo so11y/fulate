@@ -1,10 +1,16 @@
 import { defineConfig } from "vite";
+import vueJsx from "@vitejs/plugin-vue-jsx";
 import path from "path";
 
 const root = path.resolve(__dirname, "../..");
 
 export default defineConfig({
   root: __dirname,
+  plugins: [
+    vueJsx({
+      isCustomElement: (tag) => tag.startsWith("f-"),
+    }),
+  ],
   resolve: {
     alias: [
       { find: /^@fulate\/util(.*)$/, replacement: path.resolve(root, "packages/util/src$1") },

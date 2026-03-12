@@ -19,3 +19,12 @@ export { EditerLayer } from "./layer/editer-layer";
 
 // Registry
 export { registerElement, getElementCtor } from "./registry";
+
+import { registerElement } from "./registry";
+import { Layer } from "./layer/index";
+import { Artboard } from "./layer/artboard";
+import { EditerLayer } from "./layer/editer-layer";
+
+registerElement("f-layer", Layer);
+registerElement("f-artboard", Artboard);
+registerElement("f-editer-layer", EditerLayer);
