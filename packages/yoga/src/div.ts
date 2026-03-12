@@ -318,6 +318,15 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return this;
     }
 
+    toJson(includeChildren = false) {
+      const json = super.toJson(includeChildren) as any;
+      for (const key of ExtractKey) {
+        const val = this._options[key];
+        if (val !== undefined) json[key] = val;
+      }
+      return json;
+    }
+
     onParentResize() {}
 
     quickSetOptions(options: ShapeOption): this {

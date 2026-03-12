@@ -12,6 +12,8 @@ import { paintSelect } from "./paint";
 import { selectHitTest } from "./hitTest";
 import { setupInteraction } from "./interaction";
 import { doGroup, unGroup } from "./grouping";
+import { alignElements, type AlignType } from "./align";
+import { copyElements, pasteElements } from "./clipboard";
 import { HistoryManager } from "../history";
 
 export class Select extends Group {
@@ -64,6 +66,18 @@ export class Select extends Group {
 
   unGroup() {
     unGroup(this);
+  }
+
+  align(type: AlignType) {
+    alignElements(this, type);
+  }
+
+  copy() {
+    copyElements(this);
+  }
+
+  paste() {
+    pasteElements(this);
   }
 
   select(children: Array<Element>) {

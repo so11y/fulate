@@ -11,6 +11,8 @@ export { Pinned } from "./pinned";
 export type { PinnedMatrix, PinnedAABB } from "./pinned";
 export { Group } from "./group";
 export type { GroupOption } from "./group";
+export { ScrollView } from "./scrollview";
+export type { ScrollViewOption } from "./scrollview";
 
 // Line
 export {

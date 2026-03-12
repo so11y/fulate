@@ -44,6 +44,7 @@ export class Root extends Node {
   _pendingLayers = new Set<Layer>();
 
   private _rafScheduled = false;
+  private _rafId = 0;
   private _nextTickPromise: Promise<void> | null = null;
   private _nextTickResolve: (() => void) | null = null;
 
@@ -124,7 +125,11 @@ export class Root extends Node {
     if (this._rafScheduled) return;
     this._rafScheduled = true;
 
-    requestAnimationFrame((time) => {
+    this._rafId = requestAnimationFrame((time) => {
+      this._rafId = 0;
+
+      if (this.isUnmounted) return;
+
       if (this._viewportTweenGroup.getAll().length > 0) {
         this._viewportTweenGroup.update(time);
       }
@@ -293,10 +298,36 @@ export class Root extends Node {
       return;
     }
 
+    const select = this.keyElmenet?.get("select");
+    if (select && element !== select) {
+      this.dispatchEvent(
+        new CustomEvent(eventName, {
+          detail: { ctrlKey: (e as any).ctrlKey, ...detail }
+        })
+      );
+      return;
+    }
+
     element.dispatchEvent(eventName, {
       ctrlKey: e.ctrlKey,
       ...detail,
       target: element
     });
+  }
+
+  unmounted() {
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = 0;
+    }
+    this._pendingLayers.clear();
+    this._rafScheduled = false;
+
+    if (this._cssTransformTimer) {
+      clearTimeout(this._cssTransformTimer);
+      this._cssTransformTimer = null;
+    }
+
+    super.unmounted();
   }
 }

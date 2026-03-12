@@ -177,11 +177,12 @@ export class Layer extends Element {
   }
 
   flushUpdate() {
+    if (this.isUnmounted) return;
     this.updateTransform(false);
   }
 
   flushPaint() {
-    if (this.shouldRepaint() === false) {
+    if (this.isUnmounted || this.shouldRepaint() === false) {
       return;
     }
 

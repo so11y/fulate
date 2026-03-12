@@ -59,14 +59,18 @@ export class Shape extends Element {
     ctx.beginPath();
     if (this.borderPosition === "inside") {
       ctx.roundRect(
-        half, half,
-        this.width! - this.borderWidth, this.height! - this.borderWidth,
+        half,
+        half,
+        this.width! - this.borderWidth,
+        this.height! - this.borderWidth,
         Math.max((this.radius ?? 0) - half, 0)
       );
     } else {
       ctx.roundRect(
-        -half, -half,
-        this.width! + this.borderWidth, this.height! + this.borderWidth,
+        -half,
+        -half,
+        this.width! + this.borderWidth,
+        this.height! + this.borderWidth,
         (this.radius ?? 0) + half
       );
     }

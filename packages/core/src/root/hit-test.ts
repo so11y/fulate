@@ -1,7 +1,24 @@
 import type { Root } from "./index";
 import type { RBushItem } from "@fulate/core";
+import type { Element } from "../node/element";
 import { Point } from "@fulate/util";
+import { CustomEvent } from "@fulate/util";
 import { RectWithCenter } from "@fulate/util";
+
+function dispatchHitEvent(
+  root: Root,
+  name: string,
+  detail: any,
+  target: Element,
+  editMode: boolean
+) {
+  detail.target = target;
+  if (editMode) {
+    root.dispatchEvent(new CustomEvent(name, { detail: { ...detail } }));
+  } else {
+    target.dispatchEvent(name, detail);
+  }
+}
 
 export function checkHit(root: Root, point?: Point) {
   if (root.isSpacePressed || root.isPanning) return;
@@ -42,17 +59,16 @@ export function checkHit(root: Root, point?: Point) {
       deltaY: 0,
       deltaX: 0
     };
+    const isEditMode = root.keyElmenet?.has("select");
 
     if (prevElement?.element && prevElement.element.isActiveed) {
-      detail.target = prevElement.element;
-      prevElement.element.dispatchEvent("mouseleave", detail);
+      dispatchHitEvent(root, "mouseleave", detail, prevElement.element, isEditMode);
     }
     if (
       root.currentElement?.element &&
       root.currentElement.element.isActiveed
     ) {
-      detail.target = root.currentElement.element;
-      root.currentElement.element.dispatchEvent("mouseenter", detail);
+      dispatchHitEvent(root, "mouseenter", detail, root.currentElement.element, isEditMode);
     }
   }
 }
@@ -89,6 +105,10 @@ export function searchArea(
       for (const item of hitElements) {
         const element = item.element;
         if (element.selectctbale !== false && element.visible) {
+          const sc = element.inject("scrollContainer");
+          if (sc && sc !== element && !sc.isChildInScrollView(element)) {
+            continue;
+          }
           const result = callback(item);
           if (result) {
             return result;

@@ -16,3 +16,6 @@ export { Layer } from "./layer/index";
 export { Artboard } from "./layer/artboard";
 export type { ArtboardOption } from "./layer/artboard";
 export { EditerLayer } from "./layer/editer-layer";
+
+// Registry
+export { registerElement, getElementCtor } from "./registry";

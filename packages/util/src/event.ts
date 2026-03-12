@@ -187,7 +187,7 @@ export class EventEmitter {
     if (!callbacks) return;
     for (const callback of callbacks) {
       try {
-        callback(event);
+        callback.call(this, event);
         if (event._stopImmediatePropagationFlag) break;
       } catch (error) {
         console.error(`Error in event handler for "${event.type}":`, error);

@@ -67,8 +67,11 @@ function handleSelect(select: Select, e: FulateEvent) {
           const intersected = checkElementIntersects(select, element);
           if (intersected) selectEls.add(intersected);
         });
+        select.select(Array.from(selectEls));
+      } else {
+        const els = Array.from(selectEls);
+        select.select(els.length ? [els[0]] : []);
       }
-      select.select(Array.from(selectEls));
     },
     { once: true }
   );
@@ -163,7 +166,15 @@ function handleSelectMove(select: Select, e: FulateEvent) {
 }
 
 export function setupInteraction(select: Select): () => void {
+  const container = select.root.container;
+  if (!container.hasAttribute("tabindex")) {
+    container.tabIndex = -1;
+    container.style.outline = "none";
+  }
+
   const pointerdown = (e: FulateEvent) => {
+    container.focus({ preventScroll: true });
+
     const lineTool = select.root.keyElmenet?.get("lineTool") as any;
     if (lineTool?.isDrawingMode) return;
 
@@ -213,13 +224,52 @@ export function setupInteraction(select: Select): () => void {
     select.markDirty();
   };
 
+  const keydown = (e: KeyboardEvent) => {
+    const isCtrl = e.ctrlKey || e.metaKey;
+    console.log(33);
+    if (isCtrl && e.key === "z") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        select.history.redo();
+      } else {
+        select.history.undo();
+      }
+      return;
+    }
+
+    if (isCtrl && e.key === "c") {
+      e.preventDefault();
+      select.copy();
+      return;
+    }
+
+    if (isCtrl && e.key === "v") {
+      e.preventDefault();
+      select.paste();
+      return;
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      select.select([]);
+      return;
+    }
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      select.delete();
+    }
+  };
+
   select.root.addEventListener("pointerdown", pointerdown);
   select.root.addEventListener("mouseenter", mouseenter);
   select.root.addEventListener("mouseleave", mouseleave);
+  select.root.container.addEventListener("keydown", keydown);
 
   return () => {
     select.root.removeEventListener("pointerdown", pointerdown);
     select.root.removeEventListener("mouseenter", mouseenter);
     select.root.removeEventListener("mouseleave", mouseleave);
+    select.root.container.removeEventListener("keydown", keydown);
   };
 }

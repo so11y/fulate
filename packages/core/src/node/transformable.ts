@@ -17,6 +17,7 @@ export interface TransformableOptions {
   originY?: TOriginY;
   skewX?: number;
   skewY?: number;
+  [P: string]: any;
 }
 
 export class Transformable extends Node {
@@ -87,6 +88,12 @@ export class Transformable extends Node {
     // 继承父级世界矩阵
     if (this.parent) {
       m.multiplySelf(this.parent._ownMatrixCache);
+      if ((this.parent as any).isScrollContainer) {
+        m.translateSelf(
+          -(this.parent as any).scrollX,
+          -(this.parent as any).scrollY
+        );
+      }
     }
 
     // 应用本地变换

@@ -43,7 +43,11 @@ const ruleLayer = new Layer({
 
 const editerLayer = new EditerLayer({
   zIndex: 2,
-  children: [new Select(), new Snap(), new LineTool()]
+  children: [
+    new Select(),
+    new Snap(),
+    new LineTool()
+  ]
 });
 
 // 添加快捷键绑定：Ctrl+G 编组，Ctrl+Shift+G 解组
@@ -239,6 +243,7 @@ const workspace = new Workspace({
 
             // --- 第二行：文本与功能组件 (Row 1) ---
             new Text({
+              editable: true,
               left: col(0),
               top: START_Y + ITEM_SIZE + GAP, // 第一行下方
               width: ITEM_SIZE,

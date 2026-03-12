@@ -14,6 +14,7 @@ export interface TextOption extends ShapeOption {
   lineHeight?: number;
   wordWrap?: boolean;
   autoScale?: boolean;
+  editable?: boolean;
 }
 
 export class Text extends Shape {
@@ -33,6 +34,11 @@ export class Text extends Shape {
   underline: boolean = false;
   lineHeight: number = 1.5;
   wordWrap: boolean = true;
+  editable: boolean = false;
+
+  isEditing: boolean = false;
+  private _textarea: HTMLTextAreaElement | null = null;
+  private _editAbort: AbortController | null = null;
 
   private lines: string[] = [];
   private textHeight: number = 0;
@@ -162,6 +168,119 @@ export class Text extends Shape {
     this.applyTransformToCtx(ctx);
     ctx.font = this.fontString;
     this.computeLines(ctx);
+  }
+
+  enterEditing() {
+    if (!this.editable || this.isEditing) return;
+    this.isEditing = true;
+
+    const root = this.root;
+    const { scale } = root.viewport;
+    const m = this._ownMatrixCache;
+    const abort = new AbortController();
+    this._editAbort = abort;
+    const { signal } = abort;
+
+    const textarea = document.createElement("textarea");
+
+    const sx = Math.sqrt(m.a * m.a + m.b * m.b);
+    const sy = Math.sqrt(m.c * m.c + m.d * m.d);
+    const angle = Math.atan2(m.b, m.a) * (180 / Math.PI);
+
+    const left = m.e * scale + root.viewport.x;
+    const top = m.f * scale + root.viewport.y;
+    const w = (this.width || 100) * sx * scale;
+    const h =
+      (this.height || this.fontSize * this.lineHeight) * sy * scale;
+    const fs = this.fontSize * sx * scale;
+
+    Object.assign(textarea.style, {
+      position: "absolute",
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${w}px`,
+      height: `${h}px`,
+      fontSize: `${fs}px`,
+      fontFamily: this.fontFamily,
+      fontWeight: String(this.fontWeight),
+      fontStyle: this.fontStyle,
+      color: this.color,
+      textAlign: this.textAlign,
+      lineHeight: String(this.lineHeight),
+      background: this.backgroundColor || "transparent",
+      border: "1px solid #4F81FF",
+      borderRadius: this.radius ? `${this.radius * sx * scale}px` : "0",
+      outline: "none",
+      resize: "none",
+      overflow: "hidden",
+      padding: "0",
+      margin: "0",
+      zIndex: "9999",
+      boxSizing: "border-box",
+      transformOrigin: "0 0",
+      transform: angle ? `rotate(${angle}deg)` : "none"
+    });
+
+    textarea.value = this.text;
+    this.visible = false;
+    this.markDirty();
+
+    root.container.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    this._textarea = textarea;
+
+    textarea.addEventListener(
+      "input",
+      () => {
+        this.text = textarea.value;
+      },
+      { signal }
+    );
+
+    textarea.addEventListener(
+      "keydown",
+      (e) => {
+        e.stopPropagation();
+        if (e.key === "Escape") textarea.blur();
+      },
+      { signal }
+    );
+
+    textarea.addEventListener(
+      "pointerdown",
+      (e) => {
+        e.stopPropagation();
+      },
+      { signal }
+    );
+
+    textarea.addEventListener(
+      "blur",
+      () => {
+        this.exitEditing();
+      },
+      { signal }
+    );
+  }
+
+  exitEditing() {
+    if (!this.isEditing) return;
+    if (this._textarea) {
+      this.text = this._textarea.value;
+      this._textarea.remove();
+      this._textarea = null;
+    }
+    this._editAbort?.abort();
+    this._editAbort = null;
+    this.isEditing = false;
+    this.visible = true;
+    this.markDirty();
+  }
+
+  deactivate() {
+    this.exitEditing();
+    super.deactivate();
   }
 
   protected paintContent(ctx: CanvasRenderingContext2D) {

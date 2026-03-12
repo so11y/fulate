@@ -1,18 +1,25 @@
 {
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "playground": "vite --config packages/playground/vite.config.ts"
   },
   "devDependencies": {
     "ac": "https://github.com/so11y/ac.git",
     "vite": "^6.0.7"
   },
   "dependencies": {
-    "@fulate/util": "*",
     "@fulate/core": "*",
-    "@fulate/ui": "*",
+    "@fulate/playground": "*",
     "@fulate/tools": "*",
-    "@fulate/yoga": "*"
+    "@fulate/ui": "*",
+    "@fulate/util": "*",
+    "@fulate/vue": "*",
+    "@fulate/yoga": "*",
+    "@vue/runtime-core": "^3.5.30",
+    "vue": "^3.5.30"
   }
 }

@@ -90,6 +90,20 @@ export function initRootEvents(root: Root) {
     (e) => {
       e.preventDefault();
 
+      const el = root.currentElement?.element;
+      const sc = el
+        ? (el as any).isScrollContainer
+          ? el
+          : el.inject?.("scrollContainer")
+        : null;
+      if (sc && (sc as any).isScrollContainer) {
+        (sc as any).scrollBy(e.deltaX, e.deltaY);
+        root.lastPointerPos.x = e.clientX;
+        root.lastPointerPos.y = e.clientY;
+        checkHit(root);
+        return;
+      }
+
       const rect = root.containerRect;
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
@@ -115,6 +129,26 @@ export function initRootEvents(root: Root) {
   document.addEventListener("click", (e) => root._notify(e, "click"), {
     signal
   });
+
+  root.container.addEventListener(
+    "dblclick",
+    () => {
+      const select = root.keyElmenet?.get("select") as any;
+      if (select?.selectEls?.length === 1) {
+        const el = select.selectEls[0] as any;
+        if (typeof el?.enterEditing === "function") {
+          el.enterEditing();
+          select.select([]);
+        }
+      } else if (!select) {
+        const el = root.currentElement?.element as any;
+        if (typeof el?.enterEditing === "function") {
+          el.enterEditing();
+        }
+      }
+    },
+    { signal }
+  );
 
   root.addEventListener("unmounted", () => abortController.abort());
 }

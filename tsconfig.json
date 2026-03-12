@@ -13,7 +13,9 @@
       "@fulate/tools": ["packages/tools/src/index.ts"],
       "@fulate/tools/*": ["packages/tools/src/*"],
       "@fulate/yoga": ["packages/yoga/src/index.ts"],
-      "@fulate/yoga/*": ["packages/yoga/src/*"]
+      "@fulate/yoga/*": ["packages/yoga/src/*"],
+      "@fulate/vue": ["packages/vue/src/index.ts"],
+      "@fulate/vue/*": ["packages/vue/src/*"]
     }
   },
   "include": ["main.ts", "src/**/*.ts", "packages/*/src/**/*.ts", "vite.config.ts"]

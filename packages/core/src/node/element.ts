@@ -104,7 +104,7 @@ export class Element extends Transformable {
 
     EVENT_KEYS.forEach((v) => {
       if (options[v]) {
-        this.addEventListener(v.slice(2), (e) => options[v].call(this, e));
+        this.addEventListener(v.slice(2), options[v]);
       }
     });
 
@@ -280,6 +280,7 @@ export class Element extends Transformable {
     const viewTop = -vy / scale;
 
     const m = this._ownMatrixCache;
+    let inRootViewport: boolean;
 
     if (m.b === 0 && m.c === 0) {
       const sx = m.a;
@@ -289,22 +290,29 @@ export class Element extends Transformable {
       const w = this.width * Math.abs(sx);
       const h = this.height * Math.abs(sy);
 
-      return (
+      inRootViewport =
         left + w > viewLeft &&
         left < viewLeft + vw &&
         top + h > viewTop &&
-        top < viewTop + vh
-      );
+        top < viewTop + vh;
+    } else {
+      const { left, top, width, height } = this.getBoundingRect();
+
+      inRootViewport =
+        left + width > viewLeft &&
+        left < viewLeft + vw &&
+        top + height > viewTop &&
+        top < viewTop + vh;
     }
 
-    const { left, top, width, height } = this.getBoundingRect();
+    if (!inRootViewport) return false;
 
-    return (
-      left + width > viewLeft &&
-      left < viewLeft + vw &&
-      top + height > viewTop &&
-      top < viewTop + vh
-    );
+    const scrollContainer = this.inject("scrollContainer");
+    if (scrollContainer && scrollContainer !== this) {
+      return scrollContainer.isChildInScrollView(this);
+    }
+
+    return true;
   }
 
   /**

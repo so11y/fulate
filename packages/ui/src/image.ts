@@ -36,6 +36,12 @@ export class Image extends Shape {
     };
   }
 
+  toJson(includeChildren = false) {
+    const json = super.toJson(includeChildren) as any;
+    json.src = this.src;
+    return json;
+  }
+
   protected paintContent(ctx: CanvasRenderingContext2D) {
     if (this._isLoaded && this.image) {
       if (this.radius) {

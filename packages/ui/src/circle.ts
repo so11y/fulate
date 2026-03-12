@@ -39,10 +39,9 @@ export class Circle extends Shape {
 
   hasPointHint(point: Point) {
     const localPoint = this.getGlobalToLocal(point);
-    return Intersection.isPointInCircle(
-      localPoint,
-      new Point(this.radius, this.radius),
-      this.radius
-    );
+    const r = Math.min(this.width || 0, this.height || 0) / 2;
+    const cx = (this.width || 0) / 2;
+    const cy = (this.height || 0) / 2;
+    return Intersection.isPointInCircle(localPoint, new Point(cx, cy), r);
   }
 }
