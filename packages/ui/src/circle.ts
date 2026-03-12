@@ -1,0 +1,47 @@
+import { Intersection } from "@fulate/util";
+import { Point } from "@fulate/util";
+import { ShapeOption, Shape } from "@fulate/core";
+
+export class Circle extends Shape {
+  type = "circle";
+
+  constructor(options?: ShapeOption & { radius?: number }) {
+    super(options);
+    this.radius =
+      options?.radius ?? Math.min(this.width ?? 0, this.height ?? 0) / 2;
+  }
+
+  protected buildPath(ctx: CanvasRenderingContext2D) {
+    const r = Math.min(this.width || 0, this.height || 0) / 2;
+    ctx.beginPath();
+    ctx.arc(
+      (this.width || 0) / 2,
+      (this.height || 0) / 2,
+      r,
+      0,
+      Math.PI * 2
+    );
+  }
+
+  protected buildBorderPath(ctx: CanvasRenderingContext2D) {
+    const r = Math.min(this.width || 0, this.height || 0) / 2;
+    const half = this.borderWidth / 2;
+    const offset = this.borderPosition === "inside" ? -half : half;
+    ctx.beginPath();
+    ctx.arc(
+      (this.width || 0) / 2,
+      (this.height || 0) / 2,
+      r + offset,
+      0,
+      Math.PI * 2
+    );
+  }
+
+  hasPointHint(point: Point) {
+    const localPoint = this.getGlobalToLocal(point);
+    const r = Math.min(this.width || 0, this.height || 0) / 2;
+    const cx = (this.width || 0) / 2;
+    const cy = (this.height || 0) / 2;
+    return Intersection.isPointInCircle(localPoint, new Point(cx, cy), r);
+  }
+}

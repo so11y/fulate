@@ -1,16 +1,27 @@
 {
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "playground": "vite --config packages/playground/vite.config.ts"
   },
   "devDependencies": {
+    "@types/node": "^25.4.0",
+    "@vitejs/plugin-vue-jsx": "^5.1.4",
     "ac": "https://github.com/so11y/ac.git",
-    "lodash-es": "^4.17.22",
-    "vite": "^6.0.7",
-    "yoga-layout": "^3.2.1"
+    "vite": "^6.0.7"
   },
   "dependencies": {
-    "@tweenjs/tween.js": "^25.0.0",
-    "@types/rbush": "^4.0.0",
-    "rbush": "^4.0.1"
+    "@fulate/core": "*",
+    "@fulate/playground": "*",
+    "@fulate/tools": "*",
+    "@fulate/ui": "*",
+    "@fulate/util": "*",
+    "@fulate/vue": "*",
+    "@fulate/yoga": "*",
+    "@vue/runtime-core": "^3.5.30",
+    "vue": "^3.5.30"
   }
 }

@@ -2,6 +2,23 @@
   "compilerOptions": {
     "target": "ESNext",
     "moduleResolution": "node",
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "baseUrl": ".",
+    "paths": {
+      "@fulate/util": ["packages/util/src/index.ts"],
+      "@fulate/util/*": ["packages/util/src/*"],
+      "@fulate/core": ["packages/core/src/index.ts"],
+      "@fulate/core/*": ["packages/core/src/*"],
+      "@fulate/ui": ["packages/ui/src/index.ts"],
+      "@fulate/ui/*": ["packages/ui/src/*"],
+      "@fulate/tools": ["packages/tools/src/index.ts"],
+      "@fulate/tools/*": ["packages/tools/src/*"],
+      "@fulate/yoga": ["packages/yoga/src/index.ts"],
+      "@fulate/yoga/*": ["packages/yoga/src/*"],
+      "@fulate/vue": ["packages/vue/src/index.ts"],
+      "@fulate/vue/*": ["packages/vue/src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "vite.config.ts"]
+  "include": ["main.ts", "src/**/*.ts", "packages/*/src/**/*.ts", "packages/*/src/**/*.tsx", "packages/*/src/**/*.d.ts", "vite.config.ts"]
 }

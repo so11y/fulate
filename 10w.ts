@@ -4,8 +4,9 @@ import { Select } from "./lib/tools/select";
 import { Rectangle } from "./lib/ui/rectangle";
 import { Rule } from "./lib/tools/rule";
 import { Layer } from "./lib/layer";
+import { EditerLayer } from "./lib/layer/editer-layer";
 import { Snap } from "./lib/tools/select/snap";
-import { Artboard } from "./lib/ui/artboard";
+import { Artboard } from "./lib/layer/artboard";
 import { Workspace } from "./lib/ui/workspace";
 
 const root = new Root(document.getElementById("app")! as HTMLElement, {
@@ -13,9 +14,8 @@ const root = new Root(document.getElementById("app")! as HTMLElement, {
   height: window.innerHeight
 });
 
-const editerLayer = new Layer({
+const editerLayer = new EditerLayer({
   zIndex: 2,
-  enableDirtyRect: false,
   children: [
     new Rule(),
     new Select()
@@ -58,3 +58,21 @@ root.append(layer, editerLayer);
 
 console.time("渲染10w节点");
 root.mount();
+
+const totalW = cols * (cellSize + gap) - gap;
+const totalH = rows * (cellSize + gap) - gap;
+const rulerSize = 25;
+const padding = 40;
+const availW = root.width - rulerSize - padding * 2;
+const availH = root.height - rulerSize - padding * 2;
+const fitScale = Math.min(availW / totalW, availH / totalH);
+
+root.viewport.scale = fitScale;
+root.viewport.x = rulerSize + padding + (availW - totalW * fitScale) / 2;
+root.viewport.y = rulerSize + padding + (availH - totalH * fitScale) / 2;
+root.requestRender();
+
+const time = Date.now();
+root.nextTick(() => {
+  console.log(Date.now() - time);
+});
