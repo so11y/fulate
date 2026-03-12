@@ -20,5 +20,11 @@
       "@fulate/vue/*": ["packages/vue/src/*"]
     }
   },
-  "include": ["main.ts", "src/**/*.ts", "packages/*/src/**/*.ts", "packages/*/src/**/*.tsx", "packages/*/src/**/*.d.ts", "vite.config.ts"]
+  "include": [
+    "main.ts",
+    "src/**/*.ts",
+    "packages/*/src/**/*.ts",
+    "packages/*/src/**/*.tsx",
+    "packages/*/src/**/*.d.ts"
+  ]
 }
