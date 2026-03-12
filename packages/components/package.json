@@ -1,15 +1,14 @@
 {
-  "name": "@fulate/playground",
+  "name": "@fulate/components",
   "version": "0.0.1",
   "private": true,
-  "main": "src/main.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "dependencies": {
-    "@fulate/util": "*",
     "@fulate/core": "*",
     "@fulate/ui": "*",
-    "@fulate/tools": "*",
     "@fulate/yoga": "*",
     "@fulate/vue": "*",
-    "@fulate/components": "*"
+    "@vue/runtime-core": "^3.5.0"
   }
 }

@@ -13,6 +13,8 @@ export { Group } from "./group";
 export type { GroupOption } from "./group";
 export { ScrollView } from "./scrollview";
 export type { ScrollViewOption } from "./scrollview";
+export { RippleOverlay } from "./ripple";
+export type { RippleOption } from "./ripple";
 
 // Line
 export {
@@ -39,6 +41,7 @@ import { Workspace } from "./workspace";
 import { Group } from "./group";
 import { ScrollView } from "./scrollview";
 import { Line } from "./line/index";
+import { RippleOverlay } from "./ripple";
 
 registerElement("f-rectangle", Rectangle);
 registerElement("f-circle", Circle);
@@ -49,3 +52,4 @@ registerElement("f-workspace", Workspace);
 registerElement("f-group", Group);
 registerElement("f-scrollview", ScrollView);
 registerElement("f-line", Line);
+registerElement("f-ripple", RippleOverlay);

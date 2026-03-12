@@ -1,4 +1,5 @@
 import { ShapeOption, Shape } from "@fulate/core";
+import { CustomEvent } from "@fulate/util";
 
 export interface TextOption extends ShapeOption {
   text?: string;
@@ -434,6 +435,9 @@ export class Text extends Shape {
       "input",
       () => {
         this.text = textarea.value;
+        this.dispatchEvent(
+          new CustomEvent("input", { detail: this.text, bubbles: false })
+        );
       },
       { signal }
     );
@@ -476,6 +480,9 @@ export class Text extends Shape {
     this.isEditing = false;
     this.visible = true;
     this.markDirty();
+    this.dispatchEvent(
+      new CustomEvent("change", { detail: this.text, bubbles: false })
+    );
   }
 
   deactivate() {

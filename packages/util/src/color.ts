@@ -28,5 +28,16 @@ export const ColorUtil = {
   // 还原给 Canvas 用 (|0 是高效的向下取整)
   format({ r, g, b, a }: any) {
     return `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${a})`;
+  },
+
+  blend(base: string, overlay: string, opacity: number): string {
+    const b = ColorUtil.parse(base);
+    const o = ColorUtil.parse(overlay);
+    return ColorUtil.format({
+      r: b.r * (1 - opacity) + o.r * opacity,
+      g: b.g * (1 - opacity) + o.g * opacity,
+      b: b.b * (1 - opacity) + o.b * opacity,
+      a: b.a * (1 - opacity) + o.a * opacity,
+    });
   }
 };

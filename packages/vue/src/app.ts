@@ -14,6 +14,7 @@ export function createApp(
   const app = baseCreateApp(rootComponent, rootProps);
   const origMount = app.mount;
 
+  //@ts-ignore
   app.mount = (rootOrEl: any, options?: FulateAppMountOptions) => {
     let root: Root;
 
@@ -29,9 +30,16 @@ export function createApp(
 
     const container = new Layer({
       zIndex: 1,
-      enableDirtyRect: true,
+      enableDirtyRect: true
+    });
+    const overlay = new Layer({
+      zIndex: 100,
+      enableDirtyRect: true
     });
     root.append(container);
+    root.append(overlay);
+
+    app.provide("__overlay", overlay);
 
     origMount.call(app, container as any);
 
