@@ -1,4 +1,4 @@
-import { createRenderer, type RendererOptions } from "@vue/runtime-core";
+import { createRenderer, markRaw, type RendererOptions } from "@vue/runtime-core";
 import { Element, getElementCtor } from "@fulate/core";
 
 function isEventProp(key: string): boolean {
@@ -27,9 +27,9 @@ const nodeOps: RendererOptions<any, any> = {
         `[fulate-vue] Unknown element: "${type}". ` +
           `Did you forget registerElement("${type}", YourClass)?`
       );
-      return createPlaceholder();
+      return markRaw(createPlaceholder());
     }
-    return new Ctor();
+    return markRaw((new Ctor()));
   },
 
   insert(child, parent, anchor) {
@@ -89,7 +89,7 @@ const nodeOps: RendererOptions<any, any> = {
 
   nextSibling(node) {
     return node?.nextSibling ?? null;
-  },
+  }
 };
 
 export const { render, createApp: baseCreateApp } = createRenderer(nodeOps);
