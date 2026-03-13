@@ -17,7 +17,7 @@ const App = defineComponent({
       { label: "React", value: "react" },
       { label: "Angular", value: "angular" },
       { label: "Svelte", value: "svelte" },
-      { label: "Solid", value: "solid" },
+      { label: "Solid", value: "solid" }
     ];
 
     function handleSubmit() {
@@ -32,7 +32,10 @@ const App = defineComponent({
     }
 
     return () => (
-      <f-workspace width={1920} height={900}>
+      <f-workspace
+        width={1920}
+        height={900}
+      >
         <f-artboard>
           {/* Page title */}
           <f-text
@@ -88,30 +91,31 @@ const App = defineComponent({
               />
 
               <FInput
-                modelValue={inputName.value}
-                onUpdate:modelValue={(v: string) => (inputName.value = v)}
+                v-model={inputName.value}
                 label="姓名"
                 placeholder="请输入姓名"
                 width={284}
               />
 
               <FInput
-                modelValue={inputEmail.value}
-                onUpdate:modelValue={(v: string) => (inputEmail.value = v)}
+                v-model={inputEmail.value}
                 label="邮箱"
                 placeholder="name@example.com"
                 width={284}
               />
 
               <FSelect
-                modelValue={selected.value}
-                onUpdate:modelValue={(v: string) => (selected.value = v)}
+                v-model={selected.value}
                 label="框架"
                 options={frameworks}
                 width={284}
               />
 
-              <f-div display={Display.Flex} gap={12} paddingTop={4}>
+              <f-div
+                display={Display.Flex}
+                gap={12}
+                paddingTop={4}
+              >
                 <FButton
                   label="提交"
                   variant="filled"
@@ -166,21 +170,62 @@ const App = defineComponent({
                 verticalAlign="middle"
               />
 
-              <f-div display={Display.Flex} gap={10} alignItems={Align.Center}>
-                <FButton label="Filled" variant="filled" />
-                <FButton label="Outlined" variant="outlined" />
-                <FButton label="Text" variant="text" />
+              <f-div
+                display={Display.Flex}
+                gap={10}
+                alignItems={Align.Center}
+              >
+                <FButton
+                  label="Filled"
+                  variant="filled"
+                />
+                <FButton
+                  label="Outlined"
+                  variant="outlined"
+                />
+                <FButton
+                  label="Text"
+                  variant="text"
+                />
               </f-div>
 
-              <f-div display={Display.Flex} gap={10} alignItems={Align.Center}>
-                <FButton label="Primary" variant="filled" color="#1565C0" />
-                <FButton label="Error" variant="filled" color="#D32F2F" />
-                <FButton label="Success" variant="filled" color="#2E7D32" />
+              <f-div
+                display={Display.Flex}
+                gap={10}
+                alignItems={Align.Center}
+              >
+                <FButton
+                  label="Primary"
+                  variant="filled"
+                  color="#1565C0"
+                />
+                <FButton
+                  label="Error"
+                  variant="filled"
+                  color="#D32F2F"
+                />
+                <FButton
+                  label="Success"
+                  variant="filled"
+                  color="#2E7D32"
+                />
               </f-div>
 
-              <f-div display={Display.Flex} gap={10} alignItems={Align.Center}>
-                <FButton label="Disabled" variant="filled" disabled />
-                <FButton label="Disabled" variant="outlined" disabled />
+              <f-div
+                display={Display.Flex}
+                gap={10}
+                alignItems={Align.Center}
+              >
+                <FButton
+                  label="Disabled"
+                  variant="filled"
+                  disabled
+                />
+                <FButton
+                  label="Disabled"
+                  variant="outlined"
+                  disabled
+                />
               </f-div>
 
               <f-div
@@ -204,7 +249,7 @@ const App = defineComponent({
         </f-artboard>
       </f-workspace>
     );
-  },
+  }
 });
 
 registerDemo("vue-material", {
@@ -215,5 +260,5 @@ registerDemo("vue-material", {
     const root = new Root(el, { width, height });
     createApp(App).mount(root);
     return () => root.unmounted();
-  },
+  }
 });

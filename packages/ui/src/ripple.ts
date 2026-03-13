@@ -21,6 +21,8 @@ export class RippleOverlay extends Shape {
   rippleColor: string = "#ffffff";
   rippleOpacity: number = 0.3;
   duration: number = 400;
+  fitWidth = true;
+  fitHeight = true;
 
   private _ripples: RippleState[] = [];
 

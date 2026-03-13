@@ -57,6 +57,24 @@ export class Group extends Element {
     return;
   }
 
+  toJson(includeChildren = false): BaseElementOption {
+    const json = super.toJson(includeChildren) as any;
+    if (includeChildren && this.groupEls.length) {
+      const layers = this.root?.layers;
+      json.children = this.groupEls.map((el) => {
+        const childJson = el.toJson(true) as any;
+        if (layers) {
+          childJson._layerIndex = layers.indexOf(el.layer as any);
+        }
+        return childJson;
+      });
+    }
+    if (this.groupEls.length) {
+      json.groupElIds = this.groupEls.map((el) => el.id);
+    }
+    return json;
+  }
+
   snapshotChildren() {
     this.calcWorldMatrix(); // Ensure group's world matrix is computed
     const groupWorldInv = DOMMatrix.fromMatrix(this.getOwnMatrix()).inverse();

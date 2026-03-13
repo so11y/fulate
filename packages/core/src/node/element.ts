@@ -278,8 +278,10 @@ export class Element extends Transformable {
 
   hasInView() {
     if (!this.visible || !this.width || !this.height) return false;
+    if (!this.isActiveed) return false;
 
     const root = this.root;
+    if (!root) return false;
     const { x: vx, y: vy, scale } = root.viewport;
     const vw = root.width / scale;
     const vh = root.height / scale;

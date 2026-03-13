@@ -13,9 +13,14 @@ function deserializeElement(data: any): Element | undefined {
   delete props.key;
   const el = new Ctor(props);
   if (children?.length) {
-    (el as any).children = children
+    const deserialized = children
       .map((c: any) => deserializeElement(c))
       .filter(Boolean);
+    if (el.type === "group") {
+      (el as any)._pendingGroupEls = deserialized;
+    } else {
+      (el as any).children = deserialized;
+    }
   }
   return el;
 }
@@ -29,6 +34,11 @@ function applyOffset(data: any, dx: number, dy: number) {
       p.y += dy;
     }
   }
+  if (data.children) {
+    for (const child of data.children) {
+      applyOffset(child, dx, dy);
+    }
+  }
 }
 
 function collectIds(el: Element): Set<string> {
@@ -37,6 +47,11 @@ function collectIds(el: Element): Set<string> {
   if (el.children) {
     for (const c of el.children) {
       for (const id of collectIds(c)) ids.add(id);
+    }
+  }
+  if (el.type === "group") {
+    for (const m of (el as any).groupEls ?? []) {
+      for (const id of collectIds(m)) ids.add(id);
     }
   }
   return ids;
@@ -105,6 +120,7 @@ function pasteFromMemory(select: Select, sources: Element[], offset: number) {
   const newEls: Element[] = [];
   const parents: any[] = [];
   const idMap = new Map<string, string>();
+  const memberLayerMap = new Map<Element, any>();
 
   const oldIds = new Set<string>();
   for (const src of sources) {
@@ -120,7 +136,23 @@ function pasteFromMemory(select: Select, sources: Element[], offset: number) {
 
     const layer = src.layer ?? select.root.layers[0];
     if (layer) {
+      setupPastedGroup(clone, layer, select.root);
       layer.append(clone);
+
+      if (clone.type === "group") {
+        const srcMembers = (src as any).groupEls as Element[] ?? [];
+        const cloneMembers = (clone as any).groupEls as Element[] ?? [];
+        srcMembers.forEach((sm: Element, i: number) => {
+          if (!cloneMembers[i]) return;
+          idMap.set(sm.id, cloneMembers[i].id);
+          const srcLayer = sm.layer;
+          if (srcLayer && cloneMembers[i].parent !== srcLayer) {
+            srcLayer.append(cloneMembers[i]);
+          }
+          memberLayerMap.set(cloneMembers[i], cloneMembers[i].parent);
+        });
+      }
+
       newEls.push(clone);
       parents.push(layer);
       idMap.set(src.id, clone.id);
@@ -128,7 +160,7 @@ function pasteFromMemory(select: Select, sources: Element[], offset: number) {
   }
 
   remapAnchors(newEls, idMap);
-  commitPaste(select, newEls, parents);
+  commitPaste(select, newEls, parents, memberLayerMap);
 }
 
 function pasteFromClipboardData(
@@ -139,6 +171,7 @@ function pasteFromClipboardData(
   const newEls: Element[] = [];
   const parents: any[] = [];
   const idMap = new Map<string, string>();
+  const memberLayerMap = new Map<Element, any>();
 
   for (const entry of entries) {
     const data = { ...entry.props, type: entry.type };
@@ -148,7 +181,15 @@ function pasteFromClipboardData(
     if (!el) continue;
     const layer = select.root.layers[0];
     if (layer) {
+      setupPastedGroup(el, layer, select.root);
       layer.append(el);
+
+      if (el.type === "group") {
+        for (const m of (el as any).groupEls ?? []) {
+          memberLayerMap.set(m, m.parent);
+        }
+      }
+
       newEls.push(el);
       parents.push(layer);
       if (entry.id) idMap.set(entry.id, el.id);
@@ -156,21 +197,71 @@ function pasteFromClipboardData(
   }
 
   remapAnchors(newEls, idMap);
-  commitPaste(select, newEls, parents);
+  commitPaste(select, newEls, parents, memberLayerMap);
 }
 
-function commitPaste(select: Select, newEls: Element[], parents: any[]) {
+function setupPastedGroup(el: Element, defaultLayer: any, root: any) {
+  if (el.type !== "group") return;
+  const members = (el as any)._pendingGroupEls as Element[] | undefined;
+  if (!members?.length) return;
+  delete (el as any)._pendingGroupEls;
+  delete (el as any).groupElIds;
+
+  const layers = root.layers;
+  members.forEach((m: any) => {
+    const idx = m._layerIndex;
+    delete m._layerIndex;
+    const targetLayer =
+      idx != null && layers[idx] ? layers[idx] : defaultLayer;
+    targetLayer.append(m);
+  });
+  (el as any).groupEls = members;
+  members.forEach((m: any) => {
+    m.groupParent = el;
+    m.provide("group", el);
+  });
+  (el as any).snapshotChildren();
+}
+
+function commitPaste(
+  select: Select,
+  newEls: Element[],
+  parents: any[],
+  memberLayerMap: Map<Element, any>
+) {
   if (!newEls.length) return;
 
   select.history.pushAction(
     () => {
-      newEls.forEach((el) => el.parent?.removeChild(el));
-      select.select([]);
+      newEls.forEach((el) => {
+        if (el.type === "group") {
+          for (const m of (el as any).groupEls ?? []) {
+            m.groupParent = null;
+            m.parent?.removeChild(m);
+          }
+        }
+        el.parent?.removeChild(el);
+      });
+      select.root.nextTick(() => select.select([]));
     },
     () => {
       newEls.forEach((el, i) => {
+        if (el.type === "group") {
+          for (const m of (el as any).groupEls ?? []) {
+            const targetLayer = memberLayerMap.get(m) ?? parents[i];
+            targetLayer?.append(m);
+          }
+        }
         parents[i]?.append(el);
         el.markDirty();
+        if (el.type === "group") {
+          const members = (el as any).groupEls as Element[] ?? [];
+          members.forEach((m: any) => {
+            m.groupParent = el;
+            m.provide("group", el);
+          });
+          (el as any).snapshotChildren();
+        }
       });
       select.root.nextTick(() => select.select(newEls));
     }

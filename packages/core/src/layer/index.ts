@@ -28,6 +28,7 @@ export class Layer extends Element {
 
   isLayer = true;
   isRenderDirtyMode = false;
+  _forceFullRepaint = false;
 
   private pendingSyncNodes = new Set<Element>();
 
@@ -183,6 +184,16 @@ export class Layer extends Element {
 
   flushPaint() {
     if (this.isUnmounted || this.shouldRepaint() === false) {
+      return;
+    }
+
+    if (this._forceFullRepaint) {
+      this._forceFullRepaint = false;
+      this.dirtyNodes.clear();
+      this.clear();
+      this.paint(this.ctx);
+      this.finalDirtyRects = null;
+      this.isRenderDirtyMode = false;
       return;
     }
 

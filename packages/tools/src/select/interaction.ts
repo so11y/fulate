@@ -226,12 +226,22 @@ export function setupInteraction(select: Select): () => void {
 
   const keydown = (e: KeyboardEvent) => {
     const isCtrl = e.ctrlKey || e.metaKey;
-    if (isCtrl && e.key === "z") {
+    if (isCtrl && (e.key === "z" || e.key === "y")) {
       e.preventDefault();
-      if (e.shiftKey) {
+      if (e.key === "y") {
         select.history.redo();
       } else {
         select.history.undo();
+      }
+      return;
+    }
+
+    if (isCtrl && e.key === "g") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        select.unGroup();
+      } else {
+        select.doGroup();
       }
       return;
     }

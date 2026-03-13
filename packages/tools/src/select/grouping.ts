@@ -43,7 +43,7 @@ export function doGroup(select: Select) {
         delete el._provides.group;
       });
       group.parent?.removeChild(group as any);
-      select.select(children);
+      select.root.nextTick(() => select.select(children));
     },
     () => {
       group.groupEls = children;
@@ -53,7 +53,7 @@ export function doGroup(select: Select) {
       });
       parent.append(group);
       group.snapshotChildren();
-      select.select([group as any]);
+      select.root.nextTick(() => select.select([group as any]));
     }
   );
 }
@@ -114,7 +114,7 @@ export function unGroup(select: Select) {
         }
       }
       group.snapshotChildren();
-      select.select([group as any]);
+      select.root.nextTick(() => select.select([group as any]));
     },
     () => {
       children.forEach((el) => {
@@ -124,8 +124,7 @@ export function unGroup(select: Select) {
       if (group.parent) {
         group.parent.removeChild(group as any);
       }
-      select.select(children);
-      // select.root.requestRender();
+      select.root.nextTick(() => select.select(children));
     }
   );
 }

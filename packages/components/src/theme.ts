@@ -26,10 +26,10 @@ export const MD3 = {
   rippleOpacity: 0.32,
 
   // Shape
-  radiusFull: 100,
-  radiusLg: 16,
-  radiusMd: 12,
-  radiusSm: 8,
+  radiusFull: 4,
+  radiusLg: 4,
+  radiusMd: 4,
+  radiusSm: 2,
 
   // Typography
   fontSize: 14,

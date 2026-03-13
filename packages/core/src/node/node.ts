@@ -109,10 +109,17 @@ export class Node extends EventEmitter {
   }
 
   // ================= 结构操作 =================
+  private _detachFromSameParent(child: Node) {
+    if (child.parent !== this || !this.children) return;
+    const oldIdx = this.children.indexOf(child as any);
+    if (oldIdx !== -1) this.children.splice(oldIdx, 1);
+  }
+
   append(...children: Node[]) {
     if (!this.children) this.children = [];
     const added: Node[] = [];
     children.forEach((child) => {
+      this._detachFromSameParent(child);
       this.children!.push(child as any);
       added.push(child);
     });
@@ -123,7 +130,10 @@ export class Node extends EventEmitter {
   prepend(...children: Node[]) {
     if (!this.children) this.children = [];
     const added: Node[] = [];
-    children.forEach((child) => added.push(child));
+    children.forEach((child) => {
+      this._detachFromSameParent(child);
+      added.push(child);
+    });
     this.children.unshift(...(added as any[]));
     this._afterMutate(added);
     return this;
@@ -132,6 +142,7 @@ export class Node extends EventEmitter {
   insertBefore(newChild: Node, refChild: Node | null) {
     if (!refChild) return this.append(newChild);
     if (!this.children) return this;
+    this._detachFromSameParent(newChild);
     const idx = this.children.indexOf(refChild as any);
     if (idx === -1) return this;
     this.children.splice(idx, 0, newChild as any);
@@ -141,6 +152,7 @@ export class Node extends EventEmitter {
 
   insertAfter(newChild: Node, refChild: Node) {
     if (!this.children) return this;
+    this._detachFromSameParent(newChild);
     const idx = this.children.indexOf(refChild as any);
     if (idx === -1) return this;
     this.children.splice(idx + 1, 0, newChild as any);
@@ -237,7 +249,9 @@ export class Node extends EventEmitter {
   }
 
   protected shouldFastDeactivate() {
-    return (this._root?.isUnmounted ?? false) || (this._layer?.isUnmounted ?? false);
+    return (
+      (this._root?.isUnmounted ?? false) || (this._layer?.isUnmounted ?? false)
+    );
   }
 
   deactivate() {
@@ -255,13 +269,12 @@ export class Node extends EventEmitter {
       }
       this._layer?.addDirtyNode(this as any);
       this._layer?.removeRbush(this as any);
-
-      this.dispatchEvent(
-        new CustomEvent("deactivated", {
-          bubbles: false
-        })
-      );
     }
+    this.dispatchEvent(
+      new CustomEvent("deactivated", {
+        bubbles: false
+      })
+    );
 
     this.children?.forEach((child) => child.deactivate());
 

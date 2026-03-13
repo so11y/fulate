@@ -27,7 +27,7 @@ function getRestBg(variant: ButtonVariant, color: string, disabled: boolean) {
     return variant === "filled" ? MD3.surfaceContainer : MD3.surface;
   if (variant === "filled") return color;
   if (variant === "outlined") return MD3.surface;
-  return "rgba(0,0,0,0)";
+  return "rgba(255,255,255,0)";
 }
 
 function getHoverBg(variant: ButtonVariant, color: string) {
@@ -56,6 +56,7 @@ export const FButton = defineComponent({
   emits: ["press"],
   setup(props, { emit }) {
     const divRef = ref<any>(null);
+    const rippleRef = ref<any>(null);
     const hovered = ref(false);
     const isPressed = ref(false);
 
@@ -67,11 +68,11 @@ export const FButton = defineComponent({
       return Math.max(64, textW + paddingH.value * 2);
     });
 
-    function animateBg(target: string, duration = 150) {
+    function animateEl(target: Record<string, any>, duration = 150) {
       const el = divRef.value;
       if (!el?.animate) return;
       el.stopAnimations?.();
-      el.animate({ backgroundColor: target }, { duration });
+      el.animate(target, { duration });
     }
 
     function getTextColor() {
@@ -80,11 +81,39 @@ export const FButton = defineComponent({
       return props.color;
     }
 
-    function getBorder() {
+    function getRestBorderColor() {
       if (props.variant === "outlined" && !props.disabled) return MD3.outline;
       if (props.variant === "outlined" && props.disabled)
         return MD3.outlineVariant;
       return null;
+    }
+
+    function getHoverBorderColor() {
+      if (props.variant === "outlined") return props.color;
+      return null;
+    }
+
+    function getRestState() {
+      const bg = getRestBg(props.variant, props.color, props.disabled);
+      const border = getRestBorderColor();
+      return border ? { backgroundColor: bg, borderColor: border } : { backgroundColor: bg };
+    }
+
+    function getHoverState() {
+      const bg = getHoverBg(props.variant, props.color);
+      const border = getHoverBorderColor();
+      return border ? { backgroundColor: bg, borderColor: border } : { backgroundColor: bg };
+    }
+
+    function getPressState() {
+      const bg = getPressBg(props.variant, props.color);
+      const border = props.variant === "outlined" ? props.color : null;
+      return border ? { backgroundColor: bg, borderColor: border } : { backgroundColor: bg };
+    }
+
+    function getRippleColor() {
+      if (props.variant === "filled") return "#ffffff";
+      return props.color;
     }
 
     return () => (
@@ -97,7 +126,7 @@ export const FButton = defineComponent({
         height={props.height}
         flexShrink={0}
         backgroundColor={getRestBg(props.variant, props.color, props.disabled)}
-        borderColor={getBorder()}
+        borderColor={getRestBorderColor()}
         borderWidth={props.variant === "outlined" ? 1 : 0}
         radius={MD3.radiusFull}
         paddingLeft={paddingH.value}
@@ -109,33 +138,32 @@ export const FButton = defineComponent({
         onPointerdown={(e: any) => {
           if (props.disabled) return;
           isPressed.value = true;
-          animateBg(getPressBg(props.variant, props.color), 100);
+          rippleRef.value?.trigger(e.detail.x, e.detail.y);
         }}
         onPointerup={() => {
           if (!isPressed.value) return;
           isPressed.value = false;
-          const target = hovered.value
-            ? getHoverBg(props.variant, props.color)
-            : getRestBg(props.variant, props.color, props.disabled);
-          animateBg(target, 200);
         }}
         onMouseenter={() => {
           if (props.disabled) return;
           hovered.value = true;
           if (!isPressed.value) {
-            animateBg(getHoverBg(props.variant, props.color), 150);
+            animateEl(getHoverState(), 150);
           }
         }}
         onMouseleave={() => {
           hovered.value = false;
           if (!isPressed.value) {
-            animateBg(
-              getRestBg(props.variant, props.color, props.disabled),
-              200
-            );
+            animateEl(getRestState(), 200);
           }
         }}
       >
+        <f-ripple
+          ref={rippleRef}
+          rippleColor={getRippleColor()}
+          rippleOpacity={MD3.rippleOpacity}
+          duration={400}
+        />
         <f-text
           text={props.label}
           color={getTextColor()}

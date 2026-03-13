@@ -19,21 +19,21 @@ registerDemo("basic", {
           width: 120,
           height: 120,
           backgroundColor: "#e74c3c",
-          radius: 8,
+          radius: 8
         }),
         new Circle({
           left: 240,
           top: 60,
           width: 120,
           height: 120,
-          backgroundColor: "#2ecc71",
+          backgroundColor: "#2ecc71"
         }),
         new Triangle({
           left: 420,
           top: 60,
           width: 120,
           height: 120,
-          backgroundColor: "#f39c12",
+          backgroundColor: "#f39c12"
         }),
         new Text({
           left: 60,
@@ -41,10 +41,12 @@ registerDemo("basic", {
           width: 200,
           height: 50,
           text: "Hello Fulate!",
-          textAlign: "center",
+          textAlign: "left",
           verticalAlign: "middle",
-          backgroundColor: "#3498db",
+          backgroundColor: "red",
           color: "#fff",
+          editable: true,
+          wordWrap: false
         }),
         new Image({
           left: 320,
@@ -52,14 +54,14 @@ registerDemo("basic", {
           width: 120,
           height: 120,
           src: "https://picsum.photos/200/200",
-          radius: 12,
-        }),
-      ],
+          radius: 12
+        })
+      ]
     });
 
     root.append(layer);
     root.mount();
 
     return () => root.unmounted();
-  },
+  }
 });

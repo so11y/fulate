@@ -120,6 +120,7 @@ export class Root extends Node {
   requestRender() {
     this.layers.forEach((layer) => {
       layer.dirtyNodes.clear();
+      layer._forceFullRepaint = true;
       layer.requestRender();
     });
   }

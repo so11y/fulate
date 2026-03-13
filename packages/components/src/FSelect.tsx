@@ -1,5 +1,15 @@
-import { defineComponent, ref, computed, nextTick, inject, Teleport, type PropType } from "@vue/runtime-core";
-import { Display, FlexDirection, Align } from "@fulate/yoga";
+import {
+  defineComponent,
+  ref,
+  computed,
+  nextTick,
+  inject,
+  Teleport,
+  type PropType,
+  onMounted,
+  onUnmounted
+} from "@vue/runtime-core";
+import { Display, FlexDirection, Align, Justify } from "@fulate/yoga";
 import { MD3 } from "./theme";
 
 export interface SelectOption {
@@ -9,7 +19,6 @@ export interface SelectOption {
 
 const ITEM_HEIGHT = 44;
 const MAX_VISIBLE = 5;
-const ANIM_DURATION = 180;
 
 export const FSelect = defineComponent({
   name: "FSelect",
@@ -21,17 +30,32 @@ export const FSelect = defineComponent({
     disabled: { type: Boolean, default: false },
     width: { type: Number, default: 280 },
     height: { type: Number, default: 52 },
-    fontSize: { type: Number, default: 15 },
+    fontSize: { type: Number, default: 15 }
   },
   emits: ["update:modelValue"],
   setup(props, { emit }) {
-    const overlay = inject<any>("__overlay", null);
+    const overlay = inject<any>("__fulate_overlay", null);
+    const fulateRoot = inject<any>("__fulate_root", null);
     const open = ref(false);
-    const animating = ref(false);
     const showDropdown = ref(false);
     const hoveredIndex = ref(-1);
     const triggerRef = ref<any>(null);
     const dropdownRef = ref<any>(null);
+    const rippleRef = ref<any>(null);
+
+    let removeRootListener: (() => void) | null = null;
+
+    onMounted(() => {
+      removeRootListener = fulateRoot.addEventListener(
+        "pointerdown",
+        onRootPointerDown
+      );
+    });
+
+    onUnmounted(() => {
+      removeRootListener?.();
+      removeRootListener = null;
+    });
 
     const selectedLabel = computed(() => {
       const found = props.options.find((o) => o.value === props.modelValue);
@@ -41,8 +65,8 @@ export const FSelect = defineComponent({
     const hasValue = computed(() => !!props.modelValue);
     const labelFloated = computed(() => open.value || hasValue.value);
 
-    const maxDropdownHeight = computed(() =>
-      Math.min(props.options.length, MAX_VISIBLE) * ITEM_HEIGHT + 12
+    const maxDropdownHeight = computed(
+      () => Math.min(props.options.length, MAX_VISIBLE) * ITEM_HEIGHT + 12
     );
 
     function getDisplayText() {
@@ -73,81 +97,56 @@ export const FSelect = defineComponent({
       dropdown.markDirty?.();
     }
 
-    function onOutsidePointerDown() {
+    function isDescendantOf(node: any, ancestor: any): boolean {
+      let cur = node;
+      while (cur) {
+        if (cur === ancestor) return true;
+        cur = cur.parent;
+      }
+      return false;
+    }
+
+    function onRootPointerDown(e: any) {
+      if (!open.value) return;
+      const target = e.detail?.target;
+      if (!target) return;
+      if (isDescendantOf(target, triggerRef.value)) return;
+      if (isDescendantOf(target, dropdownRef.value)) return;
       doClose();
-    }
-
-    function addOutsideListener() {
-      const root = overlay?.root;
-      if (!root) return;
-      requestAnimationFrame(() => {
-        root.addEventListener("pointerdown", onOutsidePointerDown);
-      });
-    }
-
-    function removeOutsideListener() {
-      const root = overlay?.root;
-      if (!root) return;
-      root.removeEventListener("pointerdown", onOutsidePointerDown);
     }
 
     function doOpen() {
       open.value = true;
       showDropdown.value = true;
-      animating.value = true;
-      addOutsideListener();
       nextTick(() => {
         syncDropdownPosition();
         const el = dropdownRef.value;
-        if (el?.animate) {
-          el.animate(
-            { opacity: 1 },
-            {
-              duration: ANIM_DURATION,
-              onComplete() {
-                animating.value = false;
-              },
-            }
-          );
-        } else {
-          animating.value = false;
-        }
+        if (el) el.opacity = 1;
       });
     }
 
     function doClose() {
       if (!open.value) return;
-      removeOutsideListener();
       open.value = false;
-      animating.value = true;
       hoveredIndex.value = -1;
-      const el = dropdownRef.value;
-      if (el?.animate) {
-        el.animate(
-          { opacity: 0 },
-          {
-            duration: ANIM_DURATION,
-            onComplete() {
-              showDropdown.value = false;
-              animating.value = false;
-            },
-          }
-        );
-      } else {
-        showDropdown.value = false;
-        animating.value = false;
-      }
+      showDropdown.value = false;
     }
 
-    function toggle() {
-      if (props.disabled || animating.value) return;
-      if (open.value) doClose();
-      else doOpen();
+    function toggle(e?: any) {
+      if (props.disabled) return;
+      if (open.value) {
+        doClose();
+      } else {
+        doOpen();
+        if (e?.detail) {
+          rippleRef.value?.trigger(e.detail.x, e.detail.y);
+        }
+      }
     }
 
     function select(value: string) {
       emit("update:modelValue", value);
-      doClose();
+      nextTick(() => doClose());
     }
 
     const renderDropdown = () => {
@@ -160,9 +159,9 @@ export const FSelect = defineComponent({
           maxHeight={maxDropdownHeight.value}
           opacity={0}
           backgroundColor={MD3.surface}
-          radius={MD3.radiusMd}
+          radius={MD3.radiusSm}
           borderColor={MD3.outlineVariant}
-          borderWidth={1}
+          borderWidth={0.5}
           borderPosition="inside"
           scrollbarSize={4}
           scrollbarColor="rgba(0,0,0,0.15)"
@@ -192,7 +191,9 @@ export const FSelect = defineComponent({
                 text={opt.label}
                 fontSize={props.fontSize}
                 fontFamily={MD3.fontFamily}
-                color={opt.value === props.modelValue ? MD3.primary : MD3.onSurface}
+                color={
+                  opt.value === props.modelValue ? MD3.primary : MD3.onSurface
+                }
                 fontWeight={opt.value === props.modelValue ? 600 : 400}
                 verticalAlign="middle"
               />
@@ -217,54 +218,87 @@ export const FSelect = defineComponent({
         <f-div
           ref={triggerRef}
           display={Display.Flex}
-          flexDirection={FlexDirection.Column}
+          flexDirection={FlexDirection.Row}
+          alignItems={Align.Stretch}
           width={props.width}
           height={props.height}
           backgroundColor={MD3.surface}
           radius={MD3.radiusMd}
           borderColor={getBorderColor()}
-          borderWidth={open.value ? 2 : 1}
+          borderWidth={open.value ? 1.5 : 0.5}
           borderPosition="inside"
           paddingLeft={14}
-          paddingRight={14}
+          paddingRight={10}
           cursor={props.disabled ? "default" : "pointer"}
           onClick={toggle}
         >
-          <f-div height={labelFloated.value ? 18 : 0} paddingTop={labelFloated.value ? 6 : 0}>
-            {labelFloated.value && props.label ? (
-              <f-text
-                text={props.label}
-                fontSize={11}
-                fontFamily={MD3.fontFamily}
-                fontWeight={500}
-                color={open.value ? MD3.primary : MD3.onSurfaceVariant}
-              />
-            ) : null}
+          <f-ripple
+            ref={rippleRef}
+            rippleColor={MD3.primary}
+            rippleOpacity={MD3.rippleOpacity}
+            duration={400}
+          />
+
+          {/* Content column: label + text */}
+          <f-div
+            flex={1}
+            display={Display.Flex}
+            flexDirection={FlexDirection.Column}
+            justifyContent={Justify.Center}
+          >
+            <f-div
+              height={labelFloated.value ? 18 : 0}
+              paddingTop={labelFloated.value ? 4 : 0}
+            >
+              {labelFloated.value && props.label ? (
+                <f-text
+                  text={props.label}
+                  fontSize={11}
+                  fontFamily={MD3.fontFamily}
+                  fontWeight={500}
+                  color={open.value ? MD3.primary : MD3.onSurfaceVariant}
+                />
+              ) : null}
+            </f-div>
+
+            <f-div flex={1}>
+              {!labelFloated.value && props.label ? (
+                <f-text
+                  text={props.label}
+                  fontSize={props.fontSize}
+                  fontFamily={MD3.fontFamily}
+                  color={MD3.onSurfaceVariant}
+                  verticalAlign="middle"
+                />
+              ) : (
+                <f-text
+                  text={getDisplayText()}
+                  fontSize={props.fontSize}
+                  fontFamily={MD3.fontFamily}
+                  color={getTextColor()}
+                  verticalAlign="middle"
+                />
+              )}
+            </f-div>
           </f-div>
 
-          <f-div display={Display.Flex} alignItems={Align.Center} flex={1}>
-            {!labelFloated.value && props.label ? (
-              <f-text
-                text={props.label}
-                fontSize={props.fontSize}
-                fontFamily={MD3.fontFamily}
-                color={MD3.onSurfaceVariant}
-                verticalAlign="middle"
-              />
-            ) : (
-              <f-text
-                text={getDisplayText()}
-                fontSize={props.fontSize}
-                fontFamily={MD3.fontFamily}
-                color={getTextColor()}
-                verticalAlign="middle"
-              />
-            )}
+          {/* Arrow - always vertically centered */}
+          <f-div
+            width={24}
+            flexShrink={0}
+          >
+            <f-text
+              text={open.value ? "▴" : "▾"}
+              fontSize={16}
+              color={open.value ? MD3.primary : MD3.onSurfaceVariant}
+              textAlign="center"
+              verticalAlign="middle"
+            />
           </f-div>
         </f-div>
 
         {renderDropdown()}
       </f-div>
     );
-  },
+  }
 });

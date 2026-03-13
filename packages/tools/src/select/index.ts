@@ -116,10 +116,23 @@ export class Select extends Group {
       }
     }
 
-    const affected = [...this.selectEls];
-    const passive = new Set<Element>();
+    const toDelete: Element[] = [...this.selectEls];
     const deletingIds = new Set(this.selectEls.map((el) => el.id));
+
     for (const el of this.selectEls) {
+      if (el.type === "group") {
+        for (const member of (el as any).groupEls ?? []) {
+          if (!deletingIds.has(member.id)) {
+            toDelete.push(member);
+            deletingIds.add(member.id);
+          }
+        }
+      }
+    }
+
+    const affected = [...toDelete];
+    const passive = new Set<Element>();
+    for (const el of toDelete) {
       for (const dep of el.getAffectedElements()) {
         if (deletingIds.has(dep.id) || affected.includes(dep)) continue;
         affected.push(dep);
@@ -130,6 +143,12 @@ export class Select extends Group {
     this.history.snapshot(affected, passive);
 
     this.selectEls.forEach((el) => {
+      if (el.type === "group") {
+        for (const member of (el as any).groupEls ?? []) {
+          (member as any).groupParent = null;
+          member.parent?.removeChild(member);
+        }
+      }
       el.parent?.removeChild(el);
     });
     this.select([]);

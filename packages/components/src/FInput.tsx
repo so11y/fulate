@@ -1,4 +1,4 @@
-import { defineComponent, ref, computed, nextTick } from "@vue/runtime-core";
+import { defineComponent, ref, computed, nextTick, watch } from "@vue/runtime-core";
 import { Display, FlexDirection, Align } from "@fulate/yoga";
 import { MD3 } from "./theme";
 
@@ -17,6 +17,7 @@ export const FInput = defineComponent({
   setup(props, { emit }) {
     const focused = ref(false);
     const textRef = ref<any>(null);
+    const divRef = ref<any>(null);
 
     const hasValue = computed(() => props.modelValue.length > 0);
     const labelFloated = computed(() => focused.value || hasValue.value);
@@ -27,49 +28,46 @@ export const FInput = defineComponent({
       return MD3.outline;
     }
 
-    function getDisplayText() {
-      if (props.modelValue) return props.modelValue;
-      if (focused.value && props.placeholder) return props.placeholder;
-      return props.modelValue;
+    function animateBorder(toColor: string, toWidth: number, duration = 150) {
+      const el = divRef.value;
+      if (!el?.animate) return;
+      el.stopAnimations?.();
+      el.animate({ borderColor: toColor, borderWidth: toWidth }, { duration });
     }
 
-    function getTextColor() {
-      if (props.disabled) return MD3.outline;
-      if (!props.modelValue && focused.value && props.placeholder)
-        return MD3.onSurfaceVariant;
-      return MD3.onSurface;
-    }
-
-    function patchTextarea(el: any) {
-      el.enterEditing();
-      if (el._textarea) {
-        el._textarea.style.border = "none";
-        el._textarea.style.background = "transparent";
+    function setFocused(value: boolean) {
+      focused.value = value;
+      if (props.disabled) return;
+      if (value) {
+        animateBorder(MD3.primary, 1.5, 150);
+      } else {
+        animateBorder(MD3.outline, 0.5, 200);
       }
     }
 
     function handleClick() {
       if (props.disabled) return;
       if (textRef.value?.enterEditing) {
-        patchTextarea(textRef.value);
-        focused.value = true;
+        textRef.value.enterEditing();
+        setFocused(true);
       } else {
-        focused.value = true;
+        setFocused(true);
         nextTick(() => {
-          if (textRef.value?.enterEditing) patchTextarea(textRef.value);
+          textRef.value?.enterEditing?.();
         });
       }
     }
 
     return () => (
       <f-div
+        ref={divRef}
         width={props.width}
         height={props.height}
         display={Display.Flex}
         flexDirection={FlexDirection.Column}
         backgroundColor={MD3.surface}
         borderColor={getBorderColor()}
-        borderWidth={focused.value ? 2 : 1}
+        borderWidth={focused.value ? 1.5 : 0.5}
         borderPosition="inside"
         radius={MD3.radiusMd}
         paddingLeft={14}
@@ -106,17 +104,20 @@ export const FInput = defineComponent({
           ) : (
             <f-text
               ref={textRef}
-              text={getDisplayText()}
+              text={props.modelValue}
+              placeholder={props.placeholder}
+              placeholderColor={MD3.onSurfaceVariant}
               fontSize={props.fontSize}
               fontFamily={MD3.fontFamily}
-              color={getTextColor()}
+              color={props.disabled ? MD3.outline : MD3.onSurface}
               verticalAlign="middle"
               editable={!props.disabled}
+              wordWrap={false}
               onInput={(e: any) => {
                 emit("update:modelValue", e.detail);
               }}
               onChange={() => {
-                focused.value = false;
+                setFocused(false);
               }}
             />
           )}
