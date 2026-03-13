@@ -142,7 +142,7 @@ export const FCheckbox = defineComponent({
             }
           />
           {isChecked.value && (
-            <f-span
+            <f-text
               left={(STATE_LAYER_SIZE - CHECK_SIZE) / 2}
               top={(STATE_LAYER_SIZE - CHECK_SIZE) / 2}
               width={CHECK_SIZE}
@@ -151,6 +151,9 @@ export const FCheckbox = defineComponent({
               fontFamily={MD3.iconFamily}
               fontSize={16}
               color={MD3.onPrimary}
+              textAlign="center"
+              verticalAlign="middle"
+              overflow="visible"
             />
           )}
         </f-div>

@@ -12,7 +12,7 @@ export const FInput = defineComponent({
     disabled: { type: Boolean, default: false },
     width: { type: Number, default: 280 },
     height: { type: Number, default: 52 },
-    fontSize: { type: Number, default: 15 }
+    fontSize: { type: Number, default: 15 },
   },
   emits: ["update:modelValue"],
   setup(props, { emit }) {
@@ -76,7 +76,7 @@ export const FInput = defineComponent({
           paddingTop={labelFloated.value ? 6 : 0}
         >
           {labelFloated.value && props.label ? (
-            <f-span
+            <f-text
               text={props.label}
               fontSize={11}
               fontFamily={MD3.fontFamily}
@@ -87,20 +87,17 @@ export const FInput = defineComponent({
         </f-div>
 
         {/* Input text */}
-        <f-div
-          display={Display.Flex}
-          alignItems={Align.Center}
-          flex={1}
-        >
+        <f-div display={Display.Flex} alignItems={Align.Center} flex={1}>
           {!labelFloated.value && props.label ? (
-            <f-span
+            <f-text
               text={props.label}
               fontSize={props.fontSize}
               fontFamily={MD3.fontFamily}
               color={MD3.onSurfaceVariant}
+              verticalAlign="middle"
             />
           ) : (
-            <f-span
+            <f-text
               ref={textRef}
               text={props.modelValue}
               placeholder={props.placeholder}
@@ -108,6 +105,7 @@ export const FInput = defineComponent({
               fontSize={props.fontSize}
               fontFamily={MD3.fontFamily}
               color={props.disabled ? MD3.outline : MD3.onSurface}
+              verticalAlign="middle"
               editable={!props.disabled}
               wordWrap={false}
               onInput={(e: any) => {
@@ -121,5 +119,5 @@ export const FInput = defineComponent({
         </f-div>
       </f-div>
     );
-  }
+  },
 });

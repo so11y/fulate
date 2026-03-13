@@ -20,6 +20,7 @@ export interface TextOption extends ShapeOption {
   wordWrap?: boolean;
   maxLines?: number;
   autoScale?: boolean;
+  overflow?: "hidden" | "visible";
   editable?: boolean;
   placeholder?: string;
   placeholderColor?: string;
@@ -61,6 +62,7 @@ export class Text extends Shape {
   lineHeight: number = 1.5;
   wordWrap: boolean = true;
   maxLines?: number;
+  overflow: "hidden" | "visible" = "hidden";
   editable: boolean = false;
   placeholder: string = "";
   placeholderColor: string = "";
@@ -190,7 +192,7 @@ export class Text extends Shape {
     );
     const resolvedHeight = this.getResolvedHeight(lineHeightPx);
 
-    const heightLimit = resolvedHeight !== undefined
+    const heightLimit = resolvedHeight !== undefined && this.overflow !== "visible"
       ? Math.max(Math.floor(resolvedHeight / lineHeightPx), 0)
       : Infinity;
     const maxLinesLimit =
