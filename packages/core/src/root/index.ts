@@ -132,7 +132,6 @@ export class Root extends Node {
 
     this._rafId = requestAnimationFrame((time) => {
 
-      console.log(1);
       this._rafId = 0;
 
       if (this.isUnmounted) return;
