@@ -42,7 +42,6 @@ export function createApp(
     app.provide("__fulate_overlay", overlay);
     app.provide("__fulate_root", root);
 
-    console.log(root,'---');
 
     origMount.call(app, container as any);
 
