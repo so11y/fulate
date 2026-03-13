@@ -22,7 +22,7 @@ export function useStateLayer(
     const el = layerRef.value;
     if (!el?.animate) return;
     el.stopAnimations?.();
-    el.animate({ backgroundColor: bg }, { duration });
+    el.animate({ backgroundColor: bg }, { duration, paintOnly: true });
   }
 
   function onMouseEnter() {

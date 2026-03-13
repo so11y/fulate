@@ -47,7 +47,13 @@ registerDemo("10w", {
     });
 
     root.append(layer, editerLayer);
+
+    const t0 = performance.now();
     root.mount();
+    root.nextTick(() => {
+      const elapsed = (performance.now() - t0).toFixed(1);
+      console.log(`[10w] ${TOTAL} 个节点 mount → 首次绘制完成：${elapsed}ms`);
+    });
 
     return () => root.unmounted();
   },

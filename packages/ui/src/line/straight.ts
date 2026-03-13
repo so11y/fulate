@@ -146,7 +146,7 @@ function getLineControlSchema(line: Line): ControlSchema {
           ? newAnchor
           : undefined;
         lineEl._syncBoundsFromPoints();
-        lineEl.markDirty();
+        lineEl.markNeedsLayout();
 
         const rect = lineEl.getBoundingRect();
         Object.assign(select, {
@@ -156,7 +156,7 @@ function getLineControlSchema(line: Line): ControlSchema {
           height: rect.height
         });
         (select as any).snapshotChildren?.();
-        select.markDirty();
+        select.markNeedsLayout();
       }
     });
   }
@@ -200,7 +200,7 @@ function getLineControlSchema(line: Line): ControlSchema {
           lineEl.linePoints[insertedIndex].x = targetX;
           lineEl.linePoints[insertedIndex].y = targetY;
           lineEl._syncBoundsFromPoints();
-          lineEl.markDirty();
+          lineEl.markNeedsLayout();
         }
 
         const rect = lineEl.getBoundingRect();
@@ -211,7 +211,7 @@ function getLineControlSchema(line: Line): ControlSchema {
           height: rect.height
         });
         (select as any).snapshotChildren?.();
-        select.markDirty();
+        select.markNeedsLayout();
       }
     });
   }

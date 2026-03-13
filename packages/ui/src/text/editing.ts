@@ -173,7 +173,7 @@ function updateTextareaPosition(self: Text) {
 function syncFromTextarea(self: Text) {
   if (!self._textarea) return;
   self.text = self._textarea.value;
-  self.markDirty();
+  self.markNeedsLayout();
   ensureCaretVisible(self);
   updateTextareaPosition(self);
   self.dispatchEvent(
@@ -186,7 +186,7 @@ function restartBlink(self: Text) {
   self._caretVisible = true;
   self._blinkTimer = setInterval(() => {
     self._caretVisible = !self._caretVisible;
-    self.markDirty();
+    self.markNeedsLayout();
   }, CARET_BLINK_MS);
 }
 
@@ -280,7 +280,7 @@ export function enterEditing(self: Text, initialClickLocal?: { x: number; y: num
         self._caretVisible = true;
         restartBlink(self);
         ensureCaretVisible(self);
-        self.markDirty();
+        self.markNeedsLayout();
         updateTextareaPosition(self);
       });
     },
@@ -310,7 +310,7 @@ export function enterEditing(self: Text, initialClickLocal?: { x: number; y: num
         self._caretVisible = true;
         restartBlink(self);
         ensureCaretVisible(self);
-        self.markDirty();
+        self.markNeedsLayout();
         updateTextareaPosition(self);
       } else {
         exitEditing(self);
@@ -336,7 +336,7 @@ export function enterEditing(self: Text, initialClickLocal?: { x: number; y: num
       );
       self._caretVisible = true;
       ensureCaretVisible(self);
-      self.markDirty();
+      self.markNeedsLayout();
     },
     { signal }
   );
@@ -357,7 +357,7 @@ export function enterEditing(self: Text, initialClickLocal?: { x: number; y: num
     { signal }
   );
 
-  self.markDirty();
+  self.markNeedsLayout();
 }
 
 export function exitEditing(self: Text) {
@@ -374,7 +374,7 @@ export function exitEditing(self: Text) {
   self._editAbort = null;
   self.isEditing = false;
   self._composing = false;
-  self.markDirty();
+  self.markNeedsLayout();
   self.dispatchEvent(
     new CustomEvent("change", { detail: self.text, bubbles: false })
   );

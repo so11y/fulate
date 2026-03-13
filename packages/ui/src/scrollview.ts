@@ -83,7 +83,7 @@ export class ScrollView extends Shape {
     if (newX === this.scrollX && newY === this.scrollY) return;
     this.scrollX = newX;
     this.scrollY = newY;
-    this.markDirty();
+    this.markNeedsLayout();
 
     const detail = { scrollX: this.scrollX, scrollY: this.scrollY };
     this.dispatchEvent(new CustomEvent("scroll", { detail }));

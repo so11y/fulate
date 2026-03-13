@@ -35,6 +35,7 @@ export interface AnimateOptions<T = any> {
   delay?: number;
   repeat?: number;
   yoyo?: boolean;
+  paintOnly?: boolean;
   onComplete?: (v: T) => void;
   onUpdate?: (v: T) => void;
 }
@@ -83,7 +84,7 @@ export class Element extends Transformable {
         if (!hasRemainingAnchor) {
           line.parent?.removeChild(line);
         } else {
-          line.markDirty();
+          line.markNeedsLayout();
         }
       }
     }
@@ -339,7 +340,7 @@ export class Element extends Transformable {
 
     this.attrs(options);
 
-    this.markDirty();
+    this.markNeedsLayout();
 
     if (syncCalc && this.isActiveed) {
       super.updateTransform(this.parent ? this.parent.isDirty : false);
@@ -356,7 +357,7 @@ export class Element extends Transformable {
     if (options.width !== undefined) this._hasExplicitWidth = true;
     if (options.height !== undefined) this._hasExplicitHeight = true;
     Object.assign(this, options);
-    this.markDirty();
+    this.markNeedsLayout();
     return this;
   }
 
@@ -383,6 +384,10 @@ export class Element extends Transformable {
       }
     }
 
+    const dirtyFn = options?.paintOnly
+      ? () => this.markPaintDirty()
+      : () => this.markNeedsLayout();
+
     const tween = new Tween(startState, this.layer.tweenGroup)
       .to(endState, options?.duration ?? 300)
       .onUpdate(() => {
@@ -392,7 +397,7 @@ export class Element extends Transformable {
             ? ColorUtil.format(startState[key])
             : startState[key];
         }
-        this.markDirty();
+        dirtyFn();
         if (options?.onUpdate) {
           options.onUpdate(this as any);
         }

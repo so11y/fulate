@@ -253,7 +253,7 @@ function commitPaste(
           }
         }
         parents[i]?.append(el);
-        el.markDirty();
+        el.markNeedsLayout();
         if (el.type === "group") {
           const members = (el as any).groupEls as Element[] ?? [];
           members.forEach((m: any) => {

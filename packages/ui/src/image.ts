@@ -32,7 +32,7 @@ export class Image extends Shape {
       this._isLoaded = true;
       if (!this.width) this.width = img.width;
       if (!this.height) this.height = img.height;
-      this.markDirty();
+      this.markNeedsLayout();
     };
   }
 

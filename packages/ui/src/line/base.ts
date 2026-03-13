@@ -34,7 +34,7 @@ export abstract class BaseLine extends Element {
 
   private _handleTransformUpdated = () => {
     if (this.syncAnchors()) {
-      this.markDirty();
+      this.markNeedsLayout();
       this.layer?.syncRbush(this as any);
     }
   };
@@ -74,7 +74,7 @@ export abstract class BaseLine extends Element {
   addPoint(x: number, y: number, anchor?: LineAnchor) {
     this.linePoints.push({ x, y, anchor });
     this._syncBoundsFromPoints();
-    this.markDirty();
+    this.markNeedsLayout();
     if (anchor && this.root) {
       const el = this.root.idElements.get(anchor.elementId);
       if (el) this._connectToElement(el);
@@ -90,13 +90,13 @@ export abstract class BaseLine extends Element {
     p.y = y;
     p.anchor = undefined;
     this._syncBoundsFromPoints();
-    this.markDirty();
+    this.markNeedsLayout();
   }
 
   insertPoint(index: number, x: number, y: number) {
     this.linePoints.splice(index, 0, { x, y });
     this._syncBoundsFromPoints();
-    this.markDirty();
+    this.markNeedsLayout();
   }
 
   removePoint(index: number) {
@@ -107,7 +107,7 @@ export abstract class BaseLine extends Element {
     }
     this.linePoints.splice(index, 1);
     this._syncBoundsFromPoints();
-    this.markDirty();
+    this.markNeedsLayout();
   }
 
   _unregisterAnchor(elementId: string) {
@@ -338,7 +338,7 @@ export abstract class BaseLine extends Element {
       this.linePoints[i].anchor = sp.anchor;
     }
     this._syncBoundsFromPoints();
-    this.markDirty();
+    this.markNeedsLayout();
   }
 
   // --- Serialization ---

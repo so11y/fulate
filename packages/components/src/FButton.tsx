@@ -61,7 +61,7 @@ export const FButton = defineComponent({
       const el = divRef.value;
       if (!el?.animate) return;
       el.stopAnimations?.();
-      el.animate(target, { duration });
+      el.animate(target, { duration, paintOnly: true });
     }
 
     function getTextColor() {

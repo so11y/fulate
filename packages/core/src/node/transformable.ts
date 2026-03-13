@@ -353,7 +353,7 @@ export class Transformable extends Node {
     );
     //@ts-ignore
     this.setOptions({ left: center.x, top: center.y });
-    this.markDirty();
+    this.markNeedsLayout();
     return this;
   }
 
@@ -385,7 +385,15 @@ export class Transformable extends Node {
     this._inverseOwnMatrixCache = null;
   }
 
-  markDirty() {
+  markPaintDirty() {
+    if (this.layer) {
+      this.layer.addDirtyNode(this as any);
+      this.layer.requestRender?.();
+    }
+    return this;
+  }
+
+  markNeedsLayout() {
     if (this.isDirty) return this;
 
     this.isDirty = true;

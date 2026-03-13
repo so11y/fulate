@@ -34,17 +34,31 @@ export class Shape extends Element {
     return super.quickSetOptions(options);
   }
 
+  setPaint(
+    options: Partial<
+      Pick<ShapeOption, "backgroundColor" | "borderColor" | "opacity">
+    >
+  ) {
+    Object.assign(this, options);
+    this.markPaintDirty();
+    return this;
+  }
+
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
     if (!this.visible) return;
 
-    ctx.save();
+    const needsSave = this.opacity < 1;
+    if (needsSave) ctx.save();
+
     this.applyPaintTransform(ctx);
-    if (this.opacity < 1) ctx.globalAlpha *= this.opacity;
+    if (needsSave) ctx.globalAlpha *= this.opacity;
+
     this.paintBackground(ctx);
     this.paintContent(ctx);
     this.paintBorder(ctx);
     this.paintChildren(ctx);
-    ctx.restore();
+
+    if (needsSave) ctx.restore();
   }
 
   /** 定义形状路径（width × height），hover 复用此路径 */

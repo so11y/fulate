@@ -210,7 +210,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
         }
         this.width = layout.width;
         this.height = layout.height;
-        this.markDirty();
+        this.markNeedsLayout();
         this.children?.forEach((v) => v.computedLayout?.());
       }
       return this;

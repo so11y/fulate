@@ -31,7 +31,7 @@ export class LineTool extends Element {
     this.mousePos = null;
     this.nearestAnchor = null;
     this.root.container.style.cursor = "crosshair";
-    this.markDirty();
+    this.markNeedsLayout();
   }
 
   stopDrawing() {
@@ -43,7 +43,7 @@ export class LineTool extends Element {
     this.mousePos = null;
     this.nearestAnchor = null;
     this.root.container.style.cursor = "default";
-    this.markDirty();
+    this.markNeedsLayout();
   }
 
   mounted() {
@@ -104,7 +104,7 @@ export class LineTool extends Element {
       }
 
       this.tempPoints.push(pointData);
-      this.markDirty();
+      this.markNeedsLayout();
 
       if (this.nearestAnchor && this.tempPoints.length >= 2) {
         this.stopDrawing();
@@ -120,7 +120,7 @@ export class LineTool extends Element {
       if (!this.isDrawingMode) return;
       this.mousePos = { x: e.detail.x, y: e.detail.y };
       this._detectAnchor(e.detail.x, e.detail.y);
-      this.markDirty();
+      this.markNeedsLayout();
     };
 
     this.root.addEventListener("pointermove", onPointerMove);

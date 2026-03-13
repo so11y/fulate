@@ -58,12 +58,12 @@ export class RippleOverlay extends Shape {
     const tween = new Tween(ripple, this.layer.tweenGroup)
       .to({ radius: maxRadius, opacity: 0 }, this.duration)
       .easing(Easing.Quadratic.Out)
-      .onUpdate(() => this.markDirty())
+      .onUpdate(() => this.markPaintDirty())
       .onComplete(() => {
         const idx = this._ripples.indexOf(ripple);
         if (idx >= 0) this._ripples.splice(idx, 1);
         this.layer.tweenGroup.remove(tween);
-        this.markDirty();
+        this.markPaintDirty();
       })
       .start();
 
