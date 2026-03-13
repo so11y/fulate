@@ -425,6 +425,7 @@ export class Element extends Transformable {
       });
       tween.onStop(() => {
         cleanup();
+        layer.tweenGroup.remove(tween);
         resolve();
       });
     }) as Promise<void> & { tween: Tween<any> };

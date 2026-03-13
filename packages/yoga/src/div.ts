@@ -132,6 +132,7 @@ const ExtractKey = new Set([
 
 export interface DivMixin {
   yogaNode?: ReturnType<typeof Yoga.Node.create>;
+  scheduleLayout(): void;
   layout(): this;
   computedLayout(): this;
   flushStyles(): this;
@@ -183,9 +184,31 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       super.setOptions(options as any, syncCalc);
       this.flushStyles();
       if (this.isActiveed) {
-        this.inject("yoga-root").layout();
+        if (syncCalc) {
+          this.inject("yoga-root").layout();
+        } else {
+          this.inject("yoga-root").scheduleLayout();
+        }
       }
       return this;
+    }
+
+    private _layoutScheduled = false;
+
+    scheduleLayout() {
+      const yogaRoot = this.inject("yoga-root");
+      if (yogaRoot && yogaRoot !== this) {
+        yogaRoot.scheduleLayout();
+        return;
+      }
+      if (this._layoutScheduled) return;
+      this._layoutScheduled = true;
+      queueMicrotask(() => {
+        this._layoutScheduled = false;
+        if (this.isActiveed && !this.isUnmounted) {
+          this.layout();
+        }
+      });
     }
 
     layout() {
@@ -220,10 +243,13 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       if (!refChild) return this.append(newChild);
       super.insertBefore(newChild, refChild);
       if (this.isActiveed && (newChild as any).yogaNode) {
-        const idx = this.children?.indexOf(newChild as any) ?? -1;
-        if (idx !== -1) {
-          this.yogaNode.insertChild((newChild as any).yogaNode, idx);
+        let yogaIdx = 0;
+        for (const child of this.children) {
+          if (child === newChild) break;
+          if ((child as any).yogaNode) yogaIdx++;
         }
+        this.yogaNode.insertChild((newChild as any).yogaNode, yogaIdx);
+        this.inject("yoga-root")?.scheduleLayout();
       }
       return this;
     }
@@ -232,22 +258,28 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       super.append(...(children as any[]));
       if (this.isActiveed) {
         let yogaIndex = this.yogaNode.getChildCount();
+        let hasYoga = false;
         children.forEach((child: any) => {
           if (child.yogaNode) {
             this.yogaNode.insertChild(child.yogaNode, yogaIndex++);
+            hasYoga = true;
           }
         });
+        if (hasYoga) this.inject("yoga-root")?.scheduleLayout();
       }
       return this;
     }
 
     removeChild(...children: Node[]): this {
+      let hasYoga = false;
       children.forEach((child: any) => {
         if (child.yogaNode && this.yogaNode) {
           this.yogaNode.removeChild(child.yogaNode);
+          hasYoga = true;
         }
       });
       super.removeChild(...(children as any[]));
+      if (hasYoga) this.inject("yoga-root")?.scheduleLayout();
       return this;
     }
 
@@ -364,15 +396,24 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
 
     unmounted() {
+      const parent = this.parent as any;
+      const yogaRoot = this.isActiveed ? this.inject("yoga-root") : null;
+      const needsRelayout = yogaRoot && yogaRoot !== this && !yogaRoot.isUnmounted;
+
       if (this.yogaNode) {
         this.children?.forEach((child: any) => {
           if (child.yogaNode) {
             this.yogaNode.removeChild(child.yogaNode);
           }
         });
+        if (parent?.yogaNode) {
+          parent.yogaNode.removeChild(this.yogaNode);
+        }
       }
       super.unmounted();
       this.yogaNode?.free();
+
+      if (needsRelayout) yogaRoot.scheduleLayout();
     }
   }
 
