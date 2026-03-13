@@ -34,4 +34,5 @@ export const MD3 = {
   // Typography
   fontSize: 14,
   fontFamily: "Roboto, system-ui, -apple-system, sans-serif",
+  iconFamily: "Material Symbols Outlined",
 };

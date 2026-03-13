@@ -1,6 +1,7 @@
-import { defineComponent, ref, computed, nextTick, watch } from "@vue/runtime-core";
+import { defineComponent, ref, computed, nextTick } from "@vue/runtime-core";
 import { Display, FlexDirection, Align } from "@fulate/yoga";
 import { MD3 } from "./theme";
+import { getBorderColor } from "./util";
 
 export const FInput = defineComponent({
   name: "FInput",
@@ -11,7 +12,7 @@ export const FInput = defineComponent({
     disabled: { type: Boolean, default: false },
     width: { type: Number, default: 280 },
     height: { type: Number, default: 52 },
-    fontSize: { type: Number, default: 15 },
+    fontSize: { type: Number, default: 15 }
   },
   emits: ["update:modelValue"],
   setup(props, { emit }) {
@@ -21,12 +22,6 @@ export const FInput = defineComponent({
 
     const hasValue = computed(() => props.modelValue.length > 0);
     const labelFloated = computed(() => focused.value || hasValue.value);
-
-    function getBorderColor() {
-      if (props.disabled) return MD3.outlineVariant;
-      if (focused.value) return MD3.primary;
-      return MD3.outline;
-    }
 
     function animateBorder(toColor: string, toWidth: number, duration = 150) {
       const el = divRef.value;
@@ -66,7 +61,7 @@ export const FInput = defineComponent({
         display={Display.Flex}
         flexDirection={FlexDirection.Column}
         backgroundColor={MD3.surface}
-        borderColor={getBorderColor()}
+        borderColor={getBorderColor(props.disabled, focused.value)}
         borderWidth={focused.value ? 1.5 : 0.5}
         borderPosition="inside"
         radius={MD3.radiusMd}
@@ -81,7 +76,7 @@ export const FInput = defineComponent({
           paddingTop={labelFloated.value ? 6 : 0}
         >
           {labelFloated.value && props.label ? (
-            <f-text
+            <f-span
               text={props.label}
               fontSize={11}
               fontFamily={MD3.fontFamily}
@@ -92,17 +87,20 @@ export const FInput = defineComponent({
         </f-div>
 
         {/* Input text */}
-        <f-div display={Display.Flex} alignItems={Align.Center} flex={1}>
+        <f-div
+          display={Display.Flex}
+          alignItems={Align.Center}
+          flex={1}
+        >
           {!labelFloated.value && props.label ? (
-            <f-text
+            <f-span
               text={props.label}
               fontSize={props.fontSize}
               fontFamily={MD3.fontFamily}
               color={MD3.onSurfaceVariant}
-              verticalAlign="middle"
             />
           ) : (
-            <f-text
+            <f-span
               ref={textRef}
               text={props.modelValue}
               placeholder={props.placeholder}
@@ -110,7 +108,6 @@ export const FInput = defineComponent({
               fontSize={props.fontSize}
               fontFamily={MD3.fontFamily}
               color={props.disabled ? MD3.outline : MD3.onSurface}
-              verticalAlign="middle"
               editable={!props.disabled}
               wordWrap={false}
               onInput={(e: any) => {
@@ -124,5 +121,5 @@ export const FInput = defineComponent({
         </f-div>
       </f-div>
     );
-  },
+  }
 });

@@ -3,14 +3,12 @@ import {
   ref,
   computed,
   nextTick,
-  inject,
-  Teleport,
-  type PropType,
-  onMounted,
-  onUnmounted
+  type PropType
 } from "@vue/runtime-core";
 import { Display, FlexDirection, Align, Justify } from "@fulate/yoga";
 import { MD3 } from "./theme";
+import { FTooltip } from "./FTooltip";
+import { getBorderColor } from "./util";
 
 export interface SelectOption {
   label: string;
@@ -34,28 +32,10 @@ export const FSelect = defineComponent({
   },
   emits: ["update:modelValue"],
   setup(props, { emit }) {
-    const overlay = inject<any>("__fulate_overlay", null);
-    const fulateRoot = inject<any>("__fulate_root", null);
     const open = ref(false);
-    const showDropdown = ref(false);
     const hoveredIndex = ref(-1);
     const triggerRef = ref<any>(null);
-    const dropdownRef = ref<any>(null);
     const rippleRef = ref<any>(null);
-
-    let removeRootListener: (() => void) | null = null;
-
-    onMounted(() => {
-      removeRootListener = fulateRoot.addEventListener(
-        "pointerdown",
-        onRootPointerDown
-      );
-    });
-
-    onUnmounted(() => {
-      removeRootListener?.();
-      removeRootListener = null;
-    });
 
     const selectedLabel = computed(() => {
       const found = props.options.find((o) => o.value === props.modelValue);
@@ -80,56 +60,10 @@ export const FSelect = defineComponent({
       return MD3.onSurface;
     }
 
-    function getBorderColor() {
-      if (props.disabled) return MD3.outlineVariant;
-      if (open.value) return MD3.primary;
-      return MD3.outline;
-    }
-
-    function syncDropdownPosition() {
-      const trigger = triggerRef.value;
-      const dropdown = dropdownRef.value;
-      if (!trigger || !dropdown) return;
-      const m = trigger.getOwnMatrix?.();
-      if (!m) return;
-      dropdown.left = m.e;
-      dropdown.top = m.f + (trigger.height ?? props.height) + 4;
-      dropdown.markDirty?.();
-    }
-
-    function isDescendantOf(node: any, ancestor: any): boolean {
-      let cur = node;
-      while (cur) {
-        if (cur === ancestor) return true;
-        cur = cur.parent;
-      }
-      return false;
-    }
-
-    function onRootPointerDown(e: any) {
-      if (!open.value) return;
-      const target = e.detail?.target;
-      if (!target) return;
-      if (isDescendantOf(target, triggerRef.value)) return;
-      if (isDescendantOf(target, dropdownRef.value)) return;
-      doClose();
-    }
-
-    function doOpen() {
-      open.value = true;
-      showDropdown.value = true;
-      nextTick(() => {
-        syncDropdownPosition();
-        const el = dropdownRef.value;
-        if (el) el.opacity = 1;
-      });
-    }
-
     function doClose() {
       if (!open.value) return;
       open.value = false;
       hoveredIndex.value = -1;
-      showDropdown.value = false;
     }
 
     function toggle(e?: any) {
@@ -137,7 +71,7 @@ export const FSelect = defineComponent({
       if (open.value) {
         doClose();
       } else {
-        doOpen();
+        open.value = true;
         if (e?.detail) {
           rippleRef.value?.trigger(e.detail.x, e.detail.y);
         }
@@ -148,65 +82,6 @@ export const FSelect = defineComponent({
       emit("update:modelValue", value);
       nextTick(() => doClose());
     }
-
-    const renderDropdown = () => {
-      if (!showDropdown.value) return null;
-
-      const dropdown = (
-        <f-scrollview
-          ref={dropdownRef}
-          width={props.width}
-          maxHeight={maxDropdownHeight.value}
-          opacity={0}
-          backgroundColor={MD3.surface}
-          radius={MD3.radiusSm}
-          borderColor={MD3.outlineVariant}
-          borderWidth={0.5}
-          borderPosition="inside"
-          scrollbarSize={4}
-          scrollbarColor="rgba(0,0,0,0.15)"
-        >
-          {props.options.map((opt, i) => (
-            <f-rectangle
-              key={opt.value}
-              left={0}
-              top={i * ITEM_HEIGHT + 6}
-              width={props.width}
-              height={ITEM_HEIGHT}
-              backgroundColor={
-                opt.value === props.modelValue
-                  ? MD3.primaryContainer
-                  : hoveredIndex.value === i
-                    ? MD3.surfaceDim
-                    : "transparent"
-              }
-              cursor="pointer"
-              onClick={() => select(opt.value)}
-              onPointermove={() => {
-                hoveredIndex.value = i;
-              }}
-            >
-              <f-text
-                left={14}
-                text={opt.label}
-                fontSize={props.fontSize}
-                fontFamily={MD3.fontFamily}
-                color={
-                  opt.value === props.modelValue ? MD3.primary : MD3.onSurface
-                }
-                fontWeight={opt.value === props.modelValue ? 600 : 400}
-                verticalAlign="middle"
-              />
-            </f-rectangle>
-          ))}
-        </f-scrollview>
-      );
-
-      if (overlay) {
-        return <Teleport to={overlay}>{dropdown}</Teleport>;
-      }
-      return dropdown;
-    };
 
     return () => (
       <f-div
@@ -224,7 +99,7 @@ export const FSelect = defineComponent({
           height={props.height}
           backgroundColor={MD3.surface}
           radius={MD3.radiusMd}
-          borderColor={getBorderColor()}
+          borderColor={getBorderColor(props.disabled, open.value)}
           borderWidth={open.value ? 1.5 : 0.5}
           borderPosition="inside"
           paddingLeft={14}
@@ -239,7 +114,6 @@ export const FSelect = defineComponent({
             duration={400}
           />
 
-          {/* Content column: label + text */}
           <f-div
             flex={1}
             display={Display.Flex}
@@ -282,7 +156,6 @@ export const FSelect = defineComponent({
             </f-div>
           </f-div>
 
-          {/* Arrow - always vertically centered */}
           <f-div
             width={24}
             flexShrink={0}
@@ -297,7 +170,47 @@ export const FSelect = defineComponent({
           </f-div>
         </f-div>
 
-        {renderDropdown()}
+        <FTooltip
+          visible={open.value}
+          triggerRef={triggerRef}
+          width={props.width}
+          maxHeight={maxDropdownHeight.value}
+          onClickOutside={doClose}
+        >
+          {props.options.map((opt, i) => (
+            <f-rectangle
+              key={opt.value}
+              left={0}
+              top={i * ITEM_HEIGHT + 6}
+              width={props.width}
+              height={ITEM_HEIGHT}
+              backgroundColor={
+                opt.value === props.modelValue
+                  ? MD3.primaryContainer
+                  : hoveredIndex.value === i
+                    ? MD3.surfaceDim
+                    : "transparent"
+              }
+              cursor="pointer"
+              onClick={() => select(opt.value)}
+              onPointermove={() => {
+                hoveredIndex.value = i;
+              }}
+            >
+              <f-text
+                left={14}
+                text={opt.label}
+                fontSize={props.fontSize}
+                fontFamily={MD3.fontFamily}
+                color={
+                  opt.value === props.modelValue ? MD3.primary : MD3.onSurface
+                }
+                fontWeight={opt.value === props.modelValue ? 600 : 400}
+                verticalAlign="middle"
+              />
+            </f-rectangle>
+          ))}
+        </FTooltip>
       </f-div>
     );
   }

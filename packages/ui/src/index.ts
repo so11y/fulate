@@ -1,3 +1,10 @@
+export {
+  getMeasureContext,
+  measureStringWidth,
+  getCharWidth,
+  preCalculateChars,
+} from "./text/measure";
+export { wrapText } from "./text/layout";
 export { Rectangle } from "./rectangle";
 export { Circle } from "./circle";
 export { Triangle } from "./triangle";

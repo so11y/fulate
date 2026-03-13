@@ -4,7 +4,6 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "vite",
     "playground": "vite --config packages/playground/vite.config.ts"
   },
   "devDependencies": {

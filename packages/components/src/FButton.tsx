@@ -7,20 +7,9 @@ import {
 import { Display, Justify, Align } from "@fulate/yoga";
 import { ColorUtil } from "@fulate/util";
 import { MD3 } from "./theme";
+import { measureText } from "./util";
 
 type ButtonVariant = "filled" | "outlined" | "text";
-
-let _measureCtx: CanvasRenderingContext2D | null = null;
-function measureText(
-  text: string,
-  fontSize: number,
-  fontWeight: number = 500
-): number {
-  if (!_measureCtx)
-    _measureCtx = document.createElement("canvas").getContext("2d")!;
-  _measureCtx.font = `${fontWeight} ${fontSize}px ${MD3.fontFamily}`;
-  return Math.ceil(_measureCtx.measureText(text).width);
-}
 
 function getRestBg(variant: ButtonVariant, color: string, disabled: boolean) {
   if (disabled)
