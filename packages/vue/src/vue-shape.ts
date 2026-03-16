@@ -44,7 +44,7 @@ export class VueShape extends Shape {
     this._reactiveProps = reactive({ ...this._compProps });
     this._sizeRef = reactive({
       width: this.width ?? 0,
-      height: this.height ?? 0,
+      height: this.height ?? 0
     });
     const rp = this._reactiveProps;
     const Comp = this._comp!;
@@ -52,7 +52,7 @@ export class VueShape extends Shape {
     const Wrapper = defineComponent({
       setup() {
         return () => h(Comp, rp);
-      },
+      }
     });
 
     this._app = baseCreateApp(Wrapper);
@@ -160,8 +160,7 @@ export function fromVueToFulate(
     }
   }
 
-  const el = new VueShape(shapeOpts);
-  markRaw(el);
+  const el = markRaw(new VueShape(shapeOpts));
   el._comp = comp;
   el._compName = (comp as any).name ?? "";
   if (el._compName) {
