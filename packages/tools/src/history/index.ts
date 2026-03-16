@@ -1,4 +1,4 @@
-import { Element, BaseElementOption, Node } from "@fulate/core";
+import { Element, BaseElementOption, Node, TransformableOptions } from "@fulate/core";
 import type { Root } from "@fulate/core";
 import type { Select } from "../select/index";
 
@@ -18,18 +18,40 @@ interface HistoryRecord {
   passive?: boolean;
 }
 
+type SelectTransform = Required<
+  Pick<
+    TransformableOptions,
+    "left" | "top" | "width" | "height" | "angle" | "scaleX" | "scaleY" | "skewX" | "skewY"
+  >
+>;
+
+interface SelectSnapshot extends SelectTransform {
+  selectEls: Element[];
+}
+
+interface HistoryBatch {
+  records: HistoryRecord[];
+  selectPrev: SelectSnapshot;
+  selectNext: SelectSnapshot;
+}
+
 interface ActionRecord {
   undo: () => void;
   redo: () => void;
 }
 
-type HistoryEntry = HistoryRecord[] | ActionRecord;
+type HistoryEntry = HistoryBatch | ActionRecord;
+
+function isActionRecord(entry: HistoryEntry): entry is ActionRecord {
+  return "undo" in entry;
+}
 
 export class HistoryManager {
   private undoStack: HistoryEntry[] = [];
   private redoStack: HistoryEntry[] = [];
   private snapshotMap = new Map<Element, ElementState>();
   private _passiveElements?: Set<Element>;
+  private _selectPrev: SelectSnapshot | null = null;
   private limit: number;
   root?: Root;
 
@@ -51,9 +73,58 @@ export class HistoryManager {
     };
   }
 
+  private getSelectSnapshot(): SelectSnapshot {
+    const select = this.root!.find<Select>("select");
+    if (!select) {
+      return {
+        selectEls: [], left: 0, top: 0, width: 0, height: 0,
+        angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0
+      };
+    }
+    return {
+      selectEls: [...select.selectEls],
+      left: select.left,
+      top: select.top,
+      width: select.width ?? 0,
+      height: select.height ?? 0,
+      angle: select.angle,
+      scaleX: select.scaleX,
+      scaleY: select.scaleY,
+      skewX: select.skewX,
+      skewY: select.skewY
+    };
+  }
+
+  private restoreSelect(snapshot: SelectSnapshot) {
+    const select = this.root!.find<Select>("select");
+    if (!select) return;
+
+    select.selectEls = snapshot.selectEls;
+    select.currentControl = null as any;
+    select.hoverElement = null;
+
+    if (!snapshot.selectEls.length) {
+      select.setOptions({ width: 0, height: 0 });
+    } else {
+      select.setOptions({
+        left: snapshot.left,
+        top: snapshot.top,
+        width: snapshot.width,
+        height: snapshot.height,
+        angle: snapshot.angle,
+        scaleX: snapshot.scaleX,
+        scaleY: snapshot.scaleY,
+        skewX: snapshot.skewX,
+        skewY: snapshot.skewY
+      });
+      select.snapshotChildren();
+    }
+  }
+
   snapshot(elements: Element[], passiveElements?: Set<Element>) {
     this.snapshotMap.clear();
     this._passiveElements = passiveElements;
+    this._selectPrev = this.getSelectSnapshot();
     elements.forEach((el) => {
       this.snapshotMap.set(el, this.getState(el));
     });
@@ -91,7 +162,12 @@ export class HistoryManager {
     });
 
     if (changes.length > 0) {
-      this.undoStack.push(changes);
+      const batch: HistoryBatch = {
+        records: changes,
+        selectPrev: this._selectPrev!,
+        selectNext: this.getSelectSnapshot()
+      };
+      this.undoStack.push(batch);
       if (this.undoStack.length > this.limit) {
         this.undoStack.shift();
       }
@@ -100,6 +176,7 @@ export class HistoryManager {
 
     this.snapshotMap.clear();
     this._passiveElements = undefined;
+    this._selectPrev = null;
   }
 
   pushAction(undo: () => void, redo: () => void) {
@@ -117,53 +194,50 @@ export class HistoryManager {
     } else {
       const ref = parent.children[index];
       if (ref !== element) {
-        // 防止重复插入自身
         parent.insertBefore(element, ref);
       }
     }
   }
 
   private executeHistory(config: {
-    sourceStack: any[];
-    targetStack: any[];
-    isReverse: boolean; // 控制遍历方向
-    getData: (record: any) => {
-      state: any;
+    sourceStack: HistoryEntry[];
+    targetStack: HistoryEntry[];
+    isReverse: boolean;
+    selectKey: "selectPrev" | "selectNext";
+    getData: (record: HistoryRecord) => {
+      state: ElementState;
       isInsert: boolean;
       isRemove: boolean;
     };
   }) {
-    const records = config.sourceStack.pop();
-    if (!records) return;
+    const entry = config.sourceStack.pop() as HistoryBatch;
+    if (!entry) return;
 
-    config.targetStack.push(records);
+    config.targetStack.push(entry);
 
-    const selectedElements: Element[] = [];
-
+    const { records } = entry;
     const start = config.isReverse ? records.length - 1 : 0;
     const end = config.isReverse ? -1 : records.length;
     const step = config.isReverse ? -1 : 1;
 
     for (let i = start; i !== end; i += step) {
       const record = records[i];
-      const { element, type } = record;
       const { state, isInsert, isRemove } = config.getData(record);
 
       if (isRemove) {
-        element.parent?.removeChild(element);
+        record.element.parent?.removeChild(record.element);
       } else if (isInsert) {
         if (state.parent)
-          this.insertElementAt(state.parent, element, state.index);
-        element.quickSetOptions(state.props);
-        if (!record.passive) selectedElements.push(element);
+          this.insertElementAt(state.parent, record.element, state.index);
+        record.element.quickSetOptions(state.props);
       } else {
-        element.quickSetOptions(state.props);
-        if (!record.passive) selectedElements.push(element);
+        record.element.quickSetOptions(state.props);
       }
     }
 
+    const snapshot = entry[config.selectKey];
     this.root.nextTick(() => {
-      this.root.find<Select>("select")?.select(selectedElements);
+      this.restoreSelect(snapshot);
     });
   }
 
@@ -171,7 +245,7 @@ export class HistoryManager {
     const entry = this.undoStack[this.undoStack.length - 1];
     if (!entry) return;
 
-    if (!Array.isArray(entry)) {
+    if (isActionRecord(entry)) {
       this.undoStack.pop();
       this.redoStack.push(entry);
       entry.undo();
@@ -182,6 +256,7 @@ export class HistoryManager {
       sourceStack: this.undoStack,
       targetStack: this.redoStack,
       isReverse: true,
+      selectKey: "selectPrev",
       getData: (r) => ({
         state: r.prev,
         isInsert: r.type === "delete",
@@ -194,7 +269,7 @@ export class HistoryManager {
     const entry = this.redoStack[this.redoStack.length - 1];
     if (!entry) return;
 
-    if (!Array.isArray(entry)) {
+    if (isActionRecord(entry)) {
       this.redoStack.pop();
       this.undoStack.push(entry);
       entry.redo();
@@ -205,6 +280,7 @@ export class HistoryManager {
       sourceStack: this.redoStack,
       targetStack: this.undoStack,
       isReverse: false,
+      selectKey: "selectNext",
       getData: (r) => ({
         state: r.next,
         isInsert: r.type === "create",

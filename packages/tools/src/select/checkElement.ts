@@ -26,6 +26,8 @@ export function checkElement(
     group = resolved.inject("group") as Element | undefined;
   }
 
+  if (resolved !== object && excludes.includes(resolved)) return;
+
   const layer = object.inject("layer") as any;
   if (layer?.type !== "artboard") {
     if (
