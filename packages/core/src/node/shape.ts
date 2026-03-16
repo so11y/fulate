@@ -256,8 +256,10 @@ export class Shape extends Element {
     ctx.save();
     this.applyPaintTransform(ctx);
     this.buildPath(ctx);
+    ctx.clip();
+    this.buildPath(ctx);
     ctx.strokeStyle = "#4F81FF";
-    ctx.lineWidth = 1 / scale;
+    ctx.lineWidth = 2 / scale;
     ctx.stroke();
     ctx.restore();
   }

@@ -174,8 +174,15 @@ export class Element extends Transformable {
       ctx.lineTo(coords[i].x, coords[i].y);
     }
     ctx.closePath();
+    ctx.clip();
+    ctx.beginPath();
+    ctx.moveTo(coords[0].x, coords[0].y);
+    for (let i = 1; i < coords.length; i++) {
+      ctx.lineTo(coords[i].x, coords[i].y);
+    }
+    ctx.closePath();
     ctx.strokeStyle = "#4F81FF";
-    ctx.lineWidth = 1 / scale;
+    ctx.lineWidth = 2 / scale;
     ctx.stroke();
     ctx.restore();
   }

@@ -2,13 +2,12 @@ import {
   defineComponent,
   ref,
   nextTick,
-  inject,
   Teleport,
   onMounted,
   onUnmounted,
 } from "@vue/runtime-core";
 import { MD3 } from "./theme";
-import { isDescendantOf, syncPosition } from "./util";
+import { useOverlay, isDescendantOf, syncPosition } from "./util";
 
 export const FTooltip = defineComponent({
   name: "FTooltip",
@@ -21,8 +20,7 @@ export const FTooltip = defineComponent({
   },
   emits: ["clickOutside"],
   setup(props, { emit, slots }) {
-    const overlay = inject<any>("__fulate_overlay", null);
-    const fulateRoot = inject<any>("__fulate_root", null);
+    const { overlay, fulateRoot } = useOverlay();
     const floatingRef = ref<any>(null);
 
     let removeListener: (() => void) | null = null;

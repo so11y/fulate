@@ -145,6 +145,8 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
 ): new (...args: ConstructorParameters<T>) => DivMixin & InstanceType<T> {
   class Div extends Node implements YogaOption {
     yogaNode? = Yoga.Node.create();
+
+    private _layoutScheduled = false;
     declare children: any[];
 
     attrs(options: any): void {
@@ -192,8 +194,6 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       }
       return this;
     }
-
-    private _layoutScheduled = false;
 
     scheduleLayout() {
       const yogaRoot = this.inject("yoga-root");
@@ -302,8 +302,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
 
       !isNil(options.justifyContent) &&
         this.yogaNode.setJustifyContent(options.justifyContent);
-      !isNil(options.alignContent) &&
-        this.yogaNode.setAlignContent(options.alignContent);
+      this.yogaNode.setAlignContent(options.alignContent ?? Align.Stretch);
       !isNil(options.alignItems) &&
         this.yogaNode.setAlignItems(options.alignItems);
       !isNil(options.alignSelf) &&
@@ -316,8 +315,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       !isNil(options.flexDirection) &&
         this.yogaNode.setFlexDirection(options.flexDirection);
       !isNil(options.flexGrow) && this.yogaNode.setFlexGrow(options.flexGrow);
-      !isNil(options.flexShrink) &&
-        this.yogaNode.setFlexShrink(options.flexShrink);
+      this.yogaNode.setFlexShrink(options.flexShrink ?? 1);
       !isNil(options.flexWrap) && this.yogaNode.setFlexWrap(options.flexWrap);
       !isNil(options.gap) && this.yogaNode.setGap(Gutter.All, options.gap);
 
@@ -398,7 +396,8 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     unmounted() {
       const parent = this.parent as any;
       const yogaRoot = this.isActiveed ? this.inject("yoga-root") : null;
-      const needsRelayout = yogaRoot && yogaRoot !== this && !yogaRoot.isUnmounted;
+      const needsRelayout =
+        yogaRoot && yogaRoot !== this && !yogaRoot.isUnmounted;
 
       if (this.yogaNode) {
         this.children?.forEach((child: any) => {

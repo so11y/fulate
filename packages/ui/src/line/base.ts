@@ -159,6 +159,23 @@ export abstract class BaseLine extends Element {
     return changed;
   }
 
+  pruneStaleAnchors(): void {
+    if (!this.root) return;
+    for (const p of [this.headPoint, this.tailPoint]) {
+      if (!p.anchor) continue;
+      const el = this.root.idElements.get(p.anchor.elementId);
+      if (!el) {
+        p.anchor = undefined;
+        continue;
+      }
+      const pos = getElementAnchorPoint(el, p.anchor.anchorType);
+      if (Math.abs(pos.x - p.x) > 0.01 || Math.abs(pos.y - p.y) > 0.01) {
+        this._unregisterAnchor(p.anchor.elementId);
+        p.anchor = undefined;
+      }
+    }
+  }
+
   // --- Options (translation + history restore) ---
 
   private _syncConnectedLines(

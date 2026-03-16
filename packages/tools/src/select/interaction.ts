@@ -160,6 +160,9 @@ function handleSelectMove(select: Select, e: FulateEvent) {
     () => {
       select.root.removeEventListener("pointermove", pointermove);
       select.snapTool?.stop();
+      for (const el of select.selectEls) {
+        (el as any).pruneStaleAnchors?.();
+      }
       select.history.commit();
     },
     { once: true }

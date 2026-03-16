@@ -18,4 +18,4 @@ export type {
 } from "./select/controls";
 export { alignElements } from "./select/align";
 export type { AlignType } from "./select/align";
-export { copyElements, pasteElements } from "./select/clipboard";
+export { copyElements, pasteElements, setVueShapeBridge } from "./select/clipboard";

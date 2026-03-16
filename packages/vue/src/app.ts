@@ -39,9 +39,11 @@ export function createApp(
     root.append(container);
     root.append(overlay);
 
+    (root as any)._overlay = overlay;
+    (root as any)._container = container;
+
     app.provide("__fulate_overlay", overlay);
     app.provide("__fulate_root", root);
-
 
     origMount.call(app, container as any);
 
