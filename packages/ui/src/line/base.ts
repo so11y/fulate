@@ -357,6 +357,11 @@ export abstract class BaseLine extends Element {
 
   // --- Connected-lines lifecycle ---
 
+  rebindAnchors() {
+    this._bindEndpoints(false);
+    this._bindEndpoints(true);
+  }
+
   private _bindEndpoints(connect: boolean) {
     const action = connect
       ? (el: Element) => this._connectToElement(el)

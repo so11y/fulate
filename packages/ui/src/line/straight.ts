@@ -145,6 +145,9 @@ function getLineControlSchema(line: Line): ControlSchema {
         lineEl.linePoints[ptIndex].anchor = isEndpoint
           ? newAnchor
           : undefined;
+        if (prevAnchor?.elementId !== newAnchor?.elementId) {
+          lineEl.rebindAnchors();
+        }
         lineEl._syncBoundsFromPoints();
         lineEl.markNeedsLayout();
 

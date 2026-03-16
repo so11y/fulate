@@ -72,6 +72,9 @@ function remapAnchors(newEls: Element[], idMap: Map<string, string>) {
         p.anchor = undefined;
       }
     }
+    if (typeof (el as any).rebindAnchors === "function") {
+      (el as any).rebindAnchors();
+    }
   }
 }
 
