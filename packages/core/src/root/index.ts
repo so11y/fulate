@@ -150,6 +150,9 @@ export class Root extends Node {
         l.flushUpdate();
       }
       for (const l of this.layers) {
+        l.flushPostUpdate();
+      }
+      for (const l of this.layers) {
         l.flushSyncNodes();
       }
       for (const l of this._pendingLayers) {

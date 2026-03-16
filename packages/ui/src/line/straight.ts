@@ -16,6 +16,7 @@ export class Line extends BaseLine {
     this.root.applyViewPointTransform(ctx);
 
     const scale = this.root.viewport.scale;
+    const wp = this.getWorldLinePoints();
 
     ctx.strokeStyle = this.strokeColor;
     ctx.lineWidth = this.strokeWidth / scale;
@@ -23,15 +24,15 @@ export class Line extends BaseLine {
     ctx.lineJoin = "round";
 
     ctx.beginPath();
-    ctx.moveTo(this.linePoints[0].x, this.linePoints[0].y);
-    for (let i = 1; i < this.linePoints.length; i++) {
-      ctx.lineTo(this.linePoints[i].x, this.linePoints[i].y);
+    ctx.moveTo(wp[0].x, wp[0].y);
+    for (let i = 1; i < wp.length; i++) {
+      ctx.lineTo(wp[i].x, wp[i].y);
     }
     ctx.stroke();
 
     const pointSize = 3 / scale;
-    const first = this.linePoints[0];
-    const last = this.linePoints[this.linePoints.length - 1];
+    const first = wp[0];
+    const last = wp[wp.length - 1];
     for (const p of [first, last]) {
       ctx.fillStyle = p.anchor ? "#4F81FF" : this.strokeColor;
       ctx.beginPath();
@@ -44,15 +45,16 @@ export class Line extends BaseLine {
 
   paintHover(ctx: CanvasRenderingContext2D, scale: number) {
     if (this.linePoints.length < 2) return;
+    const wp = this.getWorldLinePoints();
     ctx.save();
     ctx.strokeStyle = "#4F81FF";
     ctx.lineWidth = Math.max(this.strokeWidth, 1) / scale;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.moveTo(this.linePoints[0].x, this.linePoints[0].y);
-    for (let i = 1; i < this.linePoints.length; i++) {
-      ctx.lineTo(this.linePoints[i].x, this.linePoints[i].y);
+    ctx.moveTo(wp[0].x, wp[0].y);
+    for (let i = 1; i < wp.length; i++) {
+      ctx.lineTo(wp[i].x, wp[i].y);
     }
     ctx.stroke();
     ctx.restore();
@@ -79,7 +81,8 @@ function getLineControlSchema(line: Line): ControlSchema {
       shape: "circle",
       localPosition: (_select: any, el: any) => {
         const rect = el.getBoundingRect();
-        const p = el.linePoints[ptIndex];
+        const wp = el.getWorldLinePoints();
+        const p = wp[ptIndex];
         return new Point(p.x - rect.left, p.y - rect.top);
       },
       onDelete: isEndpoint
@@ -140,8 +143,9 @@ function getLineControlSchema(line: Line): ControlSchema {
           }
         }
 
-        lineEl.linePoints[ptIndex].x = targetX;
-        lineEl.linePoints[ptIndex].y = targetY;
+        const local = lineEl.worldToLocal(targetX, targetY);
+        lineEl.linePoints[ptIndex].x = local.x;
+        lineEl.linePoints[ptIndex].y = local.y;
         lineEl.linePoints[ptIndex].anchor = isEndpoint
           ? newAnchor
           : undefined;
@@ -173,8 +177,9 @@ function getLineControlSchema(line: Line): ControlSchema {
       shape: "circle",
       localPosition: (_select: any, el: any) => {
         const rect = el.getBoundingRect();
-        const p1 = el.linePoints[segIndex];
-        const p2 = el.linePoints[segIndex + 1];
+        const wp = el.getWorldLinePoints();
+        const p1 = wp[segIndex];
+        const p2 = wp[segIndex + 1];
         return new Point(
           (p1.x + p2.x) / 2 - rect.left,
           (p1.y + p2.y) / 2 - rect.top
@@ -200,8 +205,9 @@ function getLineControlSchema(line: Line): ControlSchema {
           lineEl.insertPoint(segIndex + 1, targetX, targetY);
           insertedIndex = segIndex + 1;
         } else {
-          lineEl.linePoints[insertedIndex].x = targetX;
-          lineEl.linePoints[insertedIndex].y = targetY;
+          const local = lineEl.worldToLocal(targetX, targetY);
+          lineEl.linePoints[insertedIndex].x = local.x;
+          lineEl.linePoints[insertedIndex].y = local.y;
           lineEl._syncBoundsFromPoints();
           lineEl.markNeedsLayout();
         }
@@ -243,6 +249,7 @@ function getLineControlSchema(line: Line): ControlSchema {
       const el = select.selectEls[0] as Line;
       if (!el || el.linePoints.length < 2) return;
       const scale = select.root.viewport.scale;
+      const wp = el.getWorldLinePoints();
 
       ctx.save();
       select.root.applyViewPointTransform(ctx);
@@ -253,9 +260,9 @@ function getLineControlSchema(line: Line): ControlSchema {
       ctx.lineJoin = "round";
       ctx.setLineDash([]);
       ctx.beginPath();
-      ctx.moveTo(el.linePoints[0].x, el.linePoints[0].y);
-      for (let i = 1; i < el.linePoints.length; i++) {
-        ctx.lineTo(el.linePoints[i].x, el.linePoints[i].y);
+      ctx.moveTo(wp[0].x, wp[0].y);
+      for (let i = 1; i < wp.length; i++) {
+        ctx.lineTo(wp[i].x, wp[i].y);
       }
       ctx.stroke();
 
@@ -263,9 +270,9 @@ function getLineControlSchema(line: Line): ControlSchema {
       ctx.lineWidth = 1 / scale;
       ctx.setLineDash([4 / scale, 4 / scale]);
       ctx.beginPath();
-      ctx.moveTo(el.linePoints[0].x, el.linePoints[0].y);
-      for (let i = 1; i < el.linePoints.length; i++) {
-        ctx.lineTo(el.linePoints[i].x, el.linePoints[i].y);
+      ctx.moveTo(wp[0].x, wp[0].y);
+      for (let i = 1; i < wp.length; i++) {
+        ctx.lineTo(wp[i].x, wp[i].y);
       }
       ctx.stroke();
       ctx.setLineDash([]);

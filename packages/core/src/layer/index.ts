@@ -31,6 +31,7 @@ export class Layer extends Element {
   _forceFullRepaint = false;
 
   private pendingSyncNodes = new Set<Element>();
+  private _postUpdateCallbacks = new Set<() => void>();
 
   private static GRID_COLS = 3;
   private static GRID_ROWS = 3;
@@ -175,6 +176,18 @@ export class Layer extends Element {
       return this.dirtyNodes.size > 0;
     }
     return true;
+  }
+
+  addPostUpdate(callback: () => void) {
+    this._postUpdateCallbacks.add(callback);
+    this.requestRender();
+  }
+
+  flushPostUpdate() {
+    if (this._postUpdateCallbacks.size === 0) return;
+    const cbs = [...this._postUpdateCallbacks];
+    this._postUpdateCallbacks.clear();
+    for (const cb of cbs) cb();
   }
 
   flushUpdate() {

@@ -22,29 +22,58 @@ export interface LineOption extends BaseElementOption {
 }
 
 /**
- * Abstract base class for all line-type elements (straight, bezier, etc.).
- * Manages linePoints in world coordinates, anchor connections, history
- * serialization, group transforms, and bounding-box computation.
- * Subclasses only need to implement paint() and getControlSchema().
+ * Abstract base class for all line-type elements.
+ * linePoints are stored in LOCAL coordinates (relative to left/top).
+ * left/top is anchored to the first point's world position.
  */
 export abstract class BaseLine extends Element {
   linePoints: LinePointData[] = [];
   strokeColor = "#333333";
   strokeWidth = 2;
 
-  private _handleTransformUpdated = () => {
+  private _syncAnchorsCallback = () => {
     if (this.syncAnchors()) {
       this.markNeedsLayout();
       this.layer?.syncRbush(this as any);
     }
   };
 
+  private _handleTransformUpdated = () => {
+    this.layer?.addPostUpdate(this._syncAnchorsCallback);
+  };
+
   constructor(options?: LineOption) {
     super(options);
-    if (options?.linePoints) this.linePoints = options.linePoints;
+    if (options?.linePoints) {
+      if (options.left != null || options.top != null) {
+        this.linePoints = options.linePoints.map((p) => ({
+          x: p.x,
+          y: p.y,
+          anchor: p.anchor ? { ...p.anchor } : undefined
+        }));
+      } else {
+        this._initFromWorldPoints(options.linePoints);
+      }
+    }
     if (options?.strokeColor) this.strokeColor = options.strokeColor;
     if (options?.strokeWidth != null) this.strokeWidth = options.strokeWidth;
     this._syncBoundsFromPoints();
+  }
+
+  private _initFromWorldPoints(worldPoints: LinePointData[]) {
+    if (worldPoints.length === 0) {
+      this.linePoints = [];
+      return;
+    }
+    const originX = worldPoints[0].x;
+    const originY = worldPoints[0].y;
+    this.left = originX;
+    this.top = originY;
+    this.linePoints = worldPoints.map((p) => ({
+      x: p.x - originX,
+      y: p.y - originY,
+      anchor: p.anchor ? { ...p.anchor } : undefined
+    }));
   }
 
   // --- Anchor endpoint access ---
@@ -55,6 +84,22 @@ export abstract class BaseLine extends Element {
 
   get tailPoint(): LinePointData {
     return this.linePoints[this.linePoints.length - 1];
+  }
+
+  // --- Coordinate conversion ---
+
+  /** World point → local point (uses cached inverse matrix) */
+  worldToLocal(wx: number, wy: number): Point {
+    return this.getGlobalToLocal(new Point(wx, wy));
+  }
+
+  /** Get linePoints in world coordinates (for rendering, hit-testing, etc.) */
+  getWorldLinePoints(): { x: number; y: number; anchor?: LineAnchor }[] {
+    const m = this.getOwnMatrix();
+    return this.linePoints.map((p) => {
+      const wp = m.transformPoint({ x: p.x, y: p.y });
+      return { x: wp.x, y: wp.y, anchor: p.anchor };
+    });
   }
 
   // --- Anchor connection helpers ---
@@ -69,10 +114,17 @@ export abstract class BaseLine extends Element {
     el.removeEventListener("transformUpdated", this._handleTransformUpdated);
   }
 
-  // --- Point management ---
+  // --- Point management (all accept WORLD coordinates) ---
 
   addPoint(x: number, y: number, anchor?: LineAnchor) {
-    this.linePoints.push({ x, y, anchor });
+    if (this.linePoints.length === 0) {
+      this.left = x;
+      this.top = y;
+      this.linePoints.push({ x: 0, y: 0, anchor });
+    } else {
+      const local = this.worldToLocal(x, y);
+      this.linePoints.push({ x: local.x, y: local.y, anchor });
+    }
     this._syncBoundsFromPoints();
     this.markNeedsLayout();
     if (anchor && this.root) {
@@ -81,20 +133,22 @@ export abstract class BaseLine extends Element {
     }
   }
 
-  movePoint(index: number, x: number, y: number) {
+  movePoint(index: number, worldX: number, worldY: number) {
     const p = this.linePoints[index];
     if (p.anchor) {
       this._unregisterAnchor(p.anchor.elementId);
     }
-    p.x = x;
-    p.y = y;
+    const local = this.worldToLocal(worldX, worldY);
+    p.x = local.x;
+    p.y = local.y;
     p.anchor = undefined;
     this._syncBoundsFromPoints();
     this.markNeedsLayout();
   }
 
-  insertPoint(index: number, x: number, y: number) {
-    this.linePoints.splice(index, 0, { x, y });
+  insertPoint(index: number, worldX: number, worldY: number) {
+    const local = this.worldToLocal(worldX, worldY);
+    this.linePoints.splice(index, 0, { x: local.x, y: local.y });
     this._syncBoundsFromPoints();
     this.markNeedsLayout();
   }
@@ -125,15 +179,12 @@ export abstract class BaseLine extends Element {
 
   _syncBoundsFromPoints() {
     if (this.linePoints.length === 0) {
-      this.left = 0;
-      this.top = 0;
       this.width = 0;
       this.height = 0;
       return;
     }
-    const rect = makeBoundingBoxFromPoints(this.linePoints as Point[]);
-    this.left = rect.left;
-    this.top = rect.top;
+    const worldPoints = this.getWorldLinePoints();
+    const rect = makeBoundingBoxFromPoints(worldPoints as Point[]);
     this.width = rect.width || 1;
     this.height = rect.height || 1;
   }
@@ -143,9 +194,10 @@ export abstract class BaseLine extends Element {
     const el = this.root!.idElements.get(p.anchor.elementId);
     if (!el) return false;
     const pos = getElementAnchorPoint(el, p.anchor.anchorType);
-    if (Math.abs(pos.x - p.x) > 0.01 || Math.abs(pos.y - p.y) > 0.01) {
-      p.x = pos.x;
-      p.y = pos.y;
+    const local = this.worldToLocal(pos.x, pos.y);
+    if (Math.abs(local.x - p.x) > 0.01 || Math.abs(local.y - p.y) > 0.01) {
+      p.x = local.x;
+      p.y = local.y;
       return true;
     }
     return false;
@@ -159,7 +211,7 @@ export abstract class BaseLine extends Element {
     return changed;
   }
 
-  // --- Options (translation + history restore) ---
+  // --- Options (history restore) ---
 
   private _syncConnectedLines(
     oldPoints: LinePointData[],
@@ -191,20 +243,7 @@ export abstract class BaseLine extends Element {
       return this;
     }
 
-    const prevLeft = this.left;
-    const prevTop = this.top;
-    const result = super.quickSetOptions(options);
-    if (this.linePoints.length > 0) {
-      const dx = this.left - prevLeft;
-      const dy = this.top - prevTop;
-      if (dx !== 0 || dy !== 0) {
-        for (const p of this.linePoints) {
-          p.x += dx;
-          p.y += dy;
-        }
-      }
-    }
-    return result;
+    return super.quickSetOptions(options);
   }
 
   setOptions(options?: any, syncCalc = false) {
@@ -221,20 +260,7 @@ export abstract class BaseLine extends Element {
       return this;
     }
 
-    const prevLeft = this.left;
-    const prevTop = this.top;
-    const result = super.setOptions(options, syncCalc);
-    if (this.linePoints.length > 0 && options) {
-      const dx = this.left - prevLeft;
-      const dy = this.top - prevTop;
-      if (dx !== 0 || dy !== 0) {
-        for (const p of this.linePoints) {
-          p.x += dx;
-          p.y += dy;
-        }
-      }
-    }
-    return result;
+    return super.setOptions(options, syncCalc);
   }
 
   // --- Geometry ---
@@ -248,7 +274,8 @@ export abstract class BaseLine extends Element {
     if (this._boundingRectCache) return this._boundingRectCache;
     if (this.linePoints.length < 2) return super.getBoundingRect();
 
-    const rect = makeBoundingBoxFromPoints(this.linePoints);
+    const worldPoints = this.getWorldLinePoints();
+    const rect = makeBoundingBoxFromPoints(worldPoints);
     const pad = this._getVisualPadding();
     rect.left -= pad;
     rect.top -= pad;
@@ -262,10 +289,11 @@ export abstract class BaseLine extends Element {
   hasPointHint(point: Point): boolean {
     if (this.linePoints.length < 2) return false;
     const threshold = Math.max(5 / (this.root?.viewport?.scale || 1), 3);
+    const wp = this.getWorldLinePoints();
 
-    for (let i = 0; i < this.linePoints.length - 1; i++) {
-      const a = this.linePoints[i];
-      const b = this.linePoints[i + 1];
+    for (let i = 0; i < wp.length - 1; i++) {
+      const a = wp[i];
+      const b = wp[i + 1];
       const dist = Intersection.pointToLineSegmentDistance(
         point,
         new Point(a.x, a.y),
@@ -275,7 +303,7 @@ export abstract class BaseLine extends Element {
     }
 
     const vertexThreshold = Math.max(6 / (this.root?.viewport?.scale || 1), 4);
-    for (const p of this.linePoints) {
+    for (const p of wp) {
       if (point.pointDistance(p, vertexThreshold)) return true;
     }
     return false;
@@ -284,7 +312,8 @@ export abstract class BaseLine extends Element {
   getCoords() {
     if (this._coords) return this._coords;
     if (this.linePoints.length < 2) return super.getCoords();
-    const { minX, minY, maxX, maxY } = makeBoundsFromPoints(this.linePoints);
+    const wp = this.getWorldLinePoints();
+    const { minX, minY, maxX, maxY } = makeBoundsFromPoints(wp as Point[]);
     this._coords = [
       new Point(minX, minY),
       new Point(maxX, minY),
@@ -301,7 +330,7 @@ export abstract class BaseLine extends Element {
   }
 
   getSnapPoints(): Point[] {
-    return this.linePoints.map((p) => new Point(p.x, p.y));
+    return this.getWorldLinePoints().map((p) => new Point(p.x, p.y));
   }
 
   hasInView(): boolean {
@@ -313,6 +342,8 @@ export abstract class BaseLine extends Element {
 
   private _snapshotLinePoints: LinePointData[] | null = null;
   private _snapshotWorldMatrix: DOMMatrix | null = null;
+  private _snapshotLeft: number = 0;
+  private _snapshotTop: number = 0;
 
   snapshotForGroup(): void {
     this._snapshotLinePoints = this.linePoints.map((p) => ({
@@ -320,21 +351,30 @@ export abstract class BaseLine extends Element {
       y: p.y,
       anchor: p.anchor ? { ...p.anchor } : undefined
     }));
+    this._snapshotLeft = this.left;
+    this._snapshotTop = this.top;
     this._snapshotWorldMatrix = DOMMatrix.fromMatrix(this.calcWorldMatrix());
   }
 
   applyGroupTransform(targetMatrix: DOMMatrix): void {
     if (!this._snapshotLinePoints || !this._snapshotWorldMatrix) return;
     const delta = targetMatrix.multiply(this._snapshotWorldMatrix.inverse());
+
+    const newOrigin = new DOMPoint(this._snapshotLeft, this._snapshotTop, 0, 1).matrixTransform(delta);
+    this.left = newOrigin.x;
+    this.top = newOrigin.y;
+
     for (
       let i = 0;
       i < this._snapshotLinePoints.length && i < this.linePoints.length;
       i++
     ) {
       const sp = this._snapshotLinePoints[i];
-      const np = new DOMPoint(sp.x, sp.y, 0, 1).matrixTransform(delta);
-      this.linePoints[i].x = np.x;
-      this.linePoints[i].y = np.y;
+      const worldX = this._snapshotLeft + sp.x;
+      const worldY = this._snapshotTop + sp.y;
+      const np = new DOMPoint(worldX, worldY, 0, 1).matrixTransform(delta);
+      this.linePoints[i].x = np.x - this.left;
+      this.linePoints[i].y = np.y - this.top;
       this.linePoints[i].anchor = sp.anchor;
     }
     this._syncBoundsFromPoints();
