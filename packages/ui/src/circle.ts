@@ -26,7 +26,8 @@ export class Circle extends Shape {
   protected buildBorderPath(ctx: CanvasRenderingContext2D) {
     const r = Math.min(this.width || 0, this.height || 0) / 2;
     const half = this.borderWidth / 2;
-    const offset = this.borderPosition === "inside" ? -half : half;
+    const outset = this.getBorderOutset();
+    const offset = outset > 0 ? half : -half;
     ctx.beginPath();
     ctx.arc(
       (this.width || 0) / 2,
@@ -39,7 +40,9 @@ export class Circle extends Shape {
 
   hasPointHint(point: Point) {
     const localPoint = this.getGlobalToLocal(point);
-    const r = Math.min(this.width || 0, this.height || 0) / 2;
+    let r = Math.min(this.width || 0, this.height || 0) / 2;
+    const expand = this.getBorderOutset();
+    if (expand > 0) r += expand;
     const cx = (this.width || 0) / 2;
     const cy = (this.height || 0) / 2;
     return Intersection.isPointInCircle(localPoint, new Point(cx, cy), r);

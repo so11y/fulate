@@ -27,7 +27,7 @@ export interface ControlPoint {
   cursor: string;
   shape?: "rect" | "circle";
   /** Return the control point position in the element's local coordinate space. */
-  localPosition(element: any, dim: Point): Point;
+  localPosition(select: Select, element: any): Point;
   onDrag(
     select: Select,
     point: Point,
@@ -98,7 +98,7 @@ export const DEFAULT_RECT_SCHEMA: ControlSchema = {
       id: "tl",
       cursor: "crosshair",
       shape: "rect",
-      localPosition: (_el, _dim) => new Point(0, 0),
+      localPosition: () => new Point(0, 0),
       onDrag(select, _point, state, event) {
         resizeObject(select, state, event, "tl");
       }
@@ -107,7 +107,7 @@ export const DEFAULT_RECT_SCHEMA: ControlSchema = {
       id: "tr",
       cursor: "crosshair",
       shape: "rect",
-      localPosition: (_el, dim) => new Point(dim.x, 0),
+      localPosition: (select) => new Point(select.width, 0),
       onDrag(select, _point, state, event) {
         resizeObject(select, state, event, "tr");
       }
@@ -116,7 +116,7 @@ export const DEFAULT_RECT_SCHEMA: ControlSchema = {
       id: "br",
       cursor: "crosshair",
       shape: "rect",
-      localPosition: (_el, dim) => new Point(dim.x, dim.y),
+      localPosition: (select) => new Point(select.width, select.height),
       onDrag(select, _point, state, event) {
         resizeObject(select, state, event, "br");
       }
@@ -125,7 +125,7 @@ export const DEFAULT_RECT_SCHEMA: ControlSchema = {
       id: "bl",
       cursor: "crosshair",
       shape: "rect",
-      localPosition: (_el, dim) => new Point(0, dim.y),
+      localPosition: (select) => new Point(0, select.height),
       onDrag(select, _point, state, event) {
         resizeObject(select, state, event, "bl");
       }
@@ -178,10 +178,12 @@ export function rotateObjectWithSnapping(
   x: number,
   y: number
 ) {
-  const pivotPoint = target.translateToGivenOrigin(
+  const pivotPoint = target.getPositionByOrigin(
     target.getRelativeCenterPoint(),
     originX,
-    originY
+    originY,
+    target.originX,
+    target.originY
   );
   const lastAngle = Math.atan2(ey - pivotPoint.y, ex - pivotPoint.x),
     curAngle = Math.atan2(y - pivotPoint.y, x - pivotPoint.x);

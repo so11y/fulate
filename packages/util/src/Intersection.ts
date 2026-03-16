@@ -214,6 +214,22 @@ export class Intersection {
     );
   }
 
+  /**
+   * 判断矩形是否完全包含在由 tl(左上) 和 br(右下) 定义的区域内
+   */
+  static isContainedInRect(
+    rect: { left: number; top: number; width: number; height: number },
+    tl: { x: number; y: number },
+    br: { x: number; y: number }
+  ): boolean {
+    return (
+      rect.left >= tl.x &&
+      rect.left + rect.width <= br.x &&
+      rect.top >= tl.y &&
+      rect.top + rect.height <= br.y
+    );
+  }
+
   /** 检测线段与多边形的相交情况 */
   static intersectSegmentPolygon(a1: Point, a2: Point, points: Point[]) {
     return Intersection.intersectLinePolygon(a1, a2, points, false);

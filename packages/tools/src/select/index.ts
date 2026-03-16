@@ -188,12 +188,11 @@ export class Select extends Group {
 
   setCoords(): this {
     const finalMatrix = this.getOwnMatrix();
-    const dim = this._getTransformedDimensions();
     const schema = this.getActiveSchema();
     const el = this.selectEls.length === 1 ? this.selectEls[0] : null;
     super.setCoords();
     this.controlCoords = schema.controls.map(
-      (cp) => new Point(finalMatrix.transformPoint(cp.localPosition(el, dim)))
+      (cp) => new Point(finalMatrix.transformPoint(cp.localPosition(this, el)))
     );
     return this;
   }

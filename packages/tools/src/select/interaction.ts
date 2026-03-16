@@ -1,4 +1,4 @@
-import { Point } from "@fulate/util";
+import { Point, Intersection } from "@fulate/util";
 import { degreesToRadians } from "@fulate/util";
 import { Element } from "@fulate/core";
 import { FulateEvent } from "@fulate/util";
@@ -10,14 +10,15 @@ function checkElementIntersects(
   object: Element
 ): Element | undefined {
   const resolved = checkElement(object, [select]);
-  if (!resolved) return;
+  if (!resolved || !object.visible) return;
   const [tl, , br] = select.getControlCoords();
+
   if (
-    object.visible &&
-    (object.intersectsWithRect(tl, br) ||
-      object.isContainedWithinRect(tl, br) ||
-      object.hasPointHint(tl) ||
-      object.hasPointHint(br))
+    Intersection.isContainedInRect(object.getBoundingRect(), tl, br) ||
+    Intersection.intersectPolygonRectangle(object.getCoords(), tl, br)
+      .status === "Intersection" ||
+    object.hasPointHint(tl) ||
+    object.hasPointHint(br)
   ) {
     return resolved;
   }

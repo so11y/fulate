@@ -77,7 +77,7 @@ function getLineControlSchema(line: Line): ControlSchema {
       id: `v${i}`,
       cursor: "move",
       shape: "circle",
-      localPosition: (el: any, _dim: Point) => {
+      localPosition: (_select: any, el: any) => {
         const rect = el.getBoundingRect();
         const p = el.linePoints[ptIndex];
         return new Point(p.x - rect.left, p.y - rect.top);
@@ -168,7 +168,7 @@ function getLineControlSchema(line: Line): ControlSchema {
       id: `m${i}`,
       cursor: "pointer",
       shape: "circle",
-      localPosition: (el: any, _dim: Point) => {
+      localPosition: (_select: any, el: any) => {
         const rect = el.getBoundingRect();
         const p1 = el.linePoints[segIndex];
         const p2 = el.linePoints[segIndex + 1];

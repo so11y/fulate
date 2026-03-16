@@ -17,8 +17,7 @@ export class Triangle extends Shape {
   }
 
   getLocalSnapPoints() {
-    const dim = this._getTransformedDimensions();
-    const w = dim.x, h = dim.y;
+    const w = this.width!, h = this.height!;
     return [
       new Point(w / 2, 0),
       new Point(w, h),
@@ -30,11 +29,11 @@ export class Triangle extends Shape {
   }
 
   getLocalPoints() {
-    const dim = this._getTransformedDimensions();
+    const w = this.width!, h = this.height!;
     return [
-      new Point(dim.x / 2, 0),
-      new Point(dim.x, dim.y),
-      new Point(0, dim.y)
+      new Point(w / 2, 0),
+      new Point(w, h),
+      new Point(0, h)
     ];
   }
 
@@ -44,9 +43,9 @@ export class Triangle extends Shape {
 
   getAnchorSchema(): AnchorPoint[] {
     return [
-      { id: "left", localPosition: (_el, dim) => new Point(dim.x * 0.25, dim.y * 0.5) },
-      { id: "right", localPosition: (_el, dim) => new Point(dim.x * 0.75, dim.y * 0.5) },
-      { id: "bottom", localPosition: (_el, dim) => new Point(dim.x * 0.5, dim.y) }
+      { id: "left", localPosition: (el) => new Point(el.width * 0.25, el.height * 0.5) },
+      { id: "right", localPosition: (el) => new Point(el.width * 0.75, el.height * 0.5) },
+      { id: "bottom", localPosition: (el) => new Point(el.width * 0.5, el.height) }
     ];
   }
 }

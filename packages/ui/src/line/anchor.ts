@@ -6,24 +6,23 @@ export interface AnchorPoint {
   /** Unique id within the schema (e.g. "tl", "top", "right", …). */
   id: string;
   /** Return the anchor position in the element's local coordinate space. */
-  localPosition(element: any, dim: Point): Point;
+  localPosition(element: any): Point;
 }
 
-/** Default 8-point anchor schema (no center). Elements may override via getAnchorSchema(). */
+/** Default 4-point anchor schema. Elements may override via getAnchorSchema(). */
 export const DEFAULT_ANCHOR_SCHEMA: AnchorPoint[] = [
-  { id: "top", localPosition: (_el, dim) => new Point(dim.x * 0.5, 0) },
-  { id: "right", localPosition: (_el, dim) => new Point(dim.x, dim.y * 0.5) },
-  { id: "bottom", localPosition: (_el, dim) => new Point(dim.x * 0.5, dim.y) },
-  { id: "left", localPosition: (_el, dim) => new Point(0, dim.y * 0.5) }
+  { id: "top", localPosition: (el) => new Point(el.width * 0.5, 0) },
+  { id: "right", localPosition: (el) => new Point(el.width, el.height * 0.5) },
+  { id: "bottom", localPosition: (el) => new Point(el.width * 0.5, el.height) },
+  { id: "left", localPosition: (el) => new Point(0, el.height * 0.5) }
 ];
 
 function anchorToWorld(
   el: Element,
   anchor: AnchorPoint
 ): { x: number; y: number } {
-  const dim = (el as any)._getTransformedDimensions();
   const m = el.getOwnMatrix();
-  const local = anchor.localPosition(el, dim);
+  const local = anchor.localPosition(el);
   const pt = m.transformPoint(local);
   return { x: pt.x, y: pt.y };
 }
