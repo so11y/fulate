@@ -34,7 +34,7 @@ function applyOffset(data: any, dx: number, dy: number) {
       p.y += dy;
     }
   }
-  if (data.children) {
+  if (data.type === "group" && data.children) {
     for (const child of data.children) {
       applyOffset(child, dx, dy);
     }

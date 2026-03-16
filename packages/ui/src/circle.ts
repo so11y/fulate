@@ -1,6 +1,7 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { ShapeOption, Shape } from "@fulate/core";
+import { AnchorPoint } from "./line/anchor";
 
 export class Circle extends Shape {
   type = "circle";
@@ -36,6 +37,15 @@ export class Circle extends Shape {
       0,
       Math.PI * 2
     );
+  }
+
+  getAnchorSchema(): AnchorPoint[] {
+    return [
+      { id: "top", localPosition: (el) => new Point(el.width / 2, el.height / 2 - Math.min(el.width, el.height) / 2) },
+      { id: "right", localPosition: (el) => new Point(el.width / 2 + Math.min(el.width, el.height) / 2, el.height / 2) },
+      { id: "bottom", localPosition: (el) => new Point(el.width / 2, el.height / 2 + Math.min(el.width, el.height) / 2) },
+      { id: "left", localPosition: (el) => new Point(el.width / 2 - Math.min(el.width, el.height) / 2, el.height / 2) }
+    ];
   }
 
   hasPointHint(point: Point) {
