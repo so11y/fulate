@@ -30,8 +30,8 @@ export class Layer extends Element {
   isRenderDirtyMode = false;
   _forceFullRepaint = false;
 
-  private pendingSyncNodes = new Set<Element>();
-
+  private _pendingSyncRbushNodes = new Set<Element>();
+  private _postUpdateCallbacks = new Set<() => void>();
   private static GRID_COLS = 3;
   private static GRID_ROWS = 3;
   private static FULL_REPAINT_RATIO = 0.5;
@@ -90,7 +90,19 @@ export class Layer extends Element {
 
   syncRbush(node: any) {
     if (node.isLayer || node.type === "root") return;
-    this.pendingSyncNodes.add(node);
+    this._pendingSyncRbushNodes.add(node);
+  }
+
+  addPostUpdate(callback: () => void) {
+    this._postUpdateCallbacks.add(callback);
+    this.requestRender();
+  }
+
+  flushPostUpdate() {
+    if (this._postUpdateCallbacks.size === 0) return;
+    const cbs = [...this._postUpdateCallbacks];
+    this._postUpdateCallbacks.clear();
+    for (const cb of cbs) cb();
   }
 
   removeRbush(node: any) {
@@ -120,7 +132,7 @@ export class Layer extends Element {
   }
 
   flushSyncNodes() {
-    this.pendingSyncNodes.forEach((node: any) => {
+    this._pendingSyncRbushNodes.forEach((node: any) => {
       if (node.width === undefined || node.height === undefined) {
         if (node.rbushItem) {
           this.rbush.remove(node.rbushItem);
@@ -149,7 +161,7 @@ export class Layer extends Element {
         this.rbush.insert(node.rbushItem);
       }
     });
-    this.pendingSyncNodes.clear();
+    this._pendingSyncRbushNodes.clear();
   }
 
   hasInView() {
