@@ -53,7 +53,10 @@ export class Shape extends Element {
 
   setPaint(
     options: Partial<
-      Pick<ShapeOption, "backgroundColor" | "borderColor" | "opacity" | "shadow">
+      Pick<
+        ShapeOption,
+        "backgroundColor" | "borderColor" | "opacity" | "shadow"
+      >
     >
   ) {
     Object.assign(this, options);
@@ -108,7 +111,11 @@ export class Shape extends Element {
   }
 
   hasPointHint(point: Point): boolean {
-    if (!this.visible || this.width === undefined || this.height === undefined) {
+    if (
+      !this.visible ||
+      this.width === undefined ||
+      this.height === undefined
+    ) {
       return false;
     }
     const local = this.getGlobalToLocal(point);
@@ -138,7 +145,12 @@ export class Shape extends Element {
     let inRootViewport: boolean;
 
     if (m.b === 0 && m.c === 0) {
-      const { top: oT, right: oR, bottom: oB, left: oL } = this.getVisualOutset();
+      const {
+        top: oT,
+        right: oR,
+        bottom: oB,
+        left: oL
+      } = this.getVisualOutset();
       const absSx = Math.abs(m.a);
       const absSy = Math.abs(m.d);
       const nodeLeft = m.e - oL * absSx;
@@ -181,9 +193,11 @@ export class Shape extends Element {
     this.applyPaintTransform(ctx);
     if (this.opacity < 1) ctx.globalAlpha *= this.opacity;
 
-    if (hasShadow) this.applyShadow(ctx);
-    this.paintBackground(ctx);
-    if (hasShadow) this.clearShadow(ctx);
+    if (hasShadow) {
+      this.paintShadow(ctx, () => this.paintBackground(ctx));
+    } else {
+      this.paintBackground(ctx);
+    }
 
     this.paintContent(ctx);
     this.paintBorder(ctx);
@@ -237,15 +251,13 @@ export class Shape extends Element {
     ctx.stroke();
   }
 
-  private applyShadow(ctx: CanvasRenderingContext2D) {
+  private paintShadow(ctx: CanvasRenderingContext2D, fn: () => void) {
     const s = this.shadow!;
     ctx.shadowColor = s.color ?? "rgba(0,0,0,0.3)";
     ctx.shadowBlur = s.blur ?? 0;
     ctx.shadowOffsetX = s.offsetX ?? 0;
     ctx.shadowOffsetY = s.offsetY ?? 0;
-  }
-
-  private clearShadow(ctx: CanvasRenderingContext2D) {
+    fn();
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
