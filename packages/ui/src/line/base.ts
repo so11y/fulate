@@ -1,10 +1,6 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
-import {
-  makeBoundingBoxFromPoints,
-  makeBoundsFromPoints,
-  RectWithCenter
-} from "@fulate/util";
+import { makeBoundingBoxFromPoints, RectWithCenter } from "@fulate/util";
 import { BaseElementOption, Element } from "@fulate/core";
 import { getElementAnchorPoint } from "./anchor";
 
@@ -34,6 +30,11 @@ export abstract class BaseLine extends Element {
   linePoints: LinePointData[] = [];
   strokeColor = "#333333";
   strokeWidth = 2;
+
+  private _snapshotLinePoints: LinePointData[] | null = null;
+  private _snapshotWorldMatrix: DOMMatrix | null = null;
+  private _snapshotLeft: number = 0;
+  private _snapshotTop: number = 0;
 
   private _syncAnchorsCallback = () => {
     if (this.syncAnchors()) {
@@ -279,9 +280,12 @@ export abstract class BaseLine extends Element {
     return Math.max(10, Math.ceil(this.strokeWidth / scale + 6 / scale));
   }
 
+  getLocalPoints() {
+    return this.linePoints.map((p) => new Point(p.x, p.y));
+  }
+
   getBoundingRect(): RectWithCenter {
     if (this._boundingRectCache) return this._boundingRectCache;
-    if (this.linePoints.length < 2) return super.getBoundingRect();
 
     const worldPoints = this.getWorldLinePoints();
     const rect = makeBoundingBoxFromPoints(worldPoints);
@@ -296,7 +300,6 @@ export abstract class BaseLine extends Element {
   }
 
   hasPointHint(point: Point): boolean {
-    if (this.linePoints.length < 2) return false;
     const threshold = Math.max(5 / (this.root?.viewport?.scale || 1), 3);
     const wp = this.getWorldLinePoints();
 
@@ -317,42 +320,6 @@ export abstract class BaseLine extends Element {
     }
     return false;
   }
-
-  getCoords() {
-    if (this._coords) return this._coords;
-    if (this.linePoints.length < 2) return super.getCoords();
-    const wp = this.getWorldLinePoints();
-    const { minX, minY, maxX, maxY } = makeBoundsFromPoints(wp as Point[]);
-    this._coords = [
-      new Point(minX, minY),
-      new Point(maxX, minY),
-      new Point(maxX, maxY),
-      new Point(minX, maxY)
-    ];
-    return this._coords;
-  }
-
-  setCoords() {
-    this._coords = null;
-    this.getCoords();
-    return this;
-  }
-
-  getSnapPoints(): Point[] {
-    return this.getWorldLinePoints().map((p) => new Point(p.x, p.y));
-  }
-
-  hasInView(): boolean {
-    if (this.linePoints.length < 2) return false;
-    return super.hasInView();
-  }
-
-  // --- Group transform protocol ---
-
-  private _snapshotLinePoints: LinePointData[] | null = null;
-  private _snapshotWorldMatrix: DOMMatrix | null = null;
-  private _snapshotLeft: number = 0;
-  private _snapshotTop: number = 0;
 
   snapshotForGroup(): void {
     this._snapshotLinePoints = this.linePoints.map((p) => ({
