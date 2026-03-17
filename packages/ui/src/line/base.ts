@@ -1,6 +1,10 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
-import { makeBoundingBoxFromPoints, makeBoundsFromPoints, RectWithCenter } from "@fulate/util";
+import {
+  makeBoundingBoxFromPoints,
+  makeBoundsFromPoints,
+  RectWithCenter
+} from "@fulate/util";
 import { BaseElementOption, Element } from "@fulate/core";
 import { getElementAnchorPoint } from "./anchor";
 
@@ -34,7 +38,7 @@ export abstract class BaseLine extends Element {
   private _syncAnchorsCallback = () => {
     if (this.syncAnchors()) {
       this.markNeedsLayout();
-      this.layer?.syncRbush(this as any);
+      // this.layer?.syncRbush(this as any);
     }
   };
 
@@ -218,11 +222,16 @@ export abstract class BaseLine extends Element {
     newPoints: LinePointData[]
   ) {
     if (!this.root) return;
-    if (oldPoints[0]?.anchor) this._unregisterAnchor(oldPoints[0].anchor.elementId);
-    const oldTail = oldPoints.length > 1 ? oldPoints[oldPoints.length - 1] : undefined;
+    if (oldPoints[0]?.anchor)
+      this._unregisterAnchor(oldPoints[0].anchor.elementId);
+    const oldTail =
+      oldPoints.length > 1 ? oldPoints[oldPoints.length - 1] : undefined;
     if (oldTail?.anchor) this._unregisterAnchor(oldTail.anchor.elementId);
 
-    for (const p of [newPoints[0], newPoints.length > 1 ? newPoints[newPoints.length - 1] : undefined]) {
+    for (const p of [
+      newPoints[0],
+      newPoints.length > 1 ? newPoints[newPoints.length - 1] : undefined
+    ]) {
       if (!p?.anchor) continue;
       const el = this.root.idElements.get(p.anchor.elementId);
       if (el) this._connectToElement(el);
@@ -279,8 +288,8 @@ export abstract class BaseLine extends Element {
     const pad = this._getVisualPadding();
     rect.left -= pad;
     rect.top -= pad;
-    rect.width = (rect.width + pad * 2) || 1;
-    rect.height = (rect.height + pad * 2) || 1;
+    rect.width = rect.width + pad * 2 || 1;
+    rect.height = rect.height + pad * 2 || 1;
 
     this._boundingRectCache = rect;
     return this._boundingRectCache;
@@ -360,7 +369,12 @@ export abstract class BaseLine extends Element {
     if (!this._snapshotLinePoints || !this._snapshotWorldMatrix) return;
     const delta = targetMatrix.multiply(this._snapshotWorldMatrix.inverse());
 
-    const newOrigin = new DOMPoint(this._snapshotLeft, this._snapshotTop, 0, 1).matrixTransform(delta);
+    const newOrigin = new DOMPoint(
+      this._snapshotLeft,
+      this._snapshotTop,
+      0,
+      1
+    ).matrixTransform(delta);
     this.left = newOrigin.x;
     this.top = newOrigin.y;
 

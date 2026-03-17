@@ -131,7 +131,6 @@ export class Root extends Node {
     this._rafScheduled = true;
 
     this._rafId = requestAnimationFrame((time) => {
-
       this._rafId = 0;
 
       if (this.isUnmounted) return;
@@ -149,8 +148,14 @@ export class Root extends Node {
       for (const l of this._pendingLayers) {
         l.flushUpdate();
       }
+      //flushPostUpdate 执行需要等待其他节点矩阵计算完毕的节点
+      //比如线条需要等待A和B的位置计算完毕
       for (const l of this.layers) {
         l.flushPostUpdate();
+      }
+      //存在line在postUpdate需要标记更新，在执行一次对line的清理
+      for (const l of this._pendingLayers) {
+        l.flushUpdate();
       }
       for (const l of this.layers) {
         l.flushSyncNodes();
@@ -222,11 +227,21 @@ export class Root extends Node {
     return m;
   }
 
-  applyViewPointTransform(ctx: CanvasRenderingContext2D, ownMatrix?: DOMMatrix) {
+  applyViewPointTransform(
+    ctx: CanvasRenderingContext2D,
+    ownMatrix?: DOMMatrix
+  ) {
     const d = this.dpr;
     const vp = this.getViewPointMtrix();
     if (!ownMatrix) {
-      ctx.setTransform(vp.a * d, vp.b * d, vp.c * d, vp.d * d, vp.e * d, vp.f * d);
+      ctx.setTransform(
+        vp.a * d,
+        vp.b * d,
+        vp.c * d,
+        vp.d * d,
+        vp.e * d,
+        vp.f * d
+      );
       return;
     }
     const m = ownMatrix;
