@@ -80,13 +80,39 @@ export class Select extends Group {
     pasteElements(this);
   }
 
-  select(children: Array<Element>) {
+  select(
+    children: Array<Element>,
+    geometry?: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+      angle?: number;
+      scaleX?: number;
+      scaleY?: number;
+      skewX?: number;
+      skewY?: number;
+    }
+  ) {
     this.selectEls = children;
     this.currentControl = null as any;
     this.hoverElement = null;
 
     if (!this.selectEls.length) {
       this.setOptions({ width: 0, height: 0 });
+    } else if (geometry) {
+      this.setOptions({
+        left: geometry.left,
+        top: geometry.top,
+        width: geometry.width,
+        height: geometry.height,
+        angle: geometry.angle ?? 0,
+        scaleX: geometry.scaleX ?? 1,
+        scaleY: geometry.scaleY ?? 1,
+        skewX: geometry.skewX ?? 0,
+        skewY: geometry.skewY ?? 0
+      });
+      this.snapshotChildren();
     } else {
       const rect = makeBoundingBoxFromRects(
         this.selectEls.map((v) => v.getUnionBoundingRect())

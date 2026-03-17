@@ -98,15 +98,45 @@ function remapAnchors(newEls: Element[], idMap: Map<string, string>) {
   }
 }
 
-let memClipboard: Element[] | null = null;
+interface SelectGeometry {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  angle: number;
+  scaleX: number;
+  scaleY: number;
+  skewX: number;
+  skewY: number;
+}
+
+let memClipboard: { sources: Element[]; geometry: SelectGeometry } | null = null;
+
+function captureSelectGeometry(select: Select): SelectGeometry {
+  return {
+    left: select.left,
+    top: select.top,
+    width: select.width!,
+    height: select.height!,
+    angle: select.angle,
+    scaleX: select.scaleX,
+    scaleY: select.scaleY,
+    skewX: select.skewX,
+    skewY: select.skewY
+  };
+}
 
 export async function copyElements(select: Select) {
   if (!select.selectEls.length) return;
 
-  memClipboard = [...select.selectEls];
+  memClipboard = {
+    sources: [...select.selectEls],
+    geometry: captureSelectGeometry(select)
+  };
 
   const data = {
     [CLIPBOARD_MARKER]: true,
+    selectGeometry: captureSelectGeometry(select),
     elements: select.selectEls.map((el) => ({
       type: el.type,
       id: el.id,
@@ -125,7 +155,7 @@ export async function pasteElements(select: Select) {
   const offset = PASTE_OFFSET;
 
   if (memClipboard) {
-    pasteFromMemory(select, memClipboard, offset);
+    pasteFromMemory(select, memClipboard.sources, offset, memClipboard.geometry);
     return;
   }
 
@@ -133,13 +163,13 @@ export async function pasteElements(select: Select) {
     const text = await navigator.clipboard.readText();
     const data = JSON.parse(text);
     if (!data?.[CLIPBOARD_MARKER]) return;
-    pasteFromClipboardData(select, data.elements, offset);
+    pasteFromClipboardData(select, data.elements, offset, data.selectGeometry);
   } catch {
     // 剪贴板为空或内容不合法
   }
 }
 
-function pasteFromMemory(select: Select, sources: Element[], offset: number) {
+function pasteFromMemory(select: Select, sources: Element[], offset: number, geometry?: SelectGeometry) {
   const newEls: Element[] = [];
   const parents: any[] = [];
   const idMap = new Map<string, string>();
@@ -183,13 +213,14 @@ function pasteFromMemory(select: Select, sources: Element[], offset: number) {
   }
 
   remapAnchors(newEls, idMap);
-  commitPaste(select, newEls, parents, memberLayerMap);
+  commitPaste(select, newEls, parents, memberLayerMap, geometry);
 }
 
 function pasteFromClipboardData(
   select: Select,
   entries: { type: string; id?: string; props: any }[],
-  offset: number
+  offset: number,
+  geometry?: SelectGeometry
 ) {
   const newEls: Element[] = [];
   const parents: any[] = [];
@@ -220,7 +251,7 @@ function pasteFromClipboardData(
   }
 
   remapAnchors(newEls, idMap);
-  commitPaste(select, newEls, parents, memberLayerMap);
+  commitPaste(select, newEls, parents, memberLayerMap, geometry);
 }
 
 function setupPastedGroup(el: Element, defaultLayer: any, root: any) {
@@ -246,13 +277,20 @@ function setupPastedGroup(el: Element, defaultLayer: any, root: any) {
   (el as any).snapshotChildren();
 }
 
+function offsetGeometry(geo: SelectGeometry, dx: number, dy: number): SelectGeometry {
+  return { ...geo, left: geo.left + dx, top: geo.top + dy };
+}
+
 function commitPaste(
   select: Select,
   newEls: Element[],
   parents: any[],
-  memberLayerMap: Map<Element, any>
+  memberLayerMap: Map<Element, any>,
+  geometry?: SelectGeometry
 ) {
   if (!newEls.length) return;
+
+  const pastedGeo = geometry ? offsetGeometry(geometry, PASTE_OFFSET, PASTE_OFFSET) : undefined;
 
   select.history.pushAction(
     () => {
@@ -286,9 +324,9 @@ function commitPaste(
           (el as any).snapshotChildren();
         }
       });
-      select.root.nextTick(() => select.select(newEls));
+      select.root.nextTick(() => select.select(newEls, pastedGeo));
     }
   );
 
-  select.root.nextTick(() => select.select(newEls));
+  select.root.nextTick(() => select.select(newEls, pastedGeo));
 }
