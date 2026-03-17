@@ -10,9 +10,18 @@ const GAP = 1;
 const STEP = SIZE + GAP;
 
 const COLORS = [
-  "#e74c3c", "#3498db", "#2ecc71", "#9b59b6",
-  "#f39c12", "#1abc9c", "#e67e22", "#34495e",
-  "#16a085", "#c0392b", "#2980b9", "#8e44ad",
+  "#e74c3c",
+  "#3498db",
+  "#2ecc71",
+  "#9b59b6",
+  "#f39c12",
+  "#1abc9c",
+  "#e67e22",
+  "#34495e",
+  "#16a085",
+  "#c0392b",
+  "#2980b9",
+  "#8e44ad"
 ];
 
 registerDemo("10w", {
@@ -31,7 +40,7 @@ registerDemo("10w", {
         top: row * STEP,
         width: SIZE,
         height: SIZE,
-        backgroundColor: COLORS[i % COLORS.length],
+        backgroundColor: COLORS[i % COLORS.length]
       });
     }
 
@@ -39,11 +48,12 @@ registerDemo("10w", {
       zIndex: 1,
       enableDirtyRect: true,
       children,
+      debugDirtyRect: true
     });
 
     const editerLayer = new EditerLayer({
       zIndex: 2,
-      children: [new Select()],
+      children: [new Select()]
     });
 
     root.append(layer, editerLayer);
@@ -56,5 +66,5 @@ registerDemo("10w", {
     });
 
     return () => root.unmounted();
-  },
+  }
 });

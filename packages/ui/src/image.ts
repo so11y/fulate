@@ -45,6 +45,7 @@ export class Image extends Shape {
   protected paintContent(ctx: CanvasRenderingContext2D) {
     if (this._isLoaded && this.image) {
       if (this.radius) {
+        ctx.save();
         this.buildPath(ctx);
         ctx.clip();
       }
@@ -55,6 +56,9 @@ export class Image extends Shape {
         this.width || this.image.width,
         this.height || this.image.height
       );
+      if (this.radius) {
+        ctx.restore();
+      }
     }
   }
 }

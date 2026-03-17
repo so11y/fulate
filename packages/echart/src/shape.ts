@@ -94,10 +94,14 @@ export class EChartsShape extends Shape {
   protected paintContent(ctx: CanvasRenderingContext2D) {
     if (!this._bitmap) return;
     if (this.radius) {
+      ctx.save();
       this.buildPath(ctx);
       ctx.clip();
     }
     ctx.drawImage(this._bitmap, 0, 0, this.width!, this.height!);
+    if (this.radius) {
+      ctx.restore();
+    }
   }
 
   private _onFrame(bitmap: ImageBitmap) {

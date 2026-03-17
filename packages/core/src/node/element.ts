@@ -14,6 +14,11 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   silent?: boolean;
   pickable?: boolean;
 
+  enableRotation?: boolean;
+  enableMove?: boolean;
+  enableResize?: boolean;
+  enableAnchor?: boolean;
+
   onclick?: (this: T, e: FulateEvent<T>) => any;
   onpointermove?: (this: T, e: FulateEvent<T>) => any;
   onpointerdown?: (this: T, e: FulateEvent<T>) => any;
@@ -46,6 +51,10 @@ export class Element extends Transformable {
   cursor?: string;
   visible: boolean = true;
   selectctbale?: boolean;
+  enableRotation?: boolean;
+  enableMove?: boolean;
+  enableResize?: boolean;
+  enableAnchor?: boolean;
   groupParent?: any;
   /** IDs of lines that have an anchor point connected to this element */
   connectedLines?: Set<string>;
@@ -213,6 +222,7 @@ export class Element extends Transformable {
    * Returns null to use DEFAULT_ANCHOR_SCHEMA (8 edge/corner points, no center).
    */
   getAnchorSchema(): any[] | null {
+    if (this.enableAnchor === false) return [];
     return null;
   }
 
@@ -493,7 +503,11 @@ export class Element extends Transformable {
       cursor: this.cursor,
       selectctbale: this.selectctbale,
       silent: this.silent,
-      pickable: this.pickable
+      pickable: this.pickable,
+      enableRotation: this.enableRotation,
+      enableMove: this.enableMove,
+      enableResize: this.enableResize,
+      enableAnchor: this.enableAnchor
     } as any;
 
     if (includeChildren && this.children && this.children.length > 0) {

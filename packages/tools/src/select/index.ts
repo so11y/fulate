@@ -207,7 +207,24 @@ export class Select extends Group {
 
   getActiveSchema(): ControlSchema {
     if (this.selectEls.length !== 1) return DEFAULT_RECT_SCHEMA;
-    return this.selectEls[0].getControlSchema?.() ?? DEFAULT_RECT_SCHEMA;
+    const el = this.selectEls[0];
+    const base = el.getControlSchema?.() ?? DEFAULT_RECT_SCHEMA;
+
+    const needsOverride =
+      el.enableRotation === false ||
+      el.enableMove === false ||
+      el.enableResize === false;
+
+    if (!needsOverride) return base;
+
+    const schema = { ...base };
+    if (el.enableRotation === false) schema.enableRotation = false;
+    if (el.enableMove === false) schema.enableBodyMove = false;
+    if (el.enableResize === false) {
+      schema.controls = [];
+      schema.edges = [];
+    }
+    return schema;
   }
 
   // --- Coordinates & Bounds ---

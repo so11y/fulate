@@ -64,6 +64,7 @@ export class Root extends Node {
     this.container.style.userSelect = "none";
     this.container.style.touchAction = "none";
     this.container.style.overflow = "hidden";
+
     this.provide("root", this);
     this.provide("textDefaults", {
       color: "#000000",

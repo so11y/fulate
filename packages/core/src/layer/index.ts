@@ -39,6 +39,11 @@ export class Layer extends Element {
   isRenderDirtyMode = false;
   _forceFullRepaint = false;
 
+  debugDirtyRect: boolean = false;
+  private _debugCanvas: HTMLCanvasElement | null = null;
+  private _debugCtx: CanvasRenderingContext2D | null = null;
+  private _debugTimer: any = null;
+
   private _pendingSyncRbushNodes = new Set<Element>();
   private _postUpdateCallbacks = new Set<() => void>();
   private static GRID_COLS = 3;
@@ -56,9 +61,11 @@ export class Layer extends Element {
       silen?: boolean;
       enableDirtyRect?: boolean;
       cssTransformable?: boolean;
+      debugDirtyRect?: boolean;
     }
   ) {
     super(options);
+    this.debugDirtyRect = options?.debugDirtyRect ?? false;
     this.enableDirtyRect = options?.enableDirtyRect ?? true;
     this.cssTransformable = options?.cssTransformable ?? true;
     this.canvasEl = document.createElement("canvas");
@@ -227,6 +234,46 @@ export class Layer extends Element {
     ctx.restore();
   }
 
+  private _ensureDebugCanvas(): CanvasRenderingContext2D | null {
+    if (!this.debugDirtyRect) return null;
+    if (!this._debugCanvas) {
+      this._debugCanvas = document.createElement("canvas");
+      this._debugCanvas.width = this.canvasEl.width;
+      this._debugCanvas.height = this.canvasEl.height;
+      this._debugCanvas.style.width = this.canvasEl.style.width;
+      this._debugCanvas.style.height = this.canvasEl.style.height;
+      this._debugCanvas.style.position = "absolute";
+      this._debugCanvas.style.left = "0px";
+      this._debugCanvas.style.top = "0px";
+      this._debugCanvas.style.zIndex = "99999";
+      this._debugCanvas.style.pointerEvents = "none";
+      this.canvasEl.parentNode!.appendChild(this._debugCanvas);
+      this._debugCtx = this._debugCanvas.getContext("2d")!;
+    }
+    return this._debugCtx;
+  }
+
+  private _flashRects(screenRects: RectPoint[], color: string) {
+    const ctx = this._ensureDebugCanvas();
+    if (!ctx) return;
+    const canvas = this._debugCanvas!;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const r of screenRects) {
+      ctx.fillStyle = color;
+      ctx.fillRect(r.left, r.top, r.width, r.height);
+      ctx.strokeStyle = color.replace(/[\d.]+\)$/, "0.8)");
+      ctx.lineWidth = 2;
+      ctx.strokeRect(r.left, r.top, r.width, r.height);
+    }
+
+    if (this._debugTimer) clearTimeout(this._debugTimer);
+    this._debugTimer = setTimeout(() => {
+      this._debugTimer = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }, 120);
+  }
+
   flushPaint() {
     if (this.isUnmounted || this.shouldRepaint() === false) return;
 
@@ -285,6 +332,10 @@ export class Layer extends Element {
         this.isRenderDirtyMode = false;
         this._clearDirtyState();
         this._fullRepaint();
+        this._flashRects(
+          [{ left: 0, top: 0, width: canvasW, height: canvasH }],
+          "rgba(0, 100, 255, 0.2)"
+        );
       } else {
         const screenRects = collectActiveBuckets(this._buckets);
 
@@ -303,6 +354,7 @@ export class Layer extends Element {
           dpr
         );
         this._paintDirtyRects(screenRects);
+        this._flashRects(screenRects, "rgba(255, 0, 0, 0.25)");
         this._clearDirtyState();
       }
     } else {
@@ -377,8 +429,15 @@ function distributeToGrid(
   const r1 = Math.min(rows - 1, Math.floor(s.bottom / cellH));
   let delta = 0;
   for (let r = r0; r <= r1; r++)
-    for (let c = c0; c <= c1; c++)
-      delta += mergeToBucket(buckets[r * cols + c], s);
+    for (let c = c0; c <= c1; c++) {
+      const clipped: ScreenBounds = {
+        left: Math.max(s.left, c * cellW),
+        top: Math.max(s.top, r * cellH),
+        right: Math.min(s.right, (c + 1) * cellW),
+        bottom: Math.min(s.bottom, (r + 1) * cellH)
+      };
+      delta += mergeToBucket(buckets[r * cols + c], clipped);
+    }
   return delta;
 }
 
