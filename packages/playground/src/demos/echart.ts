@@ -10,6 +10,10 @@ const COLORS = [
 
 const CHART_TYPES = ["bar", "line", "pie", "scatter", "radar"] as const;
 
+// 定义每个图表的数据点数量
+const DATA_COUNT = 50;
+const LABELS = Array.from({ length: DATA_COUNT }, (_, i) => `节点${i + 1}`);
+
 function rand(base: number, range: number) {
   return Math.round(base + (Math.random() - 0.5) * range);
 }
@@ -29,17 +33,19 @@ function makeOption(index: number) {
     title: { text: label, left: "center", top: 6, textStyle: { fontSize: 13 } },
     tooltip: { trigger: type === "pie" ? "item" : "axis", renderMode: "richText" },
     animation: true,
-    animationDuration: 600,
+    // 动画时长改为200ms，防止每秒更新5次时动画堆积导致的卡顿
+    animationDuration: 200,
+    animationDurationUpdate: 200, 
   };
 
   if (type === "bar") {
     return {
       ...base,
-      xAxis: { type: "category", data: ["A", "B", "C", "D", "E", "F"] },
+      xAxis: { type: "category", data: LABELS },
       yAxis: { type: "value" },
       series: [
-        { type: "bar", data: randArray(6, 150, 120), itemStyle: { color: c1, borderRadius: 3 } },
-        { type: "bar", data: randArray(6, 80, 60), itemStyle: { color: c2, borderRadius: 3 } },
+        { type: "bar", data: randArray(DATA_COUNT, 150, 120), itemStyle: { color: c1, borderRadius: 3 } },
+        { type: "bar", data: randArray(DATA_COUNT, 80, 60), itemStyle: { color: c2, borderRadius: 3 } },
       ],
     };
   }
@@ -47,24 +53,24 @@ function makeOption(index: number) {
   if (type === "line") {
     return {
       ...base,
-      xAxis: { type: "category", data: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] },
+      xAxis: { type: "category", data: LABELS },
       yAxis: { type: "value" },
       series: [
-        { type: "line", data: randArray(7, 60, 50), smooth: true, symbolSize: 6, itemStyle: { color: c1 }, lineStyle: { width: 2 } },
-        { type: "line", data: randArray(7, 40, 30), smooth: true, symbolSize: 6, itemStyle: { color: c2 }, lineStyle: { width: 2 } },
+        // 数据点变多，适当调小 symbolSize 避免太拥挤
+        { type: "line", data: randArray(DATA_COUNT, 60, 50), smooth: true, symbolSize: 3, itemStyle: { color: c1 }, lineStyle: { width: 2 } },
+        { type: "line", data: randArray(DATA_COUNT, 40, 30), smooth: true, symbolSize: 3, itemStyle: { color: c2 }, lineStyle: { width: 2 } },
       ],
     };
   }
 
   if (type === "pie") {
-    const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"];
     return {
       ...base,
       series: [{
         type: "pie",
         radius: ["25%", "55%"],
         center: ["50%", "58%"],
-        data: names.map((name, i) => ({ value: rand(500, 400), name })),
+        data: LABELS.map((name) => ({ value: rand(500, 400), name })),
       }],
     };
   }
@@ -76,23 +82,23 @@ function makeOption(index: number) {
       yAxis: { type: "value" },
       series: [{
         type: "scatter",
-        symbolSize: 10,
-        data: Array.from({ length: 20 }, () => [rand(50, 80), rand(50, 80)]),
+        symbolSize: 6,
+        data: Array.from({ length: DATA_COUNT }, () => [rand(50, 80), rand(50, 80)]),
         itemStyle: { color: c1 },
       }],
     };
   }
 
   // radar
-  const indicators = ["速度", "力量", "防御", "智力", "敏捷"].map((name) => ({ name, max: 100 }));
+  const indicators = LABELS.map((name) => ({ name, max: 100 }));
   return {
     ...base,
     radar: { indicator: indicators, center: ["50%", "58%"], radius: "55%" },
     series: [{
       type: "radar",
       data: [
-        { value: randArray(5, 70, 40), name: "A", areaStyle: { color: c1, opacity: 0.3 } },
-        { value: randArray(5, 50, 30), name: "B", areaStyle: { color: c2, opacity: 0.3 } },
+        { value: randArray(DATA_COUNT, 70, 40), name: "A", areaStyle: { color: c1, opacity: 0.3 } },
+        { value: randArray(DATA_COUNT, 50, 30), name: "B", areaStyle: { color: c2, opacity: 0.3 } },
       ],
     }],
   };
@@ -102,20 +108,19 @@ function makeUpdateOption(index: number) {
   const type = CHART_TYPES[index % CHART_TYPES.length];
 
   if (type === "bar") {
-    return { series: [{ data: randArray(6, 150, 120) }, { data: randArray(6, 80, 60) }] };
+    return { series: [{ data: randArray(DATA_COUNT, 150, 120) }, { data: randArray(DATA_COUNT, 80, 60) }] };
   }
   if (type === "line") {
-    return { series: [{ data: randArray(7, 60, 50) }, { data: randArray(7, 40, 30) }] };
+    return { series: [{ data: randArray(DATA_COUNT, 60, 50) }, { data: randArray(DATA_COUNT, 40, 30) }] };
   }
   if (type === "pie") {
-    const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"];
-    return { series: [{ data: names.map((name) => ({ value: rand(500, 400), name })) }] };
+    return { series: [{ data: LABELS.map((name) => ({ value: rand(500, 400), name })) }] };
   }
   if (type === "scatter") {
-    return { series: [{ data: Array.from({ length: 20 }, () => [rand(50, 80), rand(50, 80)]) }] };
+    return { series: [{ data: Array.from({ length: DATA_COUNT }, () => [rand(50, 80), rand(50, 80)]) }] };
   }
   // radar
-  return { series: [{ data: [{ value: randArray(5, 70, 40) }, { value: randArray(5, 50, 30) }] }] };
+  return { series: [{ data: [{ value: randArray(DATA_COUNT, 70, 40) }, { value: randArray(DATA_COUNT, 50, 30) }] }] };
 }
 
 registerDemo("echart", {
@@ -130,11 +135,12 @@ registerDemo("echart", {
       size: 2,
     });
 
-    const COLS = 6;
+    // 80个图表，将列数微调至8列以使得整体布局更紧凑方正 (8*10)
+    const COLS = 8;
     const CHART_W = 300;
     const CHART_H = 220;
     const GAP = 16;
-    const COUNT = 30;
+    const COUNT = 80;
 
     const charts: EChartsShape[] = [];
 
@@ -170,11 +176,12 @@ registerDemo("echart", {
     root.append(layer, editerLayer);
     root.mount();
 
+    // 更新频率修改为 200ms 一次（每秒 5 次）
     const timer = setInterval(() => {
       for (let i = 0; i < charts.length; i++) {
         charts[i].setOption(makeUpdateOption(i));
       }
-    }, 1500);
+    }, 200);
 
     return () => {
       clearInterval(timer);
