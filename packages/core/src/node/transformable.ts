@@ -270,10 +270,42 @@ export class Transformable extends Node {
 
   // ========== 脏标记机制 ==========
 
-  private invalidateCache() {
+  /**
+   * 清除几何缓存。
+   *
+   * @param trackDirtyBounds 是否将当前 _unionBoundsCache 合并到 _lastUnionBounds。
+   *   - true（markNeedsLayout 调用）：记录"脏之前的渲染位置"，用于 getDirtyRect
+   *     计算需要清除的旧像素区域。使用 merge 而非覆盖，确保同一帧内多次
+   *     dirty cycle（如 updateTransform → postUpdate → 再次 markNeedsLayout）
+   *     不会丢失最初的渲染位置。
+   *   - false（updateTransform 调用）：仅清除缓存以便重新计算，
+   *     不修改 _lastUnionBounds，避免中间计算值（从未被渲染）
+   *     污染脏区域追踪。
+   */
+  private invalidateCache(trackDirtyBounds = false) {
     this._coords = null;
     this._snapPoints = null;
-    this._lastUnionBounds = this._unionBoundsCache ?? this._lastUnionBounds;
+    if (trackDirtyBounds && this._unionBoundsCache) {
+      if (this._lastUnionBounds) {
+        const minX = Math.min(this._lastUnionBounds.left, this._unionBoundsCache.left);
+        const minY = Math.min(this._lastUnionBounds.top, this._unionBoundsCache.top);
+        const maxX = Math.max(
+          this._lastUnionBounds.left + this._lastUnionBounds.width,
+          this._unionBoundsCache.left + this._unionBoundsCache.width
+        );
+        const maxY = Math.max(
+          this._lastUnionBounds.top + this._lastUnionBounds.height,
+          this._unionBoundsCache.top + this._unionBoundsCache.height
+        );
+        this._lastUnionBounds = {
+          left: minX, top: minY,
+          width: maxX - minX, height: maxY - minY,
+          centerX: (minX + maxX) / 2, centerY: (minY + maxY) / 2
+        };
+      } else {
+        this._lastUnionBounds = this._unionBoundsCache;
+      }
+    }
     this._boundingRectCache = null;
     this._unionBoundsCache = null;
     this._inverseOwnMatrixCache = null;
@@ -291,7 +323,7 @@ export class Transformable extends Node {
     if (this.isDirty) return this;
 
     this.isDirty = true;
-    this.invalidateCache();
+    this.invalidateCache(true);
     this.markChildDirty();
     if (this.layer) {
       this.layer.addDirtyNode(this as any);

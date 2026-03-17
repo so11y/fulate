@@ -139,6 +139,8 @@ export class Element extends Transformable {
       this._lastUnionBounds.top + this._lastUnionBounds.height
     );
 
+    this._lastUnionBounds = null;
+
     return {
       left: minX,
       top: minY,

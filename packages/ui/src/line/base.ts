@@ -188,8 +188,8 @@ export abstract class BaseLine extends Element {
       this.height = 0;
       return;
     }
-    const worldPoints = this.getWorldLinePoints();
-    const rect = makeBoundingBoxFromPoints(worldPoints as Point[]);
+    // const worldPoints = this.getWorldLinePoints();
+    const rect = makeBoundingBoxFromPoints(this.linePoints as Point[]);
     this.width = rect.width || 1;
     this.height = rect.height || 1;
   }
