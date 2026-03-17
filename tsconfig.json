@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
+    "module": "ESNext",
     "moduleResolution": "node",
     "jsx": "preserve",
     "jsxImportSource": "vue",
@@ -17,7 +18,9 @@
       "@fulate/yoga": ["packages/yoga/src/index.ts"],
       "@fulate/yoga/*": ["packages/yoga/src/*"],
       "@fulate/vue": ["packages/vue/src/index.ts"],
-      "@fulate/vue/*": ["packages/vue/src/*"]
+      "@fulate/vue/*": ["packages/vue/src/*"],
+      "@fulate/echart": ["packages/echart/src/index.ts"],
+      "@fulate/echart/*": ["packages/echart/src/*"]
     }
   },
   "include": [

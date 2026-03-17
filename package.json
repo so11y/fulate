@@ -21,6 +21,7 @@
     "@fulate/vue": "*",
     "@fulate/yoga": "*",
     "@fulate/components": "*",
+    "@fulate/echart": "*",
     "@vue/runtime-core": "^3.5.30",
     "vue": "^3.5.30"
   }

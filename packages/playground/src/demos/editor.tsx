@@ -2,6 +2,7 @@ import { registerDemo } from "../registry";
 import { Root, Layer, EditerLayer, Artboard } from "@fulate/core";
 import { Rectangle, Circle, Triangle, Text, Workspace } from "@fulate/ui";
 import { Select, Snap, Rule, LineTool, setVueShapeBridge } from "@fulate/tools";
+import { EChartsPool, EChartsShape } from "@fulate/echart";
 import { fromVueToFulate, getVueComponent, useVueShapeSize } from "@fulate/vue";
 import { defineComponent, ref } from "@vue/runtime-core";
 import { Display, FlexDirection, Align } from "@fulate/yoga";
@@ -161,6 +162,121 @@ registerDemo("editor", {
       ]
     });
 
+    const echartsPool = new EChartsPool({
+      echartsUrl:
+        "https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.esm.min.js",
+      size: 2
+    });
+
+    const barChart = new EChartsShape({
+      pool: echartsPool,
+      left: 100,
+      top: 580,
+      width: 380,
+      height: 280,
+      radius: 10,
+      shadow: { color: "rgba(0,0,0,0.1)", blur: 12, offsetY: 3 },
+      echarts: {
+        option: {
+          backgroundColor: "#fff",
+          title: {
+            text: "月度销量",
+            left: "center",
+            top: 8,
+            textStyle: { fontSize: 14 }
+          },
+          tooltip: { trigger: "axis", renderMode: "richText" },
+          legend: { data: ["销量", "利润"], top: 30 },
+          xAxis: {
+            type: "category",
+            data: ["1月", "2月", "3月", "4月", "5月", "6月"]
+          },
+          yAxis: { type: "value" },
+          series: [
+            {
+              name: "销量",
+              type: "bar",
+              data: [120, 200, 150, 80, 70, 110],
+              itemStyle: { color: "#5470c6", borderRadius: 3 }
+            },
+            {
+              name: "利润",
+              type: "bar",
+              data: [60, 120, 90, 40, 50, 80],
+              itemStyle: { color: "#91cc75", borderRadius: 3 }
+            }
+          ]
+        }
+      }
+    });
+
+    const lineChart = new EChartsShape({
+      pool: echartsPool,
+      left: 520,
+      top: 580,
+      width: 380,
+      height: 280,
+      radius: 10,
+      shadow: { color: "rgba(0,0,0,0.1)", blur: 12, offsetY: 3 },
+      echarts: {
+        option: {
+          backgroundColor: "#fff",
+          title: {
+            text: "趋势分析",
+            left: "center",
+            top: 8,
+            textStyle: { fontSize: 14 }
+          },
+          tooltip: { trigger: "axis", renderMode: "richText" },
+          legend: { data: ["温度", "湿度"], top: 30 },
+          xAxis: {
+            type: "category",
+            data: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+          },
+          yAxis: { type: "value" },
+          series: [
+            {
+              name: "温度",
+              type: "line",
+              data: [23, 25, 28, 26, 22, 20, 24],
+              smooth: true,
+              symbolSize: 6,
+              itemStyle: { color: "#ee6666" },
+              lineStyle: { width: 2 }
+            },
+            {
+              name: "湿度",
+              type: "line",
+              data: [65, 60, 55, 70, 75, 80, 68],
+              smooth: true,
+              symbolSize: 6,
+              itemStyle: { color: "#73c0de" },
+              lineStyle: { width: 2 }
+            }
+          ]
+        }
+      }
+    });
+
+    artboard.append(barChart as any, lineChart as any);
+
+    const rand = (base: number, range: number) =>
+      Math.round(base + (Math.random() - 0.5) * range);
+    const echartsTimer = setInterval(() => {
+      barChart.setOption({
+        series: [
+          { data: Array.from({ length: 6 }, () => rand(130, 120)) },
+          { data: Array.from({ length: 6 }, () => rand(70, 80)) }
+        ]
+      });
+      lineChart.setOption({
+        series: [
+          { data: Array.from({ length: 7 }, () => rand(24, 12)) },
+          { data: Array.from({ length: 7 }, () => rand(65, 30)) }
+        ]
+      });
+    }, 1500);
+
     const workspace = new Workspace({
       width: 1920,
       height: 1080,
@@ -183,6 +299,10 @@ registerDemo("editor", {
 
     //@ts-ignore
     window.fulateRoot = root;
-    return () => root.unmounted();
+    return () => {
+      clearInterval(echartsTimer);
+      echartsPool.dispose();
+      root.unmounted();
+    };
   }
 });
