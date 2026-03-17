@@ -1,18 +1,8 @@
 import { registerDemo } from "../registry";
 import { Root, Layer, EditerLayer, Artboard } from "@fulate/core";
 import { Rectangle, Circle, Triangle, Text, Workspace } from "@fulate/ui";
-import {
-  Select,
-  Snap,
-  Rule,
-  LineTool,
-  setVueShapeBridge,
-} from "@fulate/tools";
-import {
-  fromVueToFulate,
-  getVueComponent,
-  useVueShapeSize,
-} from "@fulate/vue";
+import { Select, Snap, Rule, LineTool, setVueShapeBridge } from "@fulate/tools";
+import { fromVueToFulate, getVueComponent, useVueShapeSize } from "@fulate/vue";
 import { defineComponent, ref } from "@vue/runtime-core";
 import { Display, FlexDirection, Align } from "@fulate/yoga";
 import { FButton, FSelect, MD3 } from "@fulate/components";
@@ -23,7 +13,7 @@ setVueShapeBridge(fromVueToFulate, getVueComponent);
 const FormPanel = defineComponent({
   name: "FormPanel",
   props: {
-    title: { type: String, default: "Form" },
+    title: { type: String, default: "Form" }
   },
   setup(props) {
     const size = useVueShapeSize();
@@ -31,7 +21,7 @@ const FormPanel = defineComponent({
     const options: SelectOption[] = [
       { label: "Rectangle", value: "rect" },
       { label: "Circle", value: "circle" },
-      { label: "Triangle", value: "triangle" },
+      { label: "Triangle", value: "triangle" }
     ];
 
     return () => (
@@ -74,13 +64,22 @@ const FormPanel = defineComponent({
           gap={10}
           alignItems={Align.Center}
         >
-          <FButton label="Add" variant="filled" />
-          <FButton label="Reset" variant="outlined" />
-          <FButton label="Cancel" variant="text" />
+          <FButton
+            label="Add"
+            variant="filled"
+          />
+          <FButton
+            label="Reset"
+            variant="outlined"
+          />
+          <FButton
+            label="Cancel"
+            variant="text"
+          />
         </f-div>
       </f-div>
     );
-  },
+  }
 });
 
 registerDemo("editor", {
@@ -101,21 +100,21 @@ registerDemo("editor", {
           width: 200,
           height: 150,
           backgroundColor: "#3498db",
-          radius: 8,
+          radius: 8
         }),
         new Circle({
           left: 400,
           top: 120,
           width: 120,
           height: 120,
-          backgroundColor: "#e74c3c",
+          backgroundColor: "#e74c3c"
         }),
         new Triangle({
           left: 250,
           top: 320,
           width: 140,
           height: 120,
-          backgroundColor: "#2ecc71",
+          backgroundColor: "#2ecc71"
         }),
         new Text({
           left: 150,
@@ -126,7 +125,7 @@ registerDemo("editor", {
           textAlign: "center",
           verticalAlign: "middle",
           backgroundColor: "#f39c12",
-          color: "#fff",
+          color: "#fff"
         }),
         new Rectangle({
           left: 500,
@@ -141,47 +140,49 @@ registerDemo("editor", {
               top: 20,
               width: 30,
               height: 30,
-              backgroundColor: "rgba(255,255,255,0.4)",
+              backgroundColor: "rgba(255,255,255,0.4)"
             }),
             new Circle({
               left: 60,
               top: 20,
               width: 30,
               height: 30,
-              backgroundColor: "rgba(255,255,255,0.4)",
-            }),
-          ],
+              backgroundColor: "rgba(255,255,255,0.4)"
+            })
+          ]
         }),
         fromVueToFulate(FormPanel, {
           title: "Shape Controls",
           left: 600,
           top: 100,
           width: 300,
-          height: 250,
-        }),
-      ],
+          height: 250
+        })
+      ]
     });
 
     const workspace = new Workspace({
       width: 1920,
       height: 1080,
-      children: [artboard],
+      children: [artboard]
     });
 
     const contentLayer = new Layer({
       zIndex: 1,
       enableDirtyRect: true,
-      children: [workspace],
+      children: [workspace]
     });
 
     const editerLayer = new EditerLayer({
       zIndex: 2,
-      children: [new Select(), new Snap(), new Rule(), new LineTool()],
+      children: [new Select(), new Snap(), new Rule(), new LineTool()]
     });
 
     root.append(contentLayer, editerLayer, overlayLayer);
     root.mount();
 
+    //@ts-ignore
+    window.fulateRoot = root;
     return () => root.unmounted();
-  },
+  }
 });
