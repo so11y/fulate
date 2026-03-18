@@ -356,17 +356,7 @@ export class Transformable extends Node {
       (this.parent as Transformable).bubbleUpdateTransform();
     }
 
-    this.resolveFitSize();
-    this.calcWorldMatrix();
-    this.invalidateCache();
-    this.layer?.syncRbush(this as any);
-    this.isDirty = false;
-
-    if ((this as any).connectedLines?.size) {
-      this.dispatchEvent(
-        new CustomEvent("transformUpdated", { bubbles: false })
-      );
-    }
+    this.updateTransform(false);
   }
 
   updateTransform(parentWorldDirty: boolean = false) {

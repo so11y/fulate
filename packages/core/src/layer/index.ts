@@ -210,7 +210,6 @@ export class Layer extends Element {
     }
 
     for (const node of this.dirtyNodes) {
-      node._computeUnionBounds();
       let p: Element | undefined = node.parent;
       while (p && p !== (this as any)) {
         p._unionBoundsCache = null;
@@ -265,7 +264,7 @@ export class Layer extends Element {
     return this._debugCtx;
   }
 
-  private _flashRects(screenRects: RectPoint[], color: string) {
+  private _flashRects(screenRects: RectPoint[], color: string, worldRects?: RectPoint[]) {
     const ctx = this._ensureDebugCanvas();
     if (!ctx) return;
     const canvas = this._debugCanvas!;
@@ -277,6 +276,24 @@ export class Layer extends Element {
       ctx.strokeStyle = color.replace(/[\d.]+\)$/, "0.8)");
       ctx.lineWidth = 2;
       ctx.strokeRect(r.left, r.top, r.width, r.height);
+    }
+
+    if (worldRects) {
+      const m = this.root.getViewPointMtrix();
+      const dpr = this.root.dpr;
+      for (const wr of worldRects) {
+        const hits = this.searchAreaElements(wr);
+        for (const hit of hits) {
+          const bounds = hit.element.getBoundingRect();
+          const sx = (bounds.left * m.a + m.e) * dpr;
+          const sy = (bounds.top * m.d + m.f) * dpr;
+          const sw = bounds.width * m.a * dpr;
+          const sh = bounds.height * m.d * dpr;
+          ctx.strokeStyle = "rgba(0, 255, 0, 0.8)";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx, sy, sw, sh);
+        }
+      }
     }
 
     if (this._debugTimer) clearTimeout(this._debugTimer);
@@ -365,7 +382,7 @@ export class Layer extends Element {
           dpr
         );
         this._paintDirtyRects(screenRects);
-        this._flashRects(screenRects, "rgba(255, 0, 0, 0.25)");
+        this._flashRects(screenRects, "rgba(255, 0, 0, 0.25)", this.finalDirtyRects!);
         this.clearDirtyState();
       }
     } else {
