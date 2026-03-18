@@ -117,12 +117,6 @@ export class VueShape extends Shape {
     return result;
   }
 
-  quickSetOptions(options: any) {
-    const result = super.quickSetOptions(options);
-    this._syncSize();
-    return result;
-  }
-
   private _syncSize() {
     if (this._sizeRef) {
       if (this.width !== undefined) this._sizeRef.width = this.width;

@@ -17,7 +17,7 @@ export function alignElements(select: Select, type: AlignType) {
 
   select.history.snapshot(els);
 
-  const rects = els.map((el) => ({ el, rect: el.getUnionBoundingRect() }));
+  const rects = els.map((el) => ({ el, rect: el.getBoundingRect() }));
 
   switch (type) {
     case "justify-start":

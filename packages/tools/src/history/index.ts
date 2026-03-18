@@ -229,9 +229,9 @@ export class HistoryManager {
       } else if (isInsert) {
         if (state.parent)
           this.insertElementAt(state.parent, record.element, state.index);
-        record.element.quickSetOptions(state.props);
+        record.element.setOptions(state.props);
       } else {
-        record.element.quickSetOptions(state.props);
+        record.element.setOptions(state.props);
       }
     }
 

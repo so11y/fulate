@@ -115,7 +115,7 @@ export class Select extends Group {
       this.snapshotChildren();
     } else {
       const rect = makeBoundingBoxFromRects(
-        this.selectEls.map((v) => v.getUnionBoundingRect())
+        this.selectEls.map((v) => v.getBoundingRect())
       );
       this.setOptions({
         ...rect,

@@ -1,6 +1,6 @@
 import { registerDemo } from "../registry";
 import { Root, Layer, EditerLayer, Artboard } from "@fulate/core";
-import { Rectangle, Circle, Triangle, Text, Workspace } from "@fulate/ui";
+import { Rectangle, Circle, Triangle, Text, Workspace, Pinned } from "@fulate/ui";
 import { Select, Snap, Rule, LineTool, setVueShapeBridge } from "@fulate/tools";
 import { EChartsPool, EChartsShape } from "@fulate/echart";
 import { fromVueToFulate, getVueComponent, useVueShapeSize } from "@fulate/vue";
@@ -101,7 +101,38 @@ registerDemo("editor", {
           width: 200,
           height: 150,
           backgroundColor: "#3498db",
-          radius: 8
+          radius: 8,
+          children: [
+            new Pinned({
+              target: (e) => e.parent!,
+              isPin: true,
+              anchorX: 1,
+              anchorY: 0,
+              pivotX: 0.5,
+              pivotY: 1,
+              left: 0,
+              top: -8,
+              width: 60,
+              height: 28,
+              backgroundColor: "#e74c3c",
+              radius: 6,
+              children: [
+                new Text({
+                  left: 0,
+                  top: 0,
+                  width: 60,
+                  height: 28,
+                  text: "📌 Pin",
+                  color: "#fff",
+                  fontSize: 12,
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  silent: true,
+                  pickable: false,
+                }),
+              ],
+            }) as any,
+          ],
         }),
         new Circle({
           left: 400,
@@ -149,7 +180,39 @@ registerDemo("editor", {
               width: 30,
               height: 30,
               backgroundColor: "rgba(255,255,255,0.4)"
-            })
+            }),
+            new Pinned({
+              target: (e) => e.parent!,
+              isPin: false,
+              anchorX: 0,
+              anchorY: 0,
+              pivotX: 0.5,
+              pivotY: 1,
+              inheritRotation: true,
+              inheritScale: false,
+              inheritSkew: false,
+              left: 0,
+              top: -8,
+              width: 50,
+              height: 24,
+              backgroundColor: "#1abc9c",
+              radius: 5,
+              children: [
+                new Text({
+                  left: 0,
+                  top: 0,
+                  width: 50,
+                  height: 24,
+                  text: "🔄",
+                  color: "#fff",
+                  fontSize: 11,
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  silent: true,
+                  pickable: false,
+                }),
+              ],
+            }) as any,
           ]
         }),
         fromVueToFulate(FormPanel, {

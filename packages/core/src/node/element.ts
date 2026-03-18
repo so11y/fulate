@@ -261,7 +261,7 @@ export class Element extends Transformable {
     const worldCenter = localCenter.matrixTransform(groupWorldMatrix);
     const pos = this.getPositionByOrigin(worldCenter);
 
-    this.quickSetOptions({
+    this.setOptions({
       angle,
       width: newWidth,
       height: newHeight,
@@ -282,7 +282,7 @@ export class Element extends Transformable {
   }
 
   onParentResize(rx: number, ry: number) {
-    this.quickSetOptions({
+    this.setOptions({
       width: this.width * rx,
       height: this.height * ry,
       left: this.left * rx,
@@ -371,14 +371,6 @@ export class Element extends Transformable {
 
   setOptionsSync(options?: any) {
     return this.setOptions(options, true);
-  }
-
-  quickSetOptions(options: BaseElementOption) {
-    if (options.width !== undefined) this._hasExplicitWidth = true;
-    if (options.height !== undefined) this._hasExplicitHeight = true;
-    Object.assign(this, options);
-    this.markNeedsLayout();
-    return this;
   }
 
   animate(

@@ -139,11 +139,6 @@ export class Text extends Shape {
     super.attrs(options, O);
   }
 
-  quickSetOptions(options: TextOption) {
-    this.syncExplicitTextStyle(options);
-    return super.quickSetOptions(options);
-  }
-
   // ───────── layout ─────────
 
   private resolveWidth(ctx: CanvasRenderingContext2D, font: string) {

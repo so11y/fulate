@@ -43,7 +43,7 @@ export class Group extends Element {
     const worldCenter = localCenter.matrixTransform(groupWorldMatrix);
     const pos = this.getPositionByOrigin(worldCenter);
 
-    this.quickSetOptions({
+    this.setOptions({
       angle,
       scaleX,
       scaleY,
@@ -93,12 +93,6 @@ export class Group extends Element {
 
   setOptions(options?: BaseElementOption, syncCalc = false) {
     const res = super.setOptions(options, syncCalc);
-    this._applyTransformToChildren();
-    return res;
-  }
-
-  quickSetOptions(options: BaseElementOption) {
-    const res = super.quickSetOptions(options);
     this._applyTransformToChildren();
     return res;
   }

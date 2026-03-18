@@ -47,10 +47,6 @@ export class Shape extends Element {
     return super.setOptions(options, syncCalc);
   }
 
-  quickSetOptions(options: ShapeOption) {
-    return super.quickSetOptions(options);
-  }
-
   setPaint(
     options: Partial<
       Pick<

@@ -45,7 +45,6 @@ export class Transformable extends Node {
   protected _coords: Array<Point> | null = null;
   protected _snapPoints: Array<Point> | null = null;
   protected _boundingRectCache: RectWithCenter | null = null;
-  _unionBoundsCache: RectWithCenter | null = null;
   _lastBoundingRect: RectWithCenter | null = null;
 
   private _tempCenter = new Point(0, 0);
@@ -137,52 +136,6 @@ export class Transformable extends Node {
     if (this._boundingRectCache) return this._boundingRectCache;
     this._boundingRectCache = makeBoundingBoxFromPoints(this.getCoords());
     return this._boundingRectCache;
-  }
-
-  getUnionBoundingRect(): RectWithCenter {
-    if (this._unionBoundsCache) return this._unionBoundsCache;
-    this._computeUnionBounds();
-    return this._unionBoundsCache ?? this.getBoundingRect();
-  }
-
-  _computeUnionBounds() {
-    const own = this.getBoundingRect();
-    if (!this.children?.length) {
-      this._unionBoundsCache = own;
-      return;
-    }
-
-    let minX = own.left;
-    let minY = own.top;
-    let maxX = own.left + own.width;
-    let maxY = own.top + own.height;
-
-    for (let i = 0; i < this.children.length; i++) {
-      const child = this.children[i] as any;
-      if (!child.visible || child.width === undefined) continue;
-      const cb: RectWithCenter = child.getUnionBoundingRect();
-      if (
-        cb.left >= minX &&
-        cb.top >= minY &&
-        cb.left + cb.width <= maxX &&
-        cb.top + cb.height <= maxY
-      ) {
-        continue;
-      }
-      if (cb.left < minX) minX = cb.left;
-      if (cb.top < minY) minY = cb.top;
-      if (cb.left + cb.width > maxX) maxX = cb.left + cb.width;
-      if (cb.top + cb.height > maxY) maxY = cb.top + cb.height;
-    }
-
-    this._unionBoundsCache = {
-      left: minX,
-      top: minY,
-      width: maxX - minX,
-      height: maxY - minY,
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2
-    };
   }
 
   getSnapPoints(): Point[] {
@@ -307,7 +260,6 @@ export class Transformable extends Node {
       }
     }
     this._boundingRectCache = null;
-    this._unionBoundsCache = null;
     this._inverseOwnMatrixCache = null;
   }
 
@@ -399,7 +351,6 @@ export class Transformable extends Node {
     this._ownMatrixCache = null;
     this._snapPoints = null;
     this._boundingRectCache = null;
-    this._unionBoundsCache = null;
     super.unmounted();
   }
 }

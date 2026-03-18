@@ -257,23 +257,6 @@ export abstract class BaseLine extends Element {
     }
   }
 
-  quickSetOptions(options: BaseElementOption) {
-    if ((options as any).linePoints) {
-      const oldPoints = this.linePoints;
-      super.quickSetOptions(options);
-      this.linePoints = (options as any).linePoints.map((p: any) => ({
-        x: p.x,
-        y: p.y,
-        anchor: p.anchor ? { ...p.anchor } : undefined
-      }));
-      this._syncBoundsFromPoints();
-      this._syncConnectedLines(oldPoints, this.linePoints);
-      return this;
-    }
-
-    return super.quickSetOptions(options);
-  }
-
   setOptions(options?: any, syncCalc = false) {
     if (options?.linePoints) {
       const oldPoints = this.linePoints;

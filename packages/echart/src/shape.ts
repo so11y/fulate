@@ -57,18 +57,6 @@ export class EChartsShape extends Shape {
     return result;
   }
 
-  quickSetOptions(options: any) {
-    const result = super.quickSetOptions(options);
-    if (
-      this.isActiveed &&
-      (options.width !== undefined || options.height !== undefined)
-    ) {
-      this.resizeChart();
-      // this._debouncedResize();
-    }
-    return result;
-  }
-
   mounted() {
     this._pool.create(
       this._chartId,

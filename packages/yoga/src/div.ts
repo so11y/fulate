@@ -137,7 +137,6 @@ export interface DivMixin {
   computedLayout(): this;
   flushStyles(): this;
   setOptions(options?: YogaOption, syncCalc?: boolean): this;
-  quickSetOptions(options: ShapeOption): this;
 }
 
 export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
@@ -372,26 +371,6 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
 
     onParentResize() {}
-
-    quickSetOptions(options: ShapeOption): this {
-      super.quickSetOptions(options);
-      let needFlush = false;
-      let sizeChanged = false;
-      for (const key of keysToSync) {
-        if (options[key] !== undefined) {
-          this._options[key] = options[key];
-          needFlush = true;
-          if (key === "width" || key === "height") sizeChanged = true;
-        }
-      }
-      if (needFlush) {
-        this.flushStyles();
-        if (sizeChanged && this.isActiveed) {
-          this.inject("yoga-root").layout();
-        }
-      }
-      return this;
-    }
 
     unmounted() {
       const parent = this.parent as any;
