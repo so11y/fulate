@@ -103,6 +103,13 @@ export class Node extends EventEmitter {
 
     if (this.isActiveed) {
       nodes.forEach((child) => child.mount());
+
+      const layer = this._layer;
+      if (layer && (layer as any)._frameId > 0) {
+        for (const child of nodes) {
+          if ((child as any).isDirty) layer.addDirtyNode(child as any);
+        }
+      }
     }
 
     this.isDirtyChild = true;

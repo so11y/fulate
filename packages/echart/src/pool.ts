@@ -6,7 +6,7 @@ export interface EChartsPoolOptions {
 }
 
 interface WorkerChartMessage {
-  type: "create" | "event" | "resize" | "update" | "destroy";
+  type: "create" | "event" | "resize" | "update" | "pause" | "resume" | "destroy";
   chartId: string;
   [key: string]: any;
 }
@@ -124,6 +124,14 @@ export class EChartsPool {
       notMerge,
       lazyUpdate,
     });
+  }
+
+  pause(chartId: string) {
+    this.send(chartId, { type: "pause", chartId });
+  }
+
+  resume(chartId: string) {
+    this.send(chartId, { type: "resume", chartId });
   }
 
   destroy(chartId: string) {

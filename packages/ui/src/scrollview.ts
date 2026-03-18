@@ -112,7 +112,15 @@ export class ScrollView extends Shape {
     );
   }
 
-  _computeUnionBounds() {
+  updateTransform(parentWorldDirty: boolean = false) {
+    const needsLayout = parentWorldDirty || this.isDirty || this.isDirtyChild;
+    super.updateTransform(parentWorldDirty);
+    if (needsLayout) {
+      this._updateScrollLayout();
+    }
+  }
+
+  private _updateScrollLayout() {
     let maxRight = 0;
     let maxBottom = 0;
     if (this.children?.length) {
@@ -161,8 +169,6 @@ export class ScrollView extends Shape {
         }
       }
     }
-
-    this._unionBoundsCache = this.getBoundingRect();
   }
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {

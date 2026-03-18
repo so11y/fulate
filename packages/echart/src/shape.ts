@@ -24,6 +24,7 @@ export class EChartsShape extends Shape {
   private _chartId: string;
   private _echartsOpts: EChartsInitOpts;
   private _bitmap: ImageBitmap | null = null;
+  private _paused = false;
   private _cleanups: Array<() => void> = [];
 
   constructor(options: EChartsShapeOption) {
@@ -102,6 +103,19 @@ export class EChartsShape extends Shape {
     if (this.radius) {
       ctx.restore();
     }
+  }
+
+  hasInView() {
+    const inView = super.hasInView();
+    if (this.isActiveed && inView !== !this._paused) {
+      this._paused = !inView;
+      if (this._paused) {
+        this._pool.pause(this._chartId);
+      } else {
+        this._pool.resume(this._chartId);
+      }
+    }
+    return inView;
   }
 
   private _onFrame(bitmap: ImageBitmap) {

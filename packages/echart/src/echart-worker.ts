@@ -3,7 +3,7 @@ declare const echarts: any;
 let echartsModule: any;
 const charts = new Map<
   string,
-  { chart: any; canvas: OffscreenCanvas; dpr: number }
+  { chart: any; canvas: OffscreenCanvas; dpr: number; paused: boolean }
 >();
 
 self.onmessage = async (e: MessageEvent) => {
@@ -28,7 +28,9 @@ self.onmessage = async (e: MessageEvent) => {
       });
       chart.setOption(option, notMerge, lazyUpdate);
 
+      const entry = { chart, canvas, dpr, paused: false };
       chart.on("rendered", async () => {
+        if (entry.paused) return;
         const bitmap = await createImageBitmap(canvas);
         (self as any).postMessage(
           { type: "frame", chartId, bitmap },
@@ -36,7 +38,7 @@ self.onmessage = async (e: MessageEvent) => {
         );
       });
 
-      charts.set(chartId, { chart, canvas, dpr });
+      charts.set(chartId, entry);
       break;
     }
 
@@ -70,6 +72,26 @@ self.onmessage = async (e: MessageEvent) => {
       entry.canvas.width = width * dpr;
       entry.canvas.height = height * dpr;
       entry.chart.resize({ width, height, devicePixelRatio: dpr });
+      break;
+    }
+
+    case "pause": {
+      const entry = charts.get(chartId);
+      if (entry) entry.paused = true;
+      break;
+    }
+
+    case "resume": {
+      const entry = charts.get(chartId);
+      if (entry && entry.paused) {
+        entry.paused = false;
+        createImageBitmap(entry.canvas).then((bitmap) => {
+          (self as any).postMessage(
+            { type: "frame", chartId, bitmap },
+            [bitmap]
+          );
+        });
+      }
       break;
     }
 

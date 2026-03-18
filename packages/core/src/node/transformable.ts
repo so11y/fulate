@@ -46,7 +46,7 @@ export class Transformable extends Node {
   protected _snapPoints: Array<Point> | null = null;
   protected _boundingRectCache: RectWithCenter | null = null;
   _unionBoundsCache: RectWithCenter | null = null;
-  _lastUnionBounds: RectWithCenter | null = null;
+  _lastBoundingRect: RectWithCenter | null = null;
 
   private _tempCenter = new Point(0, 0);
 
@@ -139,9 +139,9 @@ export class Transformable extends Node {
     return this._boundingRectCache;
   }
 
-  //包含自己的，也包含所有子节点的，用来一般做脏矩形清理
-  //绘制select的矩形大小
   getUnionBoundingRect(): RectWithCenter {
+    if (this._unionBoundsCache) return this._unionBoundsCache;
+    this._computeUnionBounds();
     return this._unionBoundsCache ?? this.getBoundingRect();
   }
 
@@ -160,8 +160,7 @@ export class Transformable extends Node {
     for (let i = 0; i < this.children.length; i++) {
       const child = this.children[i] as any;
       if (!child.visible || child.width === undefined) continue;
-      const cb: RectWithCenter | null = child._unionBoundsCache;
-      if (!cb) continue;
+      const cb: RectWithCenter = child.getUnionBoundingRect();
       if (
         cb.left >= minX &&
         cb.top >= minY &&
@@ -276,37 +275,35 @@ export class Transformable extends Node {
   /**
    * 清除几何缓存。
    *
-   * @param trackDirtyBounds 是否将当前 _unionBoundsCache 合并到 _lastUnionBounds。
+   * @param trackDirtyBounds 是否将当前 _boundingRectCache 合并到 _lastBoundingRect。
    *   - true（markNeedsLayout 调用）：记录"脏之前的渲染位置"，用于 getDirtyRect
    *     计算需要清除的旧像素区域。使用 merge 而非覆盖，确保同一帧内多次
-   *     dirty cycle（如 updateTransform → postUpdate → 再次 markNeedsLayout）
-   *     不会丢失最初的渲染位置。
+   *     dirty cycle 不会丢失最初的渲染位置。
    *   - false（updateTransform 调用）：仅清除缓存以便重新计算，
-   *     不修改 _lastUnionBounds，避免中间计算值（从未被渲染）
-   *     污染脏区域追踪。
+   *     不修改 _lastBoundingRect，避免中间计算值污染脏区域追踪。
    */
   private invalidateCache(trackDirtyBounds = false) {
     this._coords = null;
     this._snapPoints = null;
-    if (trackDirtyBounds && this._unionBoundsCache) {
-      if (this._lastUnionBounds) {
-        const minX = Math.min(this._lastUnionBounds.left, this._unionBoundsCache.left);
-        const minY = Math.min(this._lastUnionBounds.top, this._unionBoundsCache.top);
+    if (trackDirtyBounds && this._boundingRectCache) {
+      if (this._lastBoundingRect) {
+        const minX = Math.min(this._lastBoundingRect.left, this._boundingRectCache.left);
+        const minY = Math.min(this._lastBoundingRect.top, this._boundingRectCache.top);
         const maxX = Math.max(
-          this._lastUnionBounds.left + this._lastUnionBounds.width,
-          this._unionBoundsCache.left + this._unionBoundsCache.width
+          this._lastBoundingRect.left + this._lastBoundingRect.width,
+          this._boundingRectCache.left + this._boundingRectCache.width
         );
         const maxY = Math.max(
-          this._lastUnionBounds.top + this._lastUnionBounds.height,
-          this._unionBoundsCache.top + this._unionBoundsCache.height
+          this._lastBoundingRect.top + this._lastBoundingRect.height,
+          this._boundingRectCache.top + this._boundingRectCache.height
         );
-        this._lastUnionBounds = {
+        this._lastBoundingRect = {
           left: minX, top: minY,
           width: maxX - minX, height: maxY - minY,
           centerX: (minX + maxX) / 2, centerY: (minY + maxY) / 2
         };
       } else {
-        this._lastUnionBounds = this._unionBoundsCache;
+        this._lastBoundingRect = this._boundingRectCache;
       }
     }
     this._boundingRectCache = null;
@@ -365,6 +362,10 @@ export class Transformable extends Node {
     if (shouldUpdate) {
       this.resolveFitSize();
       this.calcWorldMatrix();
+      if (parentWorldDirty && !this.isDirty) {
+        this._lastBoundingRect = this._boundingRectCache;
+        this.layer?.addDirtyNode(this as any);
+      }
       this.invalidateCache();
       this.layer?.syncRbush(this as any);
       this.isDirty = false;
@@ -389,12 +390,11 @@ export class Transformable extends Node {
         }
       }
       this.isDirtyChild = false;
-      this._computeUnionBounds();
     }
   }
 
   unmounted(): void {
-    this._lastUnionBounds = this._unionBoundsCache ?? this._lastUnionBounds;
+    this._lastBoundingRect = this._boundingRectCache ?? this._lastBoundingRect;
     this._coords = null;
     this._ownMatrixCache = null;
     this._snapPoints = null;

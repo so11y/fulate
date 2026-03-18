@@ -32,6 +32,7 @@ export class Layer extends Element {
   isLayer = true;
   isRenderDirtyMode = false;
   _forceFullRepaint = false;
+  _dirtyVisitSet: Set<Element> | null = null;
 
   debugDirtyRect: boolean = false;
   private _debugCanvas: HTMLCanvasElement | null = null;
@@ -206,23 +207,15 @@ export class Layer extends Element {
     }
 
     for (const node of this.dirtyNodes) {
+      if (!node.isActiveed) continue;
       node.bubbleUpdateTransform();
-    }
-
-    for (const node of this.dirtyNodes) {
-      let p: Element | undefined = node.parent;
-      while (p && p !== (this as any)) {
-        p._unionBoundsCache = null;
-        p._computeUnionBounds();
-        p = p.parent;
-      }
     }
   }
 
   clearDirtyState() {
     for (const node of this.dirtyNodes) {
       node.isDirty = false;
-      node._lastUnionBounds = null;
+      node._lastBoundingRect = null;
     }
     this.dirtyNodes.clear();
     this.paintDirtyNodes.clear();
@@ -241,7 +234,23 @@ export class Layer extends Element {
     ctx.clip();
     for (const r of screenRects)
       ctx.clearRect(r.left, r.top, r.width, r.height);
+
+    const visitSet = new Set<Element>();
+    for (const wr of this.finalDirtyRects!) {
+      const hits = this.searchAreaElements(wr);
+      for (const hit of hits) {
+        let node: Element | undefined = hit.element;
+        while (node && node !== (this as any)) {
+          if (visitSet.has(node)) break;
+          visitSet.add(node);
+          node = node.parent;
+        }
+      }
+    }
+    this._dirtyVisitSet = visitSet;
     this.paint(ctx);
+    this._dirtyVisitSet = null;
+
     ctx.restore();
   }
 

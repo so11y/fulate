@@ -1,4 +1,3 @@
-import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { FulateEvent } from "@fulate/util";
 import { Transformable, TransformableOptions } from "./transformable";
@@ -141,20 +140,20 @@ export class Element extends Transformable {
 
   getDirtyRect() {
     if (!this._ownMatrixCache) {
-      return this._lastUnionBounds ?? { left: 0, top: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
+      return this._lastBoundingRect ?? { left: 0, top: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
     }
-    const current = this.getUnionBoundingRect();
-    if (!this._lastUnionBounds) return current;
+    const current = this.getBoundingRect();
+    if (!this._lastBoundingRect) return current;
 
-    const minX = Math.min(current.left, this._lastUnionBounds.left);
-    const minY = Math.min(current.top, this._lastUnionBounds.top);
+    const minX = Math.min(current.left, this._lastBoundingRect.left);
+    const minY = Math.min(current.top, this._lastBoundingRect.top);
     const maxX = Math.max(
       current.left + current.width,
-      this._lastUnionBounds.left + this._lastUnionBounds.width
+      this._lastBoundingRect.left + this._lastBoundingRect.width
     );
     const maxY = Math.max(
       current.top + current.height,
-      this._lastUnionBounds.top + this._lastUnionBounds.height
+      this._lastBoundingRect.top + this._lastBoundingRect.height
     );
 
     return {
@@ -168,13 +167,6 @@ export class Element extends Transformable {
   }
 
   shouldRepaint() {
-    if (this.layer.finalDirtyRects && this.layer.finalDirtyRects.length > 0) {
-      const bound = this.getUnionBoundingRect();
-      const hit = this.layer.finalDirtyRects.some((r) =>
-        Intersection.intersectRect(bound, r)
-      );
-      return hit;
-    }
     return true;
   }
 
@@ -207,6 +199,7 @@ export class Element extends Transformable {
 
   protected paintChildren(ctx: CanvasRenderingContext2D) {
     if (!this.children) return;
+    const visitSet = this.layer?._dirtyVisitSet;
     for (let i = 0; i < this.children.length; i++) {
       const child = this.children[i];
       if (
@@ -215,7 +208,8 @@ export class Element extends Transformable {
       ) {
         continue;
       }
-      if (child.hasInView() && child.shouldRepaint()) {
+      if (visitSet && !visitSet.has(child)) continue;
+      if (child.hasInView()) {
         child.paint(ctx);
       }
     }
