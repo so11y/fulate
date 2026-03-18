@@ -37,6 +37,7 @@ export class Node extends EventEmitter {
 
   isDirtyChild = false;
   isDirty = true;
+  _lastUpdateFrame = 0;
 
   key!: string;
   silent = false;

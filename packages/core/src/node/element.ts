@@ -6,6 +6,14 @@ import { Tween, Easing } from "@tweenjs/tween.js";
 import { ColorUtil } from "@fulate/util";
 import { qrDecompose } from "@fulate/util";
 
+export interface RBushItem {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  element: Element;
+}
+
 export interface BaseElementOption<T = Element> extends TransformableOptions {
   key?: string;
   cursor?: string;
@@ -48,6 +56,7 @@ export interface AnimateOptions<T = any> {
 export class Element extends Transformable {
   type = "element";
 
+  rbushItem: RBushItem | null = null;
   cursor?: string;
   visible: boolean = true;
   selectctbale?: boolean;
