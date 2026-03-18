@@ -65,6 +65,10 @@ registerDemo("10w", {
       console.log(`[10w] ${TOTAL} 个节点 mount → 首次绘制完成：${elapsed}ms`);
     });
 
+    //@ts-ignore
+    window._fulateRoot = root
+
+
     return () => root.unmounted();
   }
 });

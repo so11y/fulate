@@ -220,8 +220,9 @@ export class Layer extends Element {
     }
   }
 
-  private _clearDirtyState() {
+  clearDirtyState() {
     for (const node of this.dirtyNodes) {
+      node.isDirty = false;
       node._lastUnionBounds = null;
     }
     this.dirtyNodes.clear();
@@ -290,7 +291,7 @@ export class Layer extends Element {
 
     if (this._forceFullRepaint) {
       this._forceFullRepaint = false;
-      this._clearDirtyState();
+      this.clearDirtyState();
       this._fullRepaint();
       this.finalDirtyRects = null;
       this.isRenderDirtyMode = false;
@@ -340,7 +341,7 @@ export class Layer extends Element {
 
       if (earlyOut) {
         this.isRenderDirtyMode = false;
-        this._clearDirtyState();
+        this.clearDirtyState();
         this._fullRepaint();
         this._flashRects(
           [{ left: 0, top: 0, width: canvasW, height: canvasH }],
@@ -350,7 +351,7 @@ export class Layer extends Element {
         const screenRects = collectActiveBuckets(this._buckets);
 
         if (screenRects.length === 0) {
-          this._clearDirtyState();
+          this.clearDirtyState();
           this.isRenderDirtyMode = false;
           return;
         }
@@ -365,7 +366,7 @@ export class Layer extends Element {
         );
         this._paintDirtyRects(screenRects);
         this._flashRects(screenRects, "rgba(255, 0, 0, 0.25)");
-        this._clearDirtyState();
+        this.clearDirtyState();
       }
     } else {
       this._fullRepaint();

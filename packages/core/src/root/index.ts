@@ -117,8 +117,7 @@ export class Root extends Node {
 
   requestRender() {
     this.layers.forEach((layer) => {
-      layer.dirtyNodes.clear();
-      layer.paintDirtyNodes.clear();
+      layer.clearDirtyState();
       layer._forceFullRepaint = true;
       layer.requestRender();
     });
@@ -145,6 +144,7 @@ export class Root extends Node {
       }
 
       for (const l of this._pendingLayers) {
+        l._frameId++;
         l.flushUpdate();
       }
       for (const l of this.layers) {
