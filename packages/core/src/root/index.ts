@@ -1,7 +1,6 @@
 import { Node } from "../node/node";
 import { Layer } from "../layer";
-import type { RBushItem } from "../layer";
-import { Element } from "../node/element";
+import { Element, RBushItem } from "../node/element";
 import { CustomEvent } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { RectWithCenter } from "@fulate/util";
@@ -13,8 +12,6 @@ import {
   searchHitElements as searchHitElementsImpl,
   searchArea as searchAreaImpl
 } from "./hit-test";
-
-export type { RBushItem };
 
 export class Root extends Node {
   type = "root";
@@ -121,6 +118,7 @@ export class Root extends Node {
   requestRender() {
     this.layers.forEach((layer) => {
       layer.dirtyNodes.clear();
+      layer.paintDirtyNodes.clear();
       layer._forceFullRepaint = true;
       layer.requestRender();
     });

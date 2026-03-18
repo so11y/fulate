@@ -1,16 +1,9 @@
 import { BaseElementOption, Element } from "@fulate/core";
+import type { RBushItem } from "@fulate/core";
 import RBush from "rbush";
 import { RectWithCenter, RectPoint } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { Group } from "@tweenjs/tween.js";
-
-export interface RBushItem {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-  element: Element;
-}
 
 // ========== dirty-rect helpers ==========
 
@@ -34,6 +27,7 @@ export class Layer extends Element {
   finalDirtyRects: RectPoint[] | null = null;
 
   dirtyNodes = new Set<Element>();
+  paintDirtyNodes = new Set<Element>();
 
   isLayer = true;
   isRenderDirtyMode = false;
@@ -44,11 +38,14 @@ export class Layer extends Element {
   private _debugCtx: CanvasRenderingContext2D | null = null;
   private _debugTimer: any = null;
 
+  _frameId = 0;
+
   private _pendingSyncRbushNodes = new Set<Element>();
   private _postUpdateCallbacks = new Set<() => void>();
   private static GRID_COLS = 3;
   private static GRID_ROWS = 3;
   private static FULL_REPAINT_RATIO = 0.5;
+  private static RBUSH_REBUILD_RATIO = 0.3;
 
   private _buckets: RectPoint[] = Array.from(
     { length: Layer.GRID_COLS * Layer.GRID_ROWS },
@@ -104,8 +101,8 @@ export class Layer extends Element {
     this.root?.unregisterLayer(this);
   }
 
-  syncRbush(node: any) {
-    if (node.isLayer || node.type === "root") return;
+  syncRbush(node: Element) {
+    if ((node as any).isLayer || node.type === "root") return;
     this._pendingSyncRbushNodes.add(node);
   }
 
@@ -121,7 +118,7 @@ export class Layer extends Element {
     for (const cb of cbs) cb();
   }
 
-  removeRbush(node: any) {
+  removeRbush(node: Element) {
     if (node.rbushItem) {
       this.rbush.remove(node.rbushItem);
       node.rbushItem = null;
@@ -148,36 +145,31 @@ export class Layer extends Element {
   }
 
   flushSyncNodes() {
-    this._pendingSyncRbushNodes.forEach((node: any) => {
-      if (node.width === undefined || node.height === undefined) {
-        if (node.rbushItem) {
-          this.rbush.remove(node.rbushItem);
-          node.rbushItem = null;
-        }
-        return;
-      }
+    const pending = this._pendingSyncRbushNodes;
+    if (pending.size === 0) return;
 
-      const { left, top, width, height } = node.getBoundingRect();
-
-      if (node.rbushItem) {
-        this.rbush.remove(node.rbushItem);
-        node.rbushItem.minX = left;
-        node.rbushItem.minY = top;
-        node.rbushItem.maxX = left + width;
-        node.rbushItem.maxY = top + height;
-        this.rbush.insert(node.rbushItem);
-      } else {
-        node.rbushItem = {
-          minX: left,
-          minY: top,
-          maxX: left + width,
-          maxY: top + height,
-          element: node
-        };
-        this.rbush.insert(node.rbushItem);
+    const allItems = this.rbush.all();
+    if (pending.size <= allItems.length * Layer.RBUSH_REBUILD_RATIO) {
+      for (const node of pending) {
+        const oldItem = node.rbushItem;
+        if (oldItem) this.rbush.remove(oldItem);
+        updateNodeItem(node);
+        if (node.rbushItem) this.rbush.insert(node.rbushItem);
       }
-    });
-    this._pendingSyncRbushNodes.clear();
+    } else {
+      for (const node of pending) updateNodeItem(node);
+
+      const existing = new Set(allItems);
+      const result = allItems.filter((item) => item.element.rbushItem === item);
+      for (const node of pending) {
+        const item = node.rbushItem;
+        if (item && !existing.has(item)) result.push(item);
+      }
+      this.rbush.clear();
+      this.rbush.load(result);
+    }
+
+    pending.clear();
   }
 
   hasInView() {
@@ -189,8 +181,11 @@ export class Layer extends Element {
   }
 
   addDirtyNode(node: Element) {
-    if (!this.enableDirtyRect) return;
     this.dirtyNodes.add(node);
+  }
+
+  addPaintDirtyNode(node: Element) {
+    this.paintDirtyNodes.add(node);
   }
 
   requestRender() {
@@ -199,15 +194,30 @@ export class Layer extends Element {
 
   shouldRepaint() {
     if (this.root?._pendingLayers.has(this)) return true;
-    if (this.enableDirtyRect) {
-      return this.dirtyNodes.size > 0;
-    }
-    return true;
+    return this.dirtyNodes.size > 0 || this.paintDirtyNodes.size > 0;
   }
 
   flushUpdate() {
     if (this.isUnmounted) return;
-    this.updateTransform(false);
+
+    if (this.isDirty) {
+      this.updateTransform(false);
+      return;
+    }
+
+    for (const node of this.dirtyNodes) {
+      node.bubbleUpdateTransform();
+    }
+
+    for (const node of this.dirtyNodes) {
+      node._computeUnionBounds();
+      let p: Element | undefined = node.parent;
+      while (p && p !== (this as any)) {
+        p._unionBoundsCache = null;
+        p._computeUnionBounds();
+        p = p.parent;
+      }
+    }
   }
 
   private _clearDirtyState() {
@@ -215,6 +225,7 @@ export class Layer extends Element {
       node._lastUnionBounds = null;
     }
     this.dirtyNodes.clear();
+    this.paintDirtyNodes.clear();
   }
 
   private _fullRepaint() {
@@ -286,7 +297,8 @@ export class Layer extends Element {
       return;
     }
 
-    if (this.enableDirtyRect && this.dirtyNodes.size > 0) {
+    const hasDirty = this.dirtyNodes.size > 0 || this.paintDirtyNodes.size > 0;
+    if (this.enableDirtyRect && hasDirty) {
       this.isRenderDirtyMode = true;
 
       const m = this.root.getViewPointMtrix();
@@ -304,27 +316,25 @@ export class Layer extends Element {
       let totalArea = 0;
       let earlyOut = false;
 
-      for (const node of this.dirtyNodes) {
+      const addNodeDirtyRect = (node: Element) => {
         const screen = worldRectToScreen(
           node.getDirtyRect(),
-          m.a,
-          m.d,
-          m.e,
-          m.f,
-          dpr,
-          padding
+          m.a, m.d, m.e, m.f, dpr, padding
         );
         totalArea += distributeToGrid(
-          this._buckets,
-          screen,
-          GRID_COLS,
-          GRID_ROWS,
-          cellW,
-          cellH
+          this._buckets, screen, GRID_COLS, GRID_ROWS, cellW, cellH
         );
-        if (totalArea > threshold) {
-          earlyOut = true;
-          break;
+        if (totalArea > threshold) earlyOut = true;
+      };
+
+      for (const node of this.dirtyNodes) {
+        addNodeDirtyRect(node);
+        if (earlyOut) break;
+      }
+      if (!earlyOut) {
+        for (const node of this.paintDirtyNodes) {
+          addNodeDirtyRect(node);
+          if (earlyOut) break;
         }
       }
 
@@ -470,5 +480,27 @@ function resetBuckets(buckets: RectPoint[]) {
     b.top = Infinity;
     b.width = 0;
     b.height = 0;
+  }
+}
+
+function updateNodeItem(node: Element) {
+  if (node.width === undefined || node.height === undefined) {
+    node.rbushItem = null;
+    return;
+  }
+  const { left, top, width, height } = node.getBoundingRect();
+  if (!node.rbushItem) {
+    node.rbushItem = {
+      minX: left,
+      minY: top,
+      maxX: left + width,
+      maxY: top + height,
+      element: node
+    };
+  } else {
+    node.rbushItem.minX = left;
+    node.rbushItem.minY = top;
+    node.rbushItem.maxX = left + width;
+    node.rbushItem.maxY = top + height;
   }
 }

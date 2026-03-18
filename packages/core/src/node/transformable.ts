@@ -132,12 +132,15 @@ export class Transformable extends Node {
 
   // --- 几何与碰撞检测 ---
 
+  //这个是自己的范围，不包含子的，处理碰撞，检查鼠标 ，aabb
   getBoundingRect(): RectWithCenter {
     if (this._boundingRectCache) return this._boundingRectCache;
     this._boundingRectCache = makeBoundingBoxFromPoints(this.getCoords());
     return this._boundingRectCache;
   }
 
+  //包含自己的，也包含所有子节点的，用来一般做脏矩形清理
+  //绘制select的矩形大小
   getUnionBoundingRect(): RectWithCenter {
     return this._unionBoundsCache ?? this.getBoundingRect();
   }
@@ -313,7 +316,7 @@ export class Transformable extends Node {
 
   markPaintDirty() {
     if (this.layer) {
-      this.layer.addDirtyNode(this as any);
+      this.layer.addPaintDirtyNode(this as any);
       this.layer.requestRender?.();
     }
     return this;
@@ -341,6 +344,28 @@ export class Transformable extends Node {
       if (this.fitHeight && !this._hasExplicitHeight && this.parent.height !== undefined) {
         this.height = this.parent.height;
       }
+    }
+  }
+
+  bubbleUpdateTransform() {
+    const frameId = this.layer?._frameId ?? 0;
+    if (this._lastUpdateFrame === frameId) return;
+    this._lastUpdateFrame = frameId;
+
+    if (this.parent && this.parent._lastUpdateFrame !== frameId && this.parent.isDirty) {
+      (this.parent as Transformable).bubbleUpdateTransform();
+    }
+
+    this.resolveFitSize();
+    this.calcWorldMatrix();
+    this.invalidateCache();
+    this.layer?.syncRbush(this as any);
+    this.isDirty = false;
+
+    if ((this as any).connectedLines?.size) {
+      this.dispatchEvent(
+        new CustomEvent("transformUpdated", { bubbles: false })
+      );
     }
   }
 
