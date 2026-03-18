@@ -264,7 +264,11 @@ export class Layer extends Element {
     return this._debugCtx;
   }
 
-  private _flashRects(screenRects: RectPoint[], color: string, worldRects?: RectPoint[]) {
+  private _flashRects(
+    screenRects: RectPoint[],
+    color: string,
+    worldRects?: RectPoint[]
+  ) {
     const ctx = this._ensureDebugCanvas();
     if (!ctx) return;
     const canvas = this._debugCanvas!;
@@ -337,10 +341,20 @@ export class Layer extends Element {
       const addNodeDirtyRect = (node: Element) => {
         const screen = worldRectToScreen(
           node.getDirtyRect(),
-          m.a, m.d, m.e, m.f, dpr, padding
+          m.a,
+          m.d,
+          m.e,
+          m.f,
+          dpr,
+          padding
         );
         totalArea += distributeToGrid(
-          this._buckets, screen, GRID_COLS, GRID_ROWS, cellW, cellH
+          this._buckets,
+          screen,
+          GRID_COLS,
+          GRID_ROWS,
+          cellW,
+          cellH
         );
         if (totalArea > threshold) earlyOut = true;
       };
@@ -382,7 +396,11 @@ export class Layer extends Element {
           dpr
         );
         this._paintDirtyRects(screenRects);
-        this._flashRects(screenRects, "rgba(255, 0, 0, 0.25)", this.finalDirtyRects!);
+        this._flashRects(
+          screenRects,
+          "rgba(255, 0, 0, 0.25)",
+          this.finalDirtyRects!
+        );
         this.clearDirtyState();
       }
     } else {
@@ -459,10 +477,10 @@ function distributeToGrid(
   for (let r = r0; r <= r1; r++)
     for (let c = c0; c <= c1; c++) {
       const clipped: ScreenBounds = {
-        left: Math.max(s.left, c * cellW),
-        top: Math.max(s.top, r * cellH),
-        right: Math.min(s.right, (c + 1) * cellW),
-        bottom: Math.min(s.bottom, (r + 1) * cellH)
+        left: Math.floor(Math.max(s.left, c * cellW)),
+        top: Math.floor(Math.max(s.top, r * cellH)),
+        right: Math.ceil(Math.min(s.right, (c + 1) * cellW)),
+        bottom: Math.ceil(Math.min(s.bottom, (r + 1) * cellH))
       };
       delta += mergeToBucket(buckets[r * cols + c], clipped);
     }
