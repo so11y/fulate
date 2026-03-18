@@ -140,7 +140,16 @@ export class Element extends Transformable {
 
   getDirtyRect() {
     if (!this._ownMatrixCache) {
-      return this._lastBoundingRect ?? { left: 0, top: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
+      return (
+        this._lastBoundingRect ?? {
+          left: 0,
+          top: 0,
+          width: 0,
+          height: 0,
+          centerX: 0,
+          centerY: 0
+        }
+      );
     }
     const current = this.getBoundingRect();
     if (!this._lastBoundingRect) return current;
@@ -164,10 +173,6 @@ export class Element extends Transformable {
       centerX: (minX + maxX) / 2,
       centerY: (minY + maxY) / 2
     };
-  }
-
-  shouldRepaint() {
-    return true;
   }
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
