@@ -1,6 +1,13 @@
 import { registerDemo } from "../registry";
 import { Root, Layer, EditerLayer, Artboard } from "@fulate/core";
-import { Rectangle, Circle, Triangle, Text, Workspace, Pinned } from "@fulate/ui";
+import {
+  Rectangle,
+  Circle,
+  Triangle,
+  Text,
+  Workspace,
+  Pinned
+} from "@fulate/ui";
 import { Select, Snap, Rule, LineTool, setVueShapeBridge } from "@fulate/tools";
 import { EChartsPool, EChartsShape } from "@fulate/echart";
 import { fromVueToFulate, getVueComponent, useVueShapeSize } from "@fulate/vue";
@@ -31,8 +38,6 @@ const FormPanel = defineComponent({
         flexDirection={FlexDirection.Column}
         gap={16}
         padding={20}
-        width={size.width}
-        height={size.height}
         backgroundColor={MD3.surface}
         radius={12}
         borderColor={MD3.outlineVariant}
@@ -128,11 +133,11 @@ registerDemo("editor", {
                   textAlign: "center",
                   verticalAlign: "middle",
                   silent: true,
-                  pickable: false,
-                }),
-              ],
-            }) as any,
-          ],
+                  pickable: false
+                })
+              ]
+            }) as any
+          ]
         }),
         new Circle({
           left: 400,
@@ -209,10 +214,10 @@ registerDemo("editor", {
                   textAlign: "center",
                   verticalAlign: "middle",
                   silent: true,
-                  pickable: false,
-                }),
-              ],
-            }) as any,
+                  pickable: false
+                })
+              ]
+            }) as any
           ]
         }),
         fromVueToFulate(FormPanel, {
@@ -221,6 +226,13 @@ registerDemo("editor", {
           top: 100,
           width: 300,
           height: 250
+        }),
+        fromVueToFulate(FButton, {
+          label: "f-button",
+          left: 120,
+          top: 260,
+          width: 130,
+          height: 40
         })
       ]
     });

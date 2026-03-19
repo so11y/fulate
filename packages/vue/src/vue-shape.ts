@@ -84,35 +84,17 @@ export class VueShape extends Shape {
 
   attrs(options: any, O?: any) {
     if (!options) return;
-    const shapeOpts: Record<string, any> = {};
     for (const [key, val] of Object.entries(options)) {
       if (this._isCompProp(key)) {
         this._compProps[key] = val;
         if (this._reactiveProps) this._reactiveProps[key] = val;
-      } else {
-        shapeOpts[key] = val;
       }
     }
-    if (Object.keys(shapeOpts).length > 0) {
-      super.attrs(shapeOpts, O);
-    }
+    super.attrs(options, O);
   }
 
   setOptions(options?: any, syncCalc = false) {
-    if (!options) return this;
-    const shapeOpts: Record<string, any> = {};
-    for (const [key, val] of Object.entries(options)) {
-      if (this._isCompProp(key)) {
-        this._compProps[key] = val;
-        if (this._reactiveProps) this._reactiveProps[key] = val;
-      } else {
-        shapeOpts[key] = val;
-      }
-    }
-    const result = super.setOptions(
-      Object.keys(shapeOpts).length > 0 ? shapeOpts : undefined,
-      syncCalc
-    );
+    const result = super.setOptions(options, syncCalc);
     this._syncSize();
     return result;
   }
@@ -146,11 +128,8 @@ export function fromVueToFulate(
 
   if (props) {
     for (const [key, val] of Object.entries(props)) {
-      if (compPropKeys.has(key)) {
-        compProps[key] = val;
-      } else {
-        shapeOpts[key] = val;
-      }
+      if (compPropKeys.has(key)) compProps[key] = val;
+      shapeOpts[key] = val;
     }
   }
 
