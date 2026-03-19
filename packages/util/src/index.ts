@@ -1,5 +1,5 @@
 export { PiBy180 } from "./constants";
-export { createVector, Point } from "./point";
+export { createVector, Point, transformPoint } from "./point";
 export type { TOriginX, TOriginY, PointType } from "./point";
 export {
   makeBoundingBoxFromPoints,
