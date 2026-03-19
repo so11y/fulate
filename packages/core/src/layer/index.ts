@@ -319,6 +319,10 @@ export class Layer extends Element {
   flushPaint() {
     if (this.isUnmounted || this.shouldRepaint() === false) return;
 
+    if (this.root?._isCssTransforming && this.cssTransformable) {
+      return;
+    }
+
     if (this._forceFullRepaint) {
       this._forceFullRepaint = false;
       this.clearDirtyState();
