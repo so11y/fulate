@@ -1,9 +1,14 @@
 import { Node } from "./node";
-import { Point, PointType, TOriginX, TOriginY } from "@fulate/util";
+import {
+  Point,
+  PointType,
+  TOriginX,
+  TOriginY,
+  transformPoint
+} from "@fulate/util";
 import { resolveOrigin } from "@fulate/util";
 import { RectWithCenter, makeBoundingBoxFromPoints } from "@fulate/util";
 import { CustomEvent } from "@fulate/util";
-import { transformPoint } from "packages/util/src/point";
 
 export interface TransformableOptions {
   left?: number;
