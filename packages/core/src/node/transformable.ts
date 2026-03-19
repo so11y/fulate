@@ -3,6 +3,7 @@ import { Point, PointType, TOriginX, TOriginY } from "@fulate/util";
 import { resolveOrigin } from "@fulate/util";
 import { RectWithCenter, makeBoundingBoxFromPoints } from "@fulate/util";
 import { CustomEvent } from "@fulate/util";
+import { transformPoint } from "packages/util/src/point";
 
 export interface TransformableOptions {
   left?: number;
@@ -117,16 +118,16 @@ export class Transformable extends Node {
 
   getWorldPoint(point: Point) {
     const matrix = this.getOwnMatrix();
-    return new Point(matrix.transformPoint(point));
+    return transformPoint(matrix, point); //new Point(matrix.transformPoint(point));
   }
 
   getGlobalToLocal(point: Point) {
     if (this._inverseOwnMatrixCache) {
-      return new Point(this._inverseOwnMatrixCache.transformPoint(point));
+      return transformPoint(this._inverseOwnMatrixCache, point); //new Point(this._inverseOwnMatrixCache.transformPoint(point));
     }
     const inverseMatrix = this.getOwnMatrix().inverse();
     this._inverseOwnMatrixCache = inverseMatrix;
-    return new Point(inverseMatrix.transformPoint(point));
+    return transformPoint(inverseMatrix, point); // new Point(inverseMatrix.transformPoint(point));
   }
 
   // --- 几何与碰撞检测 ---
@@ -143,8 +144,8 @@ export class Transformable extends Node {
       return this._snapPoints;
     }
     const finalMatrix = this.getOwnMatrix();
-    this._snapPoints = this.getLocalSnapPoints().map(
-      (point) => new Point(finalMatrix.transformPoint(point))
+    this._snapPoints = this.getLocalSnapPoints().map((point) =>
+      point.applyMatrix(finalMatrix)
     );
     return this._snapPoints;
   }
@@ -174,8 +175,8 @@ export class Transformable extends Node {
 
   setCoords() {
     const finalMatrix = this.getOwnMatrix();
-    this._coords = this.getLocalPoints().map(
-      (point) => new Point(finalMatrix.transformPoint(point))
+    this._coords = this.getLocalPoints().map((point) =>
+      point.applyMatrix(finalMatrix)
     );
     return this;
   }
@@ -240,8 +241,14 @@ export class Transformable extends Node {
     this._snapPoints = null;
     if (trackDirtyBounds && this._boundingRectCache) {
       if (this._lastBoundingRect) {
-        const minX = Math.min(this._lastBoundingRect.left, this._boundingRectCache.left);
-        const minY = Math.min(this._lastBoundingRect.top, this._boundingRectCache.top);
+        const minX = Math.min(
+          this._lastBoundingRect.left,
+          this._boundingRectCache.left
+        );
+        const minY = Math.min(
+          this._lastBoundingRect.top,
+          this._boundingRectCache.top
+        );
         const maxX = Math.max(
           this._lastBoundingRect.left + this._lastBoundingRect.width,
           this._boundingRectCache.left + this._boundingRectCache.width
@@ -251,9 +258,12 @@ export class Transformable extends Node {
           this._boundingRectCache.top + this._boundingRectCache.height
         );
         this._lastBoundingRect = {
-          left: minX, top: minY,
-          width: maxX - minX, height: maxY - minY,
-          centerX: (minX + maxX) / 2, centerY: (minY + maxY) / 2
+          left: minX,
+          top: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          centerX: (minX + maxX) / 2,
+          centerY: (minY + maxY) / 2
         };
       } else {
         this._lastBoundingRect = this._boundingRectCache;
@@ -287,10 +297,18 @@ export class Transformable extends Node {
 
   resolveFitSize() {
     if (this.parent) {
-      if (this.fitWidth && !this._hasExplicitWidth && this.parent.width !== undefined) {
+      if (
+        this.fitWidth &&
+        !this._hasExplicitWidth &&
+        this.parent.width !== undefined
+      ) {
         this.width = this.parent.width;
       }
-      if (this.fitHeight && !this._hasExplicitHeight && this.parent.height !== undefined) {
+      if (
+        this.fitHeight &&
+        !this._hasExplicitHeight &&
+        this.parent.height !== undefined
+      ) {
         this.height = this.parent.height;
       }
     }
@@ -301,7 +319,11 @@ export class Transformable extends Node {
     if (this._lastUpdateFrame === frameId) return;
     this._lastUpdateFrame = frameId;
 
-    if (this.parent && this.parent._lastUpdateFrame !== frameId && this.parent.isDirty) {
+    if (
+      this.parent &&
+      this.parent._lastUpdateFrame !== frameId &&
+      this.parent.isDirty
+    ) {
       (this.parent as Transformable).bubbleUpdateTransform();
     }
 

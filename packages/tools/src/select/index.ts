@@ -235,7 +235,7 @@ export class Select extends Group {
     const el = this.selectEls.length === 1 ? this.selectEls[0] : null;
     super.setCoords();
     this.controlCoords = schema.controls.map(
-      (cp) => new Point(finalMatrix.transformPoint(cp.localPosition(this, el)))
+      (cp) => cp.localPosition(this, el).applyMatrix(finalMatrix) //new Point(finalMatrix.transformPoint(cp.localPosition(this, el)))
     );
     return this;
   }

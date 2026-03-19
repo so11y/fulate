@@ -60,12 +60,30 @@ export class Point extends DOMPoint {
     return this;
   }
 
-  pointDistance<T extends { x: number; y: number }>(
-    p1: T,
-    threshold: number
-  ) {
+  setXY(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+    return this;
+  }
+
+  applyMatrix(m: DOMMatrix) {
+    return transformPoint(m, this, this);
+  }
+
+  pointDistance<T extends { x: number; y: number }>(p1: T, threshold: number) {
     const dx = this.x - p1.x;
     const dy = this.y - p1.y;
     return dx * dx + dy * dy <= threshold ** 2;
   }
+}
+
+export function transformPoint(
+  m: DOMMatrix,
+  point: PointType,
+  out?: Point
+): Point {
+  const x = m.a * point.x + m.c * point.y + m.e;
+  const y = m.b * point.x + m.d * point.y + m.f;
+  if (out) return out.setXY(x, y);
+  return new Point(x, y);
 }
