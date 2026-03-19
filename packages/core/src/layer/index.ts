@@ -4,15 +4,7 @@ import RBush from "rbush";
 import { RectWithCenter, RectPoint } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { Group } from "@tweenjs/tween.js";
-
-// ========== dirty-rect helpers ==========
-
-interface ScreenBounds {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
+import { DirtyGrid } from "./dirty-grid";
 
 export class Layer extends Element {
   type = "layer";
@@ -43,15 +35,10 @@ export class Layer extends Element {
 
   private _pendingSyncRbushNodes = new Set<Element>();
   private _postUpdateCallbacks = new Set<() => void>();
-  private static GRID_COLS = 3;
-  private static GRID_ROWS = 3;
   private static FULL_REPAINT_RATIO = 0.5;
   private static RBUSH_REBUILD_RATIO = 0.3;
 
-  private _buckets: RectPoint[] = Array.from(
-    { length: Layer.GRID_COLS * Layer.GRID_ROWS },
-    () => ({ left: Infinity, top: Infinity, width: 0, height: 0 })
-  );
+  private _dirtyGrid = new DirtyGrid();
 
   constructor(
     options?: BaseElementOption & {
@@ -236,8 +223,17 @@ export class Layer extends Element {
       ctx.clearRect(r.left, r.top, r.width, r.height);
 
     const visitSet = new Set<Element>();
+    const m = this.root.getViewPointMtrix();
+    //因为有去整，这里对去整进行补偿，才不会多clear白边出来
+    const queryPad = 1 / (m.a * this.root.dpr);
     for (const wr of this.finalDirtyRects!) {
-      const hits = this.searchAreaElements(wr);
+      const padded = {
+        left: wr.left - queryPad,
+        top: wr.top - queryPad,
+        width: wr.width + queryPad * 2,
+        height: wr.height + queryPad * 2
+      };
+      const hits = this.searchAreaElements(padded);
       for (const hit of hits) {
         let node: Element | undefined = hit.element;
         while (node && node !== (this as any)) {
@@ -337,82 +333,48 @@ export class Layer extends Element {
       this.isRenderDirtyMode = true;
 
       const m = this.root.getViewPointMtrix();
-      const dpr = this.root.dpr;
-      const padding = Math.ceil(2 + (m.a < 1 ? 1 / m.a : 0)) * dpr;
-      const canvasW = this.width * dpr;
-      const canvasH = this.height * dpr;
-      const { GRID_COLS, GRID_ROWS, FULL_REPAINT_RATIO } = Layer;
-      const cellW = canvasW / GRID_COLS;
-      const cellH = canvasH / GRID_ROWS;
-      const threshold = canvasW * canvasH * FULL_REPAINT_RATIO;
+      const worldPad = 2 / m.a;
 
-      resetBuckets(this._buckets);
-
-      let totalArea = 0;
-      let earlyOut = false;
-
-      const addNodeDirtyRect = (node: Element) => {
-        const screen = worldRectToScreen(
-          node.getDirtyRect(),
-          m.a,
-          m.d,
-          m.e,
-          m.f,
-          dpr,
-          padding
-        );
-        totalArea += distributeToGrid(
-          this._buckets,
-          screen,
-          GRID_COLS,
-          GRID_ROWS,
-          cellW,
-          cellH
-        );
-        if (totalArea > threshold) earlyOut = true;
+      const worldRects: RectPoint[] = [];
+      const addPadded = (node: Element) => {
+        const r = node.getDirtyRect();
+        worldRects.push({
+          left: r.left - worldPad,
+          top: r.top - worldPad,
+          width: r.width + worldPad * 2,
+          height: r.height + worldPad * 2
+        });
       };
+      for (const node of this.dirtyNodes) addPadded(node);
+      for (const node of this.paintDirtyNodes) addPadded(node);
 
-      for (const node of this.dirtyNodes) {
-        addNodeDirtyRect(node);
-        if (earlyOut) break;
-      }
-      if (!earlyOut) {
-        for (const node of this.paintDirtyNodes) {
-          addNodeDirtyRect(node);
-          if (earlyOut) break;
-        }
-      }
+      const visibleWorldW = this.width / m.a;
+      const visibleWorldH = this.height / m.d;
+      const visibleArea = visibleWorldW * visibleWorldH;
 
-      if (earlyOut) {
+      const { rects: mergedWorldRects } = this._dirtyGrid.merge(
+        worldRects,
+        visibleArea,
+        Layer.FULL_REPAINT_RATIO
+      );
+
+      if (!mergedWorldRects) {
         this.isRenderDirtyMode = false;
         this.clearDirtyState();
         this._fullRepaint();
-        this._flashRects(
-          [{ left: 0, top: 0, width: canvasW, height: canvasH }],
-          "rgba(0, 100, 255, 0.2)"
-        );
+        this._flashFullRepaint();
+      } else if (mergedWorldRects.length === 0) {
+        this.clearDirtyState();
+        this.isRenderDirtyMode = false;
+        return;
       } else {
-        const screenRects = collectActiveBuckets(this._buckets);
-
-        if (screenRects.length === 0) {
-          this.clearDirtyState();
-          this.isRenderDirtyMode = false;
-          return;
-        }
-
-        this.finalDirtyRects = screenToWorldRects(
-          screenRects,
-          m.a,
-          m.d,
-          m.e,
-          m.f,
-          dpr
-        );
+        this.finalDirtyRects = mergedWorldRects;
+        const screenRects = this._worldToScreenRects(mergedWorldRects);
         this._paintDirtyRects(screenRects);
         this._flashRects(
           screenRects,
           "rgba(255, 0, 0, 0.25)",
-          this.finalDirtyRects!
+          mergedWorldRects
         );
         this.clearDirtyState();
       }
@@ -422,6 +384,27 @@ export class Layer extends Element {
 
     this.finalDirtyRects = null;
     this.isRenderDirtyMode = false;
+  }
+
+  private _worldToScreenRects(worldRects: RectPoint[]): RectPoint[] {
+    const m = this.root.getViewPointMtrix();
+    const dpr = this.root.dpr;
+    return worldRects.map((r) => {
+      const sl = Math.floor((r.left * m.a + m.e) * dpr);
+      const st = Math.floor((r.top * m.d + m.f) * dpr);
+      const sr = Math.ceil(((r.left + r.width) * m.a + m.e) * dpr);
+      const sb = Math.ceil(((r.top + r.height) * m.d + m.f) * dpr);
+      return { left: sl, top: st, width: sr - sl, height: sb - st };
+    });
+  }
+
+  private _flashFullRepaint() {
+    const canvasW = this.width * this.root.dpr;
+    const canvasH = this.height * this.root.dpr;
+    this._flashRects(
+      [{ left: 0, top: 0, width: canvasW, height: canvasH }],
+      "rgba(0, 100, 255, 0.2)"
+    );
   }
 
   paint(ctx = this.ctx) {
@@ -441,94 +424,6 @@ export class Layer extends Element {
       this.height * this.root.dpr
     );
     this.ctx.restore();
-  }
-}
-
-function worldRectToScreen(
-  rect: RectPoint,
-  ma: number,
-  md: number,
-  me: number,
-  mf: number,
-  dpr: number,
-  padding: number
-): ScreenBounds {
-  return {
-    left: Math.floor((rect.left * ma + me) * dpr) - padding,
-    top: Math.floor((rect.top * md + mf) * dpr) - padding,
-    right: Math.ceil(((rect.left + rect.width) * ma + me) * dpr) + padding,
-    bottom: Math.ceil(((rect.top + rect.height) * md + mf) * dpr) + padding
-  };
-}
-
-function mergeToBucket(bucket: RectPoint, s: ScreenBounds): number {
-  const oldArea = bucket.left === Infinity ? 0 : bucket.width * bucket.height;
-  const bRight =
-    bucket.left === Infinity ? -Infinity : bucket.left + bucket.width;
-  const bBottom =
-    bucket.top === Infinity ? -Infinity : bucket.top + bucket.height;
-  bucket.left = Math.min(bucket.left, s.left);
-  bucket.top = Math.min(bucket.top, s.top);
-  bucket.width = Math.max(bRight, s.right) - bucket.left;
-  bucket.height = Math.max(bBottom, s.bottom) - bucket.top;
-  return bucket.width * bucket.height - oldArea;
-}
-
-function distributeToGrid(
-  buckets: RectPoint[],
-  s: ScreenBounds,
-  cols: number,
-  rows: number,
-  cellW: number,
-  cellH: number
-): number {
-  const c0 = Math.max(0, Math.floor(s.left / cellW));
-  const c1 = Math.min(cols - 1, Math.floor(s.right / cellW));
-  const r0 = Math.max(0, Math.floor(s.top / cellH));
-  const r1 = Math.min(rows - 1, Math.floor(s.bottom / cellH));
-  let delta = 0;
-  for (let r = r0; r <= r1; r++)
-    for (let c = c0; c <= c1; c++) {
-      const clipped: ScreenBounds = {
-        left: Math.floor(Math.max(s.left, c * cellW)),
-        top: Math.floor(Math.max(s.top, r * cellH)),
-        right: Math.ceil(Math.min(s.right, (c + 1) * cellW)),
-        bottom: Math.ceil(Math.min(s.bottom, (r + 1) * cellH))
-      };
-      delta += mergeToBucket(buckets[r * cols + c], clipped);
-    }
-  return delta;
-}
-
-function collectActiveBuckets(buckets: RectPoint[]): RectPoint[] {
-  const out: RectPoint[] = [];
-  for (const b of buckets)
-    if (b.left !== Infinity && b.width > 0 && b.height > 0) out.push(b);
-  return out;
-}
-
-function screenToWorldRects(
-  rects: RectPoint[],
-  ma: number,
-  md: number,
-  me: number,
-  mf: number,
-  dpr: number
-): RectPoint[] {
-  return rects.map((r) => ({
-    left: (r.left / dpr - me) / ma,
-    top: (r.top / dpr - mf) / md,
-    width: r.width / dpr / ma,
-    height: r.height / dpr / md
-  }));
-}
-
-function resetBuckets(buckets: RectPoint[]) {
-  for (const b of buckets) {
-    b.left = Infinity;
-    b.top = Infinity;
-    b.width = 0;
-    b.height = 0;
   }
 }
 
