@@ -4,7 +4,8 @@ import {
   reactive,
   markRaw,
   h,
-  type Component
+  type Component,
+  mergeProps
 } from "@vue/runtime-core";
 import { baseCreateApp } from "./renderer";
 
@@ -24,7 +25,6 @@ export class VueShape extends Shape {
   _comp: Component | null = null;
   _compName: string = "";
   _compProps: Record<string, any> = {};
-  _compPropKeys: Set<string> | null = null;
   _reactiveProps: Record<string, any> | null = null;
   _sizeRef: { width: number; height: number } | null = null;
   _app: any = null;
@@ -46,12 +46,13 @@ export class VueShape extends Shape {
       width: this.width ?? 0,
       height: this.height ?? 0
     });
+    const _this = this;
     const rp = this._reactiveProps;
     const Comp = this._comp!;
 
     const Wrapper = defineComponent({
       setup() {
-        return () => h(Comp, rp);
+        return () => h(Comp, mergeProps(rp, _this._sizeRef));
       }
     });
 
@@ -79,7 +80,7 @@ export class VueShape extends Shape {
   }
 
   private _isCompProp(key: string): boolean {
-    return this._compPropKeys?.has(key) ?? false;
+    return key in ((this._comp as any)?.props ?? {});
   }
 
   attrs(options: any, O?: any) {
@@ -120,27 +121,13 @@ export function fromVueToFulate(
   comp: Component,
   props?: Record<string, any>
 ): VueShape {
-  const compPropsDef = (comp as any).props ?? {};
-  const compPropKeys = new Set(Object.keys(compPropsDef));
-
-  const shapeOpts: Record<string, any> = {};
-  const compProps: Record<string, any> = {};
-
-  if (props) {
-    for (const [key, val] of Object.entries(props)) {
-      if (compPropKeys.has(key)) compProps[key] = val;
-      shapeOpts[key] = val;
-    }
-  }
-
-  const el = markRaw(new VueShape(shapeOpts));
+  const el = markRaw(new VueShape());
   el._comp = comp;
   el._compName = (comp as any).name ?? "";
   if (el._compName) {
     vueCompRegistry.set(el._compName, comp);
   }
-  el._compProps = compProps;
-  el._compPropKeys = compPropKeys;
+  if (props) el.attrs(props);
 
   return el;
 }
