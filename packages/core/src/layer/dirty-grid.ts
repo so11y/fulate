@@ -87,7 +87,12 @@ export class DirtyGrid {
     fullRepaintRatio: number
   ): DirtyGridResult {
     if (dirtyRects.length === 0) return { rects: [] };
-    if (dirtyRects.length === 1) return { rects: [dirtyRects[0]] };
+    if (dirtyRects.length === 1) {
+      const r = dirtyRects[0];
+      if (r.width * r.height > visibleArea * fullRepaintRatio)
+        return { rects: null };
+      return { rects: [r] };
+    }
 
     const bb = makeBoundingBoxFromRects(dirtyRects);
     const bbArea = bb.width * bb.height;
