@@ -141,11 +141,11 @@ export class Layer extends Element {
       for (const node of pending) {
         const oldItem = node.rbushItem;
         if (oldItem) this.rbush.remove(oldItem);
-        updateNodeItem(node);
+        updateRbushItem(node);
         if (node.rbushItem) this.rbush.insert(node.rbushItem);
       }
     } else {
-      for (const node of pending) updateNodeItem(node);
+      for (const node of pending) updateRbushItem(node);
 
       const existing = new Set(allItems);
       const result = allItems.filter((item) => item.element.rbushItem === item);
@@ -427,7 +427,7 @@ export class Layer extends Element {
   }
 }
 
-function updateNodeItem(node: Element) {
+function updateRbushItem(node: Element) {
   if (node.width === undefined || node.height === undefined) {
     node.rbushItem = null;
     return;
