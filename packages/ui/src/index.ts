@@ -49,6 +49,7 @@ import { Group } from "./group";
 import { ScrollView } from "./scrollview";
 import { Line } from "./line/index";
 import { RippleOverlay } from "./ripple";
+import { Pinned } from "./pinned";
 
 registerElement("f-rectangle", Rectangle);
 registerElement("f-circle", Circle);
@@ -60,3 +61,4 @@ registerElement("f-group", Group);
 registerElement("f-scrollview", ScrollView);
 registerElement("f-line", Line);
 registerElement("f-ripple", RippleOverlay);
+registerElement("f-pinned", Pinned);
