@@ -1,5 +1,5 @@
 import { ShapeOption, Shape } from "@fulate/core";
-import { CustomEvent } from "@fulate/util";
+import { CustomEvent } from "@fulate/core";
 import {
   getMeasureContext,
   preCalculateChars,

@@ -1,4 +1,5 @@
-import { CustomEvent, Point } from "@fulate/util";
+import { CustomEvent } from "@fulate/core";
+import { Point } from "@fulate/util";
 import { getMeasureContext, getCharWidth, measureStringWidth } from "./measure";
 import type { Text, ResolvedTextStyle } from "./index";
 

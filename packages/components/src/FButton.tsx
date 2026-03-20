@@ -5,7 +5,7 @@ import {
   type PropType
 } from "@vue/runtime-core";
 import { Display, Justify, Align } from "@fulate/yoga";
-import { ColorUtil } from "@fulate/util";
+import { blendColor } from "@fulate/util";
 import { MD3 } from "./theme";
 import { measureText } from "./util";
 
@@ -21,14 +21,14 @@ function getRestBg(variant: ButtonVariant, color: string, disabled: boolean) {
 
 function getHoverBg(variant: ButtonVariant, color: string) {
   if (variant === "filled")
-    return ColorUtil.blend(color, "#ffffff", MD3.stateHoverOpacity);
-  return ColorUtil.blend(MD3.surface, color, MD3.stateHoverOpacity);
+    return blendColor(color, "#ffffff", MD3.stateHoverOpacity);
+  return blendColor(MD3.surface, color, MD3.stateHoverOpacity);
 }
 
 function getPressBg(variant: ButtonVariant, color: string) {
   if (variant === "filled")
-    return ColorUtil.blend(color, "#ffffff", MD3.statePressOpacity);
-  return ColorUtil.blend(MD3.surface, color, MD3.statePressOpacity);
+    return blendColor(color, "#ffffff", MD3.statePressOpacity);
+  return blendColor(MD3.surface, color, MD3.statePressOpacity);
 }
 
 export const FButton = defineComponent({

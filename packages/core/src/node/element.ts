@@ -1,8 +1,8 @@
 import { Point } from "@fulate/util";
-import { FulateEvent } from "@fulate/util";
+import { FulateEvent } from "../event";
 import { Transformable, TransformableOptions } from "./transformable";
 import { Tween, Easing } from "@tweenjs/tween.js";
-import { ColorUtil } from "@fulate/util";
+import { parseColor, formatColor } from "@fulate/util";
 import { qrDecompose } from "@fulate/util";
 
 export interface RBushItem {
@@ -396,8 +396,8 @@ export class Element extends Transformable {
       const currentValue = (this as any)[key];
 
       if (isColor) {
-        startState[key] = ColorUtil.parse(currentValue);
-        endState[key] = ColorUtil.parse(targetValue);
+        startState[key] = parseColor(currentValue || "transparent");
+        endState[key] = parseColor(targetValue || "transparent");
       } else {
         startState[key] = currentValue ?? 0;
         endState[key] = targetValue;
@@ -414,7 +414,7 @@ export class Element extends Transformable {
         for (const key in to) {
           const isColor = key.toLowerCase().includes("color");
           (this as any)[key] = isColor
-            ? ColorUtil.format(startState[key])
+            ? formatColor(startState[key])
             : startState[key];
         }
         dirtyFn();

@@ -1,4 +1,4 @@
-import { CustomEvent, EventEmitter } from "@fulate/util";
+import { CustomEvent, EventEmitter } from "../event";
 import type { Root } from "@fulate/core";
 import type { Layer } from "@fulate/core";
 

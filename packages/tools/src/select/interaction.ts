@@ -1,7 +1,7 @@
 import { Point, Intersection } from "@fulate/util";
 import { degreesToRadians } from "@fulate/util";
 import { Element } from "@fulate/core";
-import { FulateEvent } from "@fulate/util";
+import { FulateEvent } from "@fulate/core";
 import type { Select } from "./index";
 import { checkElement } from "./checkElement";
 

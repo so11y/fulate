@@ -1,7 +1,7 @@
 import { Node } from "../node/node";
 import { Layer } from "../layer";
 import { Element, RBushItem } from "../node/element";
-import { CustomEvent } from "@fulate/util";
+import { CustomEvent } from "../event";
 import { Point } from "@fulate/util";
 import { RectWithCenter } from "@fulate/util";
 import { Group } from "@tweenjs/tween.js";

@@ -1,5 +1,6 @@
 import { Shape, ShapeOption } from "@fulate/core";
-import { Point, FulateEvent } from "@fulate/util";
+import { FulateEvent } from "@fulate/core";
+import { Point } from "@fulate/util";
 // import { debounce } from "lodash-es";
 import { EChartsPool } from "./pool";
 

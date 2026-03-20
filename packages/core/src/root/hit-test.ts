@@ -2,7 +2,7 @@ import type { Root } from "./index";
 import type { RBushItem } from "@fulate/core";
 import type { Element } from "../node/element";
 import { Point } from "@fulate/util";
-import { CustomEvent } from "@fulate/util";
+import { CustomEvent } from "../event";
 import { RectWithCenter } from "@fulate/util";
 
 function dispatchHitEvent(

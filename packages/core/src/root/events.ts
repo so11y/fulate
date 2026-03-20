@@ -1,4 +1,4 @@
-import { CustomEvent } from "@fulate/util";
+import { CustomEvent } from "../event";
 import type { Root } from "./index";
 import { applyCssTransform } from "./viewport";
 import { checkHit } from "./hit-test";

@@ -1,23 +1,18 @@
-export { PiBy180 } from "./constants";
 export { createVector, Point, transformPoint } from "./point";
 export type { TOriginX, TOriginY, PointType } from "./point";
 export {
   makeBoundingBoxFromPoints,
   makeBoundsFromPoints,
-  makeBoundingBoxFromRects
+  makeBoundingBoxFromRects,
+  rectToBounds,
+  boundsToRect,
+  mergeBounds,
+  isValidBounds,
+  createEmptyBounds
 } from "./rect";
-export type { Rect, RectWithCenter, RectPoint, BoundingBox } from "./rect";
+export type { Rect, RectWithCenter, RectPoint, BoundingBox, Bounds } from "./rect";
 export { qrDecompose, extractPhysicalTransform } from "./matrix";
-export { degreesToRadians, radiansToDegrees } from "./radiansDegreesConversion";
-export { ColorUtil } from "./color";
+export { degreesToRadians, radiansToDegrees } from "./math";
 export { Intersection } from "./Intersection";
-export { CustomEvent, EventEmitter } from "./event";
-export type {
-  UserCanvasEvent,
-  EventName,
-  CanvasPointEvent,
-  FulateEvent,
-  CustomEventInit,
-  AddEventListenerOptions
-} from "./event";
+export { parseColor, formatColor, blendColor, colorWithAlpha } from "./color";
 export { resolveOrigin } from "./resolveOrigin";

@@ -1,14 +1,9 @@
 import { ref } from "@vue/runtime-core";
-import { ColorUtil } from "@fulate/util";
+import { colorWithAlpha } from "@fulate/util";
 import { MD3 } from "../theme";
 
 const STATE_HOVER_ALPHA = 0.08;
 const STATE_PRESS_ALPHA = 0.12;
-
-function colorWithAlpha(colorStr: string, alpha: number): string {
-  const c = ColorUtil.parse(colorStr);
-  return `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})`;
-}
 
 export function useStateLayer(
   disabled: () => boolean,

@@ -1,4 +1,4 @@
-import { radiansToDegrees } from "./radiansDegreesConversion";
+import { radiansToDegrees } from "./math";
 
 /**
  * QR 分解：从 2D 仿射矩阵中提取旋转角度、缩放和斜切。

@@ -1,4 +1,4 @@
-import { Point } from "./point";
+import { Point } from "@fulate/util";
 
 export type UserCanvasEvent = Event & FulateEvent;
 
@@ -10,8 +10,7 @@ export type EventName =
   | "contextmenu"
   | "mouseenter"
   | "mouseleave"
-  | "wheel"
-  | "sizeUpdate";
+  | "wheel";
 
 export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 

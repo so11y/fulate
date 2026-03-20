@@ -4,7 +4,7 @@ import {
 } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { type Select } from "./index";
-import { FulateEvent } from "@fulate/util";
+import { FulateEvent } from "@fulate/core";
 import { qrDecompose } from "@fulate/util";
 
 // ---------------------------------------------------------------------------

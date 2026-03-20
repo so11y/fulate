@@ -1,3 +1,14 @@
+// Event system
+export { CustomEvent, EventEmitter } from "./event";
+export type {
+  UserCanvasEvent,
+  EventName,
+  CanvasPointEvent,
+  FulateEvent,
+  CustomEventInit,
+  AddEventListenerOptions
+} from "./event";
+
 // Node system
 export { Node } from "./node/node";
 export { Transformable } from "./node/transformable";

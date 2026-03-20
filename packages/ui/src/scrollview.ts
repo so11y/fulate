@@ -1,7 +1,8 @@
 import { Shape } from "@fulate/core";
 import type { ShapeOption } from "@fulate/core";
 import type { RectWithCenter } from "@fulate/util";
-import { CustomEvent, Point } from "@fulate/util";
+import { CustomEvent } from "@fulate/core";
+import { Point } from "@fulate/util";
 
 export interface ScrollViewOption extends ShapeOption {
   scrollX?: number;

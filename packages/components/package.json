@@ -7,8 +7,8 @@
   "dependencies": {
     "@fulate/core": "*",
     "@fulate/ui": "*",
-    "@fulate/yoga": "*",
     "@fulate/vue": "*",
+    "@fulate/yoga": "*",
     "@vue/runtime-core": "^3.5.0"
   }
 }

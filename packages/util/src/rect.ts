@@ -10,8 +10,47 @@ export interface RectWithCenter extends Rect {
   centerY?: number;
 }
 
-export interface RectPoint
-  extends Omit<RectWithCenter, "centerX" | "centerY"> {}
+export interface RectPoint extends Rect {}
+
+export interface Bounds {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+export function rectToBounds(r: Rect): Bounds {
+  return {
+    left: r.left,
+    top: r.top,
+    right: r.left + r.width,
+    bottom: r.top + r.height,
+  };
+}
+
+export function boundsToRect(b: Bounds): RectPoint {
+  return {
+    left: b.left,
+    top: b.top,
+    width: b.right - b.left,
+    height: b.bottom - b.top,
+  };
+}
+
+export function mergeBounds(target: Bounds, source: Bounds): void {
+  target.left = Math.min(target.left, source.left);
+  target.top = Math.min(target.top, source.top);
+  target.right = Math.max(target.right, source.right);
+  target.bottom = Math.max(target.bottom, source.bottom);
+}
+
+export function isValidBounds(b: Bounds): boolean {
+  return b.left < Infinity && b.right > b.left && b.bottom > b.top;
+}
+
+export function createEmptyBounds(): Bounds {
+  return { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+}
 
 export function makeBoundingBoxFromPoints(
   points: { x: number; y: number }[]

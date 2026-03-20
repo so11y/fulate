@@ -14,7 +14,7 @@ import Yoga, {
 import { Node } from "@fulate/core";
 import type { ShapeOption } from "@fulate/core";
 import { Rectangle as BaseRectangle } from "@fulate/ui";
-import { FulateEvent } from "@fulate/util";
+import { FulateEvent } from "@fulate/core";
 
 type YogaStyleSize = number | `${number}%`;
 type YogaStyleSizeAndAuto = YogaStyleSize | "auto";

@@ -1,12 +1,12 @@
-import type { RectPoint } from "@fulate/util";
-import { makeBoundingBoxFromRects } from "@fulate/util";
-
-interface Bounds {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-}
+import type { RectPoint, Bounds } from "@fulate/util";
+import {
+  makeBoundingBoxFromRects,
+  rectToBounds,
+  boundsToRect,
+  mergeBounds,
+  isValidBounds,
+  createEmptyBounds
+} from "@fulate/util";
 
 const GRID_COLS = 3;
 const GRID_ROWS = 3;
@@ -17,10 +17,7 @@ function mergeToBucket(bucket: Bounds, s: Bounds): number {
   const oldH = bucket.bottom - bucket.top;
   const oldArea = oldW > 0 && oldH > 0 ? oldW * oldH : 0;
 
-  bucket.left = Math.min(bucket.left, s.left);
-  bucket.top = Math.min(bucket.top, s.top);
-  bucket.right = Math.max(bucket.right, s.right);
-  bucket.bottom = Math.max(bucket.bottom, s.bottom);
+  mergeBounds(bucket, s);
 
   const newW = bucket.right - bucket.left;
   const newH = bucket.bottom - bucket.top;
@@ -28,34 +25,7 @@ function mergeToBucket(bucket: Bounds, s: Bounds): number {
 }
 
 function resetBuckets(buckets: Bounds[]) {
-  for (const b of buckets) {
-    b.left = Infinity;
-    b.top = Infinity;
-    b.right = -Infinity;
-    b.bottom = -Infinity;
-  }
-}
-
-function toBounds(r: RectPoint): Bounds {
-  return {
-    left: r.left,
-    top: r.top,
-    right: r.left + r.width,
-    bottom: r.top + r.height
-  };
-}
-
-function boundsToRect(b: Bounds): RectPoint {
-  return {
-    left: b.left,
-    top: b.top,
-    width: b.right - b.left,
-    height: b.bottom - b.top
-  };
-}
-
-function isActiveBounds(b: Bounds): boolean {
-  return b.left < Infinity && b.right > b.left && b.bottom > b.top;
+  for (const b of buckets) Object.assign(b, createEmptyBounds());
 }
 
 export interface DirtyGridResult {
@@ -70,12 +40,10 @@ export interface DirtyGridResult {
  * 再在包围盒内部做网格划分和合并。
  */
 export class DirtyGrid {
-  private _buckets: Bounds[] = Array.from({ length: BUCKET_COUNT }, () => ({
-    left: Infinity,
-    top: Infinity,
-    right: -Infinity,
-    bottom: -Infinity
-  }));
+  private _buckets: Bounds[] = Array.from(
+    { length: BUCKET_COUNT },
+    () => createEmptyBounds()
+  );
 
   /**
    * @param visibleArea 当前可见的世界区域面积，用于判断是否全量重绘
@@ -113,7 +81,7 @@ export class DirtyGrid {
     let totalArea = 0;
 
     for (const r of dirtyRects) {
-      const s = toBounds(r);
+      const s = rectToBounds(r);
 
       const relL = s.left - bb.left;
       const relT = s.top - bb.top;
@@ -145,7 +113,7 @@ export class DirtyGrid {
 
     const result: RectPoint[] = [];
     for (const b of this._buckets) {
-      if (isActiveBounds(b)) result.push(boundsToRect(b));
+      if (isValidBounds(b)) result.push(boundsToRect(b));
     }
     return { rects: result };
   }

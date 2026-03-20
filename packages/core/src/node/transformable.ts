@@ -8,7 +8,7 @@ import {
 } from "@fulate/util";
 import { resolveOrigin } from "@fulate/util";
 import { RectWithCenter, makeBoundingBoxFromPoints } from "@fulate/util";
-import { CustomEvent } from "@fulate/util";
+import { CustomEvent } from "../event";
 
 export interface TransformableOptions {
   left?: number;

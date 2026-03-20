@@ -1,5 +1,5 @@
 import { BaseElementOption, Element } from "@fulate/core";
-import { FulateEvent } from "@fulate/util";
+import { FulateEvent } from "@fulate/core";
 import { Line, LinePointData, getElementAnchorPoints } from "@fulate/ui";
 import { checkElement } from "../select/checkElement";
 
