@@ -3,8 +3,10 @@ import { ShapeOption, Element } from "@fulate/core";
 import { qrDecompose } from "@fulate/util";
 
 interface PinnedOptions {
-  /** 目标元素 */
-  target: (e: Pinned) => Element;
+  /** 目标元素（函数或 targetMode 二选一） */
+  target?: (e: Pinned) => Element;
+  /** 可序列化的目标模式："parent" | "id:xxx" */
+  targetMode?: string;
   /** 钉在目标上的归一化 X 位置 (0=左, 0.5=中, 1=右) */
   anchorX?: number;
   /** 钉在目标上的归一化 Y 位置 (0=上, 0.5=中, 1=下) */
@@ -30,6 +32,7 @@ export interface PinnedAABB extends PinnedOptions {
 }
 
 export class Pinned extends Rectangle {
+  type = "pinned";
   declare target: (e: Pinned) => Element;
   declare isPin: boolean;
   declare anchorX: number;
@@ -46,7 +49,11 @@ export class Pinned extends Rectangle {
   constructor(options: ShapeOption & PinnedMatrix);
   constructor(options: any) {
     super(options);
-    this.target = options.target;
+    if (typeof options.target === "function") {
+      this.target = options.target;
+    } else if (options.targetMode) {
+      this.target = Pinned._resolveTargetMode(options.targetMode);
+    }
     this.isPin = options.isPin ?? false;
     this.anchorX = options.anchorX ?? 0;
     this.anchorY = options.anchorY ?? 0;
@@ -57,6 +64,27 @@ export class Pinned extends Rectangle {
     this.inheritSkew = options.inheritSkew ?? true;
   }
 
+  private static _resolveTargetMode(mode: string): (e: Pinned) => Element {
+    if (mode === "parent") {
+      return (e) => e.parent! as Element;
+    }
+    if (mode.startsWith("id:")) {
+      const targetId = mode.slice(3);
+      return (e) => e.root?.idElements?.get(targetId)!;
+    }
+    return (e) => e.parent! as Element;
+  }
+
+  private _inferTargetMode(): string | undefined {
+    if (!this.target) return undefined;
+    try {
+      const result = this.target(this);
+      if (result === this.parent) return "parent";
+      if (result?.id) return `id:${result.id}`;
+    } catch {}
+    return undefined;
+  }
+
   mount() {
     super.mount();
     this.provide("selectctbale", this.selectctbale);
@@ -65,6 +93,21 @@ export class Pinned extends Rectangle {
   applyGroupTransform() {}
 
   onParentResize() {}
+
+  toJson(includeChildren = false) {
+    const json = super.toJson(includeChildren) as any;
+    const mode = this._inferTargetMode();
+    if (mode) json.targetMode = mode;
+    json.isPin = this.isPin;
+    json.anchorX = this.anchorX;
+    json.anchorY = this.anchorY;
+    json.pivotX = this.pivotX;
+    json.pivotY = this.pivotY;
+    json.inheritRotation = this.inheritRotation;
+    json.inheritScale = this.inheritScale;
+    json.inheritSkew = this.inheritSkew;
+    return json;
+  }
 
   calcWorldMatrix() {
     const m = this._ownMatrixCache;
@@ -77,7 +120,9 @@ export class Pinned extends Rectangle {
     m.e = 0;
     m.f = 0;
 
+    if (!this.target) return m;
     const target = this.target(this);
+    if (!target) return m;
 
     if (this.isPin) {
       const aabb = target.getBoundingRect();

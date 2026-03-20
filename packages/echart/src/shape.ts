@@ -58,12 +58,12 @@ export class EChartsShape extends Shape {
   }
 
   mounted() {
+    super.mounted();
     if (!this._pool) {
       this._pool = this.inject<EChartsPool>("echartsPool") ?? null;
     }
     if (!this._pool) {
       console.warn("[EChartsShape] No pool available, chart will not render.");
-      super.mounted();
       return;
     }
     this._pool.create(
@@ -75,7 +75,6 @@ export class EChartsShape extends Shape {
       (bitmap) => this._onFrame(bitmap)
     );
     this._bindEvents();
-    super.mounted();
   }
 
   deactivate() {

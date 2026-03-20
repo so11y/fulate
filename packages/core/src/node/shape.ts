@@ -38,9 +38,6 @@ export class Shape extends Element {
 
   constructor(options?: ShapeOption) {
     super(options);
-    if (options) {
-      this.attrs(options);
-    }
   }
 
   setOptions(options?: ShapeOption, syncCalc = false) {

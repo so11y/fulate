@@ -43,7 +43,6 @@ export class Node extends EventEmitter {
   silent = false;
   pickable = true; //false 事件跳过这个节点，继续往上冒
 
-  _options: any = {};
   _provides: Record<string, any>;
 
   _root: Root | null = null;

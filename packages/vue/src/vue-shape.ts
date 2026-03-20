@@ -83,7 +83,7 @@ export class VueShape extends Shape {
     return key in ((this._comp as any)?.props ?? {});
   }
 
-  attrs(options: any, O?: any) {
+  attrs(options: any) {
     if (!options) return;
     for (const [key, val] of Object.entries(options)) {
       if (this._isCompProp(key)) {
@@ -91,7 +91,7 @@ export class VueShape extends Shape {
         if (this._reactiveProps) this._reactiveProps[key] = val;
       }
     }
-    super.attrs(options, O);
+    super.attrs(options);
   }
 
   setOptions(options?: any, syncCalc = false) {
@@ -120,7 +120,13 @@ registerElement("f-vue-component", VueShape);
 import { registerClipboardPlugin } from "@fulate/tools";
 
 registerClipboardPlugin("vue-component", (data) => {
-  const { type: _, children: __, component, componentProps, ...shapeProps } = data;
+  const {
+    type: _,
+    children: __,
+    component,
+    componentProps,
+    ...shapeProps
+  } = data;
   if (!component) return;
   const comp = vueCompRegistry.get(component);
   if (!comp) return;

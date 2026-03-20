@@ -75,14 +75,23 @@ export class Element extends Transformable {
   private _activeTweens?: Set<Tween<Element>>;
   declare children: this[];
   declare parent: this;
+  private _initProps: any = null;
 
   constructor(options?: BaseElementOption) {
     super();
     if (options) {
       const { children, ...props } = options;
-      this.attrs(props);
+      this._initProps = props;
       if (children) this.children = children as any;
     }
+  }
+
+  mounted() {
+    if (this._initProps) {
+      this.attrs(this._initProps);
+      this._initProps = null;
+    }
+    super.mounted();
   }
 
   deactivate() {
@@ -119,9 +128,7 @@ export class Element extends Transformable {
     return result;
   }
 
-  attrs(options: any, O: { target?: any; assign?: boolean } = {}): void {
-    const { target = this, assign = false } = O;
-
+  attrs(options: any): void {
     if (options.width !== undefined) this._hasExplicitWidth = true;
     if (options.height !== undefined) this._hasExplicitHeight = true;
 
@@ -131,11 +138,7 @@ export class Element extends Transformable {
       }
     });
 
-    Object.assign(target, options);
-
-    if (assign && target !== this._options) {
-      Object.assign(this._options, options);
-    }
+    Object.assign(this, options);
   }
 
   getDirtyRect() {

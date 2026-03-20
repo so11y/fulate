@@ -1,6 +1,10 @@
 import { ShapeOption, Shape } from "@fulate/core";
 import { CustomEvent } from "@fulate/util";
-import { getMeasureContext, preCalculateChars, measureStringWidth } from "./measure";
+import {
+  getMeasureContext,
+  preCalculateChars,
+  measureStringWidth
+} from "./measure";
 import { wrapText, fitLineWithEllipsis } from "./layout";
 import { enterEditing, exitEditing, setupClickToEdit } from "./editing";
 import { paintTextContent } from "./paint";
@@ -134,9 +138,9 @@ export class Text extends Shape {
     return `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
   }
 
-  attrs(options: any, O: { target?: any; assign?: boolean } = {}) {
+  attrs(options: any) {
     this.syncExplicitTextStyle(options);
-    super.attrs(options, O);
+    super.attrs(options);
   }
 
   // ───────── layout ─────────
@@ -183,13 +187,18 @@ export class Text extends Shape {
     }
 
     const { lines: rawLines, offsets: rawOffsets } = wrapText(
-      ctx, this.text, width, font, style.wordWrap
+      ctx,
+      this.text,
+      width,
+      font,
+      style.wordWrap
     );
     const resolvedHeight = this.getResolvedHeight(lineHeightPx);
 
-    const heightLimit = resolvedHeight !== undefined && this.overflow !== "visible"
-      ? Math.max(Math.floor(resolvedHeight / lineHeightPx), 0)
-      : Infinity;
+    const heightLimit =
+      resolvedHeight !== undefined && this.overflow !== "visible"
+        ? Math.max(Math.floor(resolvedHeight / lineHeightPx), 0)
+        : Infinity;
     const maxLinesLimit =
       style.maxLines && style.maxLines > 0 ? style.maxLines : Infinity;
     const visibleLineLimit = Math.min(heightLimit, maxLinesLimit);
@@ -202,7 +211,10 @@ export class Text extends Shape {
       lines = rawLines.slice(0, visibleLineLimit);
       if (isTruncated && lines.length > 0) {
         lines[lines.length - 1] = fitLineWithEllipsis(
-          ctx, lines[lines.length - 1], width, font
+          ctx,
+          lines[lines.length - 1],
+          width,
+          font
         );
       }
     }
@@ -248,6 +260,30 @@ export class Text extends Shape {
     this._clickToEditRemove = null;
     this.exitEditing();
     super.deactivate();
+  }
+
+  // ───────── serialization ─────────
+
+  toJson(includeChildren = false) {
+    const json = super.toJson(includeChildren) as any;
+    json.text = this.text;
+    json.fontSize = this.fontSize;
+    json.fontFamily = this.fontFamily;
+    json.fontWeight = this.fontWeight;
+    json.fontStyle = this.fontStyle;
+    json.color = this.color;
+    json.textAlign = this.textAlign;
+    json.textBaseline = this.textBaseline;
+    json.verticalAlign = this.verticalAlign;
+    json.underline = this.underline;
+    json.lineHeight = this.lineHeight;
+    json.wordWrap = this.wordWrap;
+    json.maxLines = this.maxLines;
+    json.overflow = this.overflow;
+    json.editable = this.editable;
+    json.placeholder = this.placeholder;
+    json.placeholderColor = this.placeholderColor;
+    return json;
   }
 
   // ───────── rendering (delegated) ─────────

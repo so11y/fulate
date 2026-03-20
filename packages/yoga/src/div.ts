@@ -146,19 +146,23 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     yogaNode? = Yoga.Node.create();
 
     private _layoutScheduled = false;
+    private _yogaStyles: Partial<YogaOption> = {};
     declare children: any[];
 
     attrs(options: any): void {
-      super.attrs(options, {
-        assign: true,
-        target: this._options
-      });
-
-      Object.keys(options).forEach((key) => {
-        if (!ExtractKey.has(key) && !key.startsWith("on")) {
-          this[key] = options[key];
+      for (const key of Object.keys(options)) {
+        if (ExtractKey.has(key)) {
+          (this._yogaStyles as any)[key] = options[key];
         }
-      });
+      }
+
+      const rest: any = {};
+      for (const key of Object.keys(options)) {
+        if (!ExtractKey.has(key)) {
+          rest[key] = options[key];
+        }
+      }
+      super.attrs(rest);
     }
 
     mount(): void {
@@ -224,8 +228,8 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
         const layout = this.yogaNode.getComputedLayout();
         const isRoot = this.inject("yoga-root") === this;
         if (isRoot) {
-          this.left = this._options.left ?? 0;
-          this.top = this._options.top ?? 0;
+          this.left = (this._yogaStyles.left as number) ?? 0;
+          this.top = (this._yogaStyles.top as number) ?? 0;
         } else {
           this.left = layout.left;
           this.top = layout.top;
@@ -283,7 +287,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     }
 
     flushStyles(this: Div & YogaOption) {
-      const options = this._options;
+      const options = this._yogaStyles as any;
       if (!isNil(options.display)) {
         this.yogaNode.setDisplay(options.display);
         if (options.display === Display.Flex) {
@@ -364,7 +368,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
     toJson(includeChildren = false) {
       const json = super.toJson(includeChildren) as any;
       for (const key of ExtractKey) {
-        const val = this._options[key];
+        const val = (this._yogaStyles as any)[key];
         if (val !== undefined) json[key] = val;
       }
       return json;
@@ -390,6 +394,7 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       }
       super.unmounted();
       this.yogaNode?.free();
+      this.yogaNode = null;
 
       if (needsRelayout) yogaRoot.scheduleLayout();
     }
