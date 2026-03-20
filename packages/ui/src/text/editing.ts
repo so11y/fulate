@@ -186,7 +186,7 @@ function restartBlink(self: Text) {
   self._caretVisible = true;
   self._blinkTimer = setInterval(() => {
     self._caretVisible = !self._caretVisible;
-    self.markNeedsLayout();
+    self.markPaintDirty();
   }, CARET_BLINK_MS);
 }
 

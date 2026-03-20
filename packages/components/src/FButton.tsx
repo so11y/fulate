@@ -49,7 +49,6 @@ export const FButton = defineComponent({
     const hovered = ref(false);
     const isPressed = ref(false);
 
-    console.log(1);
     const paddingH = computed(() => (props.variant === "text" ? 16 : 24));
 
     const autoWidth = computed(() => {
