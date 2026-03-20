@@ -343,6 +343,8 @@ export class Transformable extends Node {
       this.calcWorldMatrix();
       if (parentWorldDirty && !this.isDirty) {
         this._lastBoundingRect = this._boundingRectCache;
+      }
+      if (parentWorldDirty) {
         this.layer?.addDirtyNode(this as any);
       }
       this.invalidateCache();

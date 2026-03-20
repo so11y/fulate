@@ -36,7 +36,7 @@ export class Node extends EventEmitter {
   isUnmounted = false;
 
   isDirtyChild = false;
-  isDirty = true;
+  isDirty = false;
   _lastUpdateFrame = 0;
 
   key!: string;
@@ -106,7 +106,7 @@ export class Node extends EventEmitter {
       const layer = this._layer;
       if (layer && (layer as any)._frameId > 0) {
         for (const child of nodes) {
-          if ((child as any).isDirty) layer.addDirtyNode(child as any);
+          if (child) layer.addDirtyNode(child as any);
         }
       }
     }
@@ -236,6 +236,7 @@ export class Node extends EventEmitter {
   activate() {
     if (this.isActiveed || this.isUnmounted) return;
     this.isActiveed = true;
+    this.isDirty = true;
 
     this._root = this.inject("root") ?? null;
     this._layer = this.inject("layer") ?? null;

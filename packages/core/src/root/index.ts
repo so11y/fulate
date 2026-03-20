@@ -117,7 +117,7 @@ export class Root extends Node {
 
   requestRender() {
     this.layers.forEach((layer) => {
-      layer.clearDirtyState();
+      // layer.clearDirtyState();
       layer._forceFullRepaint = true;
       layer.requestRender();
     });
