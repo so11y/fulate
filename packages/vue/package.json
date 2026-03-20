@@ -9,6 +9,7 @@
     "@fulate/core": "*",
     "@fulate/ui": "*",
     "@fulate/yoga": "*",
+    "@fulate/tools": "*",
     "@vue/runtime-core": "^3.5.0"
   }
 }

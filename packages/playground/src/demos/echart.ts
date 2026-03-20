@@ -173,13 +173,15 @@ registerDemo("echart", {
       children: [new Select()],
     });
 
+    root.provide("echartsPool", pool);
     root.append(layer, editerLayer);
     root.mount();
 
     // 更新频率修改为 200ms 一次（每秒 5 次）
     const timer = setInterval(() => {
-      for (let i = 0; i < charts.length; i++) {
-        charts[i].setOption(makeUpdateOption(i));
+      let i = 0;
+      for (const chartId of pool.chartIds) {
+        pool.update(chartId, makeUpdateOption(i++));
       }
     }, 200);
 

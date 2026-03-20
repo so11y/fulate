@@ -11,7 +11,7 @@ export interface EChartsInitOpts {
 }
 
 export interface EChartsShapeOption extends ShapeOption<EChartsShape> {
-  pool: EChartsPool;
+  pool?: EChartsPool;
   echarts: EChartsInitOpts;
 }
 
@@ -20,7 +20,7 @@ let idCounter = 0;
 export class EChartsShape extends Shape {
   type = "echarts";
 
-  private _pool: EChartsPool;
+  private _pool: EChartsPool | null = null;
   private _chartId: string;
   private _echartsOpts: EChartsInitOpts;
   private _bitmap: ImageBitmap | null = null;
@@ -30,17 +30,17 @@ export class EChartsShape extends Shape {
   constructor(options: EChartsShapeOption) {
     const { pool, echarts: echartsOpts, ...shapeOpts } = options;
     super(shapeOpts as ShapeOption);
-    this._pool = pool;
+    this._pool = pool ?? null;
     this._echartsOpts = echartsOpts;
     this._chartId = `echart_${idCounter++}`;
   }
 
   setOption(option: any, notMerge?: boolean, lazyUpdate?: boolean) {
-    this._pool.update(this._chartId, option, notMerge, lazyUpdate);
+    this._pool?.update(this._chartId, option, notMerge, lazyUpdate);
   }
 
   resizeChart() {
-    this._pool.resize(this._chartId, this.width!, this.height!, this.root.dpr);
+    this._pool?.resize(this._chartId, this.width!, this.height!, this.root.dpr);
   }
 
   // private _debouncedResize = () => this.resizeChart(); // debounce(() => this.resizeChart(), 30);
@@ -58,6 +58,14 @@ export class EChartsShape extends Shape {
   }
 
   mounted() {
+    if (!this._pool) {
+      this._pool = this.inject<EChartsPool>("echartsPool") ?? null;
+    }
+    if (!this._pool) {
+      console.warn("[EChartsShape] No pool available, chart will not render.");
+      super.mounted();
+      return;
+    }
     this._pool.create(
       this._chartId,
       this.width!,
@@ -71,12 +79,11 @@ export class EChartsShape extends Shape {
   }
 
   deactivate() {
-    // this._debouncedResize.cancel();
     this._bitmap?.close();
     this._bitmap = null;
     this._cleanups.forEach((fn) => fn());
     this._cleanups = [];
-    this._pool.destroy(this._chartId);
+    this._pool?.destroy(this._chartId);
     super.deactivate();
   }
 
@@ -95,7 +102,7 @@ export class EChartsShape extends Shape {
 
   hasInView() {
     const inView = super.hasInView();
-    if (this.isActiveed && inView !== !this._paused) {
+    if (this._pool && this.isActiveed && inView !== !this._paused) {
       this._paused = !inView;
       if (this._paused) {
         this._pool.pause(this._chartId);
@@ -119,7 +126,7 @@ export class EChartsShape extends Shape {
   private _forwardEvent(eventName: string) {
     return (e: FulateEvent) => {
       const local = this._toLocal(e);
-      this._pool.event(this._chartId, eventName, local.x, local.y);
+      this._pool?.event(this._chartId, eventName, local.x, local.y);
     };
   }
 
@@ -134,7 +141,7 @@ export class EChartsShape extends Shape {
     bindAndTrack("pointerdown", this._forwardEvent("mousedown"));
     bindAndTrack("pointerup", this._forwardEvent("mouseup"));
     bindAndTrack("mouseleave", () => {
-      this._pool.event(this._chartId, "mouseout", -1000, -1000);
+      this._pool?.event(this._chartId, "mouseout", -1000, -1000);
     });
   }
 

@@ -8,15 +8,13 @@ import {
   Workspace,
   Pinned
 } from "@fulate/ui";
-import { Select, Snap, Rule, LineTool, setVueShapeBridge } from "@fulate/tools";
+import { Select, Snap, Rule, LineTool } from "@fulate/tools";
 import { EChartsPool, EChartsShape } from "@fulate/echart";
-import { fromVueToFulate, getVueComponent, useVueShapeSize } from "@fulate/vue";
+import { fromVueToFulate, useVueShapeSize } from "@fulate/vue";
 import { defineComponent, ref } from "@vue/runtime-core";
 import { Display, FlexDirection, Align } from "@fulate/yoga";
 import { FButton, FSelect, MD3 } from "@fulate/components";
 import type { SelectOption } from "@fulate/components";
-
-setVueShapeBridge(fromVueToFulate, getVueComponent);
 
 const FormPanel = defineComponent({
   name: "FormPanel",
@@ -338,18 +336,14 @@ registerDemo("editor", {
     const rand = (base: number, range: number) =>
       Math.round(base + (Math.random() - 0.5) * range);
     const echartsTimer = setInterval(() => {
-      barChart.setOption({
-        series: [
-          { data: Array.from({ length: 6 }, () => rand(130, 120)) },
-          { data: Array.from({ length: 6 }, () => rand(70, 80)) }
-        ]
-      });
-      lineChart.setOption({
-        series: [
-          { data: Array.from({ length: 7 }, () => rand(24, 12)) },
-          { data: Array.from({ length: 7 }, () => rand(65, 30)) }
-        ]
-      });
+      for (const chartId of echartsPool.chartIds) {
+        echartsPool.update(chartId, {
+          series: [
+            { data: Array.from({ length: 7 }, () => rand(100, 100)) },
+            { data: Array.from({ length: 7 }, () => rand(60, 60)) }
+          ]
+        });
+      }
     }, 1500);
 
     const workspace = new Workspace({
@@ -369,6 +363,7 @@ registerDemo("editor", {
       children: [new Select(), new Snap(), new Rule(), new LineTool()]
     });
 
+    root.provide("echartsPool", echartsPool);
     root.append(contentLayer, editerLayer, overlayLayer);
     root.mount();
 

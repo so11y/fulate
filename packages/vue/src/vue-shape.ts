@@ -117,6 +117,17 @@ export class VueShape extends Shape {
 
 registerElement("f-vue-component", VueShape);
 
+import { registerClipboardPlugin } from "@fulate/tools";
+
+registerClipboardPlugin("vue-component", (data) => {
+  const { type: _, children: __, component, componentProps, ...shapeProps } = data;
+  if (!component) return;
+  const comp = vueCompRegistry.get(component);
+  if (!comp) return;
+  delete shapeProps.key;
+  return fromVueToFulate(comp, { ...shapeProps, ...componentProps });
+});
+
 export function fromVueToFulate(
   comp: Component,
   props?: Record<string, any>

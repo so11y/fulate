@@ -17,6 +17,10 @@ export class EChartsPool {
   private pendingQueues: WorkerChartMessage[][];
   private chartToWorker = new Map<string, number>();
   private workerLoad: number[];
+
+  get chartIds(): MapIterator<string> {
+    return this.chartToWorker.keys();
+  }
   private callbacks = new Map<string, FrameCallback>();
 
   constructor(options: EChartsPoolOptions) {

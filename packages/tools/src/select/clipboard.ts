@@ -5,26 +5,20 @@ import type { Select } from "./index";
 const CLIPBOARD_MARKER = "__fulate_clipboard__";
 const PASTE_OFFSET = 20;
 
-let _fromVueToFulate: ((comp: any, props?: any) => any) | null = null;
-let _getVueComponent: ((name: string) => any) | null = null;
+type DeserializeFactory = (data: any) => Element | undefined;
+const deserializePlugins = new Map<string, DeserializeFactory>();
 
-export function setVueShapeBridge(
-  fromVue: (comp: any, props?: any) => any,
-  getComp: (name: string) => any
-) {
-  _fromVueToFulate = fromVue;
-  _getVueComponent = getComp;
+export function registerClipboardPlugin(type: string, factory: DeserializeFactory) {
+  deserializePlugins.set(type, factory);
 }
 
 function deserializeElement(data: any): Element | undefined {
   const { type, children, ...props } = data;
 
-  if (type === "vue-component" && props.component && _fromVueToFulate && _getVueComponent) {
-    const comp = _getVueComponent(props.component);
-    if (!comp) return;
-    const { component: _, componentProps, ...shapeProps } = props;
-    delete shapeProps.key;
-    return _fromVueToFulate(comp, { ...shapeProps, ...componentProps });
+  const pluginFactory = deserializePlugins.get(type);
+  if (pluginFactory) {
+    delete props.key;
+    return pluginFactory(data);
   }
 
   const tag = type.startsWith("f-") ? type : `f-${type}`;
