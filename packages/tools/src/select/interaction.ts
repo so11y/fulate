@@ -217,7 +217,7 @@ export function setupInteraction(select: Select): () => void {
     const prev = select.hoverElement;
     select.hoverElement = resolved ?? null;
     if (select.hoverElement !== prev) {
-      select.markNeedsLayout();
+      select.markPaintDirty();
     }
   };
 
@@ -225,7 +225,7 @@ export function setupInteraction(select: Select): () => void {
     if (!select.hoverElement) return;
     if (select.root.getCurrnetEelement()) return;
     select.hoverElement = null;
-    select.markNeedsLayout();
+    select.markPaintDirty();
   };
 
   const keydown = (e: KeyboardEvent) => {
