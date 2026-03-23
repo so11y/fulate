@@ -8,7 +8,10 @@ const PASTE_OFFSET = 20;
 type DeserializeFactory = (data: any) => Element | undefined;
 const deserializePlugins = new Map<string, DeserializeFactory>();
 
-export function registerClipboardPlugin(type: string, factory: DeserializeFactory) {
+export function registerClipboardPlugin(
+  type: string,
+  factory: DeserializeFactory
+) {
   deserializePlugins.set(type, factory);
 }
 
@@ -42,13 +45,18 @@ function deserializeElement(data: any): Element | undefined {
 function applyOffset(data: any, dx: number, dy: number) {
   if (data.left != null) data.left += dx;
   if (data.top != null) data.top += dy;
-  if (data.children) {
+  // if (data.linePoints) {
+  //   for (const p of data.linePoints) {
+  //     p.x += dx;
+  //     p.y += dy;
+  //   }
+  // }
+  if (data.type === "group" && data.children) {
     for (const child of data.children) {
       applyOffset(child, dx, dy);
     }
   }
 }
-
 function collectIds(el: Element): Set<string> {
   const ids = new Set<string>();
   ids.add(el.id);
@@ -98,7 +106,8 @@ interface SelectGeometry {
   skewY: number;
 }
 
-let memClipboard: { sources: Element[]; geometry: SelectGeometry } | null = null;
+let memClipboard: { sources: Element[]; geometry: SelectGeometry } | null =
+  null;
 
 function captureSelectGeometry(select: Select): SelectGeometry {
   return {
@@ -143,7 +152,12 @@ export async function pasteElements(select: Select) {
   const offset = PASTE_OFFSET;
 
   if (memClipboard) {
-    pasteFromMemory(select, memClipboard.sources, offset, memClipboard.geometry);
+    pasteFromMemory(
+      select,
+      memClipboard.sources,
+      offset,
+      memClipboard.geometry
+    );
     return;
   }
 
@@ -157,7 +171,12 @@ export async function pasteElements(select: Select) {
   }
 }
 
-function pasteFromMemory(select: Select, sources: Element[], offset: number, geometry?: SelectGeometry) {
+function pasteFromMemory(
+  select: Select,
+  sources: Element[],
+  offset: number,
+  geometry?: SelectGeometry
+) {
   const newEls: Element[] = [];
   const parents: any[] = [];
   const idMap = new Map<string, string>();
@@ -181,8 +200,8 @@ function pasteFromMemory(select: Select, sources: Element[], offset: number, geo
       layer.append(clone);
 
       if (clone.type === "group") {
-        const srcMembers = (src as any).groupEls as Element[] ?? [];
-        const cloneMembers = (clone as any).groupEls as Element[] ?? [];
+        const srcMembers = ((src as any).groupEls as Element[]) ?? [];
+        const cloneMembers = ((clone as any).groupEls as Element[]) ?? [];
         srcMembers.forEach((sm: Element, i: number) => {
           if (!cloneMembers[i]) return;
           idMap.set(sm.id, cloneMembers[i].id);
@@ -253,8 +272,7 @@ function setupPastedGroup(el: Element, defaultLayer: any, root: any) {
   members.forEach((m: any) => {
     const idx = m._layerIndex;
     delete m._layerIndex;
-    const targetLayer =
-      idx != null && layers[idx] ? layers[idx] : defaultLayer;
+    const targetLayer = idx != null && layers[idx] ? layers[idx] : defaultLayer;
     targetLayer.append(m);
   });
   (el as any).groupEls = members;
@@ -265,7 +283,11 @@ function setupPastedGroup(el: Element, defaultLayer: any, root: any) {
   (el as any).snapshotChildren();
 }
 
-function offsetGeometry(geo: SelectGeometry, dx: number, dy: number): SelectGeometry {
+function offsetGeometry(
+  geo: SelectGeometry,
+  dx: number,
+  dy: number
+): SelectGeometry {
   return { ...geo, left: geo.left + dx, top: geo.top + dy };
 }
 
@@ -278,7 +300,9 @@ function commitPaste(
 ) {
   if (!newEls.length) return;
 
-  const pastedGeo = geometry ? offsetGeometry(geometry, PASTE_OFFSET, PASTE_OFFSET) : undefined;
+  const pastedGeo = geometry
+    ? offsetGeometry(geometry, PASTE_OFFSET, PASTE_OFFSET)
+    : undefined;
 
   select.history.pushAction(
     () => {
@@ -304,7 +328,7 @@ function commitPaste(
         parents[i]?.append(el);
         el.markNeedsLayout();
         if (el.type === "group") {
-          const members = (el as any).groupEls as Element[] ?? [];
+          const members = ((el as any).groupEls as Element[]) ?? [];
           members.forEach((m: any) => {
             m.groupParent = el;
             m.provide("group", el);
