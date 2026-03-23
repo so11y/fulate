@@ -13,9 +13,10 @@ export class Image extends Shape {
 
   constructor(options?: ImageOption) {
     super(options);
-    if (options) {
-      this.attrs(options);
-    }
+  }
+
+  mounted() {
+    super.mounted();
     if (this.src && !this.image) {
       this.loadImage();
     } else if (this.image) {
