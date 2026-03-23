@@ -22,6 +22,7 @@ export { ScrollView } from "./scrollview";
 export type { ScrollViewOption } from "./scrollview";
 export { RippleOverlay } from "./ripple";
 export type { RippleOption } from "./ripple";
+export { AnchorIndicator } from "./anchor-indicator";
 
 // Line
 export {
@@ -29,13 +30,15 @@ export {
   Line,
   DEFAULT_ANCHOR_SCHEMA,
   getElementAnchorPoint,
-  getElementAnchorPoints
+  getElementAnchorPoints,
+  resolveAnchors
 } from "./line/index";
 export type {
   LineAnchor,
   LinePointData,
   LineOption,
-  AnchorPoint
+  AnchorPoint,
+  AnchorPointData
 } from "./line/index";
 
 import { registerElement } from "@fulate/core";
@@ -50,6 +53,7 @@ import { ScrollView } from "./scrollview";
 import { Line } from "./line/index";
 import { RippleOverlay } from "./ripple";
 import { Pinned } from "./pinned";
+import "./anchor-indicator";
 
 registerElement("f-rectangle", Rectangle);
 registerElement("f-circle", Circle);

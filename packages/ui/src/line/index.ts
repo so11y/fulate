@@ -6,6 +6,7 @@ export { Line } from "./straight";
 export {
   DEFAULT_ANCHOR_SCHEMA,
   getElementAnchorPoint,
-  getElementAnchorPoints
+  getElementAnchorPoints,
+  resolveAnchors
 } from "./anchor";
-export type { AnchorPoint } from "./anchor";
+export type { AnchorPoint, AnchorPointData } from "./anchor";

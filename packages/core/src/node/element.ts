@@ -66,6 +66,35 @@ export class Element extends Transformable {
   groupParent?: any;
   /** IDs of lines that have an anchor point connected to this element */
   connectedLines?: Set<string>;
+  /** User-configured anchor point data (edge + label). */
+  private _anchors: any[] | null = null;
+  private _anchorIndicators: Map<string, Element> | null = null;
+
+  get anchors(): any[] | null { return this._anchors; }
+  set anchors(value: any[] | null) {
+    const oldIds = new Set(this._anchors?.map((a: any) => a.id) ?? []);
+    this._anchors = value;
+    const newIds = new Set(value?.map((a: any) => a.id) ?? []);
+
+    if (this.isActiveed && this.connectedLines) {
+      for (const removedId of oldIds) {
+        if (newIds.has(removedId)) continue;
+        for (const lineId of [...this.connectedLines]) {
+          const line = this.root?.idElements.get(lineId) as any;
+          if (!line?.linePoints) continue;
+          for (const p of line.linePoints) {
+            if (p.anchor?.elementId === this.id && p.anchor?.anchorType === removedId) {
+              p.anchor = undefined;
+            }
+          }
+          line.markNeedsLayout?.();
+        }
+      }
+    }
+
+    if (this.isActiveed) this._syncAnchorIndicators();
+  }
+
   private _groupSnapshot: {
     width: number;
     height: number;
@@ -92,6 +121,7 @@ export class Element extends Transformable {
       this._initProps = null;
     }
     super.mounted();
+    if (this._anchors?.length) this._syncAnchorIndicators();
   }
 
   deactivate() {
@@ -131,6 +161,12 @@ export class Element extends Transformable {
   attrs(options: any): void {
     if (options.width !== undefined) this._hasExplicitWidth = true;
     if (options.height !== undefined) this._hasExplicitHeight = true;
+
+    if (options.anchors !== undefined) {
+      this._anchors = options.anchors;
+      delete options.anchors;
+      if (this.isActiveed) this._syncAnchorIndicators();
+    }
 
     EVENT_KEYS.forEach((v) => {
       if (options[v]) {
@@ -230,12 +266,105 @@ export class Element extends Transformable {
 
   /**
    * Override to provide custom anchor points for snapping and line connections.
-   * Returns null to use DEFAULT_ANCHOR_SCHEMA (8 edge/corner points, no center).
+   * Returns null to use DEFAULT_ANCHOR_SCHEMA.
    */
   getAnchorSchema(): any[] | null {
     if (this.enableAnchor === false) return [];
+    if (this._anchors?.length) return this._resolveAnchors(this._anchors);
     return null;
   }
+
+  private _resolveAnchors(data: any[]): any[] {
+    const groups = new Map<string, any[]>();
+    for (const d of data) {
+      let list = groups.get(d.edge);
+      if (!list) { list = []; groups.set(d.edge, list); }
+      list.push(d);
+    }
+    const result: any[] = [];
+    for (const [edge, items] of groups) {
+      const total = items.length;
+      items.forEach((item: any, i: number) => {
+        const ratio = (i + 1) / (total + 1);
+        result.push({
+          id: item.id,
+          localPosition: (el: any) => {
+            switch (edge) {
+              case "top":    return new Point(el.width * ratio, 0);
+              case "bottom": return new Point(el.width * ratio, el.height);
+              case "left":   return new Point(0, el.height * ratio);
+              case "right":  return new Point(el.width, el.height * ratio);
+              default:       return new Point(el.width * 0.5, el.height * 0.5);
+            }
+          }
+        });
+      });
+    }
+    return result;
+  }
+
+  _syncAnchorIndicators() {
+    const data = this._anchors;
+
+    if (!data?.length) {
+      if (this._anchorIndicators) {
+        for (const indicator of this._anchorIndicators.values()) {
+          this.removeChild(indicator);
+        }
+        this._anchorIndicators = null;
+      }
+      return;
+    }
+
+    if (!this._anchorIndicators) this._anchorIndicators = new Map();
+    const currentIds = new Set(data.map((a: any) => a.id));
+
+    for (const [id, indicator] of this._anchorIndicators) {
+      if (!currentIds.has(id)) {
+        this.removeChild(indicator);
+        this._anchorIndicators.delete(id);
+      }
+    }
+
+    const groups = new Map<string, any[]>();
+    for (const d of data) {
+      let list = groups.get(d.edge);
+      if (!list) { list = []; groups.set(d.edge, list); }
+      list.push(d);
+    }
+
+    for (const d of data) {
+      const sameEdge = groups.get(d.edge)!;
+      const idx = sameEdge.indexOf(d);
+      const ratio = (idx + 1) / (sameEdge.length + 1);
+
+      let indicator = this._anchorIndicators.get(d.id);
+      if (!indicator) {
+        indicator = Element._createAnchorIndicator(d);
+        this._anchorIndicators.set(d.id, indicator);
+        this.append(indicator);
+      } else {
+        (indicator as any).anchorLabel = d.label;
+        (indicator as any).edge = d.edge;
+      }
+
+      (indicator as any).anchorRatio = ratio;
+      indicator.markNeedsLayout();
+    }
+  }
+
+  static _createAnchorIndicator: (data: any) => Element = (data) => {
+    const el = new Element({ width: 8, height: 8, visible: true });
+    el.id = `__anchor_${data.id}`;
+    el.selectctbale = false;
+    el.enableMove = false;
+    el.enableResize = false;
+    el.enableAnchor = false;
+    el.silent = true;
+    el.pickable = false;
+    (el as any).edge = data.edge;
+    return el;
+  };
 
   snapshotForGroup(): void {
     this._groupSnapshot = {
@@ -513,8 +642,14 @@ export class Element extends Transformable {
       enableAnchor: this.enableAnchor
     } as any;
 
+    if (this._anchors?.length) {
+      json.anchors = this._anchors.map((a: any) => ({ ...a }));
+    }
+
     if (includeChildren && this.children && this.children.length > 0) {
-      json.children = this.children.map((c) => c.toJson(true)) as any;
+      json.children = this.children
+        .filter((c) => (c as any).type !== "anchor-indicator")
+        .map((c) => c.toJson(true)) as any;
     }
 
     return json;

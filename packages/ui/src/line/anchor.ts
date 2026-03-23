@@ -9,6 +9,43 @@ export interface AnchorPoint {
   localPosition(element: any): Point;
 }
 
+/** User-configurable anchor point data (no ratio — position auto-calculated). */
+export interface AnchorPointData {
+  id: string;
+  label: string;
+  edge: "top" | "right" | "bottom" | "left";
+}
+
+/** Resolve user-configured anchor data into positioned AnchorPoint[]. */
+export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
+  const groups = new Map<string, AnchorPointData[]>();
+  for (const d of data) {
+    let list = groups.get(d.edge);
+    if (!list) { list = []; groups.set(d.edge, list); }
+    list.push(d);
+  }
+  const result: AnchorPoint[] = [];
+  for (const [edge, items] of groups) {
+    const total = items.length;
+    items.forEach((item, i) => {
+      const ratio = (i + 1) / (total + 1);
+      result.push({
+        id: item.id,
+        localPosition(el: any) {
+          switch (edge) {
+            case "top":    return new Point(el.width * ratio, 0);
+            case "bottom": return new Point(el.width * ratio, el.height);
+            case "left":   return new Point(0, el.height * ratio);
+            case "right":  return new Point(el.width, el.height * ratio);
+            default:       return new Point(el.width * 0.5, el.height * 0.5);
+          }
+        }
+      });
+    });
+  }
+  return result;
+}
+
 /** Default 4-point anchor schema. Elements may override via getAnchorSchema(). */
 export const DEFAULT_ANCHOR_SCHEMA: AnchorPoint[] = [
   { id: "top", localPosition: (el) => new Point(el.width * 0.5, 0) },
