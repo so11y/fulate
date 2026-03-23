@@ -4,24 +4,26 @@
     "packages/*"
   ],
   "scripts": {
-    "playground": "vite --config packages/playground/vite.config.ts"
+    "playground": "vite --config packages/playground/vite.config.ts",
+    "editor": "vite --config packages/playground-editor/vite.config.ts"
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
+    "@vitejs/plugin-vue": "^6.0.5",
     "@vitejs/plugin-vue-jsx": "^5.1.4",
     "ac": "https://github.com/so11y/ac.git",
     "vite": "^6.0.7"
   },
   "dependencies": {
+    "@fulate/components": "*",
     "@fulate/core": "*",
+    "@fulate/echart": "*",
     "@fulate/playground": "*",
     "@fulate/tools": "*",
     "@fulate/ui": "*",
     "@fulate/util": "*",
     "@fulate/vue": "*",
     "@fulate/yoga": "*",
-    "@fulate/components": "*",
-    "@fulate/echart": "*",
     "@vue/runtime-core": "^3.5.30",
     "vue": "^3.5.30"
   }

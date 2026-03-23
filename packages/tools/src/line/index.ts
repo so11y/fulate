@@ -59,6 +59,7 @@ export class LineTool extends Element {
 
   private _setupEvents() {
     const onKeyDown = (e: KeyboardEvent) => {
+      console.log('---');
       if (
         e.key.toLowerCase() === "l" &&
         !e.ctrlKey &&

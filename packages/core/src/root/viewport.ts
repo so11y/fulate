@@ -1,6 +1,5 @@
 import type { Root } from "./index";
-import type { Element } from "@fulate/core";
-import type { Rule } from "@fulate/tools";
+import type { RectWithCenter } from "@fulate/util";
 import { Tween, Easing } from "@tweenjs/tween.js";
 
 export function applyCssTransform(root: Root) {
@@ -56,7 +55,7 @@ export function syncPaintedViewport(root: Root) {
 
 export function focusNode(
   root: Root,
-  node: Element,
+  rect: RectWithCenter,
   {
     padding = 10,
     animate
@@ -65,21 +64,22 @@ export function focusNode(
     animate?: { duration?: number; easing?: (amount: number) => number };
   }
 ): Promise<void> {
-  const RULER_SIZE = root.find<Rule>("rule")?.rulerSize ?? 0;
-  const aabb = node.getBoundingRect();
+  const rulerSize = root.find<{ rulerSize?: number }>("rule")?.rulerSize ?? 0;
+  const activeWidth = root.width - rulerSize;
+  const activeHeight = root.height - rulerSize;
 
-  const activeWidth = root.width - RULER_SIZE;
-  const activeHeight = root.height - RULER_SIZE;
-
-  const scaleX = (activeWidth - padding * 2) / aabb.width;
-  const scaleY = (activeHeight - padding * 2) / aabb.height;
+  const scaleX = (activeWidth - padding * 2) / rect.width;
+  const scaleY = (activeHeight - padding * 2) / rect.height;
   const bestScale = Math.min(scaleX, scaleY, 1);
 
-  const visualCenterX = RULER_SIZE + activeWidth / 2;
-  const visualCenterY = RULER_SIZE + activeHeight / 2;
+  const visualCenterX = rulerSize + activeWidth / 2;
+  const visualCenterY = rulerSize + activeHeight / 2;
 
-  const targetX = visualCenterX - aabb.centerX * bestScale;
-  const targetY = visualCenterY - aabb.centerY * bestScale;
+  const cx = rect.centerX ?? rect.left + rect.width / 2;
+  const cy = rect.centerY ?? rect.top + rect.height / 2;
+
+  const targetX = visualCenterX - cx * bestScale;
+  const targetY = visualCenterY - cy * bestScale;
 
   if (!animate) {
     root.viewport.scale = bestScale;

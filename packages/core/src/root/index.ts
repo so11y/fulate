@@ -278,13 +278,13 @@ export class Root extends Node {
   // ================= 视口（委托） =================
 
   focusNode(
-    node: Element,
+    rect: RectWithCenter,
     options: {
       padding?: number;
       animate?: { duration?: number; easing?: (amount: number) => number };
     }
   ): Promise<void> {
-    return focusNodeImpl(this, node, options);
+    return focusNodeImpl(this, rect, options);
   }
 
   // ================= 事件分发 =================
