@@ -49,36 +49,30 @@ export abstract class BaseLine extends Element {
 
   constructor(options?: LineOption) {
     super(options);
-    if (options?.linePoints) {
+  }
+
+  attrs(options: any): void {
+    if (options.linePoints) {
+      const points: LinePointData[] = options.linePoints;
       if (options.left != null || options.top != null) {
-        this.linePoints = options.linePoints.map((p) => ({
+        options.linePoints = points.map((p: LinePointData) => ({
           x: p.x,
           y: p.y,
           anchor: p.anchor ? { ...p.anchor } : undefined
         }));
-      } else {
-        this._initFromWorldPoints(options.linePoints);
+      } else if (points.length > 0) {
+        const originX = points[0].x;
+        const originY = points[0].y;
+        options.left = originX;
+        options.top = originY;
+        options.linePoints = points.map((p: LinePointData) => ({
+          x: p.x - originX,
+          y: p.y - originY,
+          anchor: p.anchor ? { ...p.anchor } : undefined
+        }));
       }
     }
-    if (options?.strokeColor) this.strokeColor = options.strokeColor;
-    if (options?.strokeWidth != null) this.strokeWidth = options.strokeWidth;
-    this._syncBoundsFromPoints();
-  }
-
-  private _initFromWorldPoints(worldPoints: LinePointData[]) {
-    if (worldPoints.length === 0) {
-      this.linePoints = [];
-      return;
-    }
-    const originX = worldPoints[0].x;
-    const originY = worldPoints[0].y;
-    this.left = originX;
-    this.top = originY;
-    this.linePoints = worldPoints.map((p) => ({
-      x: p.x - originX,
-      y: p.y - originY,
-      anchor: p.anchor ? { ...p.anchor } : undefined
-    }));
+    super.attrs(options);
   }
 
   // --- Anchor endpoint access ---
@@ -409,6 +403,7 @@ export abstract class BaseLine extends Element {
 
   mounted() {
     super.mounted();
+    this._syncBoundsFromPoints();
     this._bindEndpoints(true);
   }
 
