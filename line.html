@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Plait Elbow Line Route Demo</title>
+<style>
+*{margin:0;box-sizing:border-box}
+body{overflow:hidden;background:#f8f9fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+canvas{display:block;cursor:default}
+
+.panel{
+  position:absolute;top:16px;left:16px;background:#fff;border-radius:10px;
+  box-shadow:0 2px 12px rgba(0,0,0,.08);padding:18px 22px;min-width:260px;
+  border:1px solid #eef0f4;user-select:none;z-index:10
+}
+.panel h3{font-size:15px;font-weight:600;color:#1a1f36;margin-bottom:12px;letter-spacing:-.3px}
+.section{margin-bottom:14px}
+.section-title{font-size:12px;color:#8792a2;margin-bottom:6px;font-weight:500}
+.dir-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.dir-row label{font-size:12px;color:#3c4257;min-width:50px}
+.dir-btn{
+  padding:3px 10px;font-size:11px;border:1px solid #d9dce4;border-radius:5px;
+  background:#fff;color:#3c4257;cursor:pointer;transition:all .15s
+}
+.dir-btn:hover{border-color:#5469d4;color:#5469d4}
+.dir-btn.active{background:#5469d4;color:#fff;border-color:#5469d4}
+
+.toggle-row{display:flex;gap:8px;flex-wrap:wrap}
+.toggle{
+  display:flex;align-items:center;gap:5px;font-size:12px;color:#3c4257;cursor:pointer
+}
+.toggle input{accent-color:#5469d4}
+.info{font-size:11px;color:#8792a2;margin-top:10px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="panel">
+  <h3>Plait Elbow Line Routing</h3>
+
+  <div class="section">
+    <div class="section-title">Source 出口方向</div>
+    <div class="dir-row" id="srcDir">
+      <button class="dir-btn" data-dir="top">Top</button>
+      <button class="dir-btn active" data-dir="right">Right</button>
+      <button class="dir-btn" data-dir="bottom">Bottom</button>
+      <button class="dir-btn" data-dir="left">Left</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Target 入口方向</div>
+    <div class="dir-row" id="tgtDir">
+      <button class="dir-btn" data-dir="top">Top</button>
+      <button class="dir-btn" data-dir="right">Right</button>
+      <button class="dir-btn" data-dir="bottom">Bottom</button>
+      <button class="dir-btn active" data-dir="left">Left</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">调试可视化</div>
+    <div class="toggle-row">
+      <label class="toggle"><input type="checkbox" id="showGrid">网格点</label>
+      <label class="toggle"><input type="checkbox" id="showOuter">外框</label>
+      <label class="toggle"><input type="checkbox" id="showEdges">图边</label>
+      <label class="toggle"><input type="checkbox" checked id="showCorner">圆角</label>
+    </div>
+  </div>
+
+  <div class="info">
+    拖动方块测试各种位置关系<br>
+    算法还原自 <b style="color:#5469d4">@plait/common</b> elbow-line-route
+  </div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const DEFAULT_ROUTE_MARGIN = 30;
+const CORNER_RADIUS = 10;
+
+// ==================== Rectangle Utilities ====================
+
+function expandRect(rect, left, top, right, bottom) {
+    return {
+        x: rect.x - left,
+        y: rect.y - top,
+        width: rect.width + left + right,
+        height: rect.height + top + bottom
+    };
+}
+
+function isPointInRect(rect, p) {
+    return p[0] > rect.x && p[0] < rect.x + rect.width &&
+           p[1] > rect.y && p[1] < rect.y + rect.height;
+}
+
+function isRectHit(a, b) {
+    return isRectHitX(a, b) && isRectHitY(a, b);
+}
+
+function isRectHitX(a, b) {
+    return Math.floor(Math.max(a.x + a.width, b.x + b.width) - Math.min(a.x, b.x) - a.width - b.width) <= 0;
+}
+
+function isRectHitY(a, b) {
+    return Math.floor(Math.max(a.y + a.height, b.y + b.height) - Math.min(a.y, b.y) - a.height - b.height) <= 0;
+}
+
+function getRectByPoints(points) {
+    let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity;
+    for (const p of points) {
+        xMin = Math.min(xMin, p[0]); yMin = Math.min(yMin, p[1]);
+        xMax = Math.max(xMax, p[0]); yMax = Math.max(yMax, p[1]);
+    }
+    return { x: xMin, y: yMin, width: xMax - xMin, height: yMax - yMin };
+}
+
+function getCornerPointsByPoints(points) {
+    const xs = points.map(p => p[0]), ys = points.map(p => p[1]);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    const yMin = Math.min(...ys), yMax = Math.max(...ys);
+    return [[xMin, yMin], [xMax, yMin], [xMax, yMax], [xMin, yMax]];
+}
+
+function getGapCenter(r1, r2, isHorizontal) {
+    const a = isHorizontal ? 'x' : 'y';
+    const s = isHorizontal ? 'width' : 'height';
+    const vals = [r1[a], r1[a] + r1[s], r2[a], r2[a] + r2[s]].sort((a, b) => a - b);
+    return (vals[1] + vals[2]) / 2;
+}
+
+function pointsEqual(a, b) {
+    return Math.abs(a[0] - b[0]) < 0.5 && Math.abs(a[1] - b[1]) < 0.5;
+}
+
+// ==================== Margin Reduction (plait) ====================
+
+function reduceRouteMargin(sourceRect, targetRect) {
+    const d = DEFAULT_ROUTE_MARGIN;
+    const sourceOffset = [d, d, d, d]; // top, right, bottom, left
+    const targetOffset = [d, d, d, d];
+
+    const leftToRight = sourceRect.x - (targetRect.x + targetRect.width);
+    const rightToLeft = targetRect.x - (sourceRect.x + sourceRect.width);
+    if (leftToRight > 0 && leftToRight < d * 2) {
+        const o = leftToRight / 2;
+        sourceOffset[3] = o; targetOffset[1] = o;
+    }
+    if (rightToLeft > 0 && rightToLeft < d * 2) {
+        const o = rightToLeft / 2;
+        targetOffset[3] = o; sourceOffset[1] = o;
+    }
+    const topToBottom = sourceRect.y - (targetRect.y + targetRect.height);
+    const bottomToTop = targetRect.y - (sourceRect.y + sourceRect.height);
+    if (topToBottom > 0 && topToBottom < d * 2) {
+        const o = topToBottom / 2;
+        sourceOffset[0] = o; targetOffset[2] = o;
+    }
+    if (bottomToTop > 0 && bottomToTop < d * 2) {
+        const o = bottomToTop / 2;
+        sourceOffset[2] = o; targetOffset[0] = o;
+    }
+    return { sourceOffset, targetOffset };
+}
+
+function getSourceAndTargetOuterRectangle(sourceRect, targetRect) {
+    const { sourceOffset, targetOffset } = reduceRouteMargin(sourceRect, targetRect);
+    const sourceOuterRect = expandRect(sourceRect, sourceOffset[3], sourceOffset[0], sourceOffset[1], sourceOffset[2]);
+    const targetOuterRect = expandRect(targetRect, targetOffset[3], targetOffset[0], targetOffset[1], targetOffset[2]);
+    return { sourceOuterRect, targetOuterRect };
+}
+
+// ==================== Point / Direction ====================
+
+function getNextPoint(point, outerRect, direction) {
+    switch (direction) {
+        case 'top':    return [point[0], outerRect.y];
+        case 'bottom': return [point[0], outerRect.y + outerRect.height];
+        case 'right':  return [outerRect.x + outerRect.width, point[1]];
+        case 'left':   return [outerRect.x, point[1]];
+    }
+}
+
+function getAnchorPoint(rect, direction) {
+    switch (direction) {
+        case 'top':    return [rect.x + rect.width / 2, rect.y];
+        case 'bottom': return [rect.x + rect.width / 2, rect.y + rect.height];
+        case 'right':  return [rect.x + rect.width, rect.y + rect.height / 2];
+        case 'left':   return [rect.x, rect.y + rect.height / 2];
+    }
+}
+
+// ==================== Intersection Check ====================
+
+function isSourceAndTargetIntersect(opts) {
+    return (
+        isPointInRect(opts.targetRect, opts.sourcePoint) ||
+        isPointInRect(opts.targetOuterRect, opts.nextSourcePoint) ||
+        isPointInRect(opts.sourceOuterRect, opts.nextTargetPoint) ||
+        isPointInRect(opts.sourceRect, opts.targetPoint)
+    );
+}
+
+// ==================== Graph Points ====================
+
+function removeDuplicatePoints(points) {
+    const seen = new Set();
+    return points.filter(p => {
+        const key = p[0] + ',' + p[1];
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+    });
+}
+
+function getGraphPoints(opts) {
+    const { nextSourcePoint, nextTargetPoint, sourceOuterRect, targetOuterRect } = opts;
+    const x = [], y = [];
+    [sourceOuterRect, targetOuterRect].forEach(r => {
+        x.push(r.x, r.x + r.width / 2, r.x + r.width);
+        y.push(r.y, r.y + r.height / 2, r.y + r.height);
+    });
+    const rxs = [
+        sourceOuterRect.x, sourceOuterRect.x + sourceOuterRect.width,
+        targetOuterRect.x, targetOuterRect.x + targetOuterRect.width
+    ].sort((a, b) => a - b);
+    x.push((rxs[1] + rxs[2]) / 2, nextSourcePoint[0], nextTargetPoint[0]);
+
+    const rys = [
+        sourceOuterRect.y, sourceOuterRect.y + sourceOuterRect.height,
+        targetOuterRect.y, targetOuterRect.y + targetOuterRect.height
+    ].sort((a, b) => a - b);
+    y.push((rys[1] + rys[2]) / 2, nextSourcePoint[1], nextTargetPoint[1]);
+
+    let result = [];
+    for (let i = 0; i < x.length; i++) {
+        for (let j = 0; j < y.length; j++) {
+            const p = [x[i], y[j]];
+            if (!isPointInRect(sourceOuterRect, p) && !isPointInRect(targetOuterRect, p)) {
+                result.push(p);
+            }
+        }
+    }
+    return removeDuplicatePoints(result).filter(p =>
+        !isPointInRect(sourceOuterRect, p) && !isPointInRect(targetOuterRect, p)
+    );
+}
+
+// ==================== PointGraph ====================
+
+class PointNode {
+    constructor(data) { this.data = data; this.adjacentNodes = []; }
+}
+
+class PointGraph {
+    constructor() { this.index = {}; }
+    add(p) {
+        const xs = '' + p[0], ys = '' + p[1];
+        if (!(xs in this.index)) this.index[xs] = {};
+        if (!(ys in this.index[xs])) this.index[xs][ys] = new PointNode(p);
+    }
+    connect(a, b) {
+        const nA = this.get(a), nB = this.get(b);
+        if (nA && nB) nA.adjacentNodes.push(nB);
+    }
+    has(p) {
+        const xs = '' + p[0], ys = '' + p[1];
+        return xs in this.index && ys in this.index[xs];
+    }
+    get(p) {
+        const xs = '' + p[0], ys = '' + p[1];
+        return (xs in this.index && ys in this.index[xs]) ? this.index[xs][ys] : null;
+    }
+}
+
+function createGraph(points) {
+    const graph = new PointGraph();
+    const Xs = [], Ys = [];
+    points.forEach(p => {
+        if (Xs.indexOf(p[0]) < 0) Xs.push(p[0]);
+        if (Ys.indexOf(p[1]) < 0) Ys.push(p[1]);
+        graph.add(p);
+    });
+    Xs.sort((a, b) => a - b);
+    Ys.sort((a, b) => a - b);
+    for (let i = 0; i < Xs.length; i++) {
+        for (let j = 0; j < Ys.length; j++) {
+            const pt = [Xs[i], Ys[j]];
+            if (!graph.has(pt)) continue;
+            if (i > 0) {
+                const other = [Xs[i - 1], Ys[j]];
+                if (graph.has(other)) { graph.connect(other, pt); graph.connect(pt, other); }
+            }
+            if (j > 0) {
+                const other = [Xs[i], Ys[j - 1]];
+                if (graph.has(other)) { graph.connect(other, pt); graph.connect(pt, other); }
+            }
+        }
+    }
+    return graph;
+}
+
+// ==================== A* (plait 原版) ====================
+
+class PriorityQueue {
+    constructor() { this.list = []; }
+    enqueue(item) { this.list.push(item); this.list.sort((a, b) => a.priority - b.priority); }
+    dequeue() { return this.list.shift(); }
+}
+
+class AStar {
+    constructor(graph) { this.graph = graph; this.cameFrom = new Map(); }
+    heuristic(a, b) { return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]); }
+    search(start, end, previousStart) {
+        const frontier = new PriorityQueue();
+        const startNode = this.graph.get(start);
+        this.cameFrom = new Map();
+        const costSoFar = new Map();
+        costSoFar.set(startNode, 0);
+        frontier.enqueue({ node: startNode, priority: 0 });
+        while (frontier.list.length > 0) {
+            const current = frontier.dequeue();
+            if (!current) break;
+            const cp = current.node.data;
+            if (cp[0] === end[0] && cp[1] === end[1]) break;
+            current.node.adjacentNodes.forEach(next => {
+                let newCost = costSoFar.get(current.node) + this.heuristic(next.data, current.node.data);
+                const prevNode = this.cameFrom.get(current.node);
+                const prevPt = prevNode ? prevNode.data : previousStart;
+                const sameX = prevPt[0] === current.node.data[0] && prevPt[0] === next.data[0];
+                const sameY = prevPt[1] === current.node.data[1] && prevPt[1] === next.data[1];
+                if (!sameX && !sameY) newCost += 1;
+                if (!costSoFar.has(next) || newCost < costSoFar.get(next)) {
+                    costSoFar.set(next, newCost);
+                    frontier.enqueue({ node: next, priority: newCost + this.heuristic(next.data, end) });
+                    this.cameFrom.set(next, current.node);
+                }
+            });
+        }
+    }
+    getRoute(start, end) {
+        const result = [];
+        let temp = end;
+        while (temp[0] !== start[0] || temp[1] !== start[1]) {
+            const node = this.graph.get(temp);
+            if (!node) break;
+            const pre = this.cameFrom.get(node);
+            if (!pre) break;
+            result.unshift(pre.data);
+            temp = pre.data;
+        }
+        return result;
+    }
+}
+
+// ==================== Path Simplification & Centerline Adjust ====================
+
+function simplifyOrthogonalPoints(points) {
+    if (points.length <= 2) return points;
+    const result = [points[0]];
+    for (let i = 1; i < points.length - 1; i++) {
+        const prev = points[i - 1], curr = points[i], next = points[i + 1];
+        const overH = Math.abs(prev[1] - curr[1]) < 0.5 && Math.abs(curr[1] - next[1]) < 0.5;
+        const overV = Math.abs(prev[0] - curr[0]) < 0.5 && Math.abs(curr[0] - next[0]) < 0.5;
+        if (!overH && !overV) result.push(curr);
+    }
+    result.push(points[points.length - 1]);
+    return result;
+}
+
+function getAdjustOptions(path, centerOfAxis, isHorizontal) {
+    const parallelPaths = [];
+    let start = null, pointOfHit = null;
+    const axis = isHorizontal ? 0 : 1;
+    for (let i = 0; i < path.length; i++) {
+        const prev = path[i - 1], curr = path[i];
+        if (start === null && prev && prev[axis] === curr[axis]) start = prev;
+        if (start !== null && prev[axis] !== curr[axis]) { parallelPaths.push([start, prev]); start = null; }
+        if (curr[axis] === centerOfAxis) pointOfHit = curr;
+    }
+    if (start) parallelPaths.push([start, path[path.length - 1]]);
+    return { pointOfHit, parallelPaths };
+}
+
+function adjust(route, options) {
+    const { parallelPaths, pointOfHit, sourceRect, targetRect } = options;
+    let result = null;
+    parallelPaths.forEach(parallelPath => {
+        const tempRectPoints = [pointOfHit, parallelPath[0], parallelPath[1]];
+        const tempRect = getRectByPoints(tempRectPoints);
+        if (!isRectHit(tempRect, sourceRect) && !isRectHit(tempRect, targetRect)) {
+            const tempCorners = getCornerPointsByPoints(tempRectPoints);
+            const indexRangeInPath = [], indexRangeInCorner = [];
+            route.forEach((point, index) => {
+                const cornerIdx = tempCorners.findIndex(c => pointsEqual(point, c));
+                if (cornerIdx !== -1) { indexRangeInPath.push(index); indexRangeInCorner.push(cornerIdx); }
+            });
+            if (indexRangeInPath.length < 2) return;
+            const missCorner = tempCorners.find((_, idx) => !indexRangeInCorner.includes(idx));
+            if (!missCorner) return;
+            const newPath = [...route];
+            const removeLen = Math.abs(indexRangeInPath[0] - indexRangeInPath[indexRangeInPath.length - 1]) + 1;
+            newPath.splice(indexRangeInPath[0] + 1, removeLen - 2, missCorner);
+            const turnCount = simplifyOrthogonalPoints([...route]).length - 1;
+            const newTurnCount = simplifyOrthogonalPoints([...newPath]).length - 1;
+            if (newTurnCount <= turnCount) result = newPath;
+        }
+    });
+    return result;
+}
+
+function routeAdjust(path, options) {
+    const { centerX, centerY, sourceRect, targetRect } = options;
+    if (centerX !== undefined) {
+        const opts = getAdjustOptions(path, centerX, true);
+        const res = opts.pointOfHit && adjust(path, {
+            parallelPaths: opts.parallelPaths, pointOfHit: opts.pointOfHit, sourceRect, targetRect
+        });
+        if (res) path = res;
+    }
+    if (centerY !== undefined) {
+        const opts = getAdjustOptions(path, centerY, false);
+        const res = opts.pointOfHit && adjust(path, {
+            parallelPaths: opts.parallelPaths, pointOfHit: opts.pointOfHit, sourceRect, targetRect
+        });
+        if (res) path = res;
+    }
+    return path;
+}
+
+// ==================== generateElbowLineRoute (plait 主函数) ====================
+
+let debugInfo = { graphPoints: [], graphEdges: [], sourceOuterRect: null, targetOuterRect: null };
+
+function generateElbowLineRoute(options) {
+    const { nextSourcePoint, nextTargetPoint } = options;
+    const points = getGraphPoints(options);
+    const graph = createGraph(points);
+
+    const edges = [];
+    points.forEach(p => {
+        const node = graph.get(p);
+        if (node) {
+            node.adjacentNodes.forEach(adj => {
+                edges.push([node.data, adj.data]);
+            });
+        }
+    });
+    debugInfo.graphPoints = points;
+    debugInfo.graphEdges = edges;
+    debugInfo.sourceOuterRect = options.sourceOuterRect;
+    debugInfo.targetOuterRect = options.targetOuterRect;
+
+    const aStar = new AStar(graph);
+    aStar.search(nextSourcePoint, nextTargetPoint, options.sourcePoint);
+    let route = aStar.getRoute(nextSourcePoint, nextTargetPoint);
+    route = [options.sourcePoint, ...route, nextTargetPoint, options.targetPoint];
+
+    const hitX = isRectHitX(options.sourceOuterRect, options.targetOuterRect);
+    const hitY = isRectHitY(options.sourceOuterRect, options.targetOuterRect);
+    const centerX = hitX ? undefined : getGapCenter(options.sourceOuterRect, options.targetOuterRect, true);
+    const centerY = hitY ? undefined : getGapCenter(options.sourceOuterRect, options.targetOuterRect, false);
+
+    route = routeAdjust(route, { centerX, centerY, sourceRect: options.sourceRect, targetRect: options.targetRect });
+    return simplifyOrthogonalPoints(route);
+}
+
+// ==================== getPoints (plait intersect routing) ====================
+
+function getDirectionFactor(direction) {
+    switch (direction) {
+        case 'top':    return { x: 0, y: -1 };
+        case 'bottom': return { x: 0, y: 1 };
+        case 'left':   return { x: -1, y: 0 };
+        case 'right':  return { x: 1, y: 0 };
+    }
+}
+
+function getEdgeCenter(params) {
+    return [
+        (params.sourceX + params.targetX) / 2,
+        (params.sourceY + params.targetY) / 2
+    ];
+}
+
+function getDirection(source, sourcePosition, target) {
+    const isSourceLeftOrRight = sourcePosition === 'left' || sourcePosition === 'right';
+    const sourceDir = isSourceLeftOrRight ? { x: source[0] < target[0] ? 1 : -1, y: 0 } : { x: 0, y: source[1] < target[1] ? 1 : -1 };
+    return sourceDir;
+}
+
+function getPoints(source, sourcePosition, target, targetPosition, offset) {
+    const sourceDirectionFactors = getDirectionFactor(sourcePosition);
+    const targetDFs = getDirectionFactor(targetPosition);
+    const sourceGapped = [source[0] + sourceDirectionFactors.x * offset, source[1] + sourceDirectionFactors.y * offset];
+    const targetGapped = [target[0] + targetDFs.x * offset, target[1] + targetDFs.y * offset];
+    const dir = getDirection(sourceGapped, sourcePosition, targetGapped);
+    const dirAccessor = dir.x !== 0 ? 'x' : 'y';
+    const currDir = dir[dirAccessor];
+
+    let points = [];
+    let centerX, centerY;
+    const [defaultCenterX, defaultCenterY] = getEdgeCenter({
+        sourceX: source[0],
+        sourceY: source[1],
+        targetX: target[0],
+        targetY: target[1]
+    });
+
+    if (sourceDirectionFactors[dirAccessor] * targetDFs[dirAccessor] === -1) {
+        centerX = defaultCenterX;
+        centerY = defaultCenterY;
+        const verticalSplit = [
+            [centerX, sourceGapped[1]],
+            [centerX, targetGapped[1]]
+        ];
+        const horizontalSplit = [
+            [sourceGapped[0], centerY],
+            [targetGapped[0], centerY]
+        ];
+        if (sourceDirectionFactors[dirAccessor] === currDir) {
+            points = dirAccessor === 'x' ? verticalSplit : horizontalSplit;
+        } else {
+            points = dirAccessor === 'x' ? horizontalSplit : verticalSplit;
+        }
+    } else {
+        const sourceTarget = [[sourceGapped[0], targetGapped[1]]];
+        const targetSource = [[targetGapped[0], sourceGapped[1]]];
+        if (dirAccessor === 'x') {
+            points = sourceDirectionFactors.x === currDir ? targetSource : sourceTarget;
+        } else {
+            points = sourceDirectionFactors.y === currDir ? sourceTarget : targetSource;
+        }
+
+        let flipSourceTarget;
+        if (sourcePosition !== targetPosition) {
+            const dirAccessorOpposite = dirAccessor === 'x' ? 1 : 0;
+            const isSameDir = sourceDirectionFactors[dirAccessor] === targetDFs[dirAccessor === 'x' ? 'y' : 'x'];
+            const sourceGtTarget = sourceGapped[dirAccessorOpposite] > targetGapped[dirAccessorOpposite];
+            const sourceLtTarget = sourceGapped[dirAccessorOpposite] < targetGapped[dirAccessorOpposite];
+            flipSourceTarget =
+                (sourceDirectionFactors[dirAccessor] === 1 && ((!isSameDir && sourceGtTarget) || (isSameDir && sourceLtTarget))) ||
+                (sourceDirectionFactors[dirAccessor] !== 1 && ((!isSameDir && sourceLtTarget) || (isSameDir && sourceGtTarget)));
+
+            if (flipSourceTarget) {
+                points = dirAccessor === 'x' ? sourceTarget : targetSource;
+            }
+        }
+    }
+    return [source, sourceGapped, ...points, targetGapped, target];
+}
+
+// ==================== Compute wrapper ====================
+
+function computeRoute(sourceRect, targetRect, srcDir, tgtDir) {
+    const sourcePoint = getAnchorPoint(sourceRect, srcDir);
+    const targetPoint = getAnchorPoint(targetRect, tgtDir);
+
+    const { sourceOuterRect, targetOuterRect } = getSourceAndTargetOuterRectangle(sourceRect, targetRect);
+
+    const nextSourcePoint = getNextPoint(sourcePoint, sourceOuterRect, srcDir);
+    const nextTargetPoint = getNextPoint(targetPoint, targetOuterRect, tgtDir);
+
+    const opts = {
+        sourcePoint, nextSourcePoint, sourceRect, sourceOuterRect,
+        targetPoint, nextTargetPoint, targetRect, targetOuterRect
+    };
+
+    if (isSourceAndTargetIntersect(opts)) {
+        return getPoints(sourcePoint, srcDir, targetPoint, tgtDir, DEFAULT_ROUTE_MARGIN);
+    }
+
+    return generateElbowLineRoute(opts);
+}
+
+// ==================== Canvas Rendering ====================
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let boxes = [
+    { x: 250, y: 280, width: 140, height: 90 },
+    { x: 550, y: 140, width: 140, height: 90 }
+];
+
+let srcDir = 'right', tgtDir = 'left';
+let dragTarget = null, dragOff = [0, 0];
+
+function drawDashedRect(rect, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+    ctx.setLineDash([]);
+}
+
+function drawRoute(path, useCorner) {
+    if (path.length < 2) return;
+
+    ctx.strokeStyle = '#5469d4';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    ctx.moveTo(path[0][0], path[0][1]);
+
+    if (useCorner && path.length > 2) {
+        for (let i = 1; i < path.length - 1; i++) {
+            const p0 = path[i - 1], p1 = path[i], p2 = path[i + 1];
+            const d1 = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+            const d2 = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+            const minSeg = Math.min(d1, d2);
+            const r = minSeg < CORNER_RADIUS * 2 ? 0 : CORNER_RADIUS;
+            ctx.arcTo(p1[0], p1[1], p2[0], p2[1], r);
+        }
+    } else {
+        for (let i = 1; i < path.length; i++) {
+            ctx.lineTo(path[i][0], path[i][1]);
+        }
+    }
+    ctx.lineTo(path[path.length - 1][0], path[path.length - 1][1]);
+    ctx.stroke();
+
+    // arrow
+    const last = path[path.length - 1], prev = path[path.length - 2];
+    const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
+    ctx.beginPath();
+    ctx.fillStyle = '#5469d4';
+    ctx.moveTo(last[0], last[1]);
+    ctx.lineTo(last[0] - 10 * Math.cos(angle - Math.PI / 6), last[1] - 10 * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(last[0] - 10 * Math.cos(angle + Math.PI / 6), last[1] - 10 * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+
+    // endpoint dots
+    for (const p of [path[0], path[path.length - 1]]) {
+        ctx.beginPath();
+        ctx.fillStyle = '#5469d4';
+        ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = '#fff';
+        ctx.arc(p[0], p[1], 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawBox(rect, label, isSource) {
+    const gradient = ctx.createLinearGradient(rect.x, rect.y, rect.x, rect.y + rect.height);
+    gradient.addColorStop(0, '#ffffff');
+    gradient.addColorStop(1, '#f8f9fb');
+    ctx.fillStyle = gradient;
+    ctx.strokeStyle = isSource ? '#5469d4' : '#e25f5f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(rect.x, rect.y, rect.width, rect.height, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#3c4257';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '600 13px -apple-system, sans-serif';
+    ctx.fillText(label, rect.x + rect.width / 2, rect.y + rect.height / 2 - 8);
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillStyle = '#8792a2';
+    ctx.fillText('Drag to move', rect.x + rect.width / 2, rect.y + rect.height / 2 + 10);
+
+    const dir = isSource ? srcDir : tgtDir;
+    const anchor = getAnchorPoint(rect, dir);
+    ctx.beginPath();
+    ctx.fillStyle = isSource ? '#5469d4' : '#e25f5f';
+    ctx.arc(anchor[0], anchor[1], 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.fillStyle = '#fff';
+    ctx.arc(anchor[0], anchor[1], 2.5, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // dot grid background
+    ctx.fillStyle = '#e5e7eb';
+    for (let x = 0; x < canvas.width; x += 20) {
+        for (let y = 0; y < canvas.height; y += 20) {
+            ctx.beginPath();
+            ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    const path = computeRoute(boxes[0], boxes[1], srcDir, tgtDir);
+
+    const showGrid = document.getElementById('showGrid').checked;
+    const showOuter = document.getElementById('showOuter').checked;
+    const showEdges = document.getElementById('showEdges').checked;
+    const showCorner = document.getElementById('showCorner').checked;
+
+    if (showOuter && debugInfo.sourceOuterRect) {
+        drawDashedRect(debugInfo.sourceOuterRect, 'rgba(84,105,212,0.3)');
+        drawDashedRect(debugInfo.targetOuterRect, 'rgba(226,95,95,0.3)');
+    }
+
+    if (showEdges) {
+        ctx.strokeStyle = 'rgba(84,105,212,0.1)';
+        ctx.lineWidth = 1;
+        debugInfo.graphEdges.forEach(([a, b]) => {
+            ctx.beginPath();
+            ctx.moveTo(a[0], a[1]);
+            ctx.lineTo(b[0], b[1]);
+            ctx.stroke();
+        });
+    }
+
+    if (showGrid) {
+        debugInfo.graphPoints.forEach(p => {
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(84,105,212,0.4)';
+            ctx.arc(p[0], p[1], 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    drawBox(boxes[0], 'Source', true);
+    drawBox(boxes[1], 'Target', false);
+    drawRoute(path, showCorner);
+}
+
+// ==================== Interaction ====================
+
+canvas.addEventListener('mousedown', e => {
+    const mx = e.offsetX, my = e.offsetY;
+    for (let i = boxes.length - 1; i >= 0; i--) {
+        const b = boxes[i];
+        if (mx >= b.x && mx <= b.x + b.width && my >= b.y && my <= b.y + b.height) {
+            dragTarget = b;
+            dragOff = [mx - b.x, my - b.y];
+            canvas.style.cursor = 'grabbing';
+            break;
+        }
+    }
+});
+
+canvas.addEventListener('mousemove', e => {
+    if (dragTarget) {
+        dragTarget.x = e.offsetX - dragOff[0];
+        dragTarget.y = e.offsetY - dragOff[1];
+        render();
+    } else {
+        const mx = e.offsetX, my = e.offsetY;
+        const hit = boxes.some(b => mx >= b.x && mx <= b.x + b.width && my >= b.y && my <= b.y + b.height);
+        canvas.style.cursor = hit ? 'grab' : 'default';
+    }
+});
+
+window.addEventListener('mouseup', () => {
+    dragTarget = null;
+    canvas.style.cursor = 'default';
+});
+
+// Direction buttons
+function setupDirButtons(containerId, setter) {
+    const container = document.getElementById(containerId);
+    container.querySelectorAll('.dir-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setter(btn.dataset.dir);
+            render();
+        });
+    });
+}
+
+setupDirButtons('srcDir', d => { srcDir = d; });
+setupDirButtons('tgtDir', d => { tgtDir = d; });
+
+// Debug toggles
+['showGrid', 'showOuter', 'showEdges', 'showCorner'].forEach(id => {
+    document.getElementById(id).addEventListener('change', render);
+});
+
+// Resize
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    render();
+}
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
