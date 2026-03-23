@@ -346,6 +346,7 @@ export class Element extends Transformable {
       } else {
         (indicator as any).anchorLabel = d.label;
         (indicator as any).edge = d.edge;
+        if (d.labelWidth != null) (indicator as any).labelWidth = d.labelWidth;
       }
 
       (indicator as any).anchorRatio = ratio;

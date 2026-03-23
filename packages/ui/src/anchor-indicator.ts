@@ -7,6 +7,7 @@ const GAP = 3;
 const FONT_SIZE = 10;
 const LINE_HEIGHT = 1.4;
 const FONT = `${FONT_SIZE}px Arial, sans-serif`;
+const MAX_WIDTH = 80;
 
 export class AnchorIndicator extends Shape {
   type = "anchor-indicator";
@@ -14,12 +15,14 @@ export class AnchorIndicator extends Shape {
   edge: "top" | "right" | "bottom" | "left" = "top";
   anchorRatio: number = 0;
   dotColor: string = "#4F81FF";
+  labelWidth: number = MAX_WIDTH;
 
-  constructor(data: { id: string; label: string; edge: string }) {
+  constructor(data: { id: string; label: string; edge: string; labelWidth?: number }) {
     super();
     this.id = `__anchor_${data.id}`;
     this.anchorLabel = data.label;
     this.edge = data.edge as any;
+    if (data.labelWidth != null) this.labelWidth = data.labelWidth;
     this.visible = true;
     this.selectctbale = false;
     this.enableMove = false;
@@ -36,7 +39,7 @@ export class AnchorIndicator extends Shape {
       case "top":    return { x: w / 2, y: h + GAP + DOT_RADIUS };
       case "bottom": return { x: w / 2, y: -(GAP + DOT_RADIUS) };
       case "left":   return { x: w + GAP + DOT_RADIUS, y: h / 2 };
-      case "right":  return { x: -(GAP + DOT_RADIUS), y: h / 2 };
+      case "right":  return { x: -(GAP + DOT_RADIUS), y: h / 2  };
     }
   }
 
@@ -46,27 +49,30 @@ export class AnchorIndicator extends Shape {
 
     const pw = parent.width || 0;
     const ph = parent.height || 0;
-    const anchors: any[] = (parent as any).anchors || [];
-    const sameEdgeCount = anchors.filter((a: any) => a.edge === this.edge).length;
-    const isH = this.edge === "top" || this.edge === "bottom";
-    const edgeLength = isH ? pw : ph;
-    const slotWidth = sameEdgeCount > 0 ? edgeLength / (sameEdgeCount + 1) : edgeLength;
     const lineH = FONT_SIZE * LINE_HEIGHT;
 
-    this.width = slotWidth;
+    this.width = this.labelWidth;
     this.height = lineH;
 
-    let ax: number, ay: number;
-    switch (this.edge) {
-      case "top":    ax = pw * this.anchorRatio; ay = 0;  break;
-      case "bottom": ax = pw * this.anchorRatio; ay = ph; break;
-      case "left":   ax = 0;  ay = ph * this.anchorRatio; break;
-      case "right":  ax = pw; ay = ph * this.anchorRatio; break;
-    }
-
     const dot = this._dotLocal();
-    this.left = ax - dot.x;
-    this.top = ay - dot.y;
+    switch (this.edge) {
+      case "top":
+        this.left = pw * this.anchorRatio - dot.x;
+        this.top = -(lineH + GAP + DOT_RADIUS);
+        break;
+      case "bottom":
+        this.left = pw * this.anchorRatio - dot.x;
+        this.top = ph + GAP + DOT_RADIUS;
+        break;
+      case "left":
+        this.left = -(this.labelWidth + GAP + DOT_RADIUS);
+        this.top = ph * this.anchorRatio - lineH / 2;
+        break;
+      case "right":
+        this.left = pw + GAP + DOT_RADIUS;
+        this.top = ph * this.anchorRatio - lineH / 2;
+        break;
+    }
   }
 
   private _ellipsis(text: string, maxW: number): string {
@@ -103,12 +109,20 @@ export class AnchorIndicator extends Shape {
     ctx.fillStyle = "#555";
     ctx.textBaseline = "middle";
 
-    const textMaxW = w - DOT_RADIUS * 2 - GAP * 2;
+    const textMaxW = w - GAP;
     if (textMaxW <= 0) return;
 
     const label = this._ellipsis(this.anchorLabel, textMaxW);
-    ctx.textAlign = "center";
-    ctx.fillText(label, w / 2, h / 2);
+    if (this.edge === "left") {
+      ctx.textAlign = "right";
+      ctx.fillText(label, w, h / 2);
+    } else if (this.edge === "right") {
+      ctx.textAlign = "left";
+      ctx.fillText(label, 0, h / 2);
+    } else {
+      ctx.textAlign = "center";
+      ctx.fillText(label, w / 2, h / 2);
+    }
   }
 
   hasPointHint(_point: Point): boolean {
