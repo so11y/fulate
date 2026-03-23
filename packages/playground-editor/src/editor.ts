@@ -10,6 +10,7 @@ import {
   Line,
 } from "@fulate/ui";
 import { Select, Snap, Rule, LineTool } from "@fulate/tools";
+import { markRaw } from "vue";
 import { store, refreshSelection } from "./store";
 import { loadFromStorage } from "./persistence";
 
@@ -133,9 +134,9 @@ export function initEditor(container: HTMLElement) {
   root.append(contentLayer, editerLayer, overlayLayer);
   root.mount();
 
-  store.root = root;
-  store.artboard = artboard;
-  store.select = selectTool;
+  store.root = markRaw(root);
+  store.artboard = markRaw(artboard);
+  store.select = markRaw(selectTool);
   store.viewportScale = root.viewport.scale;
 
   root.addEventListener("pointerup", () => setTimeout(refreshSelection, 30));

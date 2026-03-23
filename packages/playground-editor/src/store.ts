@@ -1,4 +1,4 @@
-import { reactive } from "vue";
+import { reactive, markRaw } from "vue";
 import type { Root, Artboard, Element } from "@fulate/core";
 import type { Select } from "@fulate/tools";
 

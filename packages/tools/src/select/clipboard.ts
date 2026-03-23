@@ -42,13 +42,7 @@ function deserializeElement(data: any): Element | undefined {
 function applyOffset(data: any, dx: number, dy: number) {
   if (data.left != null) data.left += dx;
   if (data.top != null) data.top += dy;
-  // if (data.linePoints) {
-  //   for (const p of data.linePoints) {
-  //     p.x += dx;
-  //     p.y += dy;
-  //   }
-  // }
-  if (data.type === "group" && data.children) {
+  if (data.children) {
     for (const child of data.children) {
       applyOffset(child, dx, dy);
     }

@@ -137,7 +137,7 @@ export class Layer extends Element {
     if (pending.size === 0) return;
 
     const allItems = this.rbush.all();
-    if (pending.size <= allItems.length * Layer.RBUSH_REBUILD_RATIO) {
+    if (allItems.length === 0 || pending.size <= allItems.length * Layer.RBUSH_REBUILD_RATIO) {
       for (const node of pending) {
         const oldItem = node.rbushItem;
         if (oldItem) this.rbush.remove(oldItem);
