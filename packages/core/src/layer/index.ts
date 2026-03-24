@@ -293,14 +293,23 @@ export class Layer extends Element {
       for (const wr of worldRects) {
         const hits = this.searchAreaElements(wr);
         for (const hit of hits) {
-          const bounds = hit.element.getBoundingRect();
-          const sx = (bounds.left * m.a + m.e) * dpr;
-          const sy = (bounds.top * m.d + m.f) * dpr;
-          const sw = bounds.width * m.a * dpr;
-          const sh = bounds.height * m.d * dpr;
+          const coords = hit.element.getCoords();
+          if (!coords || coords.length < 2) continue;
+          ctx.beginPath();
+          ctx.moveTo(
+            (coords[0].x * m.a + m.e) * dpr,
+            (coords[0].y * m.d + m.f) * dpr
+          );
+          for (let i = 1; i < coords.length; i++) {
+            ctx.lineTo(
+              (coords[i].x * m.a + m.e) * dpr,
+              (coords[i].y * m.d + m.f) * dpr
+            );
+          }
+          ctx.closePath();
           ctx.strokeStyle = "rgba(0, 255, 0, 0.8)";
           ctx.lineWidth = 1;
-          ctx.strokeRect(sx, sy, sw, sh);
+          ctx.stroke();
         }
       }
     }
