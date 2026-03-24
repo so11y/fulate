@@ -6,6 +6,21 @@ import type { Select } from "./index";
 import type { ElementSnapshot } from "./controls";
 import { checkElement } from "./checkElement";
 
+function snapshotElements(els: Element[]): ElementSnapshot[] {
+  return els.map((el) => {
+    el.calcWorldMatrix();
+    return {
+      el,
+      matrix: DOMMatrix.fromMatrix(el.getOwnMatrix()),
+      worldCenterPoint: el.getWorldCenterPoint(),
+      width: el.width,
+      height: el.height,
+      scaleX: el.scaleX,
+      scaleY: el.scaleY
+    };
+  });
+}
+
 function checkElementIntersects(
   select: Select,
   object: Element
@@ -86,21 +101,7 @@ function handleControl(select: Select, e: FulateEvent) {
   select.history.snapshot(select.selectEls);
 
   const theta = degreesToRadians(select.angle ?? 0);
-
-  let diveIn: ElementSnapshot | undefined;
-  if (select.isDiveIn) {
-    const el = select.selectEls[0];
-    el.calcWorldMatrix();
-    diveIn = {
-      el,
-      matrix: DOMMatrix.fromMatrix(el.getOwnMatrix()),
-      worldCenterPoint: el.getWorldCenterPoint(),
-      width: el.width,
-      height: el.height,
-      scaleX: el.scaleX,
-      scaleY: el.scaleY
-    };
-  }
+  const snapshots = snapshotElements(select.selectEls);
 
   const selectPrevState = {
     theta,
@@ -111,7 +112,7 @@ function handleControl(select: Select, e: FulateEvent) {
     top: select.top,
     worldCenterPoint: select.getWorldCenterPoint(),
     matrix: DOMMatrix.fromMatrix(select.getOwnMatrix()),
-    diveIn
+    snapshots
   };
 
   let dragStarted = false;
@@ -131,17 +132,11 @@ function handleControl(select: Select, e: FulateEvent) {
       if (dragStarted) {
         schema.onDragEnd?.(select, control);
       }
-      if (select.isDiveIn) {
-        for (const el of select.selectEls) {
-          if (el.groupParent) el.groupParent.markBoundingBoxDirty();
-        }
-      } else {
-        const updated = new Set();
-        for (const el of select.selectEls) {
-          if (el.groupParent && !updated.has(el.groupParent)) {
-            updated.add(el.groupParent);
-            el.groupParent.updateBoundingBox();
-          }
+      const updated = new Set();
+      for (const el of select.selectEls) {
+        if (el.groupParent && !updated.has(el.groupParent)) {
+          updated.add(el.groupParent);
+          el.groupParent.markBoundingBoxDirty();
         }
       }
       select.history.commit();
@@ -152,7 +147,6 @@ function handleControl(select: Select, e: FulateEvent) {
 
 function handleSelectMove(select: Select, e: FulateEvent) {
   const startPoint = new Point(e.detail.x, e.detail.y);
-  const isDiveIn = select.isDiveIn;
 
   select.history.snapshot(select.selectEls);
   const schema = select.getActiveSchema();
@@ -165,8 +159,11 @@ function handleSelectMove(select: Select, e: FulateEvent) {
   const originalSelectLeft = select.left;
   const originalSelectTop = select.top;
 
-  const originalElLeft = isDiveIn ? select.selectEls[0].left : 0;
-  const originalElTop = isDiveIn ? select.selectEls[0].top : 0;
+  const originalPositions = select.selectEls.map((el) => ({
+    el,
+    left: el.left,
+    top: el.top
+  }));
 
   const coords =
     select.selectEls.length === 1
@@ -184,21 +181,16 @@ function handleSelectMove(select: Select, e: FulateEvent) {
       dy += snapResult.dy;
     }
 
-    if (isDiveIn) {
-      select.selectEls[0].setOptions({
-        left: originalElLeft + dx,
-        top: originalElTop + dy
-      });
-      select.updateSelectFrame({
-        left: originalSelectLeft + dx,
-        top: originalSelectTop + dy
-      });
-    } else {
-      select.setOptions({
-        left: originalSelectLeft + dx,
-        top: originalSelectTop + dy
+    for (const pos of originalPositions) {
+      pos.el.setOptions({
+        left: pos.left + dx,
+        top: pos.top + dy
       });
     }
+    select.updateSelectFrame({
+      left: originalSelectLeft + dx,
+      top: originalSelectTop + dy
+    });
   };
 
   select.root.addEventListener("pointermove", pointermove);
@@ -207,19 +199,12 @@ function handleSelectMove(select: Select, e: FulateEvent) {
     () => {
       select.root.removeEventListener("pointermove", pointermove);
       select.snapTool?.stop();
-      if (select.isDiveIn) {
-        for (const el of select.selectEls) {
-          (el as any).onSelectMoveEnd?.();
-          if (el.groupParent) el.groupParent.markBoundingBoxDirty();
-        }
-      } else {
-        const updated = new Set();
-        for (const el of select.selectEls) {
-          (el as any).onSelectMoveEnd?.();
-          if (el.groupParent && !updated.has(el.groupParent)) {
-            updated.add(el.groupParent);
-            el.groupParent.updateBoundingBox();
-          }
+      const updated = new Set();
+      for (const el of select.selectEls) {
+        (el as any).onSelectMoveEnd?.();
+        if (el.groupParent && !updated.has(el.groupParent)) {
+          updated.add(el.groupParent);
+          el.groupParent.markBoundingBoxDirty();
         }
       }
       select.history.commit();

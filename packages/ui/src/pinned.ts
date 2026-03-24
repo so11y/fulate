@@ -92,8 +92,6 @@ export class Pinned extends Rectangle {
 
   applyGroupTransform() {}
 
-  onParentResize() {}
-
   toJson(includeChildren = false) {
     const json = super.toJson(includeChildren) as any;
     const mode = this._inferTargetMode();

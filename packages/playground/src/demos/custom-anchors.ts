@@ -21,17 +21,19 @@ registerDemo("custom-anchors", {
         { id: "in1", label: "输入1", edge: "top" },
         { id: "in2", label: "输入2", edge: "top" },
         { id: "in3", label: "输入3", edge: "top" },
-        { id: "out1", label: "输出", edge: "bottom" },
+        { id: "out1", label: "输出", edge: "bottom" }
       ],
       children: [
         new Text({
-          left: 0, top: 0, width: 180, height: 100,
           text: "节点 A (自定义锚点)",
-          textAlign: "center", verticalAlign: "middle",
-          color: "#fff", fontSize: 13,
-          silent: true, pickable: false,
-        }),
-      ],
+          textAlign: "center",
+          verticalAlign: "middle",
+          color: "#fff",
+          fontSize: 13,
+          silent: true,
+          pickable: false
+        })
+      ]
     });
 
     const nodeB = new Rectangle({
@@ -43,13 +45,15 @@ registerDemo("custom-anchors", {
       radius: 8,
       children: [
         new Text({
-          left: 0, top: 0, width: 160, height: 90,
           text: "节点 B (默认锚点)",
-          textAlign: "center", verticalAlign: "middle",
-          color: "#fff", fontSize: 13,
-          silent: true, pickable: false,
-        }),
-      ],
+          textAlign: "center",
+          verticalAlign: "middle",
+          color: "#fff",
+          fontSize: 13,
+          silent: true,
+          pickable: false
+        })
+      ]
     });
 
     const nodeC = new Rectangle({
@@ -62,17 +66,19 @@ registerDemo("custom-anchors", {
       anchors: [
         { id: "data", label: "数据源", edge: "left" },
         { id: "out1", label: "输出1", edge: "right" },
-        { id: "out2", label: "输出2", edge: "right" },
+        { id: "out2", label: "输出2", edge: "right" }
       ],
       children: [
         new Text({
-          left: 0, top: 0, width: 180, height: 100,
           text: "节点 C (左右锚点)",
-          textAlign: "center", verticalAlign: "middle",
-          color: "#fff", fontSize: 13,
-          silent: true, pickable: false,
-        }),
-      ],
+          textAlign: "center",
+          verticalAlign: "middle",
+          color: "#fff",
+          fontSize: 13,
+          silent: true,
+          pickable: false
+        })
+      ]
     });
 
     const nodeD = new Rectangle({
@@ -86,17 +92,19 @@ registerDemo("custom-anchors", {
         { id: "in1", label: "输入", edge: "top" },
         { id: "out1", label: "输出1", edge: "bottom" },
         { id: "out2", label: "输出2", edge: "bottom" },
-        { id: "out3", label: "输出3", edge: "bottom" },
+        { id: "out3", label: "输出3", edge: "bottom" }
       ],
       children: [
         new Text({
-          left: 0, top: 0, width: 160, height: 80,
           text: "节点 D (多输出)",
-          textAlign: "center", verticalAlign: "middle",
-          color: "#fff", fontSize: 13,
-          silent: true, pickable: false,
-        }),
-      ],
+          textAlign: "center",
+          verticalAlign: "middle",
+          color: "#fff",
+          fontSize: 13,
+          silent: true,
+          pickable: false
+        })
+      ]
     });
 
     const hint = new Text({
@@ -108,28 +116,28 @@ registerDemo("custom-anchors", {
       color: "#666",
       fontSize: 12,
       silent: true,
-      pickable: false,
+      pickable: false
     });
 
     const artboard = new Artboard({
-      children: [nodeA, nodeB, nodeC, nodeD, hint],
+      children: [nodeA, nodeB, nodeC, nodeD, hint]
     });
 
     const workspace = new Workspace({
       width: 1920,
       height: 1080,
-      children: [artboard],
+      children: [artboard]
     });
 
     const contentLayer = new Layer({
       zIndex: 1,
       enableDirtyRect: true,
-      children: [workspace],
+      children: [workspace]
     });
 
     const editerLayer = new EditerLayer({
       zIndex: 2,
-      children: [new Select(), new Snap(), new LineTool()],
+      children: [new Select(), new Snap(), new LineTool()]
     });
 
     root.append(contentLayer, editerLayer);
@@ -153,7 +161,11 @@ registerDemo("custom-anchors", {
     makeBtn("给 A 添加锚点", () => {
       const anchors = [...(nodeA.anchors ?? [])];
       const idx = anchors.filter((a) => a.edge === "top").length + 1;
-      anchors.push({ id: `in${idx + 3}`, label: `输入${idx + 3}`, edge: "top" });
+      anchors.push({
+        id: `in${idx + 3}`,
+        label: `输入${idx + 3}`,
+        edge: "top"
+      });
       nodeA.anchors = anchors;
       nodeA.markNeedsLayout();
     });
@@ -171,7 +183,7 @@ registerDemo("custom-anchors", {
       const anchors = nodeC.anchors ?? [];
       const flipped = anchors.map((a) => ({
         ...a,
-        edge: a.edge === "left" ? "right" : a.edge === "right" ? "left" : a.edge,
+        edge: a.edge === "left" ? "right" : a.edge === "right" ? "left" : a.edge
       }));
       nodeC.anchors = flipped;
       nodeC.markNeedsLayout();
@@ -179,10 +191,9 @@ registerDemo("custom-anchors", {
 
     el.appendChild(btnContainer);
 
-
     //@ts-ignore
-    window._fulateRoot = root
+    window._fulateRoot = root;
 
     return () => root.unmounted();
-  },
+  }
 });

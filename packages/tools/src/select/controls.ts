@@ -2,7 +2,6 @@ import { radiansToDegrees } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { type Select } from "./index";
 import { FulateEvent } from "@fulate/core";
-import { qrDecompose } from "@fulate/util";
 
 // ---------------------------------------------------------------------------
 //  Interfaces
@@ -27,7 +26,7 @@ export interface SelectState {
   worldCenterPoint: Point;
   angle: number;
   matrix: DOMMatrix;
-  diveIn?: ElementSnapshot;
+  snapshots: ElementSnapshot[];
 }
 
 export interface ControlPoint {
@@ -217,7 +216,7 @@ export function rotateObjectWithSnapping(
 export function rotateCallback(
   selectEL: Select,
   point: Point,
-  { theta }: SelectState,
+  state: SelectState,
   event: FulateEvent
 ) {
   const angle = rotateObjectWithSnapping(
@@ -227,13 +226,36 @@ export function rotateCallback(
       ey: point.y,
       originX: selectEL.originX,
       originY: selectEL.originY,
-      theta
+      theta: state.theta
     },
     event.detail.x,
     event.detail.y
   );
 
-  selectEL.setOptions({ angle });
+  const { matrix, snapshots } = state;
+  const deltaAngle = angle - state.angle;
+
+  const cx = state.worldCenterPoint.x;
+  const cy = state.worldCenterPoint.y;
+  const deltaMatrix = new DOMMatrix()
+    .translate(cx, cy)
+    .rotate(0, 0, deltaAngle)
+    .translate(-cx, -cy);
+
+  for (const snap of snapshots) {
+    const {
+      el, matrix: elMatrix, worldCenterPoint,
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
+    } = snap;
+
+    const targetMatrix = deltaMatrix.multiply(elMatrix);
+    const worldCenter = worldCenterPoint.matrixTransform(deltaMatrix);
+    el.applyTransformMatrix(targetMatrix, worldCenter, {
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
+    });
+  }
+
+  selectEL.updateSelectFrame({ angle });
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +315,7 @@ export function resizeObject(
   event: any,
   type: string
 ) {
-  const { width: pWidth, height: pHeight, matrix, diveIn } = preState;
+  const { width: pWidth, height: pHeight, matrix, snapshots } = preState;
   const { sx, sy, fixedLocalX, fixedLocalY } = computeResizeScale(
     preState,
     event,
@@ -305,54 +327,35 @@ export function resizeObject(
     .scale(sx, sy)
     .translate(-fixedLocalX, -fixedLocalY);
 
-  if (diveIn) {
+  const newSelectWorldMatrix = matrix.multiply(localScaleMatrix);
+  const matrixInv = DOMMatrix.fromMatrix(matrix).inverse();
+  const deltaMatrix = newSelectWorldMatrix.multiply(matrixInv);
+
+  for (const snap of snapshots) {
     const {
       el, matrix: elMatrix, worldCenterPoint,
       width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
-    } = diveIn;
-
-    const newSelectWorldMatrix = matrix.multiply(localScaleMatrix);
-    const matrixInv = DOMMatrix.fromMatrix(matrix).inverse();
-    const deltaMatrix = newSelectWorldMatrix.multiply(matrixInv);
+    } = snap;
 
     const targetMatrix = deltaMatrix.multiply(elMatrix);
     const worldCenter = worldCenterPoint.matrixTransform(deltaMatrix);
     el.applyTransformMatrix(targetMatrix, worldCenter, {
       width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
     });
-
-    const newLocalCenter = new Point(
-      pWidth / 2,
-      pHeight / 2
-    ).matrixTransform(localScaleMatrix);
-    const newWorldCenter = newLocalCenter.matrixTransform(matrix);
-    const newW = pWidth * Math.abs(sx);
-    const newH = pHeight * Math.abs(sy);
-
-    selectEL.updateSelectFrame({
-      width: newW,
-      height: newH,
-      left: newWorldCenter.x - newW / 2,
-      top: newWorldCenter.y - newH / 2
-    });
-  } else {
-    const newWorldMatrix = matrix.multiply(localScaleMatrix);
-    const { angle, scaleX, scaleY, skewX } = qrDecompose(newWorldMatrix);
-
-    const newLocalCenter = new Point(
-      pWidth / 2,
-      pHeight / 2
-    ).matrixTransform(localScaleMatrix);
-    const newWorldCenter = newLocalCenter.matrixTransform(matrix);
-    const center = selectEL.getPositionByOrigin(newWorldCenter);
-
-    selectEL.setOptions({
-      angle,
-      scaleX,
-      scaleY,
-      skewX,
-      left: center.x,
-      top: center.y
-    });
   }
+
+  const newLocalCenter = new Point(
+    pWidth / 2,
+    pHeight / 2
+  ).matrixTransform(localScaleMatrix);
+  const newWorldCenter = newLocalCenter.matrixTransform(matrix);
+  const newW = pWidth * Math.abs(sx);
+  const newH = pHeight * Math.abs(sy);
+
+  selectEL.updateSelectFrame({
+    width: newW,
+    height: newH,
+    left: newWorldCenter.x - newW / 2,
+    top: newWorldCenter.y - newH / 2
+  });
 }

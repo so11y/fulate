@@ -1,13 +1,8 @@
 import { Point } from "@fulate/util";
-import {
-  makeBoundingBoxFromPoints,
-  makeBoundingBoxFromRects
-} from "@fulate/util";
+import { makeBoundingBoxFromRects } from "@fulate/util";
 import { BaseElementOption, Element } from "@fulate/core";
 import { DEFAULT_RECT_SCHEMA, type ControlSchema } from "./controls";
 import { Snap } from "./snap";
-import { Group } from "@fulate/ui";
-import { Node } from "@fulate/core";
 import { paintSelect } from "./paint";
 import { selectHitTest } from "./hitTest";
 import { setupInteraction } from "./interaction";
@@ -16,7 +11,7 @@ import { alignElements, type AlignType } from "./align";
 import { copyElements, pasteElements } from "./clipboard";
 import { HistoryManager } from "../history";
 
-export class Select extends Group {
+export class Select extends Element {
   declare currentControl: { control: any; point: any };
   key = "select";
   controlSize = 6;
@@ -26,6 +21,7 @@ export class Select extends Group {
   controlCoords: Array<Point>;
   hoverElement: Element | null = null;
   history!: HistoryManager;
+  selectEls: Element[] = [];
 
   private _cleanupInteraction?: () => void;
 
@@ -38,14 +34,6 @@ export class Select extends Group {
       ...options
     });
     this.isSubscribed = true;
-  }
-
-  get selectEls() {
-    return this.groupEls;
-  }
-
-  set selectEls(els: Element[]) {
-    this.groupEls = els;
   }
 
   get snapTool(): Snap | undefined {
@@ -78,12 +66,6 @@ export class Select extends Group {
 
   paste() {
     pasteElements(this);
-  }
-
-  get isDiveIn(): boolean {
-    return (
-      this.selectEls.length === 1 && this.selectEls[0].groupParent != null
-    );
   }
 
   canDiveIn(el: Element): boolean {
@@ -134,7 +116,6 @@ export class Select extends Group {
         skewX: geometry.skewX ?? 0,
         skewY: geometry.skewY ?? 0
       });
-      this.snapshotChildren();
     } else {
       const rect = makeBoundingBoxFromRects(
         this.selectEls.map((v) => v.getBoundingRect())
@@ -147,7 +128,6 @@ export class Select extends Group {
         skewX: 0,
         skewY: 0
       });
-      this.snapshotChildren();
     }
   }
 

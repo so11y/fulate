@@ -49,11 +49,19 @@ export class Group extends Element {
     localCenter: Point,
     groupWorldMatrix: DOMMatrix
   ): void {
-    const snap = (this as any)._groupSnapshot;
-    if (!snap) return;
+    const worldCenter = new Point(localCenter.matrixTransform(groupWorldMatrix));
+    this.applyTransformMatrix(targetMatrix, worldCenter);
+  }
+
+  applyTransformMatrix(
+    targetMatrix: DOMMatrix,
+    worldCenter: Point,
+    snap?: { width: number; height: number; scaleX: number; scaleY: number }
+  ): void {
+    const s = snap ?? (this as any)._groupSnapshot;
+    if (!s) return;
 
     const { angle, scaleX, scaleY, skewX } = qrDecompose(targetMatrix);
-    const worldCenter = localCenter.matrixTransform(groupWorldMatrix);
     const pos = this.getPositionByOrigin(worldCenter);
 
     this.setOptions({

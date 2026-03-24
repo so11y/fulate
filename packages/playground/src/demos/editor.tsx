@@ -121,10 +121,6 @@ registerDemo("editor", {
               radius: 6,
               children: [
                 new Text({
-                  left: 0,
-                  top: 0,
-                  width: 60,
-                  height: 28,
                   text: "📌 Pin",
                   color: "#fff",
                   fontSize: 12,

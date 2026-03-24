@@ -1,4 +1,3 @@
-import { makeBoundingBoxFromPoints } from "@fulate/util";
 import { Group } from "@fulate/ui";
 import type { Select } from "./index";
 
@@ -33,8 +32,7 @@ export function doGroup(select: Select) {
   parent.append(group);
   group.snapshotChildren();
 
-  select.selectEls = [group as any];
-  select.snapshotChildren();
+  select.select([group as any]);
 
   select.history.pushAction(
     () => {
@@ -74,27 +72,11 @@ export function unGroup(select: Select) {
     el.groupParent = null;
     delete el._provides.group;
   });
-  select.selectEls = children as any;
-
   if (groupParent) {
     groupParent.removeChild(group as any);
   }
 
-  const { left, top, width, height } = makeBoundingBoxFromPoints(
-    select.selectEls.map((v) => v.getCoords()).flat(1)
-  );
-  select.setOptions({
-    left,
-    top,
-    width,
-    height,
-    angle: 0,
-    scaleX: 1,
-    scaleY: 1,
-    skewX: 0,
-    skewY: 0
-  });
-  select.snapshotChildren();
+  select.select(children as any);
 
   select.history.pushAction(
     () => {

@@ -396,8 +396,6 @@ export class Element extends Transformable {
     if (!s) return;
 
     const { angle, scaleX, scaleY, skewX } = qrDecompose(targetMatrix);
-    const oldWidth = this.width;
-    const oldHeight = this.height;
 
     const ratioX = Math.abs(scaleX) / Math.abs(s.scaleX);
     const ratioY = Math.abs(scaleY) / Math.abs(s.scaleY);
@@ -418,23 +416,6 @@ export class Element extends Transformable {
       skewX,
       left: pos.x,
       top: pos.y
-    });
-
-    if (this.children?.length && oldWidth && oldHeight) {
-      const rx = newWidth / oldWidth;
-      const ry = newHeight / oldHeight;
-      for (const child of this.children) {
-        child.onParentResize(rx, ry);
-      }
-    }
-  }
-
-  onParentResize(rx: number, ry: number) {
-    this.setOptions({
-      width: this.width * rx,
-      height: this.height * ry,
-      left: this.left * rx,
-      top: this.top * ry
     });
   }
 

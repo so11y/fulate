@@ -374,8 +374,6 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
       return json;
     }
 
-    onParentResize() {}
-
     unmounted() {
       const parent = this.parent as any;
       const yogaRoot = this.isActiveed ? this.inject("yoga-root") : null;
