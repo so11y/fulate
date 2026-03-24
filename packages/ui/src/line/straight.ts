@@ -1,5 +1,4 @@
 import { Point } from "@fulate/util";
-import type { ControlPoint, ControlSchema } from "@fulate/tools";
 import { BaseLine, LineAnchor, LineOption } from "./base";
 import { ForkNode } from "../fork-node";
 
@@ -61,7 +60,7 @@ export class Line extends BaseLine {
     ctx.restore();
   }
 
-  getControlSchema(): ControlSchema {
+  getControlSchema() {
     return getLineControlSchema(this);
   }
 }
@@ -70,8 +69,8 @@ export class Line extends BaseLine {
 //  Control schema for straight-line vertex / midpoint editing
 // ---------------------------------------------------------------------------
 
-function getLineControlSchema(line: Line): ControlSchema {
-  const controls: ControlPoint[] = [];
+function getLineControlSchema(line: Line) {
+  const controls: any[] = [];
 
   for (let i = 0; i < line.linePoints.length; i++) {
     const ptIndex = i;

@@ -117,6 +117,9 @@ function drawInfoPanel(select: Select, ctx: CanvasRenderingContext2D) {
 function drawHoverBorder(select: Select, ctx: CanvasRenderingContext2D) {
   const el = select.hoverElement;
   if (!el || select.selectEls.includes(el)) return;
+  if (el.type === "group" && (el as any).ensureBoundingBox) {
+    (el as any).ensureBoundingBox();
+  }
   const scale = select.root.viewport.scale;
 
   ctx.save();

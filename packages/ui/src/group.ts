@@ -39,7 +39,14 @@ export class Group extends Element {
     this.groupEls.forEach((v) => v.calcWorldMatrix());
     const allPoints = this.groupEls.map((v) => v.setCoords().getCoords()).flat(1);
     const { left, top, width, height } = makeBoundingBoxFromPoints(allPoints);
-    Object.assign(this, { left, top, width, height });
+    Object.assign(this, {
+      left, top, width, height,
+      angle: 0,
+      scaleX: 1,
+      scaleY: 1,
+      skewX: 0,
+      skewY: 0
+    });
     this.markNeedsLayout();
     this.snapshotChildren();
   }

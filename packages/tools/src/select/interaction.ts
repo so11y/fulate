@@ -9,6 +9,7 @@ import { checkElement } from "./checkElement";
 function snapshotElements(els: Element[]): ElementSnapshot[] {
   return els.map((el) => {
     el.calcWorldMatrix();
+    el.snapshotForGroup();
     return {
       el,
       matrix: DOMMatrix.fromMatrix(el.getOwnMatrix()),

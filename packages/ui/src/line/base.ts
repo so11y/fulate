@@ -348,6 +348,10 @@ export abstract class BaseLine extends Element {
     this._snapshotWorldMatrix = DOMMatrix.fromMatrix(this.calcWorldMatrix());
   }
 
+  applyTransformMatrix(targetMatrix: DOMMatrix): void {
+    this.applyGroupTransform(targetMatrix);
+  }
+
   applyGroupTransform(targetMatrix: DOMMatrix): void {
     if (!this._snapshotLinePoints || !this._snapshotWorldMatrix) return;
     const delta = targetMatrix.multiply(this._snapshotWorldMatrix.inverse());
