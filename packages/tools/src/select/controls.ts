@@ -1,7 +1,4 @@
-import {
-  degreesToRadians,
-  radiansToDegrees
-} from "@fulate/util";
+import { radiansToDegrees } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { type Select } from "./index";
 import { FulateEvent } from "@fulate/core";
@@ -10,6 +7,16 @@ import { qrDecompose } from "@fulate/util";
 // ---------------------------------------------------------------------------
 //  Interfaces
 // ---------------------------------------------------------------------------
+
+export interface ElementSnapshot {
+  el: any;
+  matrix: DOMMatrix;
+  worldCenterPoint: Point;
+  width: number;
+  height: number;
+  scaleX: number;
+  scaleY: number;
+}
 
 export interface SelectState {
   theta: number;
@@ -20,6 +27,7 @@ export interface SelectState {
   worldCenterPoint: Point;
   angle: number;
   matrix: DOMMatrix;
+  diveIn?: ElementSnapshot;
 }
 
 export interface ControlPoint {
@@ -225,17 +233,14 @@ export function rotateCallback(
     event.detail.y
   );
 
-  selectEL.setOptions({
-    angle
-  });
+  selectEL.setOptions({ angle });
 }
 
 // ---------------------------------------------------------------------------
 //  Resize helper
 // ---------------------------------------------------------------------------
 
-export function resizeObject(
-  selectEL: any,
+function computeResizeScale(
   preState: SelectState,
   event: any,
   type: string
@@ -279,28 +284,75 @@ export function resizeObject(
   sx = sx || 0.0001;
   sy = sy || 0.0001;
 
+  return { sx, sy, fixedLocalX, fixedLocalY };
+}
+
+export function resizeObject(
+  selectEL: any,
+  preState: SelectState,
+  event: any,
+  type: string
+) {
+  const { width: pWidth, height: pHeight, matrix, diveIn } = preState;
+  const { sx, sy, fixedLocalX, fixedLocalY } = computeResizeScale(
+    preState,
+    event,
+    type
+  );
+
   const localScaleMatrix = new DOMMatrix()
     .translate(fixedLocalX, fixedLocalY)
     .scale(sx, sy)
     .translate(-fixedLocalX, -fixedLocalY);
 
-  const newWorldMatrix = matrix.multiply(localScaleMatrix);
+  if (diveIn) {
+    const {
+      el, matrix: elMatrix, worldCenterPoint,
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
+    } = diveIn;
 
-  const { angle, scaleX, scaleY, skewX } = qrDecompose(newWorldMatrix);
+    const newSelectWorldMatrix = matrix.multiply(localScaleMatrix);
+    const matrixInv = DOMMatrix.fromMatrix(matrix).inverse();
+    const deltaMatrix = newSelectWorldMatrix.multiply(matrixInv);
 
-  const newLocalCenter = new Point(pWidth / 2, pHeight / 2).matrixTransform(
-    localScaleMatrix
-  );
-  const newWorldCenter = newLocalCenter.matrixTransform(matrix);
+    const targetMatrix = deltaMatrix.multiply(elMatrix);
+    const worldCenter = worldCenterPoint.matrixTransform(deltaMatrix);
+    el.applyTransformMatrix(targetMatrix, worldCenter, {
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
+    });
 
-  const center = selectEL.getPositionByOrigin(newWorldCenter);
+    const newLocalCenter = new Point(
+      pWidth / 2,
+      pHeight / 2
+    ).matrixTransform(localScaleMatrix);
+    const newWorldCenter = newLocalCenter.matrixTransform(matrix);
+    const newW = pWidth * Math.abs(sx);
+    const newH = pHeight * Math.abs(sy);
 
-  selectEL.setOptions({
-    angle,
-    scaleX,
-    scaleY,
-    skewX,
-    left: center.x,
-    top: center.y
-  });
+    selectEL.updateSelectFrame({
+      width: newW,
+      height: newH,
+      left: newWorldCenter.x - newW / 2,
+      top: newWorldCenter.y - newH / 2
+    });
+  } else {
+    const newWorldMatrix = matrix.multiply(localScaleMatrix);
+    const { angle, scaleX, scaleY, skewX } = qrDecompose(newWorldMatrix);
+
+    const newLocalCenter = new Point(
+      pWidth / 2,
+      pHeight / 2
+    ).matrixTransform(localScaleMatrix);
+    const newWorldCenter = newLocalCenter.matrixTransform(matrix);
+    const center = selectEL.getPositionByOrigin(newWorldCenter);
+
+    selectEL.setOptions({
+      angle,
+      scaleX,
+      scaleY,
+      skewX,
+      left: center.x,
+      top: center.y
+    });
+  }
 }

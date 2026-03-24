@@ -80,6 +80,22 @@ export class Select extends Group {
     pasteElements(this);
   }
 
+  get isDiveIn(): boolean {
+    return (
+      this.selectEls.length === 1 && this.selectEls[0].groupParent != null
+    );
+  }
+
+  canDiveIn(el: Element): boolean {
+    if (el.type === "group") return true;
+    return el.enableDiveIn === true;
+  }
+
+  updateSelectFrame(options: Partial<BaseElementOption>) {
+    Object.assign(this, options);
+    this.markNeedsLayout();
+  }
+
   select(
     children: Array<Element>,
     geometry?: {
@@ -94,6 +110,12 @@ export class Select extends Group {
       skewY?: number;
     }
   ) {
+    for (const el of children) {
+      if (el.type === "group" && (el as any).ensureBoundingBox) {
+        (el as any).ensureBoundingBox();
+      }
+    }
+
     this.selectEls = children;
     this.currentControl = null as any;
     this.hoverElement = null;

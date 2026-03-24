@@ -133,18 +133,11 @@ export function initRootEvents(root: Root) {
   root.container.addEventListener(
     "dblclick",
     () => {
-      const select = root.keyElmenet?.get("select") as any;
-      if (select?.selectEls?.length === 1) {
-        const el = select.selectEls[0] as any;
-        if (typeof el?.enterEditing === "function") {
-          el.enterEditing();
-          select.select([]);
-        }
-      } else if (!select) {
-        const el = root.currentElement?.element as any;
-        if (typeof el?.enterEditing === "function") {
-          el.enterEditing();
-        }
+      const select = root.keyElmenet?.get("select");
+      if (select) return;
+      const el = root.currentElement?.element as any;
+      if (typeof el?.enterEditing === "function") {
+        el.enterEditing();
       }
     },
     { signal }

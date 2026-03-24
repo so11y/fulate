@@ -3,6 +3,7 @@ import { degreesToRadians } from "@fulate/util";
 import { Element } from "@fulate/core";
 import { FulateEvent } from "@fulate/core";
 import type { Select } from "./index";
+import type { ElementSnapshot } from "./controls";
 import { checkElement } from "./checkElement";
 
 function checkElementIntersects(
@@ -85,6 +86,22 @@ function handleControl(select: Select, e: FulateEvent) {
   select.history.snapshot(select.selectEls);
 
   const theta = degreesToRadians(select.angle ?? 0);
+
+  let diveIn: ElementSnapshot | undefined;
+  if (select.isDiveIn) {
+    const el = select.selectEls[0];
+    el.calcWorldMatrix();
+    diveIn = {
+      el,
+      matrix: DOMMatrix.fromMatrix(el.getOwnMatrix()),
+      worldCenterPoint: el.getWorldCenterPoint(),
+      width: el.width,
+      height: el.height,
+      scaleX: el.scaleX,
+      scaleY: el.scaleY
+    };
+  }
+
   const selectPrevState = {
     theta,
     angle: select.angle ?? 0,
@@ -93,7 +110,8 @@ function handleControl(select: Select, e: FulateEvent) {
     left: select.left,
     top: select.top,
     worldCenterPoint: select.getWorldCenterPoint(),
-    matrix: DOMMatrix.fromMatrix(select.getOwnMatrix())
+    matrix: DOMMatrix.fromMatrix(select.getOwnMatrix()),
+    diveIn
   };
 
   let dragStarted = false;
@@ -113,6 +131,19 @@ function handleControl(select: Select, e: FulateEvent) {
       if (dragStarted) {
         schema.onDragEnd?.(select, control);
       }
+      if (select.isDiveIn) {
+        for (const el of select.selectEls) {
+          if (el.groupParent) el.groupParent.markBoundingBoxDirty();
+        }
+      } else {
+        const updated = new Set();
+        for (const el of select.selectEls) {
+          if (el.groupParent && !updated.has(el.groupParent)) {
+            updated.add(el.groupParent);
+            el.groupParent.updateBoundingBox();
+          }
+        }
+      }
       select.history.commit();
     },
     { once: true }
@@ -121,6 +152,7 @@ function handleControl(select: Select, e: FulateEvent) {
 
 function handleSelectMove(select: Select, e: FulateEvent) {
   const startPoint = new Point(e.detail.x, e.detail.y);
+  const isDiveIn = select.isDiveIn;
 
   select.history.snapshot(select.selectEls);
   const schema = select.getActiveSchema();
@@ -132,6 +164,10 @@ function handleSelectMove(select: Select, e: FulateEvent) {
 
   const originalSelectLeft = select.left;
   const originalSelectTop = select.top;
+
+  const originalElLeft = isDiveIn ? select.selectEls[0].left : 0;
+  const originalElTop = isDiveIn ? select.selectEls[0].top : 0;
+
   const coords =
     select.selectEls.length === 1
       ? select.selectEls[0].getSnapPoints()
@@ -148,10 +184,21 @@ function handleSelectMove(select: Select, e: FulateEvent) {
       dy += snapResult.dy;
     }
 
-    select.setOptions({
-      left: originalSelectLeft + dx,
-      top: originalSelectTop + dy
-    });
+    if (isDiveIn) {
+      select.selectEls[0].setOptions({
+        left: originalElLeft + dx,
+        top: originalElTop + dy
+      });
+      select.updateSelectFrame({
+        left: originalSelectLeft + dx,
+        top: originalSelectTop + dy
+      });
+    } else {
+      select.setOptions({
+        left: originalSelectLeft + dx,
+        top: originalSelectTop + dy
+      });
+    }
   };
 
   select.root.addEventListener("pointermove", pointermove);
@@ -160,8 +207,20 @@ function handleSelectMove(select: Select, e: FulateEvent) {
     () => {
       select.root.removeEventListener("pointermove", pointermove);
       select.snapTool?.stop();
-      for (const el of select.selectEls) {
-        (el as any).onSelectMoveEnd?.();
+      if (select.isDiveIn) {
+        for (const el of select.selectEls) {
+          (el as any).onSelectMoveEnd?.();
+          if (el.groupParent) el.groupParent.markBoundingBoxDirty();
+        }
+      } else {
+        const updated = new Set();
+        for (const el of select.selectEls) {
+          (el as any).onSelectMoveEnd?.();
+          if (el.groupParent && !updated.has(el.groupParent)) {
+            updated.add(el.groupParent);
+            el.groupParent.updateBoundingBox();
+          }
+        }
       }
       select.history.commit();
     },
@@ -274,15 +333,47 @@ export function setupInteraction(select: Select): () => void {
     }
   };
 
+  const dblclick = () => {
+    if (select.selectEls.length !== 1) return;
+    const el = select.selectEls[0];
+
+    if (select.canDiveIn(el)) {
+      const point = select.root.getLogicalPosition(
+        select.root.lastPointerPos.x,
+        select.root.lastPointerPos.y
+      );
+      let hitChild: Element | undefined;
+      select.root.searchHitElements(point, ({ element }) => {
+        const container =
+          element.groupParent ?? element.inject("diveInContainer");
+        if (container === el) {
+          hitChild = element;
+          return true;
+        }
+      });
+      if (hitChild) {
+        select.select([hitChild]);
+        return;
+      }
+    }
+
+    if (typeof (el as any).enterEditing === "function") {
+      (el as any).enterEditing();
+      select.select([]);
+    }
+  };
+
   select.root.addEventListener("pointerdown", pointerdown);
   select.root.addEventListener("mouseenter", mouseenter);
   select.root.addEventListener("mouseleave", mouseleave);
   select.root.container.addEventListener("keydown", keydown);
+  select.root.container.addEventListener("dblclick", dblclick);
 
   return () => {
     select.root.removeEventListener("pointerdown", pointerdown);
     select.root.removeEventListener("mouseenter", mouseenter);
     select.root.removeEventListener("mouseleave", mouseleave);
     select.root.container.removeEventListener("keydown", keydown);
+    select.root.container.removeEventListener("dblclick", dblclick);
   };
 }

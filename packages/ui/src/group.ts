@@ -10,6 +10,7 @@ export interface GroupOption extends BaseElementOption {
 export class Group extends Element {
   type = "group";
   private _groupEls: Element[] = [];
+  _boundingBoxDirty = false;
   get groupEls(): Element[] {
     return this._groupEls;
   }
@@ -22,9 +23,21 @@ export class Group extends Element {
     { localMatrix: DOMMatrix; localCenter: Point }
   > = new Map();
 
+  markBoundingBoxDirty() {
+    this._boundingBoxDirty = true;
+  }
+
+  ensureBoundingBox() {
+    if (this._boundingBoxDirty) {
+      this.updateBoundingBox();
+    }
+  }
+
   updateBoundingBox() {
+    this._boundingBoxDirty = false;
     if (!this.groupEls.length) return;
-    const allPoints = this.groupEls.map((v) => v.getCoords()).flat(1);
+    this.groupEls.forEach((v) => v.calcWorldMatrix());
+    const allPoints = this.groupEls.map((v) => v.setCoords().getCoords()).flat(1);
     const { left, top, width, height } = makeBoundingBoxFromPoints(allPoints);
     Object.assign(this, { left, top, width, height });
     this.markNeedsLayout();

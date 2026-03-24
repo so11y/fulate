@@ -25,6 +25,7 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   enableMove?: boolean;
   enableResize?: boolean;
   enableAnchor?: boolean;
+  enableDiveIn?: boolean;
 
   onclick?: (this: T, e: FulateEvent<T>) => any;
   onpointermove?: (this: T, e: FulateEvent<T>) => any;
@@ -63,6 +64,7 @@ export class Element extends Transformable {
   enableMove?: boolean;
   enableResize?: boolean;
   enableAnchor?: boolean;
+  enableDiveIn?: boolean;
   groupParent?: any;
   /** IDs of lines that have an anchor point connected to this element */
   connectedLines?: Set<string>;
@@ -381,30 +383,38 @@ export class Element extends Transformable {
     localCenter: Point,
     groupWorldMatrix: DOMMatrix
   ): void {
-    const snap = this._groupSnapshot;
-    if (!snap) return;
+    const worldCenter = new Point(localCenter.matrixTransform(groupWorldMatrix));
+    this.applyTransformMatrix(targetMatrix, worldCenter);
+  }
+
+  applyTransformMatrix(
+    targetMatrix: DOMMatrix,
+    worldCenter: Point,
+    snap?: { width: number; height: number; scaleX: number; scaleY: number }
+  ): void {
+    const s = snap ?? this._groupSnapshot;
+    if (!s) return;
 
     const { angle, scaleX, scaleY, skewX } = qrDecompose(targetMatrix);
     const oldWidth = this.width;
     const oldHeight = this.height;
 
-    const ratioX = Math.abs(scaleX) / Math.abs(snap.scaleX);
-    const ratioY = Math.abs(scaleY) / Math.abs(snap.scaleY);
-    const newWidth = snap.width * ratioX;
-    const newHeight = snap.height * ratioY;
+    const ratioX = Math.abs(scaleX) / Math.abs(s.scaleX);
+    const ratioY = Math.abs(scaleY) / Math.abs(s.scaleY);
+    const newWidth = s.width * ratioX;
+    const newHeight = s.height * ratioY;
 
     this.width = newWidth;
     this.height = newHeight;
 
-    const worldCenter = localCenter.matrixTransform(groupWorldMatrix);
     const pos = this.getPositionByOrigin(worldCenter);
 
     this.setOptions({
       angle,
       width: newWidth,
       height: newHeight,
-      scaleX: Math.sign(scaleX) * Math.abs(snap.scaleX),
-      scaleY: Math.sign(scaleY) * Math.abs(snap.scaleY),
+      scaleX: Math.sign(scaleX) * Math.abs(s.scaleX),
+      scaleY: Math.sign(scaleY) * Math.abs(s.scaleY),
       skewX,
       left: pos.x,
       top: pos.y

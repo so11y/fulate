@@ -231,7 +231,16 @@ export class HistoryManager {
           this.insertElementAt(state.parent, record.element, state.index);
         record.element.setOptions(state.props);
       } else {
+        const oldW = record.element.width;
+        const oldH = record.element.height;
         record.element.setOptions(state.props);
+        const newW = record.element.width;
+        const newH = record.element.height;
+        if (record.element.children?.length && oldW && oldH && (newW !== oldW || newH !== oldH)) {
+          for (const child of record.element.children) {
+            child.onParentResize(newW / oldW, newH / oldH);
+          }
+        }
       }
     }
 
