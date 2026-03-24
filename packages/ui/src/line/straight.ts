@@ -1,6 +1,7 @@
 import { Point } from "@fulate/util";
 import type { ControlPoint, ControlSchema } from "@fulate/tools";
 import { BaseLine, LineAnchor, LineOption } from "./base";
+import { ForkNode } from "../fork-node";
 
 export class Line extends BaseLine {
   type = "line";
@@ -75,6 +76,11 @@ function getLineControlSchema(line: Line): ControlSchema {
   for (let i = 0; i < line.linePoints.length; i++) {
     const ptIndex = i;
     const isEndpoint = ptIndex === 0 || ptIndex === line.linePoints.length - 1;
+
+    if (isEndpoint && ForkNode.isAnchoredTo(line, ptIndex)) {
+      continue;
+    }
+
     controls.push({
       id: `v${i}`,
       cursor: "move",
@@ -225,10 +231,14 @@ function getLineControlSchema(line: Line): ControlSchema {
     });
   }
 
+  const hasForkConnection =
+    ForkNode.isAnchoredTo(line, 0) ||
+    ForkNode.isAnchoredTo(line, line.linePoints.length - 1);
+
   return {
     controls,
     enableRotation: false,
-    enableBodyMove: true,
+    enableBodyMove: !hasForkConnection,
     onDragStart(select, control) {
       const lineEl = select.selectEls[0] as Line;
       if (control.id.startsWith("v")) {

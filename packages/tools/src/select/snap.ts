@@ -418,17 +418,9 @@ export class Snap extends Element {
     this.anchorHighlights = [];
 
     this.forEachSnapTarget(excludeEls, (node) => {
-      let anchors: { type: string; x: number; y: number }[];
-      if (node.type === "line") {
-        const pts = (node as any).getSnapPoints?.() ?? [];
-        anchors = pts.map((p: { x: number; y: number }, i: number) => ({
-          type: `p${i}`,
-          x: p.x,
-          y: p.y
-        }));
-      } else {
-        anchors = getElementAnchorPoints(node);
-      }
+      if (node.type === "line") return;
+
+      const anchors = getElementAnchorPoints(node);
 
       for (const a of anchors) {
         const dx = a.x - worldX;

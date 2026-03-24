@@ -1,6 +1,6 @@
 import { BaseElementOption, Element } from "@fulate/core";
 import { FulateEvent } from "@fulate/core";
-import { Line, LinePointData, getElementAnchorPoints } from "@fulate/ui";
+import { Line, LinePointData, getElementAnchorPoints, ForkNode } from "@fulate/ui";
 import { checkElement } from "../select/checkElement";
 
 export class LineTool extends Element {
@@ -21,6 +21,10 @@ export class LineTool extends Element {
   private _anchorThreshold = 10;
   private _cleanups: Array<() => void> = [];
 
+  private _forkMode = false;
+  private _forkSourceLine: Line | null = null;
+  private _forkNode: ForkNode | null = null;
+
   constructor(options?: BaseElementOption) {
     super({ width: 0, height: 0, ...options });
   }
@@ -35,13 +39,18 @@ export class LineTool extends Element {
   }
 
   stopDrawing() {
-    if (this.tempPoints.length >= 2) {
+    if (this._forkMode && this.tempPoints.length >= 2) {
+      this._finishFork();
+    } else if (this.tempPoints.length >= 2) {
       this._createLine();
     }
     this.isDrawingMode = false;
     this.tempPoints = [];
     this.mousePos = null;
     this.nearestAnchor = null;
+    this._forkMode = false;
+    this._forkSourceLine = null;
+    this._forkNode = null;
     this.root.container.style.cursor = "default";
     this.markNeedsLayout();
   }
@@ -59,7 +68,6 @@ export class LineTool extends Element {
 
   private _setupEvents() {
     const onKeyDown = (e: KeyboardEvent) => {
-      console.log('---');
       if (
         e.key.toLowerCase() === "l" &&
         !e.ctrlKey &&
@@ -68,8 +76,12 @@ export class LineTool extends Element {
       ) {
         if (!this.isDrawingMode) {
           const select = this.root.keyElmenet.get("select") as any;
-          select?.select?.([]);
-          this.startDrawing();
+          if (select?.selectEls?.length === 1 && select.selectEls[0].type === "line") {
+            this._startForkMode(select.selectEls[0] as Line);
+          } else {
+            select?.select?.([]);
+            this.startDrawing();
+          }
         }
         return;
       }
@@ -89,6 +101,10 @@ export class LineTool extends Element {
 
       const x = e.detail.x;
       const y = e.detail.y;
+
+      if (this._forkMode && this.tempPoints.length === 0 && this._forkSourceLine) {
+        this._createForkNodeOnFirstClick();
+      }
 
       let pointData: LinePointData;
       if (this.nearestAnchor) {
@@ -128,6 +144,84 @@ export class LineTool extends Element {
     this._cleanups.push(() =>
       this.root.removeEventListener("pointermove", onPointerMove)
     );
+  }
+
+  private _startForkMode(sourceLine: Line) {
+    this._forkMode = true;
+    this._forkSourceLine = sourceLine;
+    this._forkNode = null;
+
+    const select = this.root.keyElmenet.get("select") as any;
+    select?.select?.([]);
+
+    this.isDrawingMode = true;
+    this.tempPoints = [];
+    this.mousePos = null;
+    this.nearestAnchor = null;
+    this.root.container.style.cursor = "crosshair";
+    this.markNeedsLayout();
+  }
+
+  private _createForkNodeOnFirstClick() {
+    const sourceLine = this._forkSourceLine!;
+    const wp = sourceLine.getWorldLinePoints();
+    const tailWorld = wp[wp.length - 1];
+    const tailIdx = sourceLine.linePoints.length - 1;
+    const existingAnchor = sourceLine.linePoints[tailIdx].anchor;
+
+    if (existingAnchor) {
+      const el = this.root?.idElements.get(existingAnchor.elementId);
+      if (el?.type === "forkNode") {
+        this._forkNode = el as ForkNode;
+        this.tempPoints.push({
+          x: tailWorld.x,
+          y: tailWorld.y,
+          anchor: { elementId: el.id, anchorType: "center" }
+        });
+        return;
+      }
+    }
+
+    const forkNode = new ForkNode({
+      left: tailWorld.x - 4,
+      top: tailWorld.y - 4
+    });
+    this._forkNode = forkNode;
+
+    const parent = sourceLine.parent ?? this._getDefaultContentLayer();
+    parent.append(forkNode);
+
+    sourceLine.linePoints[tailIdx].anchor = {
+      elementId: forkNode.id,
+      anchorType: "center"
+    };
+    sourceLine.rebindAnchors();
+    sourceLine._syncBoundsFromPoints();
+    sourceLine.markNeedsLayout();
+
+    this.tempPoints.push({
+      x: tailWorld.x,
+      y: tailWorld.y,
+      anchor: { elementId: forkNode.id, anchorType: "center" }
+    });
+  }
+
+  private _finishFork() {
+    if (!this._forkSourceLine || !this._forkNode) return;
+
+    const childLine = new Line({
+      linePoints: [...this.tempPoints],
+      strokeColor: this._forkSourceLine.strokeColor,
+      strokeWidth: this._forkSourceLine.strokeWidth
+    });
+
+    const parent =
+      this._forkSourceLine.parent ?? this._getDefaultContentLayer();
+    const select = this.root.keyElmenet.get("select") as any;
+
+    select?.history?.snapshot([this._forkSourceLine, this._forkNode, childLine]);
+    parent.append(childLine);
+    select?.history?.commit();
   }
 
   private get _excludes() {
@@ -210,6 +304,26 @@ export class LineTool extends Element {
 
     const scale = this.root.viewport.scale;
     const pointSize = 4 / scale;
+
+    if (this._forkMode && this.tempPoints.length === 0 && this.mousePos && this._forkSourceLine) {
+      const wp = this._forkSourceLine.getWorldLinePoints();
+      const tail = wp[wp.length - 1];
+      const snapPos = this.nearestAnchor ?? this.mousePos;
+
+      ctx.strokeStyle = "#333333";
+      ctx.lineWidth = 2 / scale;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(tail.x, tail.y);
+      ctx.lineTo(snapPos.x, snapPos.y);
+      ctx.stroke();
+
+      ctx.fillStyle = "#22c55e";
+      ctx.beginPath();
+      ctx.arc(tail.x, tail.y, pointSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     if (this.tempPoints.length > 0) {
       ctx.strokeStyle = "#333333";

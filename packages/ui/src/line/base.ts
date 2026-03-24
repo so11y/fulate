@@ -204,6 +204,7 @@ export abstract class BaseLine extends Element {
 
   onSelectMoveEnd(): void {
     if (!this.root) return;
+    let boundsChanged = false;
     for (const p of [this.headPoint, this.tailPoint]) {
       if (!p.anchor) continue;
       const el = this.root.idElements.get(p.anchor.elementId);
@@ -211,12 +212,26 @@ export abstract class BaseLine extends Element {
         p.anchor = undefined;
         continue;
       }
+
+      if (el.type === "forkNode") {
+        const pos = getElementAnchorPoint(el, p.anchor.anchorType);
+        const local = this.worldToLocal(pos.x, pos.y);
+        p.x = local.x;
+        p.y = local.y;
+        boundsChanged = true;
+        continue;
+      }
+
       const pos = getElementAnchorPoint(el, p.anchor.anchorType);
       const local = this.worldToLocal(pos.x, pos.y);
       if (Math.abs(local.x - p.x) > 0.01 || Math.abs(local.y - p.y) > 0.01) {
         this._unregisterAnchor(p.anchor.elementId);
         p.anchor = undefined;
       }
+    }
+    if (boundsChanged) {
+      this._syncBoundsFromPoints();
+      this.markNeedsLayout();
     }
   }
 
@@ -295,6 +310,12 @@ export abstract class BaseLine extends Element {
   }
 
   hasPointHint(point: Point): boolean {
+    for (const p of [this.headPoint, this.tailPoint]) {
+      if (!p.anchor) continue;
+      const el = this.root?.idElements.get(p.anchor.elementId);
+      if (el?.type === "forkNode" && el.hasPointHint(point)) return false;
+    }
+
     const threshold = Math.max(5 / (this.root?.viewport?.scale || 1), 3);
     const wp = this.getWorldLinePoints();
 

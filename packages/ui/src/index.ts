@@ -23,6 +23,8 @@ export type { ScrollViewOption } from "./scrollview";
 export { RippleOverlay } from "./ripple";
 export type { RippleOption } from "./ripple";
 export { AnchorIndicator } from "./anchor-indicator";
+export { ForkNode } from "./fork-node";
+export type { ForkNodeOption } from "./fork-node";
 
 // Line
 export {
@@ -53,6 +55,7 @@ import { ScrollView } from "./scrollview";
 import { Line } from "./line/index";
 import { RippleOverlay } from "./ripple";
 import { Pinned } from "./pinned";
+import { ForkNode } from "./fork-node";
 import "./anchor-indicator";
 
 registerElement("f-rectangle", Rectangle);
@@ -66,3 +69,4 @@ registerElement("f-scrollview", ScrollView);
 registerElement("f-line", Line);
 registerElement("f-ripple", RippleOverlay);
 registerElement("f-pinned", Pinned);
+registerElement("f-forkNode", ForkNode);

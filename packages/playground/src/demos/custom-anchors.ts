@@ -179,6 +179,10 @@ registerDemo("custom-anchors", {
 
     el.appendChild(btnContainer);
 
+
+    //@ts-ignore
+    window._fulateRoot = root
+
     return () => root.unmounted();
   },
 });
