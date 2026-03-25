@@ -172,9 +172,8 @@ function handleSelectMove(select: Select, e: FulateEvent) {
       : select.getParentCoords();
 
   const pointermove = (ev: FulateEvent) => {
-    const current = new Point(ev.detail.x, ev.detail.y);
-    let dx = current.x - startPoint.x;
-    let dy = current.y - startPoint.y;
+    let dx = ev.detail.x - startPoint.x;
+    let dy = ev.detail.y - startPoint.y;
 
     const snapResult = select.snapTool?.detect(coords, dx, dy);
     if (snapResult) {

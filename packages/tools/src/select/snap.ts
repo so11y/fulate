@@ -1,8 +1,8 @@
 import { PointType } from "@fulate/util";
 import { BoundingBox, makeBoundsFromPoints } from "@fulate/util";
-import { BaseElementOption, Element } from "@fulate/core";
+import { BaseElementOption, Element, getElementAnchorPoints } from "@fulate/core";
+import type { AnchorPointData } from "@fulate/core";
 import { Node } from "@fulate/core";
-import { getElementAnchorPoints } from "@fulate/ui";
 import { checkElement } from "./checkElement";
 
 interface SnapLine {
@@ -400,11 +400,12 @@ export class Snap extends Element {
     matched: boolean;
   }> = [];
 
-  detectAnchorSnap(
+  async detectAnchorSnap(
     worldX: number,
     worldY: number,
-    excludeEls: Element[] = []
-  ): { x: number; y: number; elementId: string; anchorType: string } | null {
+    excludeEls: Element[] = [],
+    lineId?: string
+  ): Promise<{ x: number; y: number; elementId: string; anchorType: string } | null> {
     const threshold = 10 / this.root.viewport.scale;
     const threshold2 = threshold * threshold;
     let best: {
@@ -412,6 +413,7 @@ export class Snap extends Element {
       y: number;
       elementId: string;
       anchorType: string;
+      anchorData?: AnchorPointData;
     } | null = null;
     let bestDist = threshold2;
 
@@ -421,6 +423,7 @@ export class Snap extends Element {
       if (node.type === "line") return;
 
       const anchors = getElementAnchorPoints(node);
+      const anchorDataList: AnchorPointData[] | null = (node as any).anchors;
 
       for (const a of anchors) {
         const dx = a.x - worldX;
@@ -431,15 +434,30 @@ export class Snap extends Element {
 
         if (d2 < bestDist) {
           bestDist = d2;
+          const anchorData = anchorDataList?.find((d) => d.id === a.type);
           best = {
             x: a.x,
             y: a.y,
             elementId: node.id,
-            anchorType: a.type
+            anchorType: a.type,
+            anchorData
           };
         }
       }
     });
+
+    if (best && best.anchorData?.validateSnap && lineId) {
+      try {
+        const allowed = await best.anchorData.validateSnap({
+          lineId,
+          elementId: best.elementId,
+          anchorId: best.anchorType
+        });
+        if (!allowed) best = null;
+      } catch {
+        best = null;
+      }
+    }
 
     if (best) {
       for (const h of this.anchorHighlights) {
@@ -450,7 +468,14 @@ export class Snap extends Element {
     }
 
     this.layer.requestRender();
-    return best;
+
+    if (!best) return null;
+    return {
+      x: best.x,
+      y: best.y,
+      elementId: best.elementId,
+      anchorType: best.anchorType
+    };
   }
 
   paint() {

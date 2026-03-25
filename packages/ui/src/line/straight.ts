@@ -97,7 +97,7 @@ function getLineControlSchema(line: Line) {
             lineEl.removePoint(ptIndex);
             return true;
           },
-      onDrag: (select, _point, _state, event) => {
+      onDrag: async (select, _point, _state, event) => {
         const lineEl = select.selectEls[0] as Line;
         const snap = select.snapTool;
 
@@ -110,10 +110,11 @@ function getLineControlSchema(line: Line) {
 
         if (snap) {
           if (isEndpoint) {
-            const anchorHit = snap.detectAnchorSnap(targetX, targetY, [
-              lineEl,
-              select as any
-            ]);
+            const anchorHit = await snap.detectAnchorSnap(
+              targetX, targetY,
+              [lineEl, select as any],
+              lineEl.id
+            );
             if (anchorHit) {
               targetX = anchorHit.x;
               targetY = anchorHit.y;

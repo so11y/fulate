@@ -1,8 +1,7 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { makeBoundingBoxFromPoints, RectWithCenter } from "@fulate/util";
-import { BaseElementOption, Element } from "@fulate/core";
-import { getElementAnchorPoint } from "./anchor";
+import { BaseElementOption, Element, getElementAnchorPoint } from "@fulate/core";
 
 export interface LineAnchor {
   elementId: string;

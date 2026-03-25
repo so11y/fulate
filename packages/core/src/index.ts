@@ -15,6 +15,20 @@ export { Transformable } from "./node/transformable";
 export type { TransformableOptions } from "./node/transformable";
 export { Element, EVENT_KEYS } from "./node/element";
 export type { BaseElementOption, AnimateOptions, RBushItem } from "./node/element";
+export {
+  resolveAnchors,
+  DEFAULT_ANCHOR_SCHEMA,
+  getElementAnchorPoint,
+  getElementAnchorPoints,
+  syncAnchorIndicators,
+  serializeAnchors
+} from "./utils/anchor";
+export type {
+  AnchorPoint,
+  AnchorPointData,
+  AnchorLabelStyle,
+  AnchorSnapContext
+} from "./utils/anchor";
 export { Shape } from "./node/shape";
 export type { ShapeOption, BorderPosition, ShadowOption, Outset } from "./node/shape";
 

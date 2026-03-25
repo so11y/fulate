@@ -33,14 +33,20 @@ export class Group extends Element {
     }
   }
 
+  //TODO 组合之上还有组合 也需要更新
   updateBoundingBox() {
     this._boundingBoxDirty = false;
     if (!this.groupEls.length) return;
     this.groupEls.forEach((v) => v.calcWorldMatrix());
-    const allPoints = this.groupEls.map((v) => v.setCoords().getCoords()).flat(1);
+    const allPoints = this.groupEls
+      .map((v) => v.setCoords().getCoords())
+      .flat(1);
     const { left, top, width, height } = makeBoundingBoxFromPoints(allPoints);
     Object.assign(this, {
-      left, top, width, height,
+      left,
+      top,
+      width,
+      height,
       angle: 0,
       scaleX: 1,
       scaleY: 1,
@@ -56,7 +62,9 @@ export class Group extends Element {
     localCenter: Point,
     groupWorldMatrix: DOMMatrix
   ): void {
-    const worldCenter = new Point(localCenter.matrixTransform(groupWorldMatrix));
+    const worldCenter = new Point(
+      localCenter.matrixTransform(groupWorldMatrix)
+    );
     this.applyTransformMatrix(targetMatrix, worldCenter);
   }
 

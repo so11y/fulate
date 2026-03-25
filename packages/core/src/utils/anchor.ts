@@ -1,22 +1,33 @@
-import { Element } from "@fulate/core";
 import { Point } from "@fulate/util";
+import type { Element } from "../node/element";
 
-/** A single named anchor point on an element. */
 export interface AnchorPoint {
-  /** Unique id within the schema (e.g. "tl", "top", "right", …). */
   id: string;
-  /** Return the anchor position in the element's local coordinate space. */
   localPosition(element: any): Point;
 }
 
-/** User-configurable anchor point data (no ratio — position auto-calculated). */
+export interface AnchorLabelStyle {
+  fontSize?: number;
+  color?: string;
+  fontFamily?: string;
+  fontWeight?: string | number;
+}
+
+export interface AnchorSnapContext {
+  lineId: string;
+  elementId: string;
+  anchorId: string;
+}
+
 export interface AnchorPointData {
   id: string;
   label: string;
   edge: "top" | "right" | "bottom" | "left";
+  labelWidth?: number;
+  labelStyle?: AnchorLabelStyle;
+  validateSnap?: (context: AnchorSnapContext) => Promise<boolean>;
 }
 
-/** Resolve user-configured anchor data into positioned AnchorPoint[]. */
 export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
   const groups = new Map<string, AnchorPointData[]>();
   for (const d of data) {
@@ -46,7 +57,6 @@ export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
   return result;
 }
 
-/** Default 4-point anchor schema. Elements may override via getAnchorSchema(). */
 export const DEFAULT_ANCHOR_SCHEMA: AnchorPoint[] = [
   { id: "top", localPosition: (el) => new Point(el.width * 0.5, 0) },
   { id: "right", localPosition: (el) => new Point(el.width, el.height * 0.5) },
@@ -64,10 +74,6 @@ function anchorToWorld(
   return { x: pt.x, y: pt.y };
 }
 
-/**
- * Get the world-space position of a named anchor on an element.
- * Uses the element's own AnchorSchema if it overrides getAnchorSchema().
- */
 export function getElementAnchorPoint(
   el: Element,
   anchorType: string
@@ -83,14 +89,75 @@ export function getElementAnchorPoint(
   };
 }
 
-/**
- * Get all anchor points of an element as typed position objects.
- * Uses the element's own AnchorSchema if it overrides getAnchorSchema().
- */
 export function getElementAnchorPoints(
   el: Element
 ): Array<{ type: string; x: number; y: number }> {
   const schema: AnchorPoint[] =
     (el as any).getAnchorSchema?.() ?? DEFAULT_ANCHOR_SCHEMA;
   return schema.map((a) => ({ type: a.id, ...anchorToWorld(el, a) }));
+}
+
+export function syncAnchorIndicators(
+  host: Element,
+  data: AnchorPointData[] | null,
+  indicators: Map<string, Element> | null,
+  createIndicator: (data: AnchorPointData) => Element
+): Map<string, Element> | null {
+  if (!data?.length) {
+    if (indicators) {
+      for (const indicator of indicators.values()) {
+        host.removeChild(indicator);
+      }
+    }
+    return null;
+  }
+
+  const map = indicators ?? new Map<string, Element>();
+  const currentIds = new Set(data.map((a) => a.id));
+
+  for (const [id, indicator] of map) {
+    if (!currentIds.has(id)) {
+      host.removeChild(indicator);
+      map.delete(id);
+    }
+  }
+
+  const groups = new Map<string, AnchorPointData[]>();
+  for (const d of data) {
+    let list = groups.get(d.edge);
+    if (!list) { list = []; groups.set(d.edge, list); }
+    list.push(d);
+  }
+
+  for (const d of data) {
+    const sameEdge = groups.get(d.edge)!;
+    const idx = sameEdge.indexOf(d);
+    const ratio = (idx + 1) / (sameEdge.length + 1);
+
+    let indicator = map.get(d.id);
+    if (!indicator) {
+      indicator = createIndicator(d);
+      map.set(d.id, indicator);
+      host.append(indicator);
+    } else {
+      (indicator as any).anchorLabel = d.label;
+      (indicator as any).edge = d.edge;
+      if (d.labelWidth != null) (indicator as any).labelWidth = d.labelWidth;
+      if (d.labelStyle != null) (indicator as any).labelStyle = d.labelStyle;
+    }
+
+    (indicator as any).anchorRatio = ratio;
+    indicator.markNeedsLayout();
+  }
+
+  return map;
+}
+
+export function serializeAnchors(data: AnchorPointData[]): any[] {
+  return data.map((a) => {
+    const out: any = { id: a.id, label: a.label, edge: a.edge };
+    if (a.labelWidth != null) out.labelWidth = a.labelWidth;
+    if (a.labelStyle != null) out.labelStyle = { ...a.labelStyle };
+    return out;
+  });
 }

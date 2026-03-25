@@ -1,6 +1,7 @@
 import { BaseElementOption, Element } from "@fulate/core";
 import { FulateEvent } from "@fulate/core";
-import { Line, LinePointData, getElementAnchorPoints, ForkNode } from "@fulate/ui";
+import { getElementAnchorPoints } from "@fulate/core";
+import { Line, LinePointData, ForkNode } from "@fulate/ui";
 import { checkElement } from "../select/checkElement";
 
 export class LineTool extends Element {

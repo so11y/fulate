@@ -4,6 +4,8 @@ import { Transformable, TransformableOptions } from "./transformable";
 import { Tween, Easing } from "@tweenjs/tween.js";
 import { parseColor, formatColor } from "@fulate/util";
 import { qrDecompose } from "@fulate/util";
+import { resolveAnchors, syncAnchorIndicators, serializeAnchors } from "../utils/anchor";
+import type { AnchorPointData } from "../utils/anchor";
 
 export interface RBushItem {
   minX: number;
@@ -69,14 +71,14 @@ export class Element extends Transformable {
   /** IDs of lines that have an anchor point connected to this element */
   connectedLines?: Set<string>;
   /** User-configured anchor point data (edge + label). */
-  private _anchors: any[] | null = null;
+  private _anchors: AnchorPointData[] | null = null;
   private _anchorIndicators: Map<string, Element> | null = null;
 
-  get anchors(): any[] | null { return this._anchors; }
-  set anchors(value: any[] | null) {
-    const oldIds = new Set(this._anchors?.map((a: any) => a.id) ?? []);
+  get anchors(): AnchorPointData[] | null { return this._anchors; }
+  set anchors(value: AnchorPointData[] | null) {
+    const oldIds = new Set(this._anchors?.map((a) => a.id) ?? []);
     this._anchors = value;
-    const newIds = new Set(value?.map((a: any) => a.id) ?? []);
+    const newIds = new Set(value?.map((a) => a.id) ?? []);
 
     if (this.isActiveed && this.connectedLines) {
       for (const removedId of oldIds) {
@@ -272,91 +274,20 @@ export class Element extends Transformable {
    */
   getAnchorSchema(): any[] | null {
     if (this.enableAnchor === false) return [];
-    if (this._anchors?.length) return this._resolveAnchors(this._anchors);
+    if (this._anchors?.length) return resolveAnchors(this._anchors);
     return null;
   }
 
-  private _resolveAnchors(data: any[]): any[] {
-    const groups = new Map<string, any[]>();
-    for (const d of data) {
-      let list = groups.get(d.edge);
-      if (!list) { list = []; groups.set(d.edge, list); }
-      list.push(d);
-    }
-    const result: any[] = [];
-    for (const [edge, items] of groups) {
-      const total = items.length;
-      items.forEach((item: any, i: number) => {
-        const ratio = (i + 1) / (total + 1);
-        result.push({
-          id: item.id,
-          localPosition: (el: any) => {
-            switch (edge) {
-              case "top":    return new Point(el.width * ratio, 0);
-              case "bottom": return new Point(el.width * ratio, el.height);
-              case "left":   return new Point(0, el.height * ratio);
-              case "right":  return new Point(el.width, el.height * ratio);
-              default:       return new Point(el.width * 0.5, el.height * 0.5);
-            }
-          }
-        });
-      });
-    }
-    return result;
-  }
-
   _syncAnchorIndicators() {
-    const data = this._anchors;
-
-    if (!data?.length) {
-      if (this._anchorIndicators) {
-        for (const indicator of this._anchorIndicators.values()) {
-          this.removeChild(indicator);
-        }
-        this._anchorIndicators = null;
-      }
-      return;
-    }
-
-    if (!this._anchorIndicators) this._anchorIndicators = new Map();
-    const currentIds = new Set(data.map((a: any) => a.id));
-
-    for (const [id, indicator] of this._anchorIndicators) {
-      if (!currentIds.has(id)) {
-        this.removeChild(indicator);
-        this._anchorIndicators.delete(id);
-      }
-    }
-
-    const groups = new Map<string, any[]>();
-    for (const d of data) {
-      let list = groups.get(d.edge);
-      if (!list) { list = []; groups.set(d.edge, list); }
-      list.push(d);
-    }
-
-    for (const d of data) {
-      const sameEdge = groups.get(d.edge)!;
-      const idx = sameEdge.indexOf(d);
-      const ratio = (idx + 1) / (sameEdge.length + 1);
-
-      let indicator = this._anchorIndicators.get(d.id);
-      if (!indicator) {
-        indicator = Element._createAnchorIndicator(d);
-        this._anchorIndicators.set(d.id, indicator);
-        this.append(indicator);
-      } else {
-        (indicator as any).anchorLabel = d.label;
-        (indicator as any).edge = d.edge;
-        if (d.labelWidth != null) (indicator as any).labelWidth = d.labelWidth;
-      }
-
-      (indicator as any).anchorRatio = ratio;
-      indicator.markNeedsLayout();
-    }
+    this._anchorIndicators = syncAnchorIndicators(
+      this,
+      this._anchors,
+      this._anchorIndicators,
+      Element._createAnchorIndicator
+    );
   }
 
-  static _createAnchorIndicator: (data: any) => Element = (data) => {
+  static _createAnchorIndicator: (data: AnchorPointData) => Element = (data) => {
     const el = new Element({ width: 8, height: 8, visible: true });
     el.id = `__anchor_${data.id}`;
     el.selectctbale = false;
@@ -366,6 +297,8 @@ export class Element extends Transformable {
     el.silent = true;
     el.pickable = false;
     (el as any).edge = data.edge;
+    if (data.labelWidth != null) (el as any).labelWidth = data.labelWidth;
+    if (data.labelStyle != null) (el as any).labelStyle = data.labelStyle;
     return el;
   };
 
@@ -635,7 +568,7 @@ export class Element extends Transformable {
     } as any;
 
     if (this._anchors?.length) {
-      json.anchors = this._anchors.map((a: any) => ({ ...a }));
+      json.anchors = serializeAnchors(this._anchors);
     }
 
     if (includeChildren && this.children && this.children.length > 0) {
