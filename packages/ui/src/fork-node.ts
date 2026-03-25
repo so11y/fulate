@@ -81,18 +81,7 @@ export class ForkNode extends Element {
       bodyHitTest: (_select: any, point: Point) => this.hasPointHint(point),
       paintFrame: () => {},
       getSnapExcludes: () => {
-        if (!this.connectedLines?.size) return {};
-        const excludePoints: { element: any; indices: number[] }[] = [];
-        for (const lineId of this.connectedLines) {
-          const line = this.root?.idElements.get(lineId) as any;
-          if (!line?.linePoints) continue;
-          const indices: number[] = [];
-          if (line.headPoint?.anchor?.elementId === this.id) indices.push(0);
-          if (line.tailPoint?.anchor?.elementId === this.id)
-            indices.push(line.linePoints.length - 1);
-          if (indices.length) excludePoints.push({ element: line, indices });
-        }
-        return { excludePoints };
+        return { disableSnap: true };
       },
     };
   }

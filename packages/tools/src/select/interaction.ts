@@ -159,10 +159,14 @@ function handleSelectMove(select: Select, e: FulateEvent) {
   select.history.snapshot(select.selectEls);
   const schema = select.getActiveSchema();
   const snapExcludes = schema.getSnapExcludes?.(select);
-  select.snapTool?.start(
-    select.selectEls.concat(select as any),
-    snapExcludes?.excludePoints
-  );
+  const disableSnap = snapExcludes?.disableSnap === true;
+  if (!disableSnap) {
+    const excludeEls = select.selectEls.concat(select as any);
+    if (snapExcludes?.excludeElements) {
+      excludeEls.push(...snapExcludes.excludeElements);
+    }
+    select.snapTool?.start(excludeEls, snapExcludes?.excludePoints);
+  }
 
   const originalSelectLeft = select.left;
   const originalSelectTop = select.top;
@@ -182,10 +186,12 @@ function handleSelectMove(select: Select, e: FulateEvent) {
     let dx = ev.detail.x - startPoint.x;
     let dy = ev.detail.y - startPoint.y;
 
-    const snapResult = select.snapTool?.detect(coords, dx, dy);
-    if (snapResult) {
-      dx += snapResult.dx;
-      dy += snapResult.dy;
+    if (!disableSnap) {
+      const snapResult = select.snapTool?.detect(coords, dx, dy);
+      if (snapResult) {
+        dx += snapResult.dx;
+        dy += snapResult.dy;
+      }
     }
 
     for (const pos of originalPositions) {
@@ -205,7 +211,7 @@ function handleSelectMove(select: Select, e: FulateEvent) {
     "pointerup",
     () => {
       select.root.removeEventListener("pointermove", pointermove);
-      select.snapTool?.stop();
+      if (!disableSnap) select.snapTool?.stop();
       const updated = new Set();
       for (const el of select.selectEls) {
         (el as any).onSelectMoveEnd?.();

@@ -65,6 +65,8 @@ export interface ControlSchema {
   onDragEnd?(select: Select, control: ControlPoint): void;
   getSnapExcludes?(select: Select): {
     excludePoints?: { element: any; indices: number[] }[];
+    excludeElements?: any[];
+    disableSnap?: boolean;
   };
   bodyHitTest?(select: Select, point: Point): boolean;
   paintFrame?(select: Select, ctx: CanvasRenderingContext2D): void;
