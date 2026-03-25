@@ -21,7 +21,8 @@ export {
   getElementAnchorPoint,
   getElementAnchorPoints,
   syncAnchorIndicators,
-  serializeAnchors
+  serializeAnchors,
+  isAnchorAvailable
 } from "./utils/anchor";
 export type {
   AnchorPoint,

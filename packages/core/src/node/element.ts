@@ -28,6 +28,7 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   enableResize?: boolean;
   enableAnchor?: boolean;
   enableDiveIn?: boolean;
+  anchorMultiLine?: boolean;
 
   onclick?: (this: T, e: FulateEvent<T>) => any;
   onpointermove?: (this: T, e: FulateEvent<T>) => any;
@@ -67,6 +68,8 @@ export class Element extends Transformable {
   enableResize?: boolean;
   enableAnchor?: boolean;
   enableDiveIn?: boolean;
+  /** 默认锚点是否允许多线连接，默认 false（单线） */
+  anchorMultiLine?: boolean;
   groupParent?: any;
   /** IDs of lines that have an anchor point connected to this element */
   connectedLines?: Set<string>;
@@ -564,7 +567,8 @@ export class Element extends Transformable {
       enableRotation: this.enableRotation,
       enableMove: this.enableMove,
       enableResize: this.enableResize,
-      enableAnchor: this.enableAnchor
+      enableAnchor: this.enableAnchor,
+      anchorMultiLine: this.anchorMultiLine
     } as any;
 
     if (this._anchors?.length) {

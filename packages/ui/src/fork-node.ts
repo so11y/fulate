@@ -20,6 +20,7 @@ export class ForkNode extends Element {
       enableRotation: false,
       enableResize: false,
       enableAnchor: false,
+      anchorMultiLine: true,
       ...options
     });
   }

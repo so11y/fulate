@@ -1,6 +1,6 @@
 import { BaseElementOption, Element } from "@fulate/core";
 import { FulateEvent } from "@fulate/core";
-import { getElementAnchorPoints } from "@fulate/core";
+import { getElementAnchorPoints, isAnchorAvailable } from "@fulate/core";
 import { Line, LinePointData, ForkNode } from "@fulate/ui";
 import { checkElement } from "../select/checkElement";
 
@@ -19,6 +19,15 @@ export class LineTool extends Element {
     anchorType: string;
   } | null = null;
 
+  disabledAnchorStyle: {
+    fillStyle: string;
+    strokeStyle: string;
+  } = {
+    fillStyle: "rgba(180, 180, 180, 0.4)",
+    strokeStyle: "rgba(180, 180, 180, 0.6)"
+  };
+
+  private _disabledAnchors: Array<{ x: number; y: number }> = [];
   private _anchorThreshold = 10;
   private _cleanups: Array<() => void> = [];
 
@@ -232,6 +241,7 @@ export class LineTool extends Element {
 
   private _detectAnchor(mx: number, my: number) {
     this.nearestAnchor = null;
+    this._disabledAnchors = [];
     const threshold = this._anchorThreshold / this.root.viewport.scale;
     let bestDist = threshold * threshold;
     const excludes = this._excludes;
@@ -250,6 +260,10 @@ export class LineTool extends Element {
         const anchors = getElementAnchorPoints(element);
         for (const a of anchors) {
           if (a.type === "center") continue;
+          if (!isAnchorAvailable(element, a.type)) {
+            this._disabledAnchors.push({ x: a.x, y: a.y });
+            continue;
+          }
           const dx = a.x - mx;
           const dy = a.y - my;
           const d2 = dx * dx + dy * dy;
@@ -374,7 +388,6 @@ export class LineTool extends Element {
     if (!this.isDrawingMode) return;
 
     const size = 3 / scale;
-
     const excludes = this._excludes;
     this.root.searchArea(this.root.getViewportRect(), ({ element }) => {
       const resolved = checkElement(element, excludes);
@@ -388,10 +401,21 @@ export class LineTool extends Element {
           Math.abs(a.y - this.nearestAnchor.y) < 0.1;
         if (isNearest) continue;
 
-        ctx.fillStyle = "rgba(79, 129, 255, 0.5)";
-        ctx.beginPath();
-        ctx.arc(a.x, a.y, size, 0, Math.PI * 2);
-        ctx.fill();
+        const available = isAnchorAvailable(element, a.type);
+        if (!available) {
+          ctx.fillStyle = this.disabledAnchorStyle.fillStyle;
+          ctx.strokeStyle = this.disabledAnchorStyle.strokeStyle;
+          ctx.lineWidth = 1 / scale;
+          ctx.beginPath();
+          ctx.arc(a.x, a.y, size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(79, 129, 255, 0.5)";
+          ctx.beginPath();
+          ctx.arc(a.x, a.y, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     });
   }

@@ -25,6 +25,8 @@ export interface AnchorPointData {
   edge: "top" | "right" | "bottom" | "left";
   labelWidth?: number;
   labelStyle?: AnchorLabelStyle;
+  /** 是否允许多条线连接到此锚点，默认 false（只能一条线） */
+  multiLine?: boolean;
   validateSnap?: (context: AnchorSnapContext) => Promise<boolean>;
 }
 
@@ -158,6 +160,34 @@ export function serializeAnchors(data: AnchorPointData[]): any[] {
     const out: any = { id: a.id, label: a.label, edge: a.edge };
     if (a.labelWidth != null) out.labelWidth = a.labelWidth;
     if (a.labelStyle != null) out.labelStyle = { ...a.labelStyle };
+    if (a.multiLine) out.multiLine = true;
     return out;
   });
+}
+
+/**
+ * Check if an anchor on an element is available for a new line connection.
+ * Returns false if the anchor is single-line (default) and already occupied.
+ */
+export function isAnchorAvailable(
+  element: Element,
+  anchorId: string,
+  excludeLineId?: string
+): boolean {
+  const anchorDataList: AnchorPointData[] | null = (element as any).anchors;
+  const anchorData = anchorDataList?.find((d) => d.id === anchorId);
+  const multiLine = anchorData?.multiLine ?? (element as any).anchorMultiLine ?? false;
+  if (multiLine) return true;
+
+  for (const lineId of (element as any).connectedLines ?? []) {
+    if (lineId === excludeLineId) continue;
+    const line = element.root?.idElements.get(lineId) as any;
+    if (!line?.linePoints) continue;
+    for (const p of line.linePoints) {
+      if (p.anchor?.elementId === element.id && p.anchor?.anchorType === anchorId) {
+        return false;
+      }
+    }
+  }
+  return true;
 }

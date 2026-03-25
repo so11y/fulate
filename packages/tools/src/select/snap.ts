@@ -1,6 +1,6 @@
 import { PointType } from "@fulate/util";
 import { BoundingBox, makeBoundsFromPoints } from "@fulate/util";
-import { BaseElementOption, Element, getElementAnchorPoints } from "@fulate/core";
+import { BaseElementOption, Element, getElementAnchorPoints, isAnchorAvailable } from "@fulate/core";
 import type { AnchorPointData } from "@fulate/core";
 import { Node } from "@fulate/core";
 import { checkElement } from "./checkElement";
@@ -398,6 +398,7 @@ export class Snap extends Element {
     x: number;
     y: number;
     matched: boolean;
+    available: boolean;
   }> = [];
 
   async detectAnchorSnap(
@@ -429,10 +430,11 @@ export class Snap extends Element {
         const dx = a.x - worldX;
         const dy = a.y - worldY;
         const d2 = dx * dx + dy * dy;
+        const available = isAnchorAvailable(node, a.type, lineId);
 
-        this.anchorHighlights.push({ x: a.x, y: a.y, matched: false });
+        this.anchorHighlights.push({ x: a.x, y: a.y, matched: false, available });
 
-        if (d2 < bestDist) {
+        if (available && d2 < bestDist) {
           bestDist = d2;
           const anchorData = anchorDataList?.find((d) => d.id === a.type);
           best = {
@@ -534,6 +536,15 @@ export class Snap extends Element {
           ctx.fillStyle = "rgba(79, 129, 255, 0.2)";
           ctx.beginPath();
           ctx.arc(h.x, h.y, 6 / scale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else if (!h.available) {
+          ctx.fillStyle = "rgba(180, 180, 180, 0.4)";
+          ctx.strokeStyle = "rgba(180, 180, 180, 0.6)";
+          ctx.lineWidth = 1 / scale;
+          const r = 3 / scale;
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, r, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
         } else {
