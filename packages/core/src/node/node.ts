@@ -1,6 +1,6 @@
 import { CustomEvent, EventEmitter } from "../event";
-import type { Root } from "@fulate/core";
-import type { Layer } from "@fulate/core";
+import type { Root } from "../root/index";
+import type { Layer } from "../layer/index";
 
 function linkNode(child: Node, parent: Node) {
   child.parent = parent;

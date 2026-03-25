@@ -29,7 +29,7 @@ interface ClosestMatch {
 
 // ─── Pure helpers ────────────────────────────────────────────
 
-function isAxisAlignedRect(pts: PointType[]): boolean {
+export function isAxisAlignedRect(pts: PointType[]): boolean {
   return (
     pts.length === 4 &&
     Math.abs(pts[0].x - pts[3].x) < 0.01 &&
@@ -39,7 +39,7 @@ function isAxisAlignedRect(pts: PointType[]): boolean {
   );
 }
 
-function addEdgeMidpoints(pts: PointType[]): PointType[] {
+export function addEdgeMidpoints(pts: PointType[]): PointType[] {
   const result = [...pts];
   if (pts.length === 4) {
     const [p0, p1, p2, p3] = pts;
@@ -53,7 +53,7 @@ function addEdgeMidpoints(pts: PointType[]): PointType[] {
   return result;
 }
 
-function collectSnapData(
+export function collectSnapData(
   snapPoints: PointType[],
   xData: number[],
   yData: number[]
@@ -105,7 +105,7 @@ function collectSnapData(
   }
 }
 
-function buildAxisSnapLines(
+export function buildAxisSnapLines(
   best: ClosestMatch,
   movingRange: { min: number; max: number },
   type: "vertical" | "horizontal"

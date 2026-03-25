@@ -1,5 +1,5 @@
 import { Layer } from "./index";
-import { BaseElementOption } from "@fulate/core";
+import type { BaseElementOption } from "../node/element";
 
 export interface ArtboardOption extends BaseElementOption {}
 

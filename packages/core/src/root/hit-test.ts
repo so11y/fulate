@@ -1,5 +1,5 @@
 import type { Root } from "./index";
-import type { RBushItem } from "@fulate/core";
+import type { RBushItem } from "../node/element";
 import type { Element } from "../node/element";
 import { Point } from "@fulate/util";
 import { CustomEvent } from "../event";

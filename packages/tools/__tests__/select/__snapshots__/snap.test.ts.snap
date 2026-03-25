@@ -1,0 +1,48 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildAxisSnapLines > 快照验证完整输出结构 1`] = `
+[
+  {
+    "distanceText": "150",
+    "end": 200,
+    "points": [
+      {
+        "x": 100,
+        "y": 50,
+      },
+      {
+        "x": 100,
+        "y": 200,
+      },
+    ],
+    "start": 50,
+    "textPos": {
+      "x": 105,
+      "y": 125,
+    },
+    "type": "vertical",
+    "value": 100,
+  },
+  {
+    "distanceText": "20",
+    "end": 50,
+    "points": [
+      {
+        "x": 100,
+        "y": 30,
+      },
+      {
+        "x": 100,
+        "y": 50,
+      },
+    ],
+    "start": 30,
+    "textPos": {
+      "x": 105,
+      "y": 40,
+    },
+    "type": "vertical",
+    "value": 100,
+  },
+]
+`;

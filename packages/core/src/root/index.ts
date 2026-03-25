@@ -322,7 +322,7 @@ export class Root extends Node {
     if (select && element !== select) {
       this.dispatchEvent(
         new CustomEvent(eventName, {
-          detail: { ctrlKey: (e as any).ctrlKey, ...detail }
+          detail: { ctrlKey: (e as any).ctrlKey, shiftKey: (e as any).shiftKey, ...detail }
         })
       );
       return;
@@ -330,6 +330,7 @@ export class Root extends Node {
 
     element.dispatchEvent(eventName, {
       ctrlKey: e.ctrlKey,
+      shiftKey: e.shiftKey,
       ...detail,
       target: element
     });

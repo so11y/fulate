@@ -1,4 +1,4 @@
-import { BaseElementOption } from "@fulate/core";
+import type { BaseElementOption } from "../node/element";
 import { Layer } from "./index";
 
 export class EditerLayer extends Layer {

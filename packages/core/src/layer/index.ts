@@ -1,5 +1,5 @@
-import { BaseElementOption, Element } from "@fulate/core";
-import type { RBushItem } from "@fulate/core";
+import { Element } from "../node/element";
+import type { BaseElementOption, RBushItem } from "../node/element";
 import RBush from "rbush";
 import { RectWithCenter, RectPoint } from "@fulate/util";
 import { Point } from "@fulate/util";

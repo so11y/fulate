@@ -24,6 +24,7 @@ export interface FulateEvent<T = any> extends Omit<PointerEvent, "detail"> {
     deltaY: number;
     data?: any;
     ctrlKey?: boolean;
+    shiftKey?: boolean;
   };
 }
 
@@ -157,7 +158,8 @@ export class EventEmitter {
           deltaY: detail?.deltaY ?? 0,
           deltaX: detail?.deltaX ?? 0,
           data: detail?.data ?? null,
-          ctrlKey: detail?.ctrlKey
+          ctrlKey: detail?.ctrlKey,
+          shiftKey: detail?.shiftKey
         },
         bubbles: true
       });
