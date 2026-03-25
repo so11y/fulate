@@ -32,15 +32,15 @@ function resetZoom() {
 }
 function save() {
   if (store.artboard) {
-    saveToStorage(store.artboard);
+    saveToStorage(store.artboard as any);
   }
 }
 function doExport() {
-  if (store.artboard) exportToFile(store.artboard);
+  if (store.artboard) exportToFile(store.artboard as any);
 }
 async function doImport() {
   if (store.artboard) {
-    await importFromFile(store.artboard);
+    await importFromFile(store.artboard as any);
   }
 }
 function deleteSelected() {
@@ -59,7 +59,7 @@ function clearAll() {
   if (!confirm("确认清空画布？所有未保存的内容将丢失。")) return;
   if (store.artboard) {
     const children = [...store.artboard.children];
-    children.forEach((c) => store.artboard!.removeChild(c));
+    children.forEach((c) => store.artboard!.removeChild(c as any));
     store.select?.select([]);
     clearStorage();
     refreshSelection();
@@ -83,31 +83,15 @@ function clearAll() {
     </div>
 
     <div class="toolbar-group">
-      <button
-        class="tb"
-        @click="deleteSelected"
-        :disabled="!hasSelection"
-        title="删除 (Delete)"
-      >
+      <button class="tb" @click="deleteSelected" :disabled="!hasSelection" title="删除 (Delete)">
         <span class="tb-icon">🗑</span>
       </button>
-      <button
-        class="tb"
-        @click="doGroup"
-        :disabled="store.selectedElements.length < 2"
-        title="组合 (Ctrl+G)"
-      >
+      <button class="tb" @click="doGroup" :disabled="store.selectedElements.length < 2" title="组合 (Ctrl+G)">
         <span class="tb-label">组合</span>
       </button>
-      <button
-        class="tb"
-        @click="unGroup"
-        :disabled="
-          store.selectedElements.length !== 1 ||
-          store.selectedElements[0]?.type !== 'group'
-        "
-        title="取消组合 (Ctrl+Shift+G)"
-      >
+      <button class="tb" @click="unGroup" :disabled="store.selectedElements.length !== 1 ||
+        store.selectedElements[0]?.type !== 'group'
+        " title="取消组合 (Ctrl+Shift+G)">
         <span class="tb-label">拆分</span>
       </button>
     </div>
@@ -154,12 +138,14 @@ function clearAll() {
   flex-shrink: 0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
+
 .toolbar-title {
   font-weight: 700;
   font-size: 15px;
   color: #1a73e8;
   letter-spacing: -0.3px;
 }
+
 .toolbar-group {
   display: flex;
   align-items: center;
@@ -167,16 +153,20 @@ function clearAll() {
   padding: 0 8px;
   border-right: 1px solid #eee;
 }
+
 .toolbar-group.brand {
   padding-right: 16px;
 }
+
 .toolbar-group.right {
   margin-left: auto;
   border-right: none;
 }
+
 .toolbar-group:last-child {
   border-right: none;
 }
+
 .tb {
   display: flex;
   align-items: center;
@@ -192,39 +182,49 @@ function clearAll() {
   gap: 4px;
   min-height: 30px;
 }
+
 .tb:hover {
   background: #f0f0f0;
   border-color: #e0e0e0;
 }
+
 .tb:active {
   background: #e4e4e4;
 }
+
 .tb:disabled {
   opacity: 0.35;
   cursor: default;
   pointer-events: none;
 }
+
 .tb.accent {
   background: #e8f0fe;
   color: #1a73e8;
   font-weight: 600;
 }
+
 .tb.accent:hover {
   background: #d2e3fc;
 }
+
 .tb.danger {
   color: #d93025;
 }
+
 .tb.danger:hover {
   background: #fce8e6;
 }
+
 .tb-icon {
   font-size: 16px;
   line-height: 1;
 }
+
 .tb-label {
   font-size: 12px;
 }
+
 .zoom-label {
   font-size: 12px;
   color: #666;

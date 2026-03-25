@@ -5,6 +5,7 @@ export interface ForkNodeOption extends BaseElementOption {}
 
 export class ForkNode extends Element {
   type = "forkNode";
+  immediatelyDraggable = true;
 
   static isAnchoredTo(line: any, pointIndex: number): boolean {
     const anchor = line.linePoints?.[pointIndex]?.anchor;

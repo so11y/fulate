@@ -178,11 +178,13 @@ export class LineTool extends Element {
     const tailWorld = wp[wp.length - 1];
     const tailIdx = sourceLine.linePoints.length - 1;
     const existingAnchor = sourceLine.linePoints[tailIdx].anchor;
+    const select = this.root.keyElmenet.get("select") as any;
 
     if (existingAnchor) {
       const el = this.root?.idElements.get(existingAnchor.elementId);
       if (el?.type === "forkNode") {
         this._forkNode = el as ForkNode;
+        select?.history?.snapshot([sourceLine, el]);
         this.tempPoints.push({
           x: tailWorld.x,
           y: tailWorld.y,
@@ -197,6 +199,8 @@ export class LineTool extends Element {
       top: tailWorld.y - 4
     });
     this._forkNode = forkNode;
+
+    select?.history?.snapshot([sourceLine, forkNode]);
 
     const parent = sourceLine.parent ?? this._getDefaultContentLayer();
     parent.append(forkNode);
@@ -229,7 +233,7 @@ export class LineTool extends Element {
       this._forkSourceLine.parent ?? this._getDefaultContentLayer();
     const select = this.root.keyElmenet.get("select") as any;
 
-    select?.history?.snapshot([this._forkSourceLine, this._forkNode, childLine]);
+    select?.history?.addSnapshot([childLine]);
     parent.append(childLine);
     select?.history?.commit();
   }

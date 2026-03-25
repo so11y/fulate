@@ -129,6 +129,14 @@ export class HistoryManager {
     });
   }
 
+  addSnapshot(elements: Element[]) {
+    elements.forEach((el) => {
+      if (!this.snapshotMap.has(el)) {
+        this.snapshotMap.set(el, this.getState(el));
+      }
+    });
+  }
+
   commit() {
     if (this.snapshotMap.size === 0) return;
 

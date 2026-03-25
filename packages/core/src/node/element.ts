@@ -28,6 +28,7 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   enableResize?: boolean;
   enableAnchor?: boolean;
   enableDiveIn?: boolean;
+  immediatelyDraggable?: boolean;
   anchorMultiLine?: boolean;
 
   onclick?: (this: T, e: FulateEvent<T>) => any;
@@ -68,6 +69,7 @@ export class Element extends Transformable {
   enableResize?: boolean;
   enableAnchor?: boolean;
   enableDiveIn?: boolean;
+  immediatelyDraggable?: boolean;
   /** 默认锚点是否允许多线连接，默认 false（单线） */
   anchorMultiLine?: boolean;
   groupParent?: any;

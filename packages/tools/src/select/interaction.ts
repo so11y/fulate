@@ -63,6 +63,13 @@ function handleSelect(select: Select, e: FulateEvent) {
     if (intersected) selectEls.add(intersected);
   });
 
+  const hitEls = Array.from(selectEls);
+  if (hitEls.length === 1 && (hitEls[0] as any).immediatelyDraggable) {
+    select.select([hitEls[0]]);
+    handleSelectMove(select, e);
+    return;
+  }
+
   let hasMove = false;
   const pointermove = (e: FulateEvent) => {
     hasMove = true;
