@@ -1,5 +1,4 @@
-import { radiansToDegrees } from "@fulate/util";
-import { Point } from "@fulate/util";
+import { radiansToDegrees, Point, transformPoint } from "@fulate/util";
 import { type Select } from "./index";
 import { FulateEvent } from "@fulate/core";
 
@@ -244,22 +243,14 @@ export function rotateCallback(
 
   for (const snap of snapshots) {
     const {
-      el,
-      matrix: elMatrix,
-      worldCenterPoint,
-      width: snapW,
-      height: snapH,
-      scaleX: snapSX,
-      scaleY: snapSY
+      el, matrix: elMatrix, worldCenterPoint,
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
     } = snap;
 
     const targetMatrix = deltaMatrix.multiply(elMatrix);
-    const worldCenter = worldCenterPoint.applyMatrix(deltaMatrix);
+    const worldCenter = transformPoint(deltaMatrix, worldCenterPoint);
     el.applyTransformMatrix(targetMatrix, worldCenter, {
-      width: snapW,
-      height: snapH,
-      scaleX: snapSX,
-      scaleY: snapSY
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
     });
   }
 
@@ -270,7 +261,11 @@ export function rotateCallback(
 //  Resize helper
 // ---------------------------------------------------------------------------
 
-function computeResizeScale(preState: SelectState, event: any, type: string) {
+function computeResizeScale(
+  preState: SelectState,
+  event: any,
+  type: string
+) {
   const { width: pWidth, height: pHeight, matrix } = preState;
 
   let fixedLocalX = 0;
@@ -288,7 +283,7 @@ function computeResizeScale(preState: SelectState, event: any, type: string) {
 
   const mouseWorld = new Point(event.detail.x, event.detail.y);
   const inverseMatrix = DOMMatrix.fromMatrix(matrix).inverse();
-  const mouseLocal = mouseWorld.applyMatrix(inverseMatrix);
+  const mouseLocal = transformPoint(inverseMatrix, mouseWorld);
 
   let sx = 1;
   let sy = 1;
@@ -337,29 +332,19 @@ export function resizeObject(
 
   for (const snap of snapshots) {
     const {
-      el,
-      matrix: elMatrix,
-      worldCenterPoint,
-      width: snapW,
-      height: snapH,
-      scaleX: snapSX,
-      scaleY: snapSY
+      el, matrix: elMatrix, worldCenterPoint,
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
     } = snap;
 
     const targetMatrix = deltaMatrix.multiply(elMatrix);
-    const worldCenter = worldCenterPoint.applyMatrix(deltaMatrix);
+    const worldCenter = transformPoint(deltaMatrix, worldCenterPoint);
     el.applyTransformMatrix(targetMatrix, worldCenter, {
-      width: snapW,
-      height: snapH,
-      scaleX: snapSX,
-      scaleY: snapSY
+      width: snapW, height: snapH, scaleX: snapSX, scaleY: snapSY
     });
   }
 
-  const newLocalCenter = new Point(pWidth / 2, pHeight / 2).applyMatrix(
-    localScaleMatrix
-  );
-  const newWorldCenter = newLocalCenter.applyMatrix(matrix);
+  const newLocalCenter = transformPoint(localScaleMatrix, new Point(pWidth / 2, pHeight / 2));
+  const newWorldCenter = transformPoint(matrix, newLocalCenter);
   const newW = pWidth * Math.abs(sx);
   const newH = pHeight * Math.abs(sy);
 

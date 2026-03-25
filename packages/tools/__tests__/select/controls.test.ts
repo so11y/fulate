@@ -368,4 +368,99 @@ describe("resizeObject", () => {
     expect(args.width).toBeCloseTo(200);
     expect(args.height).toBeCloseTo(100);
   });
+
+  it("连续多次调用同一 state，快照不被污染（幂等性）", () => {
+    const { select, childEl, state } = setupResize();
+    const event = createFulateEvent({ x: 150, y: 150 });
+
+    resizeObject(select as any, state, event, "br");
+    const first = (select.updateSelectFrame as any).mock.calls[0][0];
+
+    resizeObject(select as any, state, event, "br");
+    const second = (select.updateSelectFrame as any).mock.calls[1][0];
+
+    expect(second.width).toBeCloseTo(first.width);
+    expect(second.height).toBeCloseTo(first.height);
+    expect(second.left).toBeCloseTo(first.left);
+    expect(second.top).toBeCloseTo(first.top);
+  });
+
+  it("连续多次调用不同鼠标位置，快照不被污染", () => {
+    const { select, childEl, state } = setupResize();
+
+    resizeObject(select as any, state, createFulateEvent({ x: 150, y: 150 }), "br");
+    resizeObject(select as any, state, createFulateEvent({ x: 200, y: 200 }), "br");
+    resizeObject(select as any, state, createFulateEvent({ x: 150, y: 150 }), "br");
+
+    const first = (select.updateSelectFrame as any).mock.calls[0][0];
+    const third = (select.updateSelectFrame as any).mock.calls[2][0];
+
+    expect(third.width).toBeCloseTo(first.width);
+    expect(third.height).toBeCloseTo(first.height);
+    expect(third.left).toBeCloseTo(first.left);
+    expect(third.top).toBeCloseTo(first.top);
+  });
+
+  it("连续 tl resize，快照 worldCenterPoint 不被修改", () => {
+    const { select, childEl, state } = setupResize();
+    const originalCenter = state.snapshots[0].worldCenterPoint;
+    const cx = originalCenter.x;
+    const cy = originalCenter.y;
+
+    resizeObject(select as any, state, createFulateEvent({ x: 30, y: 30 }), "tl");
+    resizeObject(select as any, state, createFulateEvent({ x: 60, y: 60 }), "tl");
+
+    expect(originalCenter.x).toBe(cx);
+    expect(originalCenter.y).toBe(cy);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════
+// rotateCallback — 连续调用幂等性
+// ═════════════════════════════════════════════════════════════
+
+describe("rotateCallback — 连续调用幂等性", () => {
+  function setupRotate() {
+    const select = createMockSelect({
+      left: 0, top: 0, width: 100, height: 100, angle: 0,
+      originX: "center", originY: "center", snapAngle: 0,
+    });
+    select.getPositionByOrigin = vi.fn(() => new Point(50, 50));
+    select.getRelativeCenterPoint = vi.fn(() => new Point(50, 50));
+
+    const el = mockElement({ left: 0, top: 0, width: 100, height: 100 });
+    el.applyTransformMatrix = vi.fn();
+    const snapshot = createElementSnapshot(el);
+    const state = createSelectState(select, [snapshot]);
+
+    return { select, el, state };
+  }
+
+  it("同一角度连续调用，结果一致", () => {
+    const { select, el, state } = setupRotate();
+    const initPoint = new Point(150, 50);
+    const event = createFulateEvent({ x: 50, y: 150 });
+
+    rotateCallback(select as any, initPoint, state, event);
+    const firstAngle = (select.updateSelectFrame as any).mock.calls[0][0].angle;
+
+    rotateCallback(select as any, initPoint, state, event);
+    const secondAngle = (select.updateSelectFrame as any).mock.calls[1][0].angle;
+
+    expect(secondAngle).toBeCloseTo(firstAngle);
+  });
+
+  it("连续调用不污染快照 worldCenterPoint", () => {
+    const { select, el, state } = setupRotate();
+    const originalCenter = state.snapshots[0].worldCenterPoint;
+    const cx = originalCenter.x;
+    const cy = originalCenter.y;
+
+    const initPoint = new Point(150, 50);
+    rotateCallback(select as any, initPoint, state, createFulateEvent({ x: 50, y: 150 }));
+    rotateCallback(select as any, initPoint, state, createFulateEvent({ x: -50, y: 50 }));
+
+    expect(originalCenter.x).toBe(cx);
+    expect(originalCenter.y).toBe(cy);
+  });
 });
