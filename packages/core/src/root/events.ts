@@ -107,18 +107,9 @@ export function initRootEvents(root: Root) {
       const rect = root.containerRect;
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
-
       const factor = e.deltaY < 0 ? 1.1 : 0.9;
-      const prevScale = root.viewport.scale;
-      const newScale = Math.max(0.1, Math.min(10, prevScale * factor));
 
-      root.viewport.x = cx - ((cx - root.viewport.x) * newScale) / prevScale;
-      root.viewport.y = cy - ((cy - root.viewport.y) * newScale) / prevScale;
-      root.viewport.scale = newScale;
-
-      root.dispatchEvent(new CustomEvent("wheel"));
-
-      applyCssTransform(root);
+      root.zoomViewport(factor, { x: cx, y: cy }, true);
 
       root.lastPointerPos.x = e.clientX;
       root.lastPointerPos.y = e.clientY;

@@ -11,7 +11,7 @@ export { Triangle } from "./triangle";
 export { Text } from "./text";
 export type { TextOption } from "./text";
 export { Image } from "./image";
-export type { ImageOption } from "./image";
+export type { ImageOption, ImageResizeOption, ImageResizeMode } from "./image";
 export { Workspace } from "./workspace";
 export type { WorkspaceOption } from "./workspace";
 export { Pinned } from "./pinned";

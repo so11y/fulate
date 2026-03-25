@@ -7,6 +7,7 @@
   "dependencies": {
     "@fulate/util": "*",
     "@fulate/core": "*",
+    "@fulate/ui": "*",
     "@fulate/tools": "*",
     "lodash-es": "*"
   }

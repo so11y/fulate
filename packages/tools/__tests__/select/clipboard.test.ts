@@ -113,6 +113,60 @@ describe("copyElements", () => {
     select.selectEls = [el as any];
     await expect(copyElements(select as any)).resolves.not.toThrow();
   });
+
+  it("多个选中元素 → elements 数量与类型正确", async () => {
+    const el1 = createSelectableElement({ left: 10, top: 20 });
+    const el2 = createSelectableElement({ left: 30, top: 40 });
+    select.selectEls = [el1 as any, el2 as any];
+    await copyElements(select as any);
+
+    const data = JSON.parse(
+      (navigator.clipboard.writeText as any).mock.calls[0][0]
+    );
+    expect(data.elements).toHaveLength(2);
+    expect(data.elements[0].type).toBe("rect");
+    expect(data.elements[1].type).toBe("rect");
+  });
+
+  it("序列化调用 toJson(true) 包含 children", async () => {
+    const el = createSelectableElement();
+    select.selectEls = [el as any];
+    await copyElements(select as any);
+    expect(el.toJson).toHaveBeenCalledWith(true);
+  });
+
+  it("每个 element entry 包含 type 和 props", async () => {
+    const el = createSelectableElement();
+    select.selectEls = [el as any];
+    await copyElements(select as any);
+
+    const data = JSON.parse(
+      (navigator.clipboard.writeText as any).mock.calls[0][0]
+    );
+    const entry = data.elements[0];
+    expect(entry).toHaveProperty("type");
+    expect(entry).toHaveProperty("props");
+    expect(entry.props.left).toBe(el.left);
+  });
+
+  it("selectGeometry 包含完整几何字段", async () => {
+    const el = createSelectableElement();
+    select.selectEls = [el as any];
+    Object.assign(select, {
+      left: 1, top: 2, width: 3, height: 4,
+      angle: 45, scaleX: 2, scaleY: 0.5, skewX: 10, skewY: 15,
+    });
+    await copyElements(select as any);
+
+    const data = JSON.parse(
+      (navigator.clipboard.writeText as any).mock.calls[0][0]
+    );
+    const geo = data.selectGeometry;
+    expect(geo).toEqual({
+      left: 1, top: 2, width: 3, height: 4,
+      angle: 45, scaleX: 2, scaleY: 0.5, skewX: 10, skewY: 15,
+    });
+  });
 });
 
 // ─── pasteElements（内存粘贴） ──────────────────────────────
@@ -153,6 +207,46 @@ describe("pasteElements — from memory", () => {
     const [undoFn] = (select.history.pushAction as any).mock.calls[0];
     undoFn();
     expect(select.select).toHaveBeenCalledWith([]);
+  });
+
+  it("redo 回调 → 重新 append 元素并选中", async () => {
+    await doCopy();
+    await pasteElements(select as any);
+
+    const layer = select.root.layers[0];
+    const [, redoFn] = (select.history.pushAction as any).mock.calls[0];
+    (layer.append as any).mockClear();
+    (select.select as any).mockClear();
+
+    redoFn();
+    expect(layer.append).toHaveBeenCalled();
+    expect(select.select).toHaveBeenCalled();
+  });
+
+  it("粘贴后 select.select 收到偏移后的几何", async () => {
+    await doCopy();
+    await pasteElements(select as any);
+
+    const selectCalls = (select.select as any).mock.calls;
+    const lastCall = selectCalls[selectCalls.length - 1];
+    if (lastCall[1]) {
+      expect(lastCall[1].left).toBe(100 + 20);
+      expect(lastCall[1].top).toBe(200 + 20);
+    }
+  });
+
+  it("多元素复制粘贴 → 全部 append 到 layer", async () => {
+    const el1 = createSelectableElement({ left: 10, top: 20 });
+    const el2 = createSelectableElement({ left: 30, top: 40 });
+    (el1 as any)._layer = select.root.layers[0];
+    (el2 as any)._layer = select.root.layers[0];
+    select.selectEls = [el1 as any, el2 as any];
+    Object.assign(select, { left: 10, top: 20, width: 100, height: 80 });
+    await copyElements(select as any);
+
+    (select.root.layers[0].append as any).mockClear();
+    await pasteElements(select as any);
+    expect(select.root.layers[0].append).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -214,5 +308,84 @@ describe("pasteElements — from system clipboard", () => {
       new Error("Not allowed")
     );
     await expect(freshPaste(freshSelect as any)).resolves.not.toThrow();
+  });
+
+  it("多元素从系统剪贴板反序列化粘贴", async () => {
+    const clipData = {
+      __fulate_clipboard__: true,
+      selectGeometry: {
+        left: 0, top: 0, width: 100, height: 80,
+        angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0,
+      },
+      elements: [
+        { type: "rect", id: "a1", props: { type: "rect", left: 10, top: 20, width: 50, height: 30 } },
+        { type: "rect", id: "a2", props: { type: "rect", left: 60, top: 70, width: 40, height: 40 } },
+      ],
+    };
+    (navigator.clipboard.readText as any).mockResolvedValueOnce(
+      JSON.stringify(clipData)
+    );
+
+    await freshPaste(freshSelect as any);
+    const layer = freshSelect.root.layers[0];
+    expect(layer.append).toHaveBeenCalledTimes(2);
+    expect(freshSelect.history.pushAction).toHaveBeenCalledOnce();
+  });
+
+  it("部分 entry type 未注册 → 只粘贴成功的", async () => {
+    const clipData = {
+      __fulate_clipboard__: true,
+      selectGeometry: {
+        left: 0, top: 0, width: 100, height: 80,
+        angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0,
+      },
+      elements: [
+        { type: "rect", id: "a1", props: { type: "rect", left: 10, top: 20 } },
+        { type: "non-registered-type", id: "a2", props: { type: "non-registered-type", left: 0, top: 0 } },
+      ],
+    };
+    (navigator.clipboard.readText as any).mockResolvedValueOnce(
+      JSON.stringify(clipData)
+    );
+
+    await freshPaste(freshSelect as any);
+    const layer = freshSelect.root.layers[0];
+    expect(layer.append).toHaveBeenCalledTimes(1);
+  });
+
+  it("缺少 __fulate_clipboard__ 标记 → 不粘贴", async () => {
+    const clipData = {
+      elements: [
+        { type: "rect", id: "a1", props: { type: "rect", left: 10, top: 20 } },
+      ],
+    };
+    (navigator.clipboard.readText as any).mockResolvedValueOnce(
+      JSON.stringify(clipData)
+    );
+
+    await freshPaste(freshSelect as any);
+    expect(freshSelect.history.pushAction).not.toHaveBeenCalled();
+  });
+
+  it("反序列化后元素 left/top 带偏移(PASTE_OFFSET=20)", async () => {
+    const clipData = {
+      __fulate_clipboard__: true,
+      selectGeometry: {
+        left: 0, top: 0, width: 50, height: 30,
+        angle: 0, scaleX: 1, scaleY: 1, skewX: 0, skewY: 0,
+      },
+      elements: [
+        { type: "rect", id: "old1", props: { type: "rect", left: 10, top: 20, width: 50, height: 30 } },
+      ],
+    };
+    (navigator.clipboard.readText as any).mockResolvedValueOnce(
+      JSON.stringify(clipData)
+    );
+
+    await freshPaste(freshSelect as any);
+    const layer = freshSelect.root.layers[0];
+    const appendedEl = (layer.append as any).mock.calls[0][0];
+    expect(appendedEl.left).toBe(30);
+    expect(appendedEl.top).toBe(40);
   });
 });

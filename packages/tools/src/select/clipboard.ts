@@ -1,49 +1,19 @@
 import type { Element } from "@fulate/core";
-import { getElementCtor } from "@fulate/core";
 import type { Select } from "./index";
+import {
+  deserializeElement,
+  registerDeserializePlugin,
+} from "../file/index";
+import type { DeserializeFactory } from "../file/index";
 
 const CLIPBOARD_MARKER = "__fulate_clipboard__";
 const PASTE_OFFSET = 20;
-
-type DeserializeFactory = (data: any) => Element | undefined;
-const deserializePlugins = new Map<string, DeserializeFactory>();
 
 export function registerClipboardPlugin(
   type: string,
   factory: DeserializeFactory
 ) {
-  deserializePlugins.set(type, factory);
-}
-
-function deserializeElement(data: any): Element | undefined {
-  const { type, children, ...props } = data;
-
-  const pluginFactory = deserializePlugins.get(type);
-  if (pluginFactory) {
-    delete props.key;
-    return pluginFactory(data);
-  }
-
-  const tag = type.startsWith("f-") ? type : `f-${type}`;
-  const Ctor = getElementCtor(tag);
-  if (!Ctor) return;
-  delete props.key;
-  const el = new Ctor(props);
-  if ((el as any)._initProps) {
-    el.attrs((el as any)._initProps);
-    (el as any)._initProps = null;
-  }
-  if (children?.length) {
-    const deserialized = children
-      .map((c: any) => deserializeElement(c))
-      .filter(Boolean);
-    if (el.type === "group") {
-      (el as any)._pendingGroupEls = deserialized;
-    } else {
-      (el as any).children = deserialized;
-    }
-  }
-  return el;
+  registerDeserializePlugin(type, factory);
 }
 
 function applyOffset(data: any, dx: number, dy: number) {

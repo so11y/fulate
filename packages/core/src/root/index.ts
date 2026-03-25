@@ -6,7 +6,12 @@ import { Point } from "@fulate/util";
 import { RectWithCenter } from "@fulate/util";
 import { Group } from "@tweenjs/tween.js";
 import { initRootEvents } from "./events";
-import { syncPaintedViewport, focusNode as focusNodeImpl } from "./viewport";
+import {
+  syncPaintedViewport,
+  focusNode as focusNodeImpl,
+  zoomViewport as zoomViewportImpl,
+  resetViewport as resetViewportImpl,
+} from "./viewport";
 import {
   checkHit as checkHitImpl,
   searchHitElements as searchHitElementsImpl,
@@ -34,6 +39,9 @@ export class Root extends Node {
   height: number;
   dpr = window.devicePixelRatio || 1;
 
+  minScale: number;
+  maxScale: number;
+
   private _containerRect!: DOMRect;
 
   layers: Layer[] = [];
@@ -52,11 +60,13 @@ export class Root extends Node {
   _isCssTransforming = false;
   cssTransformThreshold = 0.45;
 
-  constructor(el: HTMLElement, options?: { width?: number; height?: number }) {
+  constructor(el: HTMLElement, options?: { width?: number; height?: number; minScale?: number; maxScale?: number }) {
     super();
     this.container = el;
     this.width = options?.width ?? el.clientWidth;
     this.height = options?.height ?? el.clientHeight;
+    this.minScale = options?.minScale ?? 0.1;
+    this.maxScale = options?.maxScale ?? 10;
     this.container.style.position = "relative";
     this.container.style.userSelect = "none";
     this.container.style.touchAction = "none";
@@ -276,6 +286,18 @@ export class Root extends Node {
   }
 
   // ================= 视口（委托） =================
+
+  zoomViewport(delta: number, center?: { x: number; y: number }, useCssTransform = false): number {
+    return zoomViewportImpl(this, delta, center, useCssTransform);
+  }
+
+  resetViewport() {
+    resetViewportImpl(this);
+  }
+
+  getZoom(): number {
+    return this.viewport.scale;
+  }
 
   focusNode(
     rect: RectWithCenter,

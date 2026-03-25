@@ -139,6 +139,10 @@ export function initEditor(container: HTMLElement) {
   store.select = markRaw(selectTool);
   store.viewportScale = root.viewport.scale;
 
+  root.addEventListener("zoom", () => {
+    store.viewportScale = root.getZoom();
+  });
+
   root.addEventListener("pointerup", () => setTimeout(refreshSelection, 30));
   root.container.addEventListener("keyup", () =>
     setTimeout(refreshSelection, 30)
@@ -219,39 +223,6 @@ export function addElementToCanvas(type: string, clientX: number, clientY: numbe
     const el = create();
     artboard.append(el);
   }
-}
-
-export function zoomViewport(delta: number) {
-  const root = store.root;
-  if (!root) return;
-  const prevScale = root.viewport.scale;
-  const newScale = Math.max(0.1, Math.min(10, prevScale * delta));
-  const cx = root.width / 2;
-  const cy = root.height / 2;
-
-  root.viewport.x = cx - ((cx - root.viewport.x) * newScale) / prevScale;
-  root.viewport.y = cy - ((cy - root.viewport.y) * newScale) / prevScale;
-  root.viewport.scale = newScale;
-
-  (root as any)._paintedViewport.x = root.viewport.x;
-  (root as any)._paintedViewport.y = root.viewport.y;
-  (root as any)._paintedViewport.scale = root.viewport.scale;
-  root.requestRender();
-
-  store.viewportScale = newScale;
-}
-
-export function resetViewport() {
-  const root = store.root;
-  if (!root) return;
-  root.viewport.x = 0;
-  root.viewport.y = 0;
-  root.viewport.scale = 1;
-  (root as any)._paintedViewport.x = 0;
-  (root as any)._paintedViewport.y = 0;
-  (root as any)._paintedViewport.scale = 1;
-  root.requestRender();
-  store.viewportScale = 1;
 }
 
 const PALETTE = [

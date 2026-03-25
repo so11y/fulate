@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { store, refreshSelection } from "../store";
-import { zoomViewport, resetViewport } from "../editor";
 import {
   saveToStorage,
   exportToFile,
@@ -23,10 +22,13 @@ function redo() {
   setTimeout(refreshSelection, 50);
 }
 function zoomIn() {
-  zoomViewport(1.25);
+  store.root?.zoomViewport(1.25);
 }
 function zoomOut() {
-  zoomViewport(0.8);
+  store.root?.zoomViewport(0.8);
+}
+function resetZoom() {
+  store.root?.resetViewport();
 }
 function save() {
   if (store.artboard) {
@@ -118,7 +120,7 @@ function clearAll() {
       <button class="tb" @click="zoomIn" title="放大">
         <span class="tb-icon">+</span>
       </button>
-      <button class="tb" @click="resetViewport" title="重置视口">
+      <button class="tb" @click="resetZoom" title="重置视口">
         <span class="tb-label">1:1</span>
       </button>
     </div>

@@ -1,7 +1,7 @@
-import { Shape, ShapeOption } from "@fulate/core";
+import { ShapeOption } from "@fulate/core";
 import { FulateEvent } from "@fulate/core";
 import { Point } from "@fulate/util";
-// import { debounce } from "lodash-es";
+import { Image, ImageOption } from "@fulate/ui";
 import { EChartsPool } from "./pool";
 
 export interface EChartsInitOpts {
@@ -11,26 +11,25 @@ export interface EChartsInitOpts {
   lazyUpdate?: boolean;
 }
 
-export interface EChartsShapeOption extends ShapeOption<EChartsShape> {
+export interface EChartsShapeOption extends ImageOption<EChartsShape> {
   pool?: EChartsPool;
   echarts: EChartsInitOpts;
 }
 
 let idCounter = 0;
 
-export class EChartsShape extends Shape {
+export class EChartsShape extends Image {
   type = "echarts";
 
   private _pool: EChartsPool | null = null;
   private _chartId: string;
   private _echartsOpts: EChartsInitOpts;
-  private _bitmap: ImageBitmap | null = null;
   private _paused = false;
   private _cleanups: Array<() => void> = [];
 
   constructor(options: EChartsShapeOption) {
-    const { pool, echarts: echartsOpts, ...shapeOpts } = options;
-    super(shapeOpts as ShapeOption);
+    const { pool, echarts: echartsOpts, ...imageOpts } = options;
+    super(imageOpts as ImageOption);
     this._pool = pool ?? null;
     this._echartsOpts = echartsOpts;
     this._chartId = `echart_${idCounter++}`;
@@ -44,8 +43,6 @@ export class EChartsShape extends Shape {
     this._pool?.resize(this._chartId, this.width!, this.height!, this.root.dpr);
   }
 
-  // private _debouncedResize = () => this.resizeChart(); // debounce(() => this.resizeChart(), 30);
-
   setOptions(options?: any, syncCalc = false) {
     const result = super.setOptions(options, syncCalc);
     if (
@@ -53,7 +50,6 @@ export class EChartsShape extends Shape {
       (options?.width !== undefined || options?.height !== undefined)
     ) {
       this.resizeChart();
-      // this._debouncedResize();
     }
     return result;
   }
@@ -63,38 +59,31 @@ export class EChartsShape extends Shape {
     if (!this._pool) {
       this._pool = this.inject<EChartsPool>("echartsPool") ?? null;
     }
-    if (!this._pool) {
-      console.warn("[EChartsShape] No pool available, chart will not render.");
-      return;
-    }
-    this._pool.create(
-      this._chartId,
-      this.width!,
-      this.height!,
-      this.root.dpr,
-      this._echartsOpts,
-      (bitmap) => this._onFrame(bitmap)
-    );
-    this._bindEvents();
+  }
+
+  activate() {
+    super.activate();
+    this._startChart();
   }
 
   deactivate() {
-    this._bitmap?.close();
-    this._bitmap = null;
-    this._cleanups.forEach((fn) => fn());
-    this._cleanups = [];
-    this._pool?.destroy(this._chartId);
+    this._stopChart();
     super.deactivate();
   }
 
+  unmounted() {
+    this._stopChart();
+    super.unmounted();
+  }
+
   protected paintContent(ctx: CanvasRenderingContext2D) {
-    if (!this._bitmap) return;
+    if (!this._renderImage) return;
     if (this.radius) {
       ctx.save();
       this.buildPath(ctx);
       ctx.clip();
     }
-    ctx.drawImage(this._bitmap, 0, 0, this.width!, this.height!);
+    ctx.drawImage(this._renderImage, 0, 0, this.width!, this.height!);
     if (this.radius) {
       ctx.restore();
     }
@@ -113,9 +102,40 @@ export class EChartsShape extends Shape {
     return inView;
   }
 
+  toJson(includeChildren = false) {
+    const json = super.toJson(includeChildren) as any;
+    json.echarts = this._echartsOpts;
+    return json;
+  }
+
+  // ===================== 内部方法 =====================
+
+  private _startChart() {
+    if (!this._pool) {
+      console.warn("[EChartsShape] No pool available, chart will not render.");
+      return;
+    }
+    this._pool.create(
+      this._chartId,
+      this.width!,
+      this.height!,
+      this.root.dpr,
+      this._echartsOpts,
+      (bitmap) => this._onFrame(bitmap)
+    );
+    this._bindEvents();
+  }
+
+  private _stopChart() {
+    this._pool?.destroy(this._chartId);
+    this._releaseRenderImage();
+    this._cleanups.forEach((fn) => fn());
+    this._cleanups = [];
+  }
+
   private _onFrame(bitmap: ImageBitmap) {
-    this._bitmap?.close();
-    this._bitmap = bitmap;
+    this._releaseRenderImage();
+    this._renderImage = bitmap;
     this.markPaintDirty();
   }
 
@@ -143,11 +163,5 @@ export class EChartsShape extends Shape {
     bindAndTrack("mouseleave", () => {
       this._pool?.event(this._chartId, "mouseout", -1000, -1000);
     });
-  }
-
-  toJson(includeChildren = false) {
-    const json = super.toJson(includeChildren) as any;
-    json.echarts = this._echartsOpts;
-    return json;
   }
 }

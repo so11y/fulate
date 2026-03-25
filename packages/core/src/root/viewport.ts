@@ -1,6 +1,46 @@
 import type { Root } from "./index";
 import type { RectWithCenter } from "@fulate/util";
+import { CustomEvent } from "../event";
 import { Tween, Easing } from "@tweenjs/tween.js";
+
+export function clampScale(root: Root, scale: number): number {
+  return Math.max(root.minScale, Math.min(root.maxScale, scale));
+}
+
+export function zoomViewport(
+  root: Root,
+  delta: number,
+  center?: { x: number; y: number },
+  useCssTransform = false
+): number {
+  const prevScale = root.viewport.scale;
+  const newScale = clampScale(root, prevScale * delta);
+  const cx = center?.x ?? root.width / 2;
+  const cy = center?.y ?? root.height / 2;
+
+  root.viewport.x = cx - ((cx - root.viewport.x) * newScale) / prevScale;
+  root.viewport.y = cy - ((cy - root.viewport.y) * newScale) / prevScale;
+  root.viewport.scale = newScale;
+
+  if (useCssTransform) {
+    applyCssTransform(root);
+  } else {
+    syncPaintedViewport(root);
+    root.requestRender();
+  }
+  root.dispatchEvent(new CustomEvent("zoom"));
+
+  return newScale;
+}
+
+export function resetViewport(root: Root) {
+  root.viewport.x = 0;
+  root.viewport.y = 0;
+  root.viewport.scale = 1;
+  syncPaintedViewport(root);
+  root.requestRender();
+  root.dispatchEvent(new CustomEvent("zoom"));
+}
 
 export function applyCssTransform(root: Root) {
   if (root.viewport.scale >= root.cssTransformThreshold) {

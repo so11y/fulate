@@ -19,3 +19,16 @@ export type {
 export { alignElements } from "./select/align";
 export type { AlignType } from "./select/align";
 export { copyElements, pasteElements, registerClipboardPlugin } from "./select/clipboard";
+export {
+  serializeElements,
+  serializeToJSON,
+  deserializeElement,
+  deserializeElements,
+  registerDeserializePlugin,
+  isValidFileData,
+  parseFileData,
+  exportToFile,
+  importFromFile,
+  importFromJSON
+} from "./file/index";
+export type { ElementFilter, FileData, DeserializeFactory } from "./file/index";
