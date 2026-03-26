@@ -5,6 +5,7 @@
     "moduleResolution": "node",
     "jsx": "preserve",
     "jsxImportSource": "vue",
+    "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@fulate/util": ["packages/util/src/index.ts"],

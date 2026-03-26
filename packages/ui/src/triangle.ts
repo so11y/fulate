@@ -1,7 +1,6 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
-import { Shape } from "@fulate/core";
-import { AnchorPoint } from "./line/anchor";
+import { Shape, AnchorPoint } from "@fulate/core";
 
 export class Triangle extends Shape {
   type = "triangle";

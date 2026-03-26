@@ -1,7 +1,6 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
-import { ShapeOption, Shape } from "@fulate/core";
-import { AnchorPoint } from "./line/anchor";
+import { ShapeOption, Shape, AnchorPoint } from "@fulate/core";
 
 export class Circle extends Shape {
   type = "circle";
