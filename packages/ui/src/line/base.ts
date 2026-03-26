@@ -159,7 +159,6 @@ export abstract class BaseLine extends Element {
       const local = this.worldToLocal(x, y);
       this.linePoints.push({ x: local.x, y: local.y, anchor });
     }
-    this._syncBoundsFromPoints();
     this.markNeedsLayout();
     if (anchor && this.root) {
       const el = this.root.idElements.get(anchor.elementId);
@@ -179,14 +178,12 @@ export abstract class BaseLine extends Element {
     p.x = local.x;
     p.y = local.y;
     p.anchor = undefined;
-    this._syncBoundsFromPoints();
     this.markNeedsLayout();
   }
 
   insertPoint(index: number, worldX: number, worldY: number) {
     const local = this.worldToLocal(worldX, worldY);
     this.linePoints.splice(index, 0, { x: local.x, y: local.y });
-    this._syncBoundsFromPoints();
     this.markNeedsLayout();
   }
 
@@ -197,7 +194,6 @@ export abstract class BaseLine extends Element {
       this._unregisterAnchor(p.anchor.elementId);
     }
     this.linePoints.splice(index, 1);
-    this._syncBoundsFromPoints();
     this.markNeedsLayout();
   }
 
@@ -218,11 +214,17 @@ export abstract class BaseLine extends Element {
     this.height = rect.height || 1;
   }
 
+  updateTransform(parentWorldDirty: boolean = false) {
+    if (this.isActiveed && (parentWorldDirty || this.isDirty)) {
+      this._syncBoundsFromPoints();
+    }
+    super.updateTransform(parentWorldDirty);
+  }
+
   // --- Anchor sync ---
 
   onSelectMoveEnd(): void {
     if (handleSelectMoveEnd(this, (id) => this._unregisterAnchor(id))) {
-      this._syncBoundsFromPoints();
       this.markNeedsLayout();
     }
   }
@@ -231,7 +233,6 @@ export abstract class BaseLine extends Element {
     if (!this.root) return false;
     let changed = syncAnchorPoint(this, this.headPoint);
     changed = syncAnchorPoint(this, this.tailPoint) || changed;
-    if (changed) this._syncBoundsFromPoints();
     return changed;
   }
 
@@ -246,7 +247,6 @@ export abstract class BaseLine extends Element {
         y: p.y,
         anchor: p.anchor ? { ...p.anchor } : undefined
       }));
-      this._syncBoundsFromPoints();
       syncConnectedLines(
         this,
         oldPoints,
@@ -357,7 +357,6 @@ export abstract class BaseLine extends Element {
       this.linePoints[i].y = np.y - this.top;
       this.linePoints[i].anchor = sp.anchor;
     }
-    this._syncBoundsFromPoints();
     this.markNeedsLayout();
   }
 
@@ -400,8 +399,9 @@ export abstract class BaseLine extends Element {
 
   mounted() {
     super.mounted();
-    this._syncBoundsFromPoints();
-    bindEndpoints(this, true, this._connectEl, this._disconnectEl);
+    this.root.nextTick(() => {
+      bindEndpoints(this, true, this._connectEl, this._disconnectEl);
+    });
   }
 
   unmounted() {

@@ -1,6 +1,10 @@
 import { Element, Shape } from "@fulate/core";
 import { Point, RectWithCenter, makeBoundingBoxFromPoints } from "@fulate/util";
-import { getMeasureContext, measureStringWidth, getCharWidth } from "./text/measure";
+import {
+  getMeasureContext,
+  measureStringWidth,
+  getCharWidth
+} from "./text/measure";
 import { buildFontString, getTextDefaults } from "./text/style";
 
 const DOT_RADIUS = 4;
@@ -18,7 +22,12 @@ export class AnchorIndicator extends Shape {
   labelWidth: number = MAX_WIDTH;
   keepLabelUpright: boolean = true;
 
-  constructor(data: { id: string; label: string; edge: string; labelWidth?: number }) {
+  constructor(data: {
+    id: string;
+    label: string;
+    edge: string;
+    labelWidth?: number;
+  }) {
     super();
     this.id = `__anchor_${data.id}`;
     this.anchorLabel = data.label;
@@ -33,11 +42,16 @@ export class AnchorIndicator extends Shape {
     this.pickable = false;
   }
 
-  private _getLabelFont(scaledFontSize?: number): { font: string; color: string } {
-    const defaults = getTextDefaults(this, { fontSize: scaledFontSize ?? FONT_SIZE });
+  private _getLabelFont(scaledFontSize?: number): {
+    font: string;
+    color: string;
+  } {
+    const defaults = getTextDefaults(this, {
+      fontSize: scaledFontSize ?? FONT_SIZE
+    });
     return {
       font: buildFontString(defaults),
-      color: (defaults.color as string) ?? "#555",
+      color: (defaults.color as string) ?? "#555"
     };
   }
 
@@ -45,10 +59,14 @@ export class AnchorIndicator extends Shape {
     const w = this.width || 0;
     const h = this.height || 0;
     switch (this.edge) {
-      case "top":    return { x: w / 2, y: h + GAP + DOT_RADIUS };
-      case "bottom": return { x: w / 2, y: -(GAP + DOT_RADIUS) };
-      case "left":   return { x: w + GAP + DOT_RADIUS, y: h / 2 };
-      case "right":  return { x: -(GAP + DOT_RADIUS), y: h / 2  };
+      case "top":
+        return { x: w / 2, y: h + GAP + DOT_RADIUS };
+      case "bottom":
+        return { x: w / 2, y: -(GAP + DOT_RADIUS) };
+      case "left":
+        return { x: w + GAP + DOT_RADIUS, y: h / 2 };
+      case "right":
+        return { x: -(GAP + DOT_RADIUS), y: h / 2 };
     }
   }
 
@@ -58,20 +76,28 @@ export class AnchorIndicator extends Shape {
     const pw = host.width || 0;
     const ph = host.height || 0;
     switch (this.edge) {
-      case "top":    return { x: pw * this.anchorRatio, y: 0 };
-      case "bottom": return { x: pw * this.anchorRatio, y: ph };
-      case "left":   return { x: 0, y: ph * this.anchorRatio };
-      case "right":  return { x: pw, y: ph * this.anchorRatio };
+      case "top":
+        return { x: pw * this.anchorRatio, y: 0 };
+      case "bottom":
+        return { x: pw * this.anchorRatio, y: ph };
+      case "left":
+        return { x: 0, y: ph * this.anchorRatio };
+      case "right":
+        return { x: pw, y: ph * this.anchorRatio };
     }
   }
 
   /** Edge outward normal in local space (unit vector). */
   private _edgeNormal(): { nx: number; ny: number } {
     switch (this.edge) {
-      case "top":    return { nx:  0, ny: -1 };
-      case "bottom": return { nx:  0, ny:  1 };
-      case "left":   return { nx: -1, ny:  0 };
-      case "right":  return { nx:  1, ny:  0 };
+      case "top":
+        return { nx: 0, ny: -1 };
+      case "bottom":
+        return { nx: 0, ny: 1 };
+      case "left":
+        return { nx: -1, ny: 0 };
+      case "right":
+        return { nx: 1, ny: 0 };
     }
   }
 
@@ -79,7 +105,10 @@ export class AnchorIndicator extends Shape {
    * Transform the edge normal into world space using the host matrix,
    * then compute the label center position offset from the anchor dot.
    */
-  private _labelWorldCenter(dotWorld: { x: number; y: number }, matrix: DOMMatrix) {
+  private _labelWorldCenter(
+    dotWorld: { x: number; y: number },
+    matrix: DOMMatrix
+  ) {
     const { a, b, c, d } = matrix;
     const { nx: lnx, ny: lny } = this._edgeNormal();
     const rnx = a * lnx + c * lny;
@@ -96,7 +125,7 @@ export class AnchorIndicator extends Shape {
       cy: dotWorld.y + wny * offset,
       wnx,
       wny,
-      lineH,
+      lineH
     };
   }
 
@@ -153,8 +182,13 @@ export class AnchorIndicator extends Shape {
   }
 
   private _labelWorldRect(): {
-    x: number; y: number; w: number; h: number;
-    align: CanvasTextAlign; tx: number; ty: number;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    align: CanvasTextAlign;
+    tx: number;
+    ty: number;
   } | null {
     const host = this.parent;
     if (!host || !this.anchorLabel) return null;
@@ -165,15 +199,21 @@ export class AnchorIndicator extends Shape {
     const { cx, cy, wnx, lineH } = this._labelWorldCenter(dot, hostMatrix);
 
     const w = this.labelWidth;
-    const align: CanvasTextAlign = Math.abs(wnx) > Math.abs(1 - Math.abs(wnx))
-      ? (wnx > 0 ? "left" : "right")
-      : "center";
+    const align: CanvasTextAlign =
+      Math.abs(wnx) > Math.abs(1 - Math.abs(wnx))
+        ? wnx > 0
+          ? "left"
+          : "right"
+        : "center";
 
     return {
       x: cx - w / 2,
       y: cy - lineH / 2,
-      w, h: lineH,
-      align, tx: cx, ty: cy,
+      w,
+      h: lineH,
+      align,
+      tx: cx,
+      ty: cy
     };
   }
 
@@ -224,6 +264,7 @@ export class AnchorIndicator extends Shape {
   }
 
   private _paintLabelWorld(ctx: CanvasRenderingContext2D) {
+    console.log('---');
     const rect = this._labelWorldRect();
     if (!rect) return;
 
@@ -242,6 +283,10 @@ export class AnchorIndicator extends Shape {
 
     const sx = (x: number) => x * vp.scale + vp.x;
     const sy = (y: number) => y * vp.scale + vp.y;
+
+    ctx.fillStyle = '#fff'
+
+    ctx.rect(sx(rect.tx), sy(rect.ty), 0, 100);
 
     ctx.font = font;
     ctx.fillStyle = color;
@@ -279,7 +324,7 @@ export class AnchorIndicator extends Shape {
       width: maxX - minX,
       height: maxY - minY,
       centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2,
+      centerY: (minY + maxY) / 2
     };
     return this._boundingRectCache;
   }
@@ -293,10 +338,22 @@ export class AnchorIndicator extends Shape {
     const h = this.height || 0;
     const dot = this._dotLocal();
     return [
-      new Point(Math.min(0, dot.x - DOT_RADIUS), Math.min(0, dot.y - DOT_RADIUS)),
-      new Point(Math.max(w, dot.x + DOT_RADIUS), Math.min(0, dot.y - DOT_RADIUS)),
-      new Point(Math.max(w, dot.x + DOT_RADIUS), Math.max(h, dot.y + DOT_RADIUS)),
-      new Point(Math.min(0, dot.x - DOT_RADIUS), Math.max(h, dot.y + DOT_RADIUS)),
+      new Point(
+        Math.min(0, dot.x - DOT_RADIUS),
+        Math.min(0, dot.y - DOT_RADIUS)
+      ),
+      new Point(
+        Math.max(w, dot.x + DOT_RADIUS),
+        Math.min(0, dot.y - DOT_RADIUS)
+      ),
+      new Point(
+        Math.max(w, dot.x + DOT_RADIUS),
+        Math.max(h, dot.y + DOT_RADIUS)
+      ),
+      new Point(
+        Math.min(0, dot.x - DOT_RADIUS),
+        Math.max(h, dot.y + DOT_RADIUS)
+      )
     ];
   }
 }

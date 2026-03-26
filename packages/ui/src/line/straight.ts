@@ -158,7 +158,6 @@ function getLineControlSchema(line: Line) {
         if (prevAnchor?.elementId !== newAnchor?.elementId) {
           lineEl.rebindAnchors();
         }
-        lineEl._syncBoundsFromPoints();
         lineEl.markNeedsLayout();
 
         const rect = lineEl.getBoundingRect();
@@ -214,7 +213,6 @@ function getLineControlSchema(line: Line) {
           const local = lineEl.worldToLocal(targetX, targetY);
           lineEl.linePoints[insertedIndex].x = local.x;
           lineEl.linePoints[insertedIndex].y = local.y;
-          lineEl._syncBoundsFromPoints();
           lineEl.markNeedsLayout();
         }
 

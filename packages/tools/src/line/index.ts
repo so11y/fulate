@@ -213,7 +213,6 @@ export class LineTool extends Element {
       anchorType: "center"
     };
     sourceLine.rebindAnchors();
-    sourceLine._syncBoundsFromPoints();
     sourceLine.markNeedsLayout();
 
     this.tempPoints.push({

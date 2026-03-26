@@ -565,7 +565,7 @@ export class Element extends Transformable {
   }
 
   toJson(includeChildren = false): BaseElementOption {
-    const json = { type: this.type } as any;
+    const json = { type: this.type, id: this.id } as any;
 
     if (this.left !== 0) json.left = this.left;
     if (this.top !== 0) json.top = this.top;
