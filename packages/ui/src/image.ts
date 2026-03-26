@@ -113,7 +113,7 @@ export class Image extends Shape {
 
   toJson(includeChildren = false) {
     const json = super.toJson(includeChildren) as any;
-    json.src = this.src;
+    if (this.src !== undefined) json.src = this.src;
     if (this._resize.mode && this._resize.mode !== "auto") {
       json.resize = { ...this._resize };
     }

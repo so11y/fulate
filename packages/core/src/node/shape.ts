@@ -271,13 +271,13 @@ export class Shape extends Element {
 
   toJson(includeChildren = false): ShapeOption {
     const json = super.toJson(includeChildren) as any;
-    json.backgroundColor = this.backgroundColor;
-    json.borderColor = this.borderColor;
-    json.borderWidth = this.borderWidth;
-    json.borderPosition = this.borderPosition;
-    json.opacity = this.opacity;
-    json.radius = this.radius;
-    json.shadow = this.shadow;
+    if (this.backgroundColor !== null) json.backgroundColor = this.backgroundColor;
+    if (this.borderColor !== null) json.borderColor = this.borderColor;
+    if (this.borderWidth) json.borderWidth = this.borderWidth;
+    if (this.borderPosition !== "inside") json.borderPosition = this.borderPosition;
+    if (this.opacity !== 1) json.opacity = this.opacity;
+    if (this.radius) json.radius = this.radius;
+    if (this.shadow !== null) json.shadow = this.shadow;
     return json;
   }
 }

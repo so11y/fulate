@@ -4,7 +4,11 @@ import { Transformable, TransformableOptions } from "./transformable";
 import { Tween, Easing } from "@tweenjs/tween.js";
 import { parseColor, formatColor } from "@fulate/util";
 import { qrDecompose } from "@fulate/util";
-import { resolveAnchors, syncAnchorIndicators, serializeAnchors } from "../utils/anchor";
+import {
+  resolveAnchors,
+  syncAnchorIndicators,
+  serializeAnchors
+} from "../utils/anchor";
 import type { AnchorPointData } from "../utils/anchor";
 
 export interface RBushItem {
@@ -79,7 +83,9 @@ export class Element extends Transformable {
   private _anchors: AnchorPointData[] | null = null;
   private _anchorIndicators: Map<string, Element> | null = null;
 
-  get anchors(): AnchorPointData[] | null { return this._anchors; }
+  get anchors(): AnchorPointData[] | null {
+    return this._anchors;
+  }
   set anchors(value: AnchorPointData[] | null) {
     const oldIds = new Set(this._anchors?.map((a) => a.id) ?? []);
     this._anchors = value;
@@ -92,7 +98,10 @@ export class Element extends Transformable {
           const line = this.root?.idElements.get(lineId) as any;
           if (!line?.linePoints) continue;
           for (const p of line.linePoints) {
-            if (p.anchor?.elementId === this.id && p.anchor?.anchorType === removedId) {
+            if (
+              p.anchor?.elementId === this.id &&
+              p.anchor?.anchorType === removedId
+            ) {
               p.anchor = undefined;
             }
           }
@@ -296,7 +305,9 @@ export class Element extends Transformable {
     );
   }
 
-  static _createAnchorIndicator: (data: AnchorPointData) => Element = (data) => {
+  static _createAnchorIndicator: (data: AnchorPointData) => Element = (
+    data
+  ) => {
     const el = new Element({ width: 8, height: 8, visible: true });
     el.id = `__anchor_${data.id}`;
     el.selectctbale = false;
@@ -325,7 +336,9 @@ export class Element extends Transformable {
     localCenter: Point,
     groupWorldMatrix: DOMMatrix
   ): void {
-    const worldCenter = new Point(localCenter.matrixTransform(groupWorldMatrix));
+    const worldCenter = new Point(
+      localCenter.matrixTransform(groupWorldMatrix)
+    );
     this.applyTransformMatrix(targetMatrix, worldCenter);
   }
 
@@ -552,30 +565,31 @@ export class Element extends Transformable {
   }
 
   toJson(includeChildren = false): BaseElementOption {
-    const json = {
-      type: this.type,
-      left: this.left,
-      top: this.top,
-      width: this.width,
-      height: this.height,
-      angle: this.angle,
-      scaleX: this.scaleX,
-      scaleY: this.scaleY,
-      skewX: this.skewX,
-      skewY: this.skewY,
-      originX: this.originX,
-      originY: this.originY,
-      visible: this.visible,
-      cursor: this.cursor,
-      selectctbale: this.selectctbale,
-      silent: this.silent,
-      pickable: this.pickable,
-      enableRotation: this.enableRotation,
-      enableMove: this.enableMove,
-      enableResize: this.enableResize,
-      enableAnchor: this.enableAnchor,
-      anchorMultiLine: this.anchorMultiLine
-    } as any;
+    const json = { type: this.type } as any;
+
+    if (this.left !== 0) json.left = this.left;
+    if (this.top !== 0) json.top = this.top;
+    if (this.width !== undefined) json.width = this.width;
+    if (this.height !== undefined) json.height = this.height;
+    if (this.angle !== 0) json.angle = this.angle;
+    if (this.scaleX !== 1) json.scaleX = this.scaleX;
+    if (this.scaleY !== 1) json.scaleY = this.scaleY;
+    if (this.skewX !== 0) json.skewX = this.skewX;
+    if (this.skewY !== 0) json.skewY = this.skewY;
+    if (this.originX !== "center") json.originX = this.originX;
+    if (this.originY !== "center") json.originY = this.originY;
+    if (this.visible !== true) json.visible = this.visible;
+    if (this.cursor !== undefined) json.cursor = this.cursor;
+    if (this.selectctbale !== undefined) json.selectctbale = this.selectctbale;
+    if (this.silent !== false) json.silent = this.silent;
+    if (this.pickable !== true) json.pickable = this.pickable;
+    if (this.enableRotation !== undefined)
+      json.enableRotation = this.enableRotation;
+    if (this.enableMove !== undefined) json.enableMove = this.enableMove;
+    if (this.enableResize !== undefined) json.enableResize = this.enableResize;
+    if (this.enableAnchor !== undefined) json.enableAnchor = this.enableAnchor;
+    if (this.anchorMultiLine !== undefined)
+      json.anchorMultiLine = this.anchorMultiLine;
 
     if (this._anchors?.length) {
       json.anchors = serializeAnchors(this._anchors);

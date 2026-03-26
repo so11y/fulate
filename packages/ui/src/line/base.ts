@@ -365,15 +365,17 @@ export abstract class BaseLine extends Element {
 
   toJson(includeChildren = false) {
     const json = super.toJson(includeChildren) as any;
-    json.linePoints = this.linePoints.map((p) => ({
-      x: p.x,
-      y: p.y,
-      anchor: p.anchor ? { ...p.anchor } : undefined
-    }));
-    json.strokeColor = this.strokeColor;
-    json.strokeWidth = this.strokeWidth;
-    json.headDecoration = this.headDecoration;
-    json.tailDecoration = this.tailDecoration;
+    if (this.linePoints.length) {
+      json.linePoints = this.linePoints.map((p) => ({
+        x: p.x,
+        y: p.y,
+        anchor: p.anchor ? { ...p.anchor } : undefined
+      }));
+    }
+    if (this.strokeColor !== "#333333") json.strokeColor = this.strokeColor;
+    if (this.strokeWidth !== 2) json.strokeWidth = this.strokeWidth;
+    if (this.headDecoration !== "none") json.headDecoration = this.headDecoration;
+    if (this.tailDecoration !== "arrow") json.tailDecoration = this.tailDecoration;
     return json;
   }
 

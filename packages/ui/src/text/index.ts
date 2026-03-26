@@ -52,9 +52,9 @@ export class Text extends Shape {
   fontWeight: string | number = "normal";
   fontStyle: string = "normal";
   color: string = "#000000";
-  textAlign: "left" | "center" | "right" = "left";
+  textAlign: "left" | "center" | "right" = "center";
   textBaseline: CanvasTextBaseline = "top";
-  verticalAlign: "top" | "middle" | "bottom" = "top";
+  verticalAlign: "top" | "middle" | "bottom" = "middle";
   underline: boolean = false;
   lineHeight: number = 1.5;
   wordWrap: boolean = true;
@@ -246,23 +246,23 @@ export class Text extends Shape {
 
   toJson(includeChildren = false) {
     const json = super.toJson(includeChildren) as any;
-    json.text = this.text;
-    json.fontSize = this.fontSize;
-    json.fontFamily = this.fontFamily;
-    json.fontWeight = this.fontWeight;
-    json.fontStyle = this.fontStyle;
-    json.color = this.color;
-    json.textAlign = this.textAlign;
-    json.textBaseline = this.textBaseline;
-    json.verticalAlign = this.verticalAlign;
-    json.underline = this.underline;
-    json.lineHeight = this.lineHeight;
-    json.wordWrap = this.wordWrap;
-    json.maxLines = this.maxLines;
-    json.overflow = this.overflow;
-    json.editable = this.editable;
-    json.placeholder = this.placeholder;
-    json.placeholderColor = this.placeholderColor;
+    if (this.text !== "") json.text = this.text;
+    if (this.fontSize !== 14) json.fontSize = this.fontSize;
+    if (this.fontFamily !== "Arial") json.fontFamily = this.fontFamily;
+    if (this.fontWeight !== "normal") json.fontWeight = this.fontWeight;
+    if (this.fontStyle !== "normal") json.fontStyle = this.fontStyle;
+    if (this.color !== "#000000") json.color = this.color;
+    if (this.textAlign !== "center") json.textAlign = this.textAlign;
+    if (this.textBaseline !== "top") json.textBaseline = this.textBaseline;
+    if (this.verticalAlign !== "middle") json.verticalAlign = this.verticalAlign;
+    if (this.underline !== false) json.underline = this.underline;
+    if (this.lineHeight !== 1.5) json.lineHeight = this.lineHeight;
+    if (this.wordWrap !== true) json.wordWrap = this.wordWrap;
+    if (this.maxLines !== undefined) json.maxLines = this.maxLines;
+    if (this.overflow !== "hidden") json.overflow = this.overflow;
+    if (this.editable !== false) json.editable = this.editable;
+    if (this.placeholder !== "") json.placeholder = this.placeholder;
+    if (this.placeholderColor !== "") json.placeholderColor = this.placeholderColor;
     return json;
   }
 

@@ -96,14 +96,14 @@ export class Pinned extends Rectangle {
     const json = super.toJson(includeChildren) as any;
     const mode = this._inferTargetMode();
     if (mode) json.targetMode = mode;
-    json.isPin = this.isPin;
-    json.anchorX = this.anchorX;
-    json.anchorY = this.anchorY;
-    json.pivotX = this.pivotX;
-    json.pivotY = this.pivotY;
-    json.inheritRotation = this.inheritRotation;
-    json.inheritScale = this.inheritScale;
-    json.inheritSkew = this.inheritSkew;
+    if (this.isPin !== false) json.isPin = this.isPin;
+    if (this.anchorX !== 0) json.anchorX = this.anchorX;
+    if (this.anchorY !== 0) json.anchorY = this.anchorY;
+    if (this.pivotX !== 0.5) json.pivotX = this.pivotX;
+    if (this.pivotY !== 0.5) json.pivotY = this.pivotY;
+    if (this.inheritRotation !== true) json.inheritRotation = this.inheritRotation;
+    if (this.inheritScale !== true) json.inheritScale = this.inheritScale;
+    if (this.inheritSkew !== true) json.inheritSkew = this.inheritSkew;
     return json;
   }
 
