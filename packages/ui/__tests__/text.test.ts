@@ -50,7 +50,9 @@ function createMockCtx() {
  */
 function createText(opts?: any) {
   const t = new Text(opts);
-  t._provides = {};
+  const mockRoot = createMockRoot();
+  t._provides = { root: mockRoot };
+  t._root = mockRoot as any;
   return t;
 }
 
@@ -172,9 +174,9 @@ describe("Text.getResolvedTextStyle", () => {
     expect(style.color).toBe("#333");
   });
 
-  it("有 textDefaults 注入且未显式设置 → 使用 defaults", () => {
+  it("有 textDefaults 且未显式设置 → 使用 defaults", () => {
     const t = createText();
-    t._provides = { textDefaults: { fontSize: 24, color: "#aaa" } };
+    (t._root as any).textDefaults = { fontSize: 24, color: "#aaa" };
     const style = t.getResolvedTextStyle();
     expect(style.fontSize).toBe(24);
     expect(style.color).toBe("#aaa");
@@ -182,7 +184,7 @@ describe("Text.getResolvedTextStyle", () => {
 
   it("显式设置的属性不被 defaults 覆盖", () => {
     const t = createText({ fontSize: 18 });
-    t._provides = { textDefaults: { fontSize: 24, color: "#aaa" } };
+    (t._root as any).textDefaults = { fontSize: 24, color: "#aaa" };
     const style = t.getResolvedTextStyle();
     expect(style.fontSize).toBe(18);
     expect(style.color).toBe("#aaa");
@@ -190,7 +192,7 @@ describe("Text.getResolvedTextStyle", () => {
 
   it("defaults 中未提供的 key → 使用实例值", () => {
     const t = createText();
-    t._provides = { textDefaults: { fontSize: 32 } };
+    (t._root as any).textDefaults = { fontSize: 32 };
     const style = t.getResolvedTextStyle();
     expect(style.fontSize).toBe(32);
     expect(style.fontFamily).toBe("Arial");
@@ -204,14 +206,14 @@ describe("Text.attrs 显式样式追踪", () => {
 
   it("通过 attrs 设置 → 标记为显式，覆盖 defaults", () => {
     const t = createText();
-    t._provides = { textDefaults: { fontSize: 24 } };
+    (t._root as any).textDefaults = { fontSize: 24 };
     t.attrs({ fontSize: 16 });
     expect(t.getResolvedTextStyle().fontSize).toBe(16);
   });
 
   it("attrs 传入 undefined → 移除显式标记，回退到 defaults", () => {
     const t = createText({ fontSize: 16 });
-    t._provides = { textDefaults: { fontSize: 24 } };
+    (t._root as any).textDefaults = { fontSize: 24 };
     expect(t.getResolvedTextStyle().fontSize).toBe(16);
 
     t.attrs({ fontSize: undefined });
@@ -220,14 +222,14 @@ describe("Text.attrs 显式样式追踪", () => {
 
   it("attrs 传入 null → 移除显式标记", () => {
     const t = createText({ fontSize: 16 });
-    t._provides = { textDefaults: { fontSize: 24 } };
+    (t._root as any).textDefaults = { fontSize: 24 };
     t.attrs({ fontSize: null });
     expect(t.getResolvedTextStyle().fontSize).toBe(24);
   });
 
   it("非 TEXT_STYLE_KEYS 的属性不影响显式标记", () => {
     const t = createText();
-    t._provides = { textDefaults: { fontSize: 24 } };
+    (t._root as any).textDefaults = { fontSize: 24 };
     t.attrs({ text: "hello", width: 200 });
     expect(t.getResolvedTextStyle().fontSize).toBe(24);
     expect(t.text).toBe("hello");

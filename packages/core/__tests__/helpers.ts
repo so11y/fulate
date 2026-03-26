@@ -130,6 +130,7 @@ export interface MockRoot {
   _provides: Record<string, any>;
   isUnmounted: boolean;
   _pendingLayers: Set<any>;
+  textDefaults: Record<string, any>;
 }
 
 export function createMockRoot(): MockRoot {
@@ -139,6 +140,7 @@ export function createMockRoot(): MockRoot {
     _provides: {},
     isUnmounted: false,
     _pendingLayers: new Set(),
+    textDefaults: {},
   };
 }
 

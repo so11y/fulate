@@ -22,6 +22,7 @@ export class Root extends Node {
   type = "root";
 
   container: HTMLElement;
+  textDefaults: Record<string, any> = {};
 
   viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
   currentElement?: RBushItem;
@@ -73,10 +74,7 @@ export class Root extends Node {
     this.container.style.overflow = "hidden";
 
     this.provide("root", this);
-    this.provide("textDefaults", {
-      color: "#000000",
-      fontSize: 14
-    });
+    this.textDefaults = { color: "#000000", fontSize: 14 };
   }
 
   mount() {

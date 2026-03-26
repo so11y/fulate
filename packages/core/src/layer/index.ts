@@ -40,6 +40,14 @@ export class Layer extends Element {
 
   private _dirtyGrid = new DirtyGrid();
 
+  private _overlayPainters = new Map<number, ((ctx: CanvasRenderingContext2D) => void)[]>();
+
+  addOverlayPainter(fn: (ctx: CanvasRenderingContext2D) => void, z = 0) {
+    let list = this._overlayPainters.get(z);
+    if (!list) { list = []; this._overlayPainters.set(z, list); }
+    list.push(fn);
+  }
+
   constructor(
     options?: BaseElementOption & {
       zIndex?: number;
@@ -420,6 +428,15 @@ export class Layer extends Element {
     ctx.save();
     this.applyTransformToCtx(ctx);
     this.paintChildren(ctx);
+
+    if (this._overlayPainters.size > 0) {
+      const keys = [...this._overlayPainters.keys()].sort((a, b) => a - b);
+      for (const k of keys) {
+        for (const fn of this._overlayPainters.get(k)!) fn(ctx);
+      }
+      this._overlayPainters.clear();
+    }
+
     ctx.restore();
   }
 

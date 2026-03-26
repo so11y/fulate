@@ -8,6 +8,17 @@ import {
 import { wrapText, fitLineWithEllipsis } from "./layout";
 import { enterEditing, exitEditing, setupClickToEdit } from "./editing";
 import { paintTextContent } from "./paint";
+import {
+  TEXT_STYLE_KEYS,
+  type TextStyleKey,
+  type TextStyleConfig,
+  buildFontString,
+  getTextDefaults,
+  resolveTextStyle
+} from "./style";
+
+export type { TextStyleConfig, TextStyleKey };
+export { buildFontString, getTextDefaults };
 
 export interface TextOption extends ShapeOption {
   text?: string;
@@ -30,25 +41,7 @@ export interface TextOption extends ShapeOption {
   placeholderColor?: string;
 }
 
-const TEXT_STYLE_KEYS = [
-  "color",
-  "fontSize",
-  "fontFamily",
-  "fontWeight",
-  "fontStyle",
-  "textAlign",
-  "textBaseline",
-  "verticalAlign",
-  "underline",
-  "lineHeight",
-  "wordWrap",
-  "maxLines"
-] as const;
-
-type TextStyleKey = (typeof TEXT_STYLE_KEYS)[number];
-type TextDefaultsContext = Pick<TextOption, TextStyleKey>;
-
-export type ResolvedTextStyle = Required<TextDefaultsContext>;
+export type ResolvedTextStyle = Required<TextStyleConfig>;
 
 export class Text extends Shape {
   type = "text";
@@ -117,25 +110,12 @@ export class Text extends Shape {
 
   getResolvedTextStyle(): ResolvedTextStyle {
     this._explicitTextStyle ??= new Set<TextStyleKey>();
-    const defaults = this.inject<TextDefaultsContext>("textDefaults") ?? {};
-    const resolved = {} as ResolvedTextStyle;
-
-    for (const key of TEXT_STYLE_KEYS) {
-      const currentValue = this[key];
-      const defaultValue = defaults[key];
-      //@ts-ignore
-      resolved[key] = (
-        this._explicitTextStyle.has(key) || defaultValue === undefined
-          ? currentValue
-          : defaultValue
-      ) as ResolvedTextStyle[TextStyleKey];
-    }
-
-    return resolved;
+    const defaults = getTextDefaults(this);
+    return resolveTextStyle(this as any, defaults, this._explicitTextStyle);
   }
 
   getFontString(style = this.getResolvedTextStyle()) {
-    return `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
+    return buildFontString(style);
   }
 
   attrs(options: any) {
