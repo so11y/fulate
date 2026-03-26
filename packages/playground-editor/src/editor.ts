@@ -173,6 +173,7 @@ export function addElementToCanvas(
   const x = (clientX - rect.left - vp.x) / vp.scale;
   const y = (clientY - rect.top - vp.y) / vp.scale;
 
+
   const creators: Record<string, () => any> = {
     rectangle: () =>
       new Rectangle({

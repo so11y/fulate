@@ -264,7 +264,6 @@ export class AnchorIndicator extends Shape {
   }
 
   private _paintLabelWorld(ctx: CanvasRenderingContext2D) {
-    console.log('---');
     const rect = this._labelWorldRect();
     if (!rect) return;
 
