@@ -1,6 +1,6 @@
 import { PointType } from "@fulate/util";
 import { BoundingBox, makeBoundsFromPoints } from "@fulate/util";
-import { BaseElementOption, Element, getElementAnchorPoints, isAnchorAvailable } from "@fulate/core";
+import { BaseElementOption, Element, getElementAnchorPoints, isAnchorAvailable, buildAnchorIdMap } from "@fulate/core";
 import type { AnchorPointData } from "@fulate/core";
 import { Node } from "@fulate/core";
 import { checkElement } from "./checkElement";
@@ -425,6 +425,7 @@ export class Snap extends Element {
 
       const anchors = getElementAnchorPoints(node);
       const anchorDataList: AnchorPointData[] | null = (node as any).anchors;
+      const anchorIdMap = anchorDataList ? buildAnchorIdMap(anchorDataList) : null;
 
       for (const a of anchors) {
         const dx = a.x - worldX;
@@ -436,7 +437,7 @@ export class Snap extends Element {
 
         if (available && d2 < bestDist) {
           bestDist = d2;
-          const anchorData = anchorDataList?.find((d) => d.id === a.type);
+          const anchorData = anchorIdMap?.get(a.type);
           best = {
             x: a.x,
             y: a.y,

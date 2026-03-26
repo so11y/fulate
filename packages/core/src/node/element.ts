@@ -7,7 +7,8 @@ import { qrDecompose } from "@fulate/util";
 import {
   resolveAnchors,
   syncAnchorIndicators,
-  serializeAnchors
+  serializeAnchors,
+  buildAnchorIdMap
 } from "../utils/anchor";
 import type { AnchorPointData } from "../utils/anchor";
 
@@ -87,9 +88,9 @@ export class Element extends Transformable {
     return this._anchors;
   }
   set anchors(value: AnchorPointData[] | null) {
-    const oldIds = new Set(this._anchors?.map((a) => a.id) ?? []);
+    const oldIds = this._anchors ? new Set(buildAnchorIdMap(this._anchors).keys()) : new Set<string>();
     this._anchors = value;
-    const newIds = new Set(value?.map((a) => a.id) ?? []);
+    const newIds = value ? new Set(buildAnchorIdMap(value).keys()) : new Set<string>();
 
     if (this.isActiveed && this.connectedLines) {
       for (const removedId of oldIds) {
@@ -305,11 +306,11 @@ export class Element extends Transformable {
     );
   }
 
-  static _createAnchorIndicator: (data: AnchorPointData) => Element = (
-    data
+  static _createAnchorIndicator: (data: AnchorPointData, anchorId: string) => Element = (
+    data, anchorId
   ) => {
     const el = new Element({ width: 8, height: 8, visible: true });
-    el.id = `__anchor_${data.id}`;
+    el.id = `__anchor_${anchorId}`;
     el.selectctbale = false;
     el.enableMove = false;
     el.enableResize = false;

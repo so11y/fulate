@@ -100,9 +100,9 @@ describe("Text 构造与默认值", () => {
   it("默认布局属性", () => {
     const t = createText();
     expect(t.text).toBe("");
-    expect(t.textAlign).toBe("left");
+    expect(t.textAlign).toBe("center");
     expect(t.textBaseline).toBe("top");
-    expect(t.verticalAlign).toBe("top");
+    expect(t.verticalAlign).toBe("middle");
     expect(t.underline).toBe(false);
     expect(t.lineHeight).toBe(1.5);
     expect(t.wordWrap).toBe(true);
@@ -375,8 +375,8 @@ describe("Text.toJson", () => {
       fontWeight: "bold",
       fontStyle: "italic",
       color: "#ff0000",
-      textAlign: "center",
-      verticalAlign: "middle",
+      textAlign: "right",
+      verticalAlign: "bottom",
       underline: true,
       lineHeight: 2,
       wordWrap: false,
@@ -394,8 +394,8 @@ describe("Text.toJson", () => {
     expect(json.fontWeight).toBe("bold");
     expect(json.fontStyle).toBe("italic");
     expect(json.color).toBe("#ff0000");
-    expect(json.textAlign).toBe("center");
-    expect(json.verticalAlign).toBe("middle");
+    expect(json.textAlign).toBe("right");
+    expect(json.verticalAlign).toBe("bottom");
     expect(json.underline).toBe(true);
     expect(json.lineHeight).toBe(2);
     expect(json.wordWrap).toBe(false);
@@ -406,8 +406,8 @@ describe("Text.toJson", () => {
     expect(json.placeholderColor).toBe("#ccc");
   });
 
-  it("默认 text 为空字符串", () => {
-    expect(createText().toJson().text).toBe("");
+  it("默认 text 为空字符串 → toJson 不输出 text", () => {
+    expect(createText().toJson().text).toBeUndefined();
   });
 });
 

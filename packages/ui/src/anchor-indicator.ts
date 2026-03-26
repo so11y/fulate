@@ -23,13 +23,12 @@ export class AnchorIndicator extends Shape {
   keepLabelUpright: boolean = true;
 
   constructor(data: {
-    id: string;
     label: string;
     edge: string;
     labelWidth?: number;
-  }) {
+  }, anchorId: string) {
     super();
-    this.id = `__anchor_${data.id}`;
+    this.id = `__anchor_${anchorId}`;
     this.anchorLabel = data.label;
     this.edge = data.edge as any;
     if (data.labelWidth != null) this.labelWidth = data.labelWidth;
@@ -357,4 +356,4 @@ export class AnchorIndicator extends Shape {
   }
 }
 
-Element._createAnchorIndicator = (data: any) => new AnchorIndicator(data);
+Element._createAnchorIndicator = (data: any, anchorId: string) => new AnchorIndicator(data, anchorId);

@@ -17,6 +17,8 @@ export { Element, EVENT_KEYS } from "./node/element";
 export type { BaseElementOption, AnimateOptions, RBushItem } from "./node/element";
 export {
   resolveAnchors,
+  resolveAnchorId,
+  buildAnchorIdMap,
   DEFAULT_ANCHOR_SCHEMA,
   getElementAnchorPoint,
   getElementAnchorPoints,

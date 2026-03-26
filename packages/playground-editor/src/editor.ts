@@ -230,10 +230,10 @@ export function addElementToCanvas(
         backgroundColor: "#3498db",
         radius: 8,
         anchors: [
-          { id: "in1", label: "输入1", edge: "top" },
-          { id: "in2", label: "输入2", edge: "top" },
-          { id: "in3", label: "输入3", edge: "top" },
-          { id: "out1", label: "输出", edge: "bottom" }
+          { label: "输入1", edge: "top" },
+          { label: "输入2", edge: "top" },
+          { label: "输入3", edge: "top" },
+          { label: "输出", edge: "bottom" }
         ],
         children: [
           new Text({

@@ -18,10 +18,10 @@ registerDemo("custom-anchors", {
       backgroundColor: "#3498db",
       radius: 8,
       anchors: [
-        { id: "in1", label: "输入1", edge: "top" },
-        { id: "in2", label: "输入2", edge: "top" },
-        { id: "in3", label: "输入3", edge: "top" },
-        { id: "out1", label: "输出", edge: "bottom" }
+        { label: "输入1", edge: "top" },
+        { label: "输入2", edge: "top" },
+        { label: "输入3", edge: "top" },
+        { label: "输出", edge: "bottom" }
       ],
       children: [
         new Text({
@@ -64,9 +64,9 @@ registerDemo("custom-anchors", {
       backgroundColor: "#2ecc71",
       radius: 8,
       anchors: [
-        { id: "data", label: "数据源", edge: "left" },
-        { id: "out1", label: "输出1", edge: "right" },
-        { id: "out2", label: "输出2", edge: "right" }
+        { label: "数据源", edge: "left" },
+        { label: "输出1", edge: "right" },
+        { label: "输出2", edge: "right" }
       ],
       children: [
         new Text({
@@ -89,10 +89,10 @@ registerDemo("custom-anchors", {
       backgroundColor: "#9b59b6",
       radius: 8,
       anchors: [
-        { id: "in1", label: "输入", edge: "top" },
-        { id: "out1", label: "输出1", edge: "bottom" },
-        { id: "out2", label: "输出2", edge: "bottom" },
-        { id: "out3", label: "输出3", edge: "bottom" }
+        { label: "输入", edge: "top" },
+        { label: "输出1", edge: "bottom" },
+        { label: "输出2", edge: "bottom" },
+        { label: "输出3", edge: "bottom" }
       ],
       children: [
         new Text({
@@ -160,10 +160,9 @@ registerDemo("custom-anchors", {
 
     makeBtn("给 A 添加锚点", () => {
       const anchors = [...(nodeA.anchors ?? [])];
-      const idx = anchors.filter((a) => a.edge === "top").length + 1;
+      const topCount = anchors.filter((a) => a.edge === "top").length;
       anchors.push({
-        id: `in${idx + 3}`,
-        label: `输入${idx + 3}`,
+        label: `输入${topCount + 1}`,
         edge: "top"
       });
       nodeA.anchors = anchors;
@@ -183,7 +182,7 @@ registerDemo("custom-anchors", {
       const anchors = nodeC.anchors ?? [];
       const flipped = anchors.map((a) => ({
         ...a,
-        edge: a.edge === "left" ? "right" : a.edge === "right" ? "left" : a.edge
+        edge: (a.edge === "left" ? "right" : a.edge === "right" ? "left" : a.edge) as typeof a.edge
       }));
       nodeC.anchors = flipped;
       nodeC.markNeedsLayout();

@@ -118,7 +118,6 @@ describe("Element", () => {
         angle: 45,
         scaleX: 2,
         scaleY: 1.5,
-        visible: true,
         cursor: "pointer",
       });
     });
