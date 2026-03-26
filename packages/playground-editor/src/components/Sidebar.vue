@@ -5,6 +5,7 @@ const elements = [
   { type: "triangle", label: "三角形", icon: "△" },
   { type: "text", label: "文本", icon: "T" },
   { type: "image", label: "图片", icon: "🖼" },
+  { type: "customer", label: "自定义", icon: "🤔" },
 ];
 
 function onDragStart(e: DragEvent, type: string) {

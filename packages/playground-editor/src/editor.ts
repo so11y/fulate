@@ -7,7 +7,7 @@ import {
   Image,
   Workspace,
   Pinned,
-  Line,
+  Line
 } from "@fulate/ui";
 import { Select, Snap, Rule, LineTool } from "@fulate/tools";
 import { markRaw } from "vue";
@@ -32,21 +32,21 @@ export function initEditor(container: HTMLElement) {
         height: 150,
         backgroundColor: "#4A90D9",
         radius: 8,
-        shadow: { color: "rgba(0,0,0,0.12)", blur: 8, offsetY: 2 },
+        shadow: { color: "rgba(0,0,0,0.12)", blur: 8, offsetY: 2 }
       }),
       new Circle({
         left: 420,
         top: 100,
         width: 120,
         height: 120,
-        backgroundColor: "#E74C3C",
+        backgroundColor: "#E74C3C"
       }),
       new Triangle({
         left: 280,
         top: 300,
         width: 140,
         height: 120,
-        backgroundColor: "#2ECC71",
+        backgroundColor: "#2ECC71"
       }),
       new Text({
         left: 150,
@@ -59,7 +59,7 @@ export function initEditor(container: HTMLElement) {
         backgroundColor: "#F39C12",
         color: "#fff",
         fontSize: 20,
-        radius: 6,
+        radius: 6
       }),
       new Rectangle({
         left: 550,
@@ -96,11 +96,11 @@ export function initEditor(container: HTMLElement) {
                 textAlign: "center",
                 verticalAlign: "middle",
                 silent: true,
-                pickable: false,
-              }),
-            ],
-          }) as any,
-        ],
+                pickable: false
+              })
+            ]
+          }) as any
+        ]
       }),
       new Rectangle({
         left: 600,
@@ -109,26 +109,26 @@ export function initEditor(container: HTMLElement) {
         height: 80,
         backgroundColor: "#3498DB",
         radius: 6,
-        opacity: 0.7,
-      }),
+        opacity: 0.7
+      })
     );
   }
 
   const workspace = new Workspace({
     width: 1920,
     height: 1080,
-    children: [artboard],
+    children: [artboard]
   });
   const contentLayer = new Layer({
     zIndex: 1,
     enableDirtyRect: true,
-    children: [workspace],
+    children: [workspace]
   });
 
   const selectTool = new Select();
   const editerLayer = new EditerLayer({
     zIndex: 2,
-    children: [selectTool, new Snap(), new Rule(), new LineTool()],
+    children: [selectTool, new Snap(), new Rule(), new LineTool()]
   });
 
   root.append(contentLayer, editerLayer, overlayLayer);
@@ -161,7 +161,11 @@ export function initEditor(container: HTMLElement) {
   };
 }
 
-export function addElementToCanvas(type: string, clientX: number, clientY: number) {
+export function addElementToCanvas(
+  type: string,
+  clientX: number,
+  clientY: number
+) {
   const root = store.root!;
   const artboard = store.artboard!;
   const rect = root.containerRect;
@@ -177,7 +181,7 @@ export function addElementToCanvas(type: string, clientX: number, clientY: numbe
         width: 160,
         height: 100,
         backgroundColor: randomColor(),
-        radius: 6,
+        radius: 6
       }),
     circle: () =>
       new Circle({
@@ -185,7 +189,7 @@ export function addElementToCanvas(type: string, clientX: number, clientY: numbe
         top: y - 50,
         width: 100,
         height: 100,
-        backgroundColor: randomColor(),
+        backgroundColor: randomColor()
       }),
     triangle: () =>
       new Triangle({
@@ -193,7 +197,7 @@ export function addElementToCanvas(type: string, clientX: number, clientY: numbe
         top: y - 50,
         width: 120,
         height: 100,
-        backgroundColor: randomColor(),
+        backgroundColor: randomColor()
       }),
     text: () =>
       new Text({
@@ -205,7 +209,7 @@ export function addElementToCanvas(type: string, clientX: number, clientY: numbe
         fontSize: 16,
         color: "#333",
         backgroundColor: "#FFF9C4",
-        radius: 4,
+        radius: 4
       }),
     image: () =>
       new Image({
@@ -214,8 +218,34 @@ export function addElementToCanvas(type: string, clientX: number, clientY: numbe
         width: 200,
         height: 150,
         src: "https://picsum.photos/200/150?random=" + Date.now(),
-        radius: 6,
+        radius: 6
       }),
+    customer: () =>
+      new Rectangle({
+        left: x - 90,
+        top: y - 50,
+        width: 180,
+        height: 100,
+        backgroundColor: "#3498db",
+        radius: 8,
+        anchors: [
+          { id: "in1", label: "输入1", edge: "top" },
+          { id: "in2", label: "输入2", edge: "top" },
+          { id: "in3", label: "输入3", edge: "top" },
+          { id: "out1", label: "输出", edge: "bottom" }
+        ],
+        children: [
+          new Text({
+            text: "节点 A (自定义锚点)",
+            textAlign: "center",
+            verticalAlign: "middle",
+            color: "#fff",
+            fontSize: 13,
+            silent: true,
+            pickable: false
+          })
+        ]
+      })
   };
 
   const create = creators[type];
@@ -226,9 +256,21 @@ export function addElementToCanvas(type: string, clientX: number, clientY: numbe
 }
 
 const PALETTE = [
-  "#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6",
-  "#1ABC9C", "#E67E22", "#34495E", "#16A085", "#D35400",
-  "#8E44AD", "#2980B9", "#27AE60", "#F1C40F", "#C0392B",
+  "#E74C3C",
+  "#3498DB",
+  "#2ECC71",
+  "#F39C12",
+  "#9B59B6",
+  "#1ABC9C",
+  "#E67E22",
+  "#34495E",
+  "#16A085",
+  "#D35400",
+  "#8E44AD",
+  "#2980B9",
+  "#27AE60",
+  "#F1C40F",
+  "#C0392B"
 ];
 
 function randomColor(): string {
