@@ -169,6 +169,9 @@ export class LineTool extends Element {
     this.mousePos = null;
     this.nearestAnchor = null;
     this.root.container.style.cursor = "crosshair";
+
+    this._createForkNodeOnFirstClick();
+
     this.markNeedsLayout();
   }
 

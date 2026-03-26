@@ -1,5 +1,5 @@
 export { BaseLine } from "./base";
-export type { LineAnchor, LinePointData, LineOption } from "./base";
+export type { LineAnchor, LinePointData, LineOption, LineDecoration } from "./base";
 
 export { Line } from "./straight";
 

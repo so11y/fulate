@@ -1,6 +1,7 @@
 import { Point } from "@fulate/util";
 import { BaseLine, LineAnchor, LineOption } from "./base";
 import { ForkNode } from "../fork-node";
+import { drawDecoration } from "./helpers";
 
 export class Line extends BaseLine {
   type = "line";
@@ -30,14 +31,13 @@ export class Line extends BaseLine {
     }
     ctx.stroke();
 
-    const pointSize = 3 / scale;
-    const first = wp[0];
-    const last = wp[wp.length - 1];
-    for (const p of [first, last]) {
-      ctx.fillStyle = p.anchor ? "#4F81FF" : this.strokeColor;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, pointSize, 0, Math.PI * 2);
-      ctx.fill();
+    if (!ForkNode.isAnchoredTo(this, 0)) {
+      drawDecoration(ctx, this.headDecoration, wp[1], wp[0], scale, this.strokeColor);
+    }
+
+    const lastIdx = this.linePoints.length - 1;
+    if (!ForkNode.isAnchoredTo(this, lastIdx)) {
+      drawDecoration(ctx, this.tailDecoration, wp[wp.length - 2], wp[wp.length - 1], scale, this.strokeColor);
     }
 
     ctx.restore();
@@ -276,6 +276,14 @@ function getLineControlSchema(line: Line) {
       }
       ctx.stroke();
 
+      if (!ForkNode.isAnchoredTo(el, 0)) {
+        drawDecoration(ctx, el.headDecoration, wp[1], wp[0], scale, el.strokeColor);
+      }
+      const lastIdx = el.linePoints.length - 1;
+      if (!ForkNode.isAnchoredTo(el, lastIdx)) {
+        drawDecoration(ctx, el.tailDecoration, wp[wp.length - 2], wp[wp.length - 1], scale, el.strokeColor);
+      }
+
       ctx.strokeStyle = "#4F81FF";
       ctx.lineWidth = 1 / scale;
       ctx.setLineDash([4 / scale, 4 / scale]);
@@ -311,3 +319,4 @@ function getLineControlSchema(line: Line) {
     }
   };
 }
+

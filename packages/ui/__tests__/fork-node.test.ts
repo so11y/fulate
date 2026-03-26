@@ -241,13 +241,13 @@ describe("ForkNode.getControlSchema", () => {
   });
 
   describe("getSnapExcludes", () => {
-    it("无 connectedLines → 空对象", () => {
+    it("始终返回 disableSnap: true", () => {
       const { node } = createActivatedForkNode();
       const result = node.getControlSchema().getSnapExcludes();
-      expect(result).toEqual({});
+      expect(result).toEqual({ disableSnap: true });
     });
 
-    it("headPoint 锚定到 forkNode → 排除 index 0", () => {
+    it("有 connectedLines 时仍返回 disableSnap: true", () => {
       const { node, mockRoot, mockLayer } = createActivatedForkNode();
       const line = createActivatedLine(mockRoot, mockLayer, [
         { x: 0, y: 0, anchor: { elementId: node.id, anchorType: "center" } },
@@ -256,47 +256,7 @@ describe("ForkNode.getControlSchema", () => {
       node.connectedLines = new Set([line.id]);
 
       const result = node.getControlSchema().getSnapExcludes();
-      expect(result.excludePoints).toHaveLength(1);
-      expect(result.excludePoints![0].element).toBe(line);
-      expect(result.excludePoints![0].indices).toContain(0);
-    });
-
-    it("tailPoint 锚定到 forkNode → 排除末尾 index", () => {
-      const { node, mockRoot, mockLayer } = createActivatedForkNode();
-      const line = createActivatedLine(mockRoot, mockLayer, [
-        { x: 0, y: 0 },
-        { x: 100, y: 0, anchor: { elementId: node.id, anchorType: "center" } }
-      ]);
-      node.connectedLines = new Set([line.id]);
-
-      const result = node.getControlSchema().getSnapExcludes();
-      expect(result.excludePoints).toHaveLength(1);
-      expect(result.excludePoints![0].indices).toContain(
-        line.linePoints.length - 1
-      );
-    });
-
-    it("两端都锚定 → 两个 index 都排除", () => {
-      const { node, mockRoot, mockLayer } = createActivatedForkNode();
-      const line = createActivatedLine(mockRoot, mockLayer, [
-        { x: 0, y: 0, anchor: { elementId: node.id, anchorType: "center" } },
-        { x: 100, y: 0, anchor: { elementId: node.id, anchorType: "center" } }
-      ]);
-      node.connectedLines = new Set([line.id]);
-
-      const result = node.getControlSchema().getSnapExcludes();
-      expect(result.excludePoints).toHaveLength(1);
-      expect(result.excludePoints![0].indices).toContain(0);
-      expect(result.excludePoints![0].indices).toContain(
-        line.linePoints.length - 1
-      );
-    });
-
-    it("connectedLine 在 idElements 中不存在 → 跳过", () => {
-      const { node } = createActivatedForkNode();
-      node.connectedLines = new Set(["non-existent-line"]);
-      const result = node.getControlSchema().getSnapExcludes();
-      expect(result).toEqual({ excludePoints: [] });
+      expect(result).toEqual({ disableSnap: true });
     });
   });
 });
@@ -672,6 +632,540 @@ describe("Line ↔ ForkNode 协作", () => {
 
       expect(node.connectedLines).toBeDefined();
       expect(node.connectedLines!.has(line.id)).toBe(true);
+    });
+  });
+});
+
+// ==================== ForkNode parentLineId / childLineIds 关系管理 ====================
+
+describe("ForkNode 结构化关系 (parentLineId / childLineIds)", () => {
+  beforeEach(() => resetNodeStatics());
+
+  describe("连接时自动维护关系", () => {
+    it("tail 锚定到 forkNode → parentLineId 设为该 line", () => {
+      const { node, mockRoot, mockLayer } = createActivatedForkNode({
+        left: 50,
+        top: 50
+      });
+      node.calcWorldMatrix();
+
+      const line = new Line();
+      initNode(line, mockRoot, mockLayer);
+
+      line.addPoint(0, 0);
+      line.addPoint(54, 54, { elementId: node.id, anchorType: "center" });
+
+      expect(node.parentLineId).toBe(line.id);
+    });
+
+    it("head 锚定到 forkNode → childLineIds 包含该 line", () => {
+      const { node, mockRoot, mockLayer } = createActivatedForkNode({
+        left: 0,
+        top: 0
+      });
+      node.calcWorldMatrix();
+
+      const line = new Line();
+      initNode(line, mockRoot, mockLayer);
+
+      line.addPoint(4, 4, { elementId: node.id, anchorType: "center" });
+      line.addPoint(100, 100);
+
+      expect(node.childLineIds.has(line.id)).toBe(true);
+    });
+
+    it("多条子线 → childLineIds 全部包含", () => {
+      const { node, mockRoot, mockLayer } = createActivatedForkNode({
+        left: 0,
+        top: 0
+      });
+      node.calcWorldMatrix();
+
+      const line1 = new Line();
+      initNode(line1, mockRoot, mockLayer);
+      line1.addPoint(4, 4, { elementId: node.id, anchorType: "center" });
+      line1.addPoint(100, 0);
+
+      const line2 = new Line();
+      initNode(line2, mockRoot, mockLayer);
+      line2.addPoint(4, 4, { elementId: node.id, anchorType: "center" });
+      line2.addPoint(0, 100);
+
+      expect(node.childLineIds.size).toBe(2);
+      expect(node.childLineIds.has(line1.id)).toBe(true);
+      expect(node.childLineIds.has(line2.id)).toBe(true);
+    });
+
+    it("无 forkNode 锚定 → parentLineId/childLineIds 不变", () => {
+      const { mockRoot, mockLayer } = createActivatedForkNode();
+      const el = createActivatedElement(mockRoot, mockLayer, {
+        left: 50,
+        top: 50,
+        width: 50,
+        height: 50
+      });
+      el.calcWorldMatrix();
+
+      const line = new Line();
+      initNode(line, mockRoot, mockLayer);
+
+      line.addPoint(0, 0);
+      line.addPoint(75, 50);
+
+      expect(el.type).not.toBe("forkNode");
+    });
+  });
+
+  describe("断开时清理关系", () => {
+    it("deactivate → parentLineId 清除", () => {
+      const { node, mockRoot, mockLayer } = createActivatedForkNode({
+        left: 50,
+        top: 50
+      });
+      node.calcWorldMatrix();
+
+      const line = new Line();
+      initNode(line, mockRoot, mockLayer);
+      line.addPoint(0, 0);
+      line.addPoint(54, 54, { elementId: node.id, anchorType: "center" });
+
+      expect(node.parentLineId).toBe(line.id);
+
+      line.deactivate();
+
+      expect(node.parentLineId).toBeNull();
+    });
+
+    it("deactivate → childLineIds 移除", () => {
+      const { node, mockRoot, mockLayer } = createActivatedForkNode({
+        left: 0,
+        top: 0
+      });
+      node.calcWorldMatrix();
+
+      const line = new Line();
+      initNode(line, mockRoot, mockLayer);
+      line.addPoint(4, 4, { elementId: node.id, anchorType: "center" });
+      line.addPoint(100, 100);
+
+      expect(node.childLineIds.has(line.id)).toBe(true);
+
+      line.deactivate();
+
+      expect(node.childLineIds.has(line.id)).toBe(false);
+    });
+  });
+
+  describe("setOptions 恢复关系", () => {
+    it("setOptions 设置 tail anchor → parentLineId 更新", () => {
+      const { node, mockRoot, mockLayer } = createActivatedForkNode({
+        left: 50,
+        top: 50
+      });
+      node.calcWorldMatrix();
+
+      const line = createActivatedLine(mockRoot, mockLayer, [
+        { x: 0, y: 0 },
+        { x: 100, y: 100 }
+      ]);
+
+      expect(node.parentLineId).toBeNull();
+
+      line.setOptions({
+        linePoints: [
+          { x: 0, y: 0 },
+          { x: 54, y: 54, anchor: { elementId: node.id, anchorType: "center" } }
+        ]
+      });
+
+      expect(node.parentLineId).toBe(line.id);
+    });
+  });
+});
+
+// ==================== BaseLine 查询方法 ====================
+
+describe("BaseLine 关系查询方法", () => {
+  beforeEach(() => resetNodeStatics());
+
+  function buildForkTree() {
+    const mockRoot = createMockRoot();
+    const mockLayer = createMockLayer();
+    Object.assign(mockRoot, {
+      viewport: { scale: 1 },
+      applyViewPointTransform: vi.fn()
+    });
+
+    const forkNode = new ForkNode({ left: 96, top: -4 });
+    initNode(forkNode, mockRoot, mockLayer);
+    forkNode.calcWorldMatrix();
+
+    const parentLine = new Line();
+    initNode(parentLine, mockRoot, mockLayer);
+    parentLine.addPoint(0, 0);
+    parentLine.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+
+    const childLine1 = new Line();
+    initNode(childLine1, mockRoot, mockLayer);
+    childLine1.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+    childLine1.addPoint(200, 50);
+
+    const childLine2 = new Line();
+    initNode(childLine2, mockRoot, mockLayer);
+    childLine2.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+    childLine2.addPoint(200, -50);
+
+    return { mockRoot, mockLayer, forkNode, parentLine, childLine1, childLine2 };
+  }
+
+  describe("getTailForkNode / getHeadForkNode", () => {
+    it("getTailForkNode → 返回 tail 锚定的 forkNode", () => {
+      const { parentLine, forkNode } = buildForkTree();
+      expect(parentLine.getTailForkNode()).toBe(forkNode);
+    });
+
+    it("getHeadForkNode → 返回 head 锚定的 forkNode", () => {
+      const { childLine1, forkNode } = buildForkTree();
+      expect(childLine1.getHeadForkNode()).toBe(forkNode);
+    });
+
+    it("无锚定 → 返回 null", () => {
+      const { mockRoot, mockLayer } = buildForkTree();
+      const line = createActivatedLine(mockRoot, mockLayer, [
+        { x: 0, y: 0 },
+        { x: 50, y: 50 }
+      ]);
+      expect(line.getTailForkNode()).toBeNull();
+      expect(line.getHeadForkNode()).toBeNull();
+    });
+
+    it("锚定到非 forkNode 元素 → 返回 null", () => {
+      const { mockRoot, mockLayer } = buildForkTree();
+      const rect = createActivatedElement(mockRoot, mockLayer, {
+        left: 0,
+        top: 0,
+        width: 50,
+        height: 50
+      });
+      rect.type = "rect";
+      rect.calcWorldMatrix();
+
+      const line = createActivatedLine(mockRoot, mockLayer, [
+        { x: 0, y: 0 },
+        { x: 25, y: 0, anchor: { elementId: rect.id, anchorType: "top" } }
+      ]);
+      expect(line.getTailForkNode()).toBeNull();
+    });
+  });
+
+  describe("getParentLine", () => {
+    it("子线通过 headForkNode 回溯到父线", () => {
+      const { childLine1, parentLine } = buildForkTree();
+      expect(childLine1.getParentLine()).toBe(parentLine);
+    });
+
+    it("父线无 headForkNode → 返回 null", () => {
+      const { parentLine } = buildForkTree();
+      expect(parentLine.getParentLine()).toBeNull();
+    });
+
+    it("两条子线回溯到同一父线", () => {
+      const { childLine1, childLine2, parentLine } = buildForkTree();
+      expect(childLine1.getParentLine()).toBe(parentLine);
+      expect(childLine2.getParentLine()).toBe(parentLine);
+    });
+  });
+
+  describe("getChildLines", () => {
+    it("父线通过 tailForkNode 展开子线", () => {
+      const { parentLine, childLine1, childLine2 } = buildForkTree();
+      const children = parentLine.getChildLines();
+      expect(children).toHaveLength(2);
+      expect(children).toContain(childLine1);
+      expect(children).toContain(childLine2);
+    });
+
+    it("子线无 tailForkNode → 返回空数组", () => {
+      const { childLine1 } = buildForkTree();
+      expect(childLine1.getChildLines()).toEqual([]);
+    });
+
+    it("无锚定线段 → 返回空数组", () => {
+      const { mockRoot, mockLayer } = buildForkTree();
+      const line = createActivatedLine(mockRoot, mockLayer, [
+        { x: 0, y: 0 },
+        { x: 50, y: 50 }
+      ]);
+      expect(line.getChildLines()).toEqual([]);
+    });
+  });
+});
+
+// ==================== getCascadeDeleteElements ====================
+
+describe("getCascadeDeleteElements", () => {
+  beforeEach(() => resetNodeStatics());
+
+  function buildForkTree() {
+    const mockRoot = createMockRoot();
+    const mockLayer = createMockLayer();
+    Object.assign(mockRoot, {
+      viewport: { scale: 1 },
+      applyViewPointTransform: vi.fn()
+    });
+
+    const forkNode = new ForkNode({ left: 96, top: -4 });
+    initNode(forkNode, mockRoot, mockLayer);
+    forkNode.calcWorldMatrix();
+
+    const parentLine = new Line();
+    initNode(parentLine, mockRoot, mockLayer);
+    parentLine.addPoint(0, 0);
+    parentLine.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+
+    const childLine1 = new Line();
+    initNode(childLine1, mockRoot, mockLayer);
+    childLine1.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+    childLine1.addPoint(200, 50);
+
+    const childLine2 = new Line();
+    initNode(childLine2, mockRoot, mockLayer);
+    childLine2.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+    childLine2.addPoint(200, -50);
+
+    return { mockRoot, mockLayer, forkNode, parentLine, childLine1, childLine2 };
+  }
+
+  describe("ForkNode.getCascadeDeleteElements", () => {
+    it("返回所有子线", () => {
+      const { forkNode, childLine1, childLine2 } = buildForkTree();
+      const result = forkNode.getCascadeDeleteElements();
+      expect(result).toHaveLength(2);
+      expect(result).toContain(childLine1);
+      expect(result).toContain(childLine2);
+    });
+
+    it("无子线 → 返回空数组", () => {
+      const { forkNode } = buildForkTree();
+      forkNode.childLineIds.clear();
+      expect(forkNode.getCascadeDeleteElements()).toEqual([]);
+    });
+  });
+
+  describe("BaseLine.getCascadeDeleteElements", () => {
+    it("父线 → 返回 tail forkNode", () => {
+      const { parentLine, forkNode } = buildForkTree();
+      const result = parentLine.getCascadeDeleteElements();
+      expect(result).toContain(forkNode);
+    });
+
+    it("删除最后一条子线 → 返回 head forkNode", () => {
+      const { forkNode, childLine1 } = buildForkTree();
+      forkNode.childLineIds.clear();
+      forkNode.childLineIds.add(childLine1.id);
+
+      const result = childLine1.getCascadeDeleteElements();
+      expect(result).toContain(forkNode);
+    });
+
+    it("还有其他子线存在 → 不返回 head forkNode", () => {
+      const { forkNode, childLine1 } = buildForkTree();
+      const result = childLine1.getCascadeDeleteElements();
+      const ids = result.map((el) => el.id);
+      expect(ids).not.toContain(forkNode.id);
+    });
+
+    it("无锚定 → 返回空数组", () => {
+      const { mockRoot, mockLayer } = buildForkTree();
+      const line = createActivatedLine(mockRoot, mockLayer, [
+        { x: 0, y: 0 },
+        { x: 50, y: 50 }
+      ]);
+      expect(line.getCascadeDeleteElements()).toEqual([]);
+    });
+  });
+});
+
+// ==================== 关系还原场景 ====================
+
+describe("关系还原场景", () => {
+  beforeEach(() => resetNodeStatics());
+
+  function buildForkTree() {
+    const mockRoot = createMockRoot();
+    const mockLayer = createMockLayer();
+    Object.assign(mockRoot, {
+      viewport: { scale: 1 },
+      applyViewPointTransform: vi.fn()
+    });
+
+    const forkNode = new ForkNode({ left: 96, top: -4 });
+    initNode(forkNode, mockRoot, mockLayer);
+    forkNode.calcWorldMatrix();
+
+    const parentLine = new Line();
+    initNode(parentLine, mockRoot, mockLayer);
+    parentLine.addPoint(0, 0);
+    parentLine.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+
+    const childLine1 = new Line();
+    initNode(childLine1, mockRoot, mockLayer);
+    childLine1.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+    childLine1.addPoint(200, 50);
+
+    const childLine2 = new Line();
+    initNode(childLine2, mockRoot, mockLayer);
+    childLine2.addPoint(100, 0, { elementId: forkNode.id, anchorType: "center" });
+    childLine2.addPoint(200, -50);
+
+    return { mockRoot, mockLayer, forkNode, parentLine, childLine1, childLine2 };
+  }
+
+  describe("deactivate → activate 往返", () => {
+    it("line deactivate 后 activate → parentLineId 恢复", () => {
+      const { forkNode, parentLine } = buildForkTree();
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+
+      parentLine.deactivate();
+      expect(forkNode.parentLineId).toBeNull();
+
+      parentLine.isActiveed = false;
+      parentLine.activate();
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+    });
+
+    it("line deactivate 后 activate → childLineIds 恢复", () => {
+      const { forkNode, childLine1 } = buildForkTree();
+      expect(forkNode.childLineIds.has(childLine1.id)).toBe(true);
+
+      childLine1.deactivate();
+      expect(forkNode.childLineIds.has(childLine1.id)).toBe(false);
+
+      childLine1.isActiveed = false;
+      childLine1.activate();
+      expect(forkNode.childLineIds.has(childLine1.id)).toBe(true);
+    });
+
+    it("所有 line deactivate 后全部 activate → 完整关系恢复", () => {
+      const { forkNode, parentLine, childLine1, childLine2 } = buildForkTree();
+
+      parentLine.deactivate();
+      childLine1.deactivate();
+      childLine2.deactivate();
+
+      expect(forkNode.parentLineId).toBeNull();
+      expect(forkNode.childLineIds.size).toBe(0);
+
+      parentLine.isActiveed = false;
+      childLine1.isActiveed = false;
+      childLine2.isActiveed = false;
+      parentLine.activate();
+      childLine1.activate();
+      childLine2.activate();
+
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+      expect(forkNode.childLineIds.size).toBe(2);
+      expect(forkNode.childLineIds.has(childLine1.id)).toBe(true);
+      expect(forkNode.childLineIds.has(childLine2.id)).toBe(true);
+    });
+  });
+
+  describe("setOptions 还原（模拟 undo/redo）", () => {
+    it("setOptions 设置 head anchor → childLineIds 恢复", () => {
+      const { forkNode, mockRoot, mockLayer } = buildForkTree();
+
+      const line = createActivatedLine(mockRoot, mockLayer, [
+        { x: 0, y: 0 },
+        { x: 200, y: 200 }
+      ]);
+
+      expect(forkNode.childLineIds.has(line.id)).toBe(false);
+
+      line.setOptions({
+        linePoints: [
+          { x: 0, y: 0, anchor: { elementId: forkNode.id, anchorType: "center" } },
+          { x: 100, y: 100 }
+        ]
+      });
+
+      expect(forkNode.childLineIds.has(line.id)).toBe(true);
+    });
+
+    it("setOptions 清除 anchor → 关系移除", () => {
+      const { forkNode, parentLine } = buildForkTree();
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+
+      parentLine.setOptions({
+        linePoints: [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 }
+        ]
+      });
+
+      expect(forkNode.parentLineId).toBeNull();
+    });
+  });
+
+  describe("rebindAnchors 后关系重建", () => {
+    it("rebindAnchors → parentLineId / childLineIds 正确", () => {
+      const { forkNode, parentLine, childLine1 } = buildForkTree();
+
+      forkNode.parentLineId = null;
+      forkNode.childLineIds.clear();
+
+      parentLine.rebindAnchors();
+      childLine1.rebindAnchors();
+
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+      expect(forkNode.childLineIds.has(childLine1.id)).toBe(true);
+    });
+  });
+
+  describe("rebuildRelations 安全重建", () => {
+    it("从 connectedLines 完整重建关系", () => {
+      const { forkNode, parentLine, childLine1, childLine2 } = buildForkTree();
+
+      forkNode.parentLineId = null;
+      forkNode.childLineIds.clear();
+
+      forkNode.rebuildRelations();
+
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+      expect(forkNode.childLineIds.size).toBe(2);
+      expect(forkNode.childLineIds.has(childLine1.id)).toBe(true);
+      expect(forkNode.childLineIds.has(childLine2.id)).toBe(true);
+    });
+
+    it("connectedLines 为空 → 关系全清", () => {
+      const { forkNode, parentLine } = buildForkTree();
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+
+      forkNode.connectedLines = new Set();
+      forkNode.rebuildRelations();
+
+      expect(forkNode.parentLineId).toBeNull();
+      expect(forkNode.childLineIds.size).toBe(0);
+    });
+
+    it("connectedLines 中有无效 id → 跳过", () => {
+      const { forkNode, parentLine } = buildForkTree();
+      forkNode.connectedLines!.add("non-existent");
+
+      forkNode.rebuildRelations();
+
+      expect(forkNode.parentLineId).toBe(parentLine.id);
+    });
+
+    it("line 只有 1 个点 → 不参与关系", () => {
+      const { forkNode, mockRoot, mockLayer } = buildForkTree();
+      const incompleteLine = new Line();
+      initNode(incompleteLine, mockRoot, mockLayer);
+      incompleteLine.linePoints = [{ x: 0, y: 0, anchor: { elementId: forkNode.id, anchorType: "center" } }];
+      forkNode.connectedLines!.add(incompleteLine.id);
+
+      forkNode.rebuildRelations();
+
+      expect(forkNode.childLineIds.has(incompleteLine.id)).toBe(false);
     });
   });
 });

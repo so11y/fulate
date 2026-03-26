@@ -158,7 +158,15 @@ export class Select extends Element {
       }
     }
 
-    this._collectForkCascade(toDelete, deletingIds);
+    for (let i = 0; i < toDelete.length; i++) {
+      const deps = toDelete[i].getCascadeDeleteElements();
+      for (const dep of deps) {
+        if (!deletingIds.has(dep.id)) {
+          toDelete.push(dep);
+          deletingIds.add(dep.id);
+        }
+      }
+    }
 
     const affected = [...toDelete];
     const passive = new Set<Element>();
@@ -184,57 +192,6 @@ export class Select extends Element {
     this.select([]);
     this.root.nextTick(() => this.root.checkHit());
     this.history.commit();
-  }
-
-  private _collectForkCascade(
-    toDelete: Element[],
-    deletingIds: Set<string>
-  ) {
-    let i = 0;
-    while (i < toDelete.length) {
-      const el = toDelete[i++];
-
-      if (el.type === "forkNode") {
-        for (const lineId of el.connectedLines ?? []) {
-          if (deletingIds.has(lineId)) continue;
-          const line = this.root?.idElements.get(lineId) as any;
-          if (!line?.linePoints) continue;
-          if (line.headPoint?.anchor?.elementId === el.id) {
-            toDelete.push(line);
-            deletingIds.add(line.id);
-          }
-        }
-      }
-
-      if (el.type === "line") {
-        const tailAnchor = (el as any).tailPoint?.anchor;
-        if (tailAnchor && !deletingIds.has(tailAnchor.elementId)) {
-          const forkNode = this.root?.idElements.get(tailAnchor.elementId);
-          if (forkNode?.type === "forkNode") {
-            toDelete.push(forkNode);
-            deletingIds.add(forkNode.id);
-          }
-        }
-
-        const headAnchor = (el as any).headPoint?.anchor;
-        if (headAnchor && !deletingIds.has(headAnchor.elementId)) {
-          const forkNode = this.root?.idElements.get(headAnchor.elementId);
-          if (forkNode?.type === "forkNode") {
-            const remaining = [...(forkNode.connectedLines ?? [])].filter(
-              (id: string) => {
-                if (deletingIds.has(id)) return false;
-                const l = this.root?.idElements.get(id) as any;
-                return l?.headPoint?.anchor?.elementId === forkNode.id;
-              }
-            );
-            if (remaining.length === 0) {
-              toDelete.push(forkNode);
-              deletingIds.add(forkNode.id);
-            }
-          }
-        }
-      }
-    }
   }
 
   // --- Lifecycle ---

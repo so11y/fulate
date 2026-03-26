@@ -7,11 +7,44 @@ export class ForkNode extends Element {
   type = "forkNode";
   immediatelyDraggable = true;
 
+  /** Line whose tail anchors into this node (the "incoming" line). */
+  parentLineId: string | null = null;
+  /** Lines whose head anchors out of this node (the "outgoing" lines). */
+  childLineIds: Set<string> = new Set();
+
   static isAnchoredTo(line: any, pointIndex: number): boolean {
     const anchor = line.linePoints?.[pointIndex]?.anchor;
     if (!anchor) return false;
     const el = line.root?.idElements.get(anchor.elementId);
     return el?.type === "forkNode";
+  }
+
+  getCascadeDeleteElements(): Element[] {
+    const result: Element[] = [];
+    for (const childId of this.childLineIds) {
+      const line = this.root?.idElements.get(childId);
+      if (line) result.push(line);
+    }
+    return result;
+  }
+
+  /**
+   * Rebuild parentLineId / childLineIds from connectedLines + anchor data.
+   * Safe to call at any time to ensure consistency.
+   */
+  rebuildRelations() {
+    this.parentLineId = null;
+    this.childLineIds.clear();
+    for (const lineId of this.connectedLines ?? []) {
+      const line = this.root?.idElements.get(lineId) as any;
+      if (!line?.linePoints || line.linePoints.length < 2) continue;
+      if (line.tailPoint?.anchor?.elementId === this.id) {
+        this.parentLineId = lineId;
+      }
+      if (line.headPoint?.anchor?.elementId === this.id) {
+        this.childLineIds.add(lineId);
+      }
+    }
   }
 
   constructor(options?: ForkNodeOption) {

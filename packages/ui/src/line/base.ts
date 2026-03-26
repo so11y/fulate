@@ -1,7 +1,23 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
 import { makeBoundingBoxFromPoints, RectWithCenter } from "@fulate/util";
-import { BaseElementOption, Element, getElementAnchorPoint } from "@fulate/core";
+import { BaseElementOption, Element } from "@fulate/core";
+import type { ForkNode } from "../fork-node";
+import {
+  connectToElement,
+  disconnectFromElement,
+  syncAllForkRelations,
+  unregisterAnchor,
+  syncAnchorPoint,
+  bindEndpoints,
+  handleSelectMoveEnd,
+  syncConnectedLines,
+  getTailForkNode,
+  getHeadForkNode,
+  getParentLine as _getParentLine,
+  getChildLines as _getChildLines,
+  getCascadeDeleteElements as _getCascadeDeleteElements
+} from "./helpers";
 
 export interface LineAnchor {
   elementId: string;
@@ -14,10 +30,14 @@ export interface LinePointData {
   anchor?: LineAnchor;
 }
 
+export type LineDecoration = "none" | "arrow" | "dot";
+
 export interface LineOption extends BaseElementOption {
   linePoints?: LinePointData[];
   strokeColor?: string;
   strokeWidth?: number;
+  headDecoration?: LineDecoration;
+  tailDecoration?: LineDecoration;
 }
 
 /**
@@ -29,6 +49,8 @@ export abstract class BaseLine extends Element {
   linePoints: LinePointData[] = [];
   strokeColor = "#333333";
   strokeWidth = 2;
+  headDecoration: LineDecoration = "none";
+  tailDecoration: LineDecoration = "arrow";
 
   private _snapshotLinePoints: LinePointData[] | null = null;
   private _snapshotWorldMatrix: DOMMatrix | null = null;
@@ -38,13 +60,18 @@ export abstract class BaseLine extends Element {
   private _syncAnchorsCallback = () => {
     if (this.syncAnchors()) {
       this.markNeedsLayout();
-      // this.layer?.syncRbush(this as any);
     }
   };
 
   private _handleTransformUpdated = () => {
     this.layer?.addPostUpdate(this._syncAnchorsCallback);
   };
+
+  private _connectEl = (el: Element) =>
+    connectToElement(this, el, this._handleTransformUpdated);
+
+  private _disconnectEl = (el: Element) =>
+    disconnectFromElement(this, el, this._handleTransformUpdated);
 
   constructor(options?: LineOption) {
     super(options);
@@ -86,12 +113,10 @@ export abstract class BaseLine extends Element {
 
   // --- Coordinate conversion ---
 
-  /** World point → local point (uses cached inverse matrix) */
   worldToLocal(wx: number, wy: number): Point {
     return this.getGlobalToLocal(new Point(wx, wy));
   }
 
-  /** Get linePoints in world coordinates (for rendering, hit-testing, etc.) */
   getWorldLinePoints(): { x: number; y: number; anchor?: LineAnchor }[] {
     const m = this.getOwnMatrix();
     return this.linePoints.map((p) => {
@@ -100,21 +125,32 @@ export abstract class BaseLine extends Element {
     });
   }
 
-  // --- Anchor connection helpers ---
+  // --- Relationship queries (delegated to helpers) ---
 
-  private _connectToElement(el: Element) {
-    (el.connectedLines ??= new Set()).add(this.id);
-    el.addEventListener("transformUpdated", this._handleTransformUpdated);
+  getTailForkNode(): ForkNode | null {
+    return getTailForkNode(this);
   }
 
-  private _disconnectFromElement(el: Element) {
-    el.connectedLines?.delete(this.id);
-    el.removeEventListener("transformUpdated", this._handleTransformUpdated);
+  getHeadForkNode(): ForkNode | null {
+    return getHeadForkNode(this);
+  }
+
+  getParentLine(): BaseLine | null {
+    return _getParentLine(this);
+  }
+
+  getChildLines(): BaseLine[] {
+    return _getChildLines(this);
+  }
+
+  getCascadeDeleteElements(): Element[] {
+    return _getCascadeDeleteElements(this);
   }
 
   // --- Point management (all accept WORLD coordinates) ---
 
   addPoint(x: number, y: number, anchor?: LineAnchor) {
+    const wasIncomplete = this.linePoints.length < 2;
     if (this.linePoints.length === 0) {
       this.left = x;
       this.top = y;
@@ -127,7 +163,10 @@ export abstract class BaseLine extends Element {
     this.markNeedsLayout();
     if (anchor && this.root) {
       const el = this.root.idElements.get(anchor.elementId);
-      if (el) this._connectToElement(el);
+      if (el) this._connectEl(el);
+    }
+    if (wasIncomplete && this.linePoints.length >= 2 && this.root) {
+      syncAllForkRelations(this);
     }
   }
 
@@ -163,14 +202,7 @@ export abstract class BaseLine extends Element {
   }
 
   _unregisterAnchor(elementId: string) {
-    if (!this.root) return;
-    const stillConnected =
-      this.headPoint.anchor?.elementId === elementId ||
-      this.tailPoint.anchor?.elementId === elementId;
-    if (!stillConnected) {
-      const el = this.root.idElements.get(elementId);
-      if (el) this._disconnectFromElement(el);
-    }
+    unregisterAnchor(this, elementId, this._disconnectEl);
   }
 
   // --- Bounds ---
@@ -181,54 +213,15 @@ export abstract class BaseLine extends Element {
       this.height = 0;
       return;
     }
-    // const worldPoints = this.getWorldLinePoints();
     const rect = makeBoundingBoxFromPoints(this.linePoints as Point[]);
     this.width = rect.width || 1;
     this.height = rect.height || 1;
   }
 
-  private _syncAnchorPoint(p: LinePointData): boolean {
-    if (!p.anchor) return false;
-    const el = this.root!.idElements.get(p.anchor.elementId);
-    if (!el) return false;
-    const pos = getElementAnchorPoint(el, p.anchor.anchorType);
-    const local = this.worldToLocal(pos.x, pos.y);
-    if (Math.abs(local.x - p.x) > 0.01 || Math.abs(local.y - p.y) > 0.01) {
-      p.x = local.x;
-      p.y = local.y;
-      return true;
-    }
-    return false;
-  }
+  // --- Anchor sync ---
 
   onSelectMoveEnd(): void {
-    if (!this.root) return;
-    let boundsChanged = false;
-    for (const p of [this.headPoint, this.tailPoint]) {
-      if (!p.anchor) continue;
-      const el = this.root.idElements.get(p.anchor.elementId);
-      if (!el) {
-        p.anchor = undefined;
-        continue;
-      }
-
-      if (el.type === "forkNode") {
-        const pos = getElementAnchorPoint(el, p.anchor.anchorType);
-        const local = this.worldToLocal(pos.x, pos.y);
-        p.x = local.x;
-        p.y = local.y;
-        boundsChanged = true;
-        continue;
-      }
-
-      const pos = getElementAnchorPoint(el, p.anchor.anchorType);
-      const local = this.worldToLocal(pos.x, pos.y);
-      if (Math.abs(local.x - p.x) > 0.01 || Math.abs(local.y - p.y) > 0.01) {
-        this._unregisterAnchor(p.anchor.elementId);
-        p.anchor = undefined;
-      }
-    }
-    if (boundsChanged) {
+    if (handleSelectMoveEnd(this, (id) => this._unregisterAnchor(id))) {
       this._syncBoundsFromPoints();
       this.markNeedsLayout();
     }
@@ -236,34 +229,13 @@ export abstract class BaseLine extends Element {
 
   syncAnchors(): boolean {
     if (!this.root) return false;
-    let changed = this._syncAnchorPoint(this.headPoint);
-    changed = this._syncAnchorPoint(this.tailPoint) || changed;
+    let changed = syncAnchorPoint(this, this.headPoint);
+    changed = syncAnchorPoint(this, this.tailPoint) || changed;
     if (changed) this._syncBoundsFromPoints();
     return changed;
   }
 
   // --- Options (history restore) ---
-
-  private _syncConnectedLines(
-    oldPoints: LinePointData[],
-    newPoints: LinePointData[]
-  ) {
-    if (!this.root) return;
-    if (oldPoints[0]?.anchor)
-      this._unregisterAnchor(oldPoints[0].anchor.elementId);
-    const oldTail =
-      oldPoints.length > 1 ? oldPoints[oldPoints.length - 1] : undefined;
-    if (oldTail?.anchor) this._unregisterAnchor(oldTail.anchor.elementId);
-
-    for (const p of [
-      newPoints[0],
-      newPoints.length > 1 ? newPoints[newPoints.length - 1] : undefined
-    ]) {
-      if (!p?.anchor) continue;
-      const el = this.root.idElements.get(p.anchor.elementId);
-      if (el) this._connectToElement(el);
-    }
-  }
 
   setOptions(options?: any, syncCalc = false) {
     if (options?.linePoints) {
@@ -275,7 +247,13 @@ export abstract class BaseLine extends Element {
         anchor: p.anchor ? { ...p.anchor } : undefined
       }));
       this._syncBoundsFromPoints();
-      this._syncConnectedLines(oldPoints, this.linePoints);
+      syncConnectedLines(
+        this,
+        oldPoints,
+        this.linePoints,
+        (id) => this._unregisterAnchor(id),
+        this._connectEl
+      );
       return this;
     }
 
@@ -336,6 +314,8 @@ export abstract class BaseLine extends Element {
     return false;
   }
 
+  // --- Group transform ---
+
   snapshotForGroup(): void {
     this._snapshotLinePoints = this.linePoints.map((p) => ({
       x: p.x,
@@ -392,35 +372,26 @@ export abstract class BaseLine extends Element {
     }));
     json.strokeColor = this.strokeColor;
     json.strokeWidth = this.strokeWidth;
+    json.headDecoration = this.headDecoration;
+    json.tailDecoration = this.tailDecoration;
     return json;
   }
 
   // --- Connected-lines lifecycle ---
 
   rebindAnchors() {
-    this._bindEndpoints(false);
-    this._bindEndpoints(true);
-  }
-
-  private _bindEndpoints(connect: boolean) {
-    const action = connect
-      ? (el: Element) => this._connectToElement(el)
-      : (el: Element) => this._disconnectFromElement(el);
-    for (const p of [this.headPoint, this.tailPoint]) {
-      if (!p.anchor) continue;
-      const el = this.root?.idElements.get(p.anchor.elementId);
-      if (el) action(el);
-    }
+    bindEndpoints(this, false, this._connectEl, this._disconnectEl);
+    bindEndpoints(this, true, this._connectEl, this._disconnectEl);
   }
 
   activate() {
     super.activate();
-    this._bindEndpoints(true);
+    bindEndpoints(this, true, this._connectEl, this._disconnectEl);
   }
 
   deactivate() {
     if (!this.shouldFastDeactivate()) {
-      this._bindEndpoints(false);
+      bindEndpoints(this, false, this._connectEl, this._disconnectEl);
     }
     super.deactivate();
   }
@@ -428,11 +399,11 @@ export abstract class BaseLine extends Element {
   mounted() {
     super.mounted();
     this._syncBoundsFromPoints();
-    this._bindEndpoints(true);
+    bindEndpoints(this, true, this._connectEl, this._disconnectEl);
   }
 
   unmounted() {
-    this._bindEndpoints(false);
+    bindEndpoints(this, false, this._connectEl, this._disconnectEl);
     super.unmounted();
   }
 }

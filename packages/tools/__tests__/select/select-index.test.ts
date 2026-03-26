@@ -187,10 +187,8 @@ describe("getActiveSchema()", () => {
 
 describe("delete()", () => {
   const realDelete = Select.prototype.delete;
-  const realCollect = (Select.prototype as any)._collectForkCascade;
 
   function setupForDelete() {
-    (select as any)._collectForkCascade = realCollect.bind(select);
     const parent = {
       children: [] as any[],
       removeChild: vi.fn(function (this: any, child: any) {
@@ -261,8 +259,6 @@ describe("delete()", () => {
   });
 
   it("group 元素 → 其 groupEls 成员也被删除", () => {
-    (select as any)._collectForkCascade = realCollect.bind(select);
-
     const member = mockElement({ type: "rect" });
     (member as any).getAffectedElements = vi.fn(() => []);
     const memberParent = {
@@ -296,24 +292,22 @@ describe("delete()", () => {
     expect(groupParent.removeChild).toHaveBeenCalledWith(group);
   });
 
-  it("forkNode → 级联删除关联 line", () => {
-    (select as any)._collectForkCascade = realCollect.bind(select);
-
-    const forkNode = mockElement({ type: "forkNode" });
-    (forkNode as any).connectedLines = new Set(["line1"]);
-    (forkNode as any).getAffectedElements = vi.fn(() => []);
-    const forkParent = { children: [forkNode], removeChild: vi.fn() };
-    (forkNode as any).parent = forkParent;
-
+  it("forkNode → 级联删除关联 line（通过 getCascadeDeleteElements）", () => {
     const line = {
       id: "line1",
       type: "line",
       linePoints: [{}],
-      headPoint: { anchor: { elementId: forkNode.id } },
       getAffectedElements: vi.fn(() => []),
+      getCascadeDeleteElements: vi.fn(() => []),
       parent: { children: [] as any[], removeChild: vi.fn() },
     };
     (line as any).parent.children.push(line);
+
+    const forkNode = mockElement({ type: "forkNode" });
+    (forkNode as any).getAffectedElements = vi.fn(() => []);
+    (forkNode as any).getCascadeDeleteElements = vi.fn(() => [line]);
+    const forkParent = { children: [forkNode], removeChild: vi.fn() };
+    (forkNode as any).parent = forkParent;
 
     select.root.idElements.set("line1", line);
 

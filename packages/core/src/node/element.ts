@@ -167,6 +167,10 @@ export class Element extends Transformable {
     return result;
   }
 
+  getCascadeDeleteElements(): Element[] {
+    return [];
+  }
+
   attrs(options: any): void {
     if (options.width !== undefined) this._hasExplicitWidth = true;
     if (options.height !== undefined) this._hasExplicitHeight = true;
