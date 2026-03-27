@@ -136,6 +136,14 @@ export class Bound implements RectWithCenter {
     return this;
   }
 
+  includePoint(x: number, y: number, padding = 0): this {
+    this.minX = Math.min(this.minX, x - padding);
+    this.minY = Math.min(this.minY, y - padding);
+    this.maxX = Math.max(this.maxX, x + padding);
+    this.maxY = Math.max(this.maxY, y + padding);
+    return this;
+  }
+
   static fromRect(r: RectWithCenter): Bound {
     return new Bound(r.left, r.top, r.left + r.width, r.top + r.height);
   }

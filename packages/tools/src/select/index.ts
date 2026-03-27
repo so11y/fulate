@@ -1,4 +1,4 @@
-import { Point, Bound } from "@fulate/util";
+import { Point } from "@fulate/util";
 import { makeBoundingBoxFromRects } from "@fulate/util";
 import { BaseElementOption, Element } from "@fulate/core";
 import { DEFAULT_RECT_SCHEMA, type ControlSchema } from "./controls";
@@ -271,24 +271,13 @@ export class Select extends Element {
     }
 
     const coords = this.getControlCoords();
-    let minX = baseRect.left;
-    let minY = baseRect.top;
-    let maxX = baseRect.left + baseRect.width;
-    let maxY = baseRect.top + baseRect.height;
-
-    const scale = this.root.viewport.scale;
-    const padding = (this.controlSize + this.hitPadding) / scale;
+    const padding = (this.controlSize + this.hitPadding) / this.root.viewport.scale;
 
     for (const p of coords) {
-      minX = Math.min(minX, p.x - padding);
-      minY = Math.min(minY, p.y - padding);
-      maxX = Math.max(maxX, p.x + padding);
-      maxY = Math.max(maxY, p.y + padding);
+      baseRect.includePoint(p.x, p.y, padding);
     }
 
-    this._boundingRectCache = new Bound(minX, minY, maxX, maxY);
-
-    return this._boundingRectCache;
+    return baseRect;
   }
 
   hasInView() {
