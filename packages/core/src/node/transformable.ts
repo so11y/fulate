@@ -7,7 +7,7 @@ import {
   transformPoint
 } from "@fulate/util";
 import { resolveOrigin } from "@fulate/util";
-import { RectWithCenter, makeBoundingBoxFromPoints } from "@fulate/util";
+import { Bound } from "@fulate/util";
 import { CustomEvent } from "../event";
 
 export interface TransformableOptions {
@@ -50,8 +50,8 @@ export class Transformable extends Node {
   protected _inverseOwnMatrixCache: DOMMatrix | null;
   protected _coords: Array<Point> | null = null;
   protected _snapPoints: Array<Point> | null = null;
-  protected _boundingRectCache: RectWithCenter | null = null;
-  _lastBoundingRect: RectWithCenter | null = null;
+  protected _boundingRectCache: Bound | null = null;
+  _lastBoundingRect: Bound | null = null;
 
   private _tempCenter = new Point(0, 0);
 
@@ -137,10 +137,10 @@ export class Transformable extends Node {
 
   // --- 几何与碰撞检测 ---
 
-  //这个是自己的范围，不包含子的，处理碰撞，检查鼠标 ，aabb
-  getBoundingRect(): RectWithCenter {
+  /** 自身的 AABB 包围盒（不含子节点），用于碰撞检测、鼠标命中等。 */
+  getBoundingRect(): Bound {
     if (this._boundingRectCache) return this._boundingRectCache;
-    this._boundingRectCache = makeBoundingBoxFromPoints(this.getCoords());
+    this._boundingRectCache = Bound.fromPoints(this.getCoords());
     return this._boundingRectCache;
   }
 
@@ -235,43 +235,18 @@ export class Transformable extends Node {
    * 清除几何缓存。
    *
    * @param trackDirtyBounds 是否将当前 _boundingRectCache 合并到 _lastBoundingRect。
-   *   - true（markNeedsLayout 调用）：记录"脏之前的渲染位置"，用于 getDirtyRect
-   *     计算需要清除的旧像素区域。使用 merge 而非覆盖，确保同一帧内多次
-   *     dirty cycle 不会丢失最初的渲染位置。
-   *   - false（updateTransform 调用）：仅清除缓存以便重新计算，
-   *     不修改 _lastBoundingRect，避免中间计算值污染脏区域追踪。
+   *   - true（markNeedsLayout）：记录脏之前的渲染位置，供 getDirtyRect 计算需要
+   *     清除的旧像素区域。使用 merge 确保同一帧多次 dirty 不丢失最初位置。
+   *   - false（updateTransform）：仅清除缓存以便重新计算，不修改 _lastBoundingRect。
    */
   private invalidateCache(trackDirtyBounds = false) {
     this._coords = null;
     this._snapPoints = null;
     if (trackDirtyBounds && this._boundingRectCache) {
       if (this._lastBoundingRect) {
-        const minX = Math.min(
-          this._lastBoundingRect.left,
-          this._boundingRectCache.left
-        );
-        const minY = Math.min(
-          this._lastBoundingRect.top,
-          this._boundingRectCache.top
-        );
-        const maxX = Math.max(
-          this._lastBoundingRect.left + this._lastBoundingRect.width,
-          this._boundingRectCache.left + this._boundingRectCache.width
-        );
-        const maxY = Math.max(
-          this._lastBoundingRect.top + this._lastBoundingRect.height,
-          this._boundingRectCache.top + this._boundingRectCache.height
-        );
-        this._lastBoundingRect = {
-          left: minX,
-          top: minY,
-          width: maxX - minX,
-          height: maxY - minY,
-          centerX: (minX + maxX) / 2,
-          centerY: (minY + maxY) / 2
-        };
+        this._lastBoundingRect.merge(this._boundingRectCache);
       } else {
-        this._lastBoundingRect = this._boundingRectCache;
+        this._lastBoundingRect = this._boundingRectCache.copy();
       }
     }
     this._boundingRectCache = null;

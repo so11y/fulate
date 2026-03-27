@@ -458,19 +458,19 @@ function updateRbushItem(node: Element) {
     node.rbushItem = null;
     return;
   }
-  const { left, top, width, height } = node.getBoundingRect();
+  const b = node.getBoundingRect();
   if (!node.rbushItem) {
     node.rbushItem = {
-      minX: left,
-      minY: top,
-      maxX: left + width,
-      maxY: top + height,
+      minX: b.minX,
+      minY: b.minY,
+      maxX: b.maxX,
+      maxY: b.maxY,
       element: node
     };
   } else {
-    node.rbushItem.minX = left;
-    node.rbushItem.minY = top;
-    node.rbushItem.maxX = left + width;
-    node.rbushItem.maxY = top + height;
+    node.rbushItem.minX = b.minX;
+    node.rbushItem.minY = b.minY;
+    node.rbushItem.maxX = b.maxX;
+    node.rbushItem.maxY = b.maxY;
   }
 }

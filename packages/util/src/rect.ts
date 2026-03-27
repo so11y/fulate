@@ -76,6 +76,65 @@ export function makeBoundingBoxFromPoints(
   };
 }
 
+export class Bound implements RectWithCenter {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+
+  constructor(minX = 0, minY = 0, maxX = 0, maxY = 0) {
+    this.minX = minX;
+    this.minY = minY;
+    this.maxX = maxX;
+    this.maxY = maxY;
+  }
+
+  get left() { return this.minX; }
+  get top() { return this.minY; }
+  get width() { return this.maxX - this.minX; }
+  get height() { return this.maxY - this.minY; }
+  get centerX() { return (this.minX + this.maxX) / 2; }
+  get centerY() { return (this.minY + this.maxY) / 2; }
+
+  merge(other: Bound): this {
+    this.minX = Math.min(this.minX, other.minX);
+    this.minY = Math.min(this.minY, other.minY);
+    this.maxX = Math.max(this.maxX, other.maxX);
+    this.maxY = Math.max(this.maxY, other.maxY);
+    return this;
+  }
+
+  copy(): Bound {
+    return new Bound(this.minX, this.minY, this.maxX, this.maxY);
+  }
+
+  copyFrom(other: Bound): this {
+    this.minX = other.minX;
+    this.minY = other.minY;
+    this.maxX = other.maxX;
+    this.maxY = other.maxY;
+    return this;
+  }
+
+  static fromRect(r: RectWithCenter): Bound {
+    return new Bound(r.left, r.top, r.left + r.width, r.top + r.height);
+  }
+
+  static fromPoints(points: { x: number; y: number }[]): Bound {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < points.length; i++) {
+      const { x, y } = points[i];
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+    return new Bound(minX, minY, maxX, maxY);
+  }
+
+  static EMPTY = new Bound(0, 0, 0, 0);
+}
+
 export interface BoundingBox {
   minX: number;
   minY: number;

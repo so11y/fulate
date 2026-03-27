@@ -1,4 +1,4 @@
-import { Point } from "@fulate/util";
+import { Point, Bound } from "@fulate/util";
 import { FulateEvent } from "../event";
 import { Transformable, TransformableOptions } from "./transformable";
 import { Tween, Easing } from "@tweenjs/tween.js";
@@ -205,41 +205,13 @@ export class Element extends Transformable {
     Object.assign(this, options);
   }
 
-  getDirtyRect() {
+  getDirtyRect(): Bound {
     if (!this._ownMatrixCache) {
-      return (
-        this._lastBoundingRect ?? {
-          left: 0,
-          top: 0,
-          width: 0,
-          height: 0,
-          centerX: 0,
-          centerY: 0
-        }
-      );
+      return this._lastBoundingRect ?? Bound.EMPTY;
     }
     const current = this.getBoundingRect();
     if (!this._lastBoundingRect) return current;
-
-    const minX = Math.min(current.left, this._lastBoundingRect.left);
-    const minY = Math.min(current.top, this._lastBoundingRect.top);
-    const maxX = Math.max(
-      current.left + current.width,
-      this._lastBoundingRect.left + this._lastBoundingRect.width
-    );
-    const maxY = Math.max(
-      current.top + current.height,
-      this._lastBoundingRect.top + this._lastBoundingRect.height
-    );
-
-    return {
-      left: minX,
-      top: minY,
-      width: maxX - minX,
-      height: maxY - minY,
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2
-    };
+    return this._lastBoundingRect.copy().merge(current);
   }
 
   paint(ctx: CanvasRenderingContext2D = this.layer.ctx) {
@@ -472,8 +444,15 @@ export class Element extends Transformable {
       const currentValue = (this as any)[key];
 
       if (isColor) {
-        startState[key] = parseColor(currentValue || "transparent");
-        endState[key] = parseColor(targetValue || "transparent");
+        const curIsObj = typeof currentValue === "object" && currentValue !== null;
+        const tarIsObj = typeof targetValue === "object" && targetValue !== null;
+        if (curIsObj || tarIsObj) {
+          startState[key] = targetValue;
+          endState[key] = targetValue;
+        } else {
+          startState[key] = parseColor(currentValue || "transparent");
+          endState[key] = parseColor(targetValue || "transparent");
+        }
       } else {
         startState[key] = currentValue ?? 0;
         endState[key] = targetValue;

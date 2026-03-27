@@ -1,6 +1,7 @@
 export { createVector, Point, transformPoint } from "./point";
 export type { TOriginX, TOriginY, PointType } from "./point";
 export {
+  Bound,
   makeBoundingBoxFromPoints,
   makeBoundsFromPoints,
   makeBoundingBoxFromRects,
