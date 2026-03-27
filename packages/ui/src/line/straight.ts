@@ -20,7 +20,7 @@ export class Line extends BaseLine {
     const wp = this.getWorldLinePoints();
 
     ctx.strokeStyle = this.strokeColor;
-    ctx.lineWidth = this.strokeWidth / scale;
+    ctx.lineWidth = this.strokeWidth;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -263,7 +263,7 @@ function getLineControlSchema(line: Line) {
       select.root.applyViewPointTransform(ctx);
 
       ctx.strokeStyle = el.strokeColor;
-      ctx.lineWidth = el.strokeWidth / scale;
+      ctx.lineWidth = el.strokeWidth;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.setLineDash([]);

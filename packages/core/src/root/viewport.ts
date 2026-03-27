@@ -3,6 +3,24 @@ import type { RectWithCenter } from "@fulate/util";
 import { CustomEvent } from "../event";
 import { Tween, Easing } from "@tweenjs/tween.js";
 
+export class Viewport {
+  x = 0;
+  y = 0;
+  scale = 1;
+  matrix = new DOMMatrix();
+
+  constructor(private _root: Root) {}
+
+  getWorldRect() {
+    return {
+      left: -this.x / this.scale,
+      top: -this.y / this.scale,
+      width: this._root.width / this.scale,
+      height: this._root.height / this.scale,
+    };
+  }
+}
+
 export function clampScale(root: Root, scale: number): number {
   return Math.max(root.minScale, Math.min(root.maxScale, scale));
 }

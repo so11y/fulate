@@ -37,6 +37,7 @@ export type { ShapeOption, BorderPosition, ShadowOption, Outset } from "./node/s
 
 // Root
 export { Root } from "./root/index";
+export { Viewport } from "./root/viewport";
 
 // Layer
 export { Layer } from "./layer/index";

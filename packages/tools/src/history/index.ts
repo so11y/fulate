@@ -186,6 +186,14 @@ export class HistoryManager {
     this._selectPrev = null;
   }
 
+  clear() {
+    this.undoStack = [];
+    this.redoStack = [];
+    this.snapshotMap.clear();
+    this._passiveElements = undefined;
+    this._selectPrev = null;
+  }
+
   pushAction(undo: () => void, redo: () => void) {
     this.undoStack.push({ undo, redo });
     if (this.undoStack.length > this.limit) {

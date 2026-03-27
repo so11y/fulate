@@ -128,11 +128,7 @@ export class Shape extends Element {
     const root = this.root;
     if (!root) return false;
 
-    const { x: vx, y: vy, scale } = root.viewport;
-    const vw = root.width / scale;
-    const vh = root.height / scale;
-    const viewLeft = -vx / scale;
-    const viewTop = -vy / scale;
+    const { left: viewLeft, top: viewTop, width: vw, height: vh } = root.viewport.getWorldRect();
 
     const m = this._ownMatrixCache;
     let inRootViewport: boolean;

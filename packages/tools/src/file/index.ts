@@ -99,6 +99,9 @@ export function restoreScene(
   root.viewport.y = 0;
   root.viewport.scale = 1;
 
+  const select = root.find<any>("select");
+  select?.history?.clear();
+
   const all = (root.children ?? []) as unknown as Element[];
   const toRemove = all.filter((c) => !filter || filter(c));
   if (toRemove.length) root.removeChild(...toRemove);

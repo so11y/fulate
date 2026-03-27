@@ -263,8 +263,7 @@ export abstract class BaseLine extends Element {
   // --- Geometry ---
 
   protected _getVisualPadding(): number {
-    const scale = this.root?.viewport?.scale || 1;
-    return Math.max(10, Math.ceil(this.strokeWidth / scale + 6 / scale));
+    return Math.max(10, Math.ceil(this.strokeWidth + 6));
   }
 
   getLocalPoints() {
@@ -284,6 +283,24 @@ export abstract class BaseLine extends Element {
 
     this._boundingRectCache = rect;
     return this._boundingRectCache;
+  }
+
+  hasInView(): boolean {
+    if (!this.visible || !this.isActiveed) return false;
+    if (this.linePoints.length < 2) return false;
+
+    const root = this.root;
+    if (!root) return false;
+
+    const { left: viewLeft, top: viewTop, width: vw, height: vh } = root.viewport.getWorldRect();
+    const { left, top, width, height } = this.getBoundingRect();
+
+    return (
+      left + width > viewLeft &&
+      left < viewLeft + vw &&
+      top + height > viewTop &&
+      top < viewTop + vh
+    );
   }
 
   hasPointHint(point: Point): boolean {

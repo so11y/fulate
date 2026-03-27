@@ -7,6 +7,7 @@ import { RectWithCenter } from "@fulate/util";
 import { Group } from "@tweenjs/tween.js";
 import { initRootEvents } from "./events";
 import {
+  Viewport,
   syncPaintedViewport,
   focusNode as focusNodeImpl,
   zoomViewport as zoomViewportImpl,
@@ -24,7 +25,7 @@ export class Root extends Node {
   container: HTMLElement;
   textDefaults: Record<string, any> = {};
 
-  viewport = { x: 0, y: 0, scale: 1, matrix: new DOMMatrix() };
+  viewport = new Viewport(this);
   currentElement?: RBushItem;
   keyElmenet = new Map<string, Element>();
   idElements = new Map<string, Element>();
@@ -201,15 +202,7 @@ export class Root extends Node {
   // ================= 坐标变换 =================
 
   getViewportRect() {
-    const { x, y, scale } = this.viewport;
-    const left = -x / scale;
-    const top = -y / scale;
-    return {
-      left,
-      top,
-      width: this.width / scale,
-      height: this.height / scale
-    };
+    return this.viewport.getWorldRect();
   }
 
   getLogicalPosition(clientX: number, clientY: number) {

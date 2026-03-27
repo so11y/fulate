@@ -13,7 +13,7 @@ export function drawDecoration(
   ctx.fillStyle = color;
 
   if (decoration === "dot") {
-    const radius = 3 / scale;
+    const radius = 3;
     ctx.beginPath();
     ctx.arc(to.x, to.y, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -21,7 +21,7 @@ export function drawDecoration(
   }
 
   if (decoration === "arrow") {
-    const arrowLen = 10 / scale;
+    const arrowLen = 10;
     const angle = Math.atan2(to.y - from.y, to.x - from.x);
     ctx.beginPath();
     ctx.moveTo(to.x, to.y);
