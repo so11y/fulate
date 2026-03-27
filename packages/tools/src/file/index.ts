@@ -11,6 +11,18 @@ export interface FileData {
   [key: string]: any;
   __fulate_file__: true;
   version: number;
+  root?: {
+    viewport?: {
+      x?: number;
+      y?: number;
+      scale?: number;
+      minScale?: number;
+      maxScale?: number;
+    };
+    textDefaults?: Record<string, any>;
+    width?: number;
+    height?: number;
+  };
   children: any[];
 }
 
@@ -39,6 +51,7 @@ export function serializeScene(
   return {
     [FILE_MARKER]: true,
     version: FILE_VERSION,
+    root: root.toJSON(),
     children,
   };
 }
@@ -95,6 +108,18 @@ export function restoreScene(
   fileData: FileData,
   filter?: ElementFilter
 ) {
+  if (fileData.root) {
+    const { viewport, textDefaults, width, height } = fileData.root;
+    if (textDefaults) Object.assign(root.textDefaults, textDefaults);
+    if (width != null && height != null) {
+      root.resize(width, height);
+    }
+    if (viewport) {
+      if (viewport.minScale != null) root.viewport.minScale = viewport.minScale;
+      if (viewport.maxScale != null) root.viewport.maxScale = viewport.maxScale;
+    }
+  }
+
   root.viewport.reset();
 
   const select = root.find<any>("select");
