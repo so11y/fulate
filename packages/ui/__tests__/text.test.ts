@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Text } from "../src/text/index";
+import { TEXT_STYLE_DEFAULTS } from "../src/text/style";
 import {
   createMockRoot,
   createMockLayer,
@@ -44,13 +45,12 @@ function createMockCtx() {
 
 /**
  * 创建可直接测试的 Text 实例。
- * Element 构造器将 options 暂存，可通过 syncProps() 立即 apply。
- * Text 自己在构造器中额外调用了 this.attrs(options)，
- * 但 width/height 等需要通过 _hasExplicitWidth 标记的逻辑仍需手动准备。
+ * mockRoot.textDefaults 已填充完整默认值。
  */
 function createText(opts?: any) {
   const t = new Text(opts);
   const mockRoot = createMockRoot();
+  mockRoot.textDefaults = { ...TEXT_STYLE_DEFAULTS };
   t._provides = { root: mockRoot };
   t._root = mockRoot as any;
   return t;
@@ -70,6 +70,7 @@ function prepareLayout(t: Text, width = 500, height = 1000) {
 function createActivatedText(opts?: any) {
   const t = new Text(opts);
   const mockRoot = createMockRoot();
+  mockRoot.textDefaults = { ...TEXT_STYLE_DEFAULTS };
   const mockLayer = createMockLayer();
   t._provides = { root: mockRoot, layer: mockLayer };
   t._root = mockRoot as any;
@@ -88,24 +89,26 @@ describe("Text 构造与默认值", () => {
     expect(createText().type).toBe("text");
   });
 
-  it("默认字体属性", () => {
+  it("默认字体属性（来自 root.textDefaults）", () => {
     const t = createText();
-    expect(t.fontSize).toBe(14);
-    expect(t.fontFamily).toBe("Arial");
-    expect(t.fontWeight).toBe("normal");
-    expect(t.fontStyle).toBe("normal");
-    expect(t.color).toBe("#000000");
+    const style = t.getResolvedTextStyle();
+    expect(style.fontSize).toBe(14);
+    expect(style.fontFamily).toBe("Arial");
+    expect(style.fontWeight).toBe("normal");
+    expect(style.fontStyle).toBe("normal");
+    expect(style.color).toBe("#000000");
   });
 
-  it("默认布局属性", () => {
+  it("默认布局属性（来自 root.textDefaults）", () => {
     const t = createText();
+    const style = t.getResolvedTextStyle();
     expect(t.text).toBe("");
-    expect(t.textAlign).toBe("center");
-    expect(t.textBaseline).toBe("top");
-    expect(t.verticalAlign).toBe("middle");
-    expect(t.underline).toBe(false);
-    expect(t.lineHeight).toBe(1.5);
-    expect(t.wordWrap).toBe(true);
+    expect(style.textAlign).toBe("center");
+    expect(style.textBaseline).toBe("top");
+    expect(style.verticalAlign).toBe("middle");
+    expect(style.underline).toBe(false);
+    expect(style.lineHeight).toBe(1.5);
+    expect(style.wordWrap).toBe(true);
     expect(t.overflow).toBe("hidden");
   });
 
@@ -167,30 +170,37 @@ describe("Text.getFontString", () => {
 describe("Text.getResolvedTextStyle", () => {
   beforeEach(() => resetNodeStatics());
 
-  it("无 textDefaults 注入 → 返回实例自身值", () => {
+  it("无显式设置 → 返回 root.textDefaults 的值", () => {
+    const t = createText();
+    const style = t.getResolvedTextStyle();
+    expect(style.fontSize).toBe(14);
+    expect(style.color).toBe("#000000");
+  });
+
+  it("显式设置 → 使用实例值", () => {
     const t = createText({ fontSize: 18, color: "#333" });
     const style = t.getResolvedTextStyle();
     expect(style.fontSize).toBe(18);
     expect(style.color).toBe("#333");
   });
 
-  it("有 textDefaults 且未显式设置 → 使用 defaults", () => {
+  it("修改 root.textDefaults → 未显式设置的属性跟着变", () => {
     const t = createText();
-    (t._root as any).textDefaults = { fontSize: 24, color: "#aaa" };
+    (t._root as any).textDefaults = { ...TEXT_STYLE_DEFAULTS, fontSize: 24, color: "#aaa" };
     const style = t.getResolvedTextStyle();
     expect(style.fontSize).toBe(24);
     expect(style.color).toBe("#aaa");
   });
 
-  it("显式设置的属性不被 defaults 覆盖", () => {
+  it("显式设置的属性不被 textDefaults 覆盖", () => {
     const t = createText({ fontSize: 18 });
-    (t._root as any).textDefaults = { fontSize: 24, color: "#aaa" };
+    (t._root as any).textDefaults = { ...TEXT_STYLE_DEFAULTS, fontSize: 24, color: "#aaa" };
     const style = t.getResolvedTextStyle();
     expect(style.fontSize).toBe(18);
     expect(style.color).toBe("#aaa");
   });
 
-  it("defaults 中未提供的 key → 使用实例值", () => {
+  it("textDefaults 中未提供的 key → 使用 TEXT_STYLE_DEFAULTS", () => {
     const t = createText();
     (t._root as any).textDefaults = { fontSize: 32 };
     const style = t.getResolvedTextStyle();
@@ -199,37 +209,30 @@ describe("Text.getResolvedTextStyle", () => {
   });
 });
 
-// ==================== attrs & explicit style tracking ====================
+// ==================== attrs & style resolution ====================
 
-describe("Text.attrs 显式样式追踪", () => {
+describe("Text.attrs 样式设置", () => {
   beforeEach(() => resetNodeStatics());
 
-  it("通过 attrs 设置 → 标记为显式，覆盖 defaults", () => {
+  it("通过 attrs 设置 → 覆盖 textDefaults", () => {
     const t = createText();
-    (t._root as any).textDefaults = { fontSize: 24 };
+    (t._root as any).textDefaults = { ...TEXT_STYLE_DEFAULTS, fontSize: 24 };
     t.attrs({ fontSize: 16 });
     expect(t.getResolvedTextStyle().fontSize).toBe(16);
   });
 
-  it("attrs 传入 undefined → 移除显式标记，回退到 defaults", () => {
+  it("attrs 传入 undefined → 回退到 textDefaults", () => {
     const t = createText({ fontSize: 16 });
-    (t._root as any).textDefaults = { fontSize: 24 };
+    (t._root as any).textDefaults = { ...TEXT_STYLE_DEFAULTS, fontSize: 24 };
     expect(t.getResolvedTextStyle().fontSize).toBe(16);
 
     t.attrs({ fontSize: undefined });
     expect(t.getResolvedTextStyle().fontSize).toBe(24);
   });
 
-  it("attrs 传入 null → 移除显式标记", () => {
-    const t = createText({ fontSize: 16 });
-    (t._root as any).textDefaults = { fontSize: 24 };
-    t.attrs({ fontSize: null });
-    expect(t.getResolvedTextStyle().fontSize).toBe(24);
-  });
-
-  it("非 TEXT_STYLE_KEYS 的属性不影响显式标记", () => {
+  it("非 TEXT_STYLE_KEYS 的属性不影响样式解析", () => {
     const t = createText();
-    (t._root as any).textDefaults = { fontSize: 24 };
+    (t._root as any).textDefaults = { ...TEXT_STYLE_DEFAULTS, fontSize: 24 };
     t.attrs({ text: "hello", width: 200 });
     expect(t.getResolvedTextStyle().fontSize).toBe(24);
     expect(t.text).toBe("hello");
@@ -367,7 +370,7 @@ describe("Text.syncTextLayout", () => {
 describe("Text.toJson", () => {
   beforeEach(() => resetNodeStatics());
 
-  it("序列化所有文本属性", () => {
+  it("序列化显式设置的文本属性", () => {
     const t = createText({
       text: "test",
       fontSize: 18,
@@ -408,6 +411,14 @@ describe("Text.toJson", () => {
 
   it("默认 text 为空字符串 → toJson 不输出 text", () => {
     expect(createText().toJson().text).toBeUndefined();
+  });
+
+  it("未显式设置的样式属性不输出到 json", () => {
+    const t = createText({ fontSize: 18 });
+    const json = t.toJson();
+    expect(json.fontSize).toBe(18);
+    expect(json.fontFamily).toBeUndefined();
+    expect(json.color).toBeUndefined();
   });
 });
 

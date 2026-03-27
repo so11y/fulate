@@ -72,6 +72,21 @@ export class Root extends Node {
     this.textDefaults = {
       color: "#000000",
       fontSize: 14,
+      fontFamily: "Arial",
+      fontWeight: "normal",
+      fontStyle: "normal",
+      textAlign: "center",
+      textBaseline: "top",
+      verticalAlign: "middle",
+      underline: false,
+      strikethrough: false,
+      lineHeight: 1.5,
+      wordWrap: true,
+      maxLines: 0,
+      letterSpacing: 0,
+      textStrokeColor: "",
+      textStrokeWidth: 0,
+      textShadow: null,
       ...options?.textStyle,
     };
   }

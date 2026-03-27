@@ -1,7 +1,7 @@
 import { Element, Shape } from "@fulate/core";
 import { Point, Bound, makeBoundingBoxFromPoints } from "@fulate/util";
 import { getMeasureContext } from "./text/measure";
-import { buildFontString, getTextDefaults } from "./text/style";
+import { buildFontString, TEXT_STYLE_DEFAULTS } from "./text/style";
 import { fitLineWithEllipsis } from "./text/layout";
 
 const DOT_RADIUS = 4;
@@ -42,12 +42,11 @@ export class AnchorIndicator extends Shape {
     font: string;
     color: string;
   } {
-    const defaults = getTextDefaults(this, {
-      fontSize: scaledFontSize ?? FONT_SIZE
-    });
+    const rootDefaults = (this.root as any)?.textDefaults ?? TEXT_STYLE_DEFAULTS;
+    const style = { ...rootDefaults, fontSize: scaledFontSize ?? FONT_SIZE };
     return {
-      font: buildFontString(defaults),
-      color: (defaults.color as string) ?? "#555"
+      font: buildFontString(style),
+      color: (rootDefaults.color as string) ?? "#555"
     };
   }
 

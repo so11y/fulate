@@ -11,15 +11,15 @@ import { enterEditing, exitEditing, setupClickToEdit } from "./editing";
 import { paintTextContent } from "./paint";
 import {
   TEXT_STYLE_KEYS,
+  TEXT_STYLE_DEFAULTS,
   type TextStyleKey,
   type TextStyleConfig,
   buildFontString,
-  getTextDefaults,
   resolveTextStyle
 } from "./style";
 
 export type { TextStyleConfig, TextStyleKey };
-export { buildFontString, getTextDefaults };
+export { buildFontString, TEXT_STYLE_DEFAULTS };
 
 export interface TextOption extends ShapeOption {
   text?: string;
@@ -53,27 +53,27 @@ export class Text extends Shape {
   type = "text";
 
   text: string = "";
-  fontSize: number = 14;
-  fontFamily: string = "Arial";
-  fontWeight: string | number = "normal";
-  fontStyle: string = "normal";
-  color: BackgroundColor = "#000000";
-  textAlign: "left" | "center" | "right" = "center";
-  textBaseline: CanvasTextBaseline = "top";
-  verticalAlign: "top" | "middle" | "bottom" = "middle";
-  underline: boolean = false;
-  strikethrough: boolean = false;
-  lineHeight: number = 1.5;
-  wordWrap: boolean = true;
+  fontSize?: number;
+  fontFamily?: string;
+  fontWeight?: string | number;
+  fontStyle?: string;
+  color?: BackgroundColor;
+  textAlign?: "left" | "center" | "right";
+  textBaseline?: CanvasTextBaseline;
+  verticalAlign?: "top" | "middle" | "bottom";
+  underline?: boolean;
+  strikethrough?: boolean;
+  lineHeight?: number;
+  wordWrap?: boolean;
   maxLines?: number;
   overflow: "hidden" | "visible" = "hidden";
   editable: boolean = false;
   placeholder: string = "";
   placeholderColor: string = "";
-  letterSpacing: number = 0;
-  textStrokeColor: string = "";
-  textStrokeWidth: number = 0;
-  textShadow: ShadowOption | null = null;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  textShadow?: ShadowOption | null;
   fitWidth = true;
   fitHeight = true;
 
@@ -88,7 +88,6 @@ export class Text extends Shape {
   _selAnchor = -1;
 
   private _clickToEditRemove: (() => void) | null = null;
-  private _explicitTextStyle = new Set<TextStyleKey>();
   _lines: string[] = [];
   _textHeight: number = 0;
 
@@ -105,33 +104,13 @@ export class Text extends Shape {
 
   // ───────── style resolution ─────────
 
-  private syncExplicitTextStyle(options: any) {
-    if (!options) return;
-    this._explicitTextStyle ??= new Set<TextStyleKey>();
-    for (const key of TEXT_STYLE_KEYS) {
-      if (Object.prototype.hasOwnProperty.call(options, key)) {
-        if (options[key] === undefined || options[key] === null) {
-          this._explicitTextStyle.delete(key);
-        } else {
-          this._explicitTextStyle.add(key);
-        }
-      }
-    }
-  }
-
   getResolvedTextStyle(): ResolvedTextStyle {
-    this._explicitTextStyle ??= new Set<TextStyleKey>();
-    const defaults = getTextDefaults(this);
-    return resolveTextStyle(this as any, defaults, this._explicitTextStyle);
+    const defaults = (this.root as any)?.textDefaults ?? TEXT_STYLE_DEFAULTS;
+    return resolveTextStyle(this as any, defaults);
   }
 
   getFontString(style = this.getResolvedTextStyle()) {
     return buildFontString(style);
-  }
-
-  attrs(options: any) {
-    this.syncExplicitTextStyle(options);
-    super.attrs(options);
   }
 
   // ───────── layout ─────────
@@ -261,27 +240,15 @@ export class Text extends Shape {
   toJson(includeChildren = false) {
     const json = super.toJson(includeChildren) as any;
     if (this.text !== "") json.text = this.text;
-    if (this.fontSize !== 14) json.fontSize = this.fontSize;
-    if (this.fontFamily !== "Arial") json.fontFamily = this.fontFamily;
-    if (this.fontWeight !== "normal") json.fontWeight = this.fontWeight;
-    if (this.fontStyle !== "normal") json.fontStyle = this.fontStyle;
-    if (this.color !== "#000000") json.color = this.color;
-    if (this.textAlign !== "center") json.textAlign = this.textAlign;
-    if (this.textBaseline !== "top") json.textBaseline = this.textBaseline;
-    if (this.verticalAlign !== "middle") json.verticalAlign = this.verticalAlign;
-    if (this.underline !== false) json.underline = this.underline;
-    if (this.strikethrough !== false) json.strikethrough = this.strikethrough;
-    if (this.lineHeight !== 1.5) json.lineHeight = this.lineHeight;
-    if (this.wordWrap !== true) json.wordWrap = this.wordWrap;
-    if (this.maxLines !== undefined) json.maxLines = this.maxLines;
+    for (const key of TEXT_STYLE_KEYS) {
+      if (this[key] !== undefined) {
+        json[key] = this[key];
+      }
+    }
     if (this.overflow !== "hidden") json.overflow = this.overflow;
     if (this.editable !== false) json.editable = this.editable;
     if (this.placeholder !== "") json.placeholder = this.placeholder;
     if (this.placeholderColor !== "") json.placeholderColor = this.placeholderColor;
-    if (this.letterSpacing !== 0) json.letterSpacing = this.letterSpacing;
-    if (this.textStrokeColor !== "") json.textStrokeColor = this.textStrokeColor;
-    if (this.textStrokeWidth !== 0) json.textStrokeWidth = this.textStrokeWidth;
-    if (this.textShadow !== null) json.textShadow = this.textShadow;
     return json;
   }
 

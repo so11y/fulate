@@ -21,63 +21,46 @@ export interface TextStyleConfig {
   textShadow?: ShadowOption | null;
 }
 
+export const TEXT_STYLE_DEFAULTS: Required<TextStyleConfig> = {
+  color: "#000000",
+  fontSize: 14,
+  fontFamily: "Arial",
+  fontWeight: "normal",
+  fontStyle: "normal",
+  textAlign: "center",
+  textBaseline: "top",
+  verticalAlign: "middle",
+  underline: false,
+  strikethrough: false,
+  lineHeight: 1.5,
+  wordWrap: true,
+  maxLines: 0,
+  letterSpacing: 0,
+  textStrokeColor: "",
+  textStrokeWidth: 0,
+  textShadow: null,
+};
+
+export const TEXT_STYLE_KEYS = Object.keys(TEXT_STYLE_DEFAULTS) as readonly TextStyleKey[];
+
+export type TextStyleKey = keyof TextStyleConfig;
+
 export function buildFontString(style: {
   fontStyle?: string;
   fontWeight?: string | number;
   fontSize?: number;
   fontFamily?: string;
 }) {
-  const fs = style.fontStyle ?? "normal";
-  const fw = style.fontWeight ?? "normal";
-  const size = style.fontSize ?? 14;
-  const ff = style.fontFamily ?? "Arial, sans-serif";
-  return `${fs} ${fw} ${size}px ${ff}`;
+  return `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px ${style.fontFamily}`;
 }
-
-export function getTextDefaults(
-  node: Node,
-  overrides?: Partial<TextStyleConfig>
-): TextStyleConfig {
-  const base = (node.root as any)?.textDefaults ?? {};
-  if (!overrides) return { ...base };
-  return { ...base, ...overrides };
-}
-
-export const TEXT_STYLE_KEYS = [
-  "color",
-  "fontSize",
-  "fontFamily",
-  "fontWeight",
-  "fontStyle",
-  "textAlign",
-  "textBaseline",
-  "verticalAlign",
-  "underline",
-  "strikethrough",
-  "lineHeight",
-  "wordWrap",
-  "maxLines",
-  "letterSpacing",
-  "textStrokeColor",
-  "textStrokeWidth",
-  "textShadow"
-] as const;
-
-export type TextStyleKey = (typeof TEXT_STYLE_KEYS)[number];
 
 export function resolveTextStyle(
-  current: Record<string, any>,
-  defaults: Record<string, any>,
-  explicit: Set<string>
+  instance: Record<string, any>,
+  defaults: Record<string, any>
 ): Required<TextStyleConfig> {
   const resolved = {} as any;
   for (const key of TEXT_STYLE_KEYS) {
-    const currentValue = current[key];
-    const defaultValue = defaults[key];
-    resolved[key] =
-      explicit.has(key) || defaultValue === undefined
-        ? currentValue
-        : defaultValue;
+    resolved[key] = instance[key] ?? defaults[key] ?? TEXT_STYLE_DEFAULTS[key];
   }
   return resolved;
 }
