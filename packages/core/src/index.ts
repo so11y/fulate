@@ -34,6 +34,13 @@ export type {
 } from "./utils/anchor";
 export { Shape } from "./node/shape";
 export type { ShapeOption, BorderPosition, ShadowOption, Outset } from "./node/shape";
+export { isGradient, createCanvasGradient } from "./utils/gradient";
+export type {
+  GradientType,
+  GradientStop,
+  GradientOption,
+  BackgroundColor
+} from "./utils/gradient";
 
 // Root
 export { Root } from "./root/index";

@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Element, registerElement } from "@fulate/core";
+import type { Root } from "@fulate/core";
 import {
+  serializeScene,
+  serializeSceneToJSON,
   deserializeElement,
   isValidFileData,
   parseFileData,
   exportToFile,
-  serializeSceneToJSON,
+  restoreScene,
 } from "../../src/file/index";
-import type { FileData } from "../../src/file/index";
+import type { ElementFilter, FileData } from "../../src/file/index";
 
 // ─── Mock Element ────────────────────────────────────────────
 
@@ -54,9 +57,114 @@ function createEl(
   Ctor: new (opts?: any) => Element,
   overrides: Record<string, any> = {}
 ) {
-  const el = new Ctor({ left: 0, top: 0, width: 100, height: 100, ...overrides }).syncProps();
-  return el;
+  return new Ctor({ left: 0, top: 0, width: 100, height: 100, ...overrides }).syncProps();
 }
+
+function createMockRoot(children: Element[] = []): Root {
+  return {
+    children,
+    toJSON: () => ({
+      viewport: { x: 0, y: 0, scale: 1 },
+      textDefaults: {},
+      width: 800,
+      height: 600,
+    }),
+    find: vi.fn(() => null),
+    viewport: { reset: vi.fn(), minScale: 0.1, maxScale: 10 },
+    textDefaults: {},
+    resize: vi.fn(),
+    removeChild: vi.fn(),
+    append: vi.fn(),
+    requestRender: vi.fn(),
+  } as any;
+}
+
+// ─── serializeScene ──────────────────────────────────────────
+
+describe("serializeScene", () => {
+  it("序列化单个元素", () => {
+    const rect = createEl(MockRect, { left: 10, top: 20, width: 50, height: 30 });
+    const root = createMockRoot([rect]);
+    const result = serializeScene(root);
+
+    expect(result.__fulate_file__).toBe(true);
+    expect(result.version).toBe(1);
+    expect(result.children).toHaveLength(1);
+    expect(result.children[0].type).toBe("rect");
+    expect(result.children[0].left).toBe(10);
+  });
+
+  it("序列化多个元素", () => {
+    const rect = createEl(MockRect);
+    const circle = createEl(MockCircle);
+    const text = createEl(MockText, { text: "hello" });
+    const root = createMockRoot([rect, circle, text]);
+    const result = serializeScene(root);
+
+    expect(result.children).toHaveLength(3);
+    expect(result.children[0].type).toBe("rect");
+    expect(result.children[1].type).toBe("circle");
+    expect(result.children[2].type).toBe("text");
+  });
+
+  it("空元素数组 → 返回空 children", () => {
+    const root = createMockRoot([]);
+    const result = serializeScene(root);
+    expect(result.__fulate_file__).toBe(true);
+    expect(result.children).toHaveLength(0);
+  });
+
+  it("传入过滤函数 → 过滤掉不需要的元素", () => {
+    const rect = createEl(MockRect);
+    const circle = createEl(MockCircle);
+    const text = createEl(MockText);
+    const root = createMockRoot([rect, circle, text]);
+    const filter: ElementFilter = (el) => el.type !== "circle";
+
+    const result = serializeScene(root, filter);
+    expect(result.children).toHaveLength(2);
+    expect(result.children.every((e: any) => e.type !== "circle")).toBe(true);
+  });
+
+  it("过滤函数过滤掉全部 → children 为空", () => {
+    const rect = createEl(MockRect);
+    const root = createMockRoot([rect]);
+    const result = serializeScene(root, () => false);
+    expect(result.children).toHaveLength(0);
+  });
+
+  it("保留元素自定义属性", () => {
+    const rect = createEl(MockRect, { backgroundColor: "#ff0000" });
+    const root = createMockRoot([rect]);
+    const result = serializeScene(root);
+    expect(result.children[0].backgroundColor).toBe("#ff0000");
+  });
+});
+
+// ─── serializeSceneToJSON ────────────────────────────────────
+
+describe("serializeSceneToJSON", () => {
+  it("返回合法 JSON 字符串", () => {
+    const rect = createEl(MockRect, { left: 5, top: 10 });
+    const root = createMockRoot([rect]);
+    const json = serializeSceneToJSON(root);
+
+    const parsed = JSON.parse(json);
+    expect(parsed.__fulate_file__).toBe(true);
+    expect(parsed.children).toHaveLength(1);
+  });
+
+  it("支持过滤函数", () => {
+    const rect = createEl(MockRect);
+    const circle = createEl(MockCircle);
+    const root = createMockRoot([rect, circle]);
+    const json = serializeSceneToJSON(root, (el) => el.type === "rect");
+
+    const parsed = JSON.parse(json);
+    expect(parsed.children).toHaveLength(1);
+    expect(parsed.children[0].type).toBe("rect");
+  });
+});
 
 // ─── deserializeElement ─────────────────────────────────────
 
@@ -107,7 +215,7 @@ describe("deserializeElement", () => {
     };
     const el = deserializeElement(data);
     expect(el).toBeDefined();
-    expect(el!.children).toHaveLength(2);
+    expect((el as any).children).toHaveLength(2);
   });
 
   it("children 中部分 type 未注册 → 只保留成功的", () => {
@@ -123,7 +231,7 @@ describe("deserializeElement", () => {
     };
     const el = deserializeElement(data);
     expect(el).toBeDefined();
-    expect(el!.children).toHaveLength(2);
+    expect((el as any).children).toHaveLength(2);
   });
 
   it("空 children 数组 → 不挂载子元素", () => {
@@ -205,6 +313,59 @@ describe("parseFileData", () => {
   });
 });
 
+// ─── restoreScene ────────────────────────────────────────────
+
+describe("restoreScene", () => {
+  it("合法 FileData → 调用 root.append 添加元素", () => {
+    const root = createMockRoot([]);
+    const fileData: FileData = {
+      __fulate_file__: true,
+      version: 1,
+      children: [
+        { type: "rect", left: 10, top: 20, width: 50, height: 30 },
+        { type: "circle", left: 40, top: 50 },
+      ],
+    };
+    restoreScene(root, fileData);
+
+    expect(root.append).toHaveBeenCalledOnce();
+    const appendedEls = (root.append as any).mock.calls[0];
+    expect(appendedEls).toHaveLength(2);
+    expect(appendedEls[0].type).toBe("rect");
+    expect(appendedEls[0].left).toBe(10);
+    expect(appendedEls[1].type).toBe("circle");
+  });
+
+  it("children 中部分 type 未注册 → 跳过", () => {
+    const root = createMockRoot([]);
+    const fileData: FileData = {
+      __fulate_file__: true,
+      version: 1,
+      children: [
+        { type: "rect", left: 0, top: 0 },
+        { type: "not-registered", left: 0, top: 0 },
+      ],
+    };
+    restoreScene(root, fileData);
+
+    expect(root.append).toHaveBeenCalledOnce();
+    const appendedEls = (root.append as any).mock.calls[0];
+    expect(appendedEls).toHaveLength(1);
+    expect(appendedEls[0].type).toBe("rect");
+  });
+
+  it("空 children → 不调用 append", () => {
+    const root = createMockRoot([]);
+    const fileData: FileData = {
+      __fulate_file__: true,
+      version: 1,
+      children: [],
+    };
+    restoreScene(root, fileData);
+    expect(root.append).not.toHaveBeenCalled();
+  });
+});
+
 // ─── exportToFile ───────────────────────────────────────────
 
 describe("exportToFile", () => {
@@ -217,8 +378,8 @@ describe("exportToFile", () => {
     revokeObjectURLSpy = vi.fn();
     clickSpy = vi.fn();
 
-    globalThis.URL.createObjectURL = createObjectURLSpy;
-    globalThis.URL.revokeObjectURL = revokeObjectURLSpy;
+    globalThis.URL.createObjectURL = createObjectURLSpy as any;
+    globalThis.URL.revokeObjectURL = revokeObjectURLSpy as any;
 
     vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
       if (tag === "a") {
@@ -230,7 +391,8 @@ describe("exportToFile", () => {
 
   it("创建下载链接并点击", () => {
     const rect = createEl(MockRect, { left: 10, top: 20 });
-    exportToFile([rect]);
+    const root = createMockRoot([rect]);
+    exportToFile(root);
 
     expect(createObjectURLSpy).toHaveBeenCalledOnce();
     expect(clickSpy).toHaveBeenCalledOnce();
@@ -239,6 +401,7 @@ describe("exportToFile", () => {
 
   it("使用自定义文件名", () => {
     const rect = createEl(MockRect);
+    const root = createMockRoot([rect]);
     let downloadName = "";
     vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
       if (tag === "a") {
@@ -252,23 +415,26 @@ describe("exportToFile", () => {
       return document.createElement(tag);
     });
 
-    exportToFile([rect], "my-design.json");
+    exportToFile(root, "my-design.json");
     expect(downloadName).toBe("my-design.json");
   });
 
   it("传入过滤函数 → 只导出过滤后的元素", () => {
     const rect = createEl(MockRect);
     const circle = createEl(MockCircle);
+    const root = createMockRoot([rect, circle]);
 
     let blobContent = "";
-    globalThis.URL.createObjectURL = vi.fn((blob: Blob) => {
+    const customCreateURL = vi.fn((blob: Blob) => {
       blob.text().then((t) => (blobContent = t));
       return "blob:mock";
     });
+    globalThis.URL.createObjectURL = customCreateURL as any;
 
-    exportToFile([rect, circle], "test.json", (el) => el.type === "rect");
+    exportToFile(root, "test.json", (el) => el.type === "rect");
 
     expect(createObjectURLSpy).not.toHaveBeenCalled();
+    expect(customCreateURL).toHaveBeenCalledOnce();
   });
 });
 
@@ -284,15 +450,21 @@ describe("serialize → deserialize roundtrip", () => {
       backgroundColor: "#abcdef",
     });
 
-    const json = serializeToJSON([rect]);
-    const els = importFromJSON(json);
+    const root = createMockRoot([rect]);
+    const json = serializeSceneToJSON(root);
+    const fileData = parseFileData(json);
+    expect(fileData).not.toBeNull();
+
+    const els = fileData!.children
+      .map((d: any) => deserializeElement(d))
+      .filter(Boolean);
 
     expect(els).toHaveLength(1);
-    expect(els[0].type).toBe("rect");
-    expect(els[0].left).toBe(42);
-    expect(els[0].top).toBe(84);
-    expect(els[0].width).toBe(200);
-    expect(els[0].height).toBe(150);
+    expect(els[0]!.type).toBe("rect");
+    expect(els[0]!.left).toBe(42);
+    expect(els[0]!.top).toBe(84);
+    expect(els[0]!.width).toBe(200);
+    expect(els[0]!.height).toBe(150);
   });
 
   it("多元素往返", () => {
@@ -300,40 +472,43 @@ describe("serialize → deserialize roundtrip", () => {
     const circle = createEl(MockCircle, { left: 30, top: 40 });
     const text = createEl(MockText, { left: 50, top: 60, text: "hello" });
 
-    const json = serializeToJSON([rect, circle, text]);
-    const els = importFromJSON(json);
+    const root = createMockRoot([rect, circle, text]);
+    const json = serializeSceneToJSON(root);
+    const fileData = parseFileData(json);
+    expect(fileData).not.toBeNull();
+
+    const els = fileData!.children
+      .map((d: any) => deserializeElement(d))
+      .filter(Boolean);
 
     expect(els).toHaveLength(3);
-    expect(els[0].type).toBe("rect");
-    expect(els[1].type).toBe("circle");
-    expect(els[2].type).toBe("text");
+    expect(els[0]!.type).toBe("rect");
+    expect(els[1]!.type).toBe("circle");
+    expect(els[2]!.type).toBe("text");
   });
 
   it("序列化时过滤 → 反序列化不含被过滤元素", () => {
     const rect = createEl(MockRect);
     const circle = createEl(MockCircle);
 
-    const json = serializeToJSON([rect, circle], (el) => el.type !== "circle");
-    const els = importFromJSON(json);
+    const root = createMockRoot([rect, circle]);
+    const json = serializeSceneToJSON(root, (el) => el.type !== "circle");
+    const fileData = parseFileData(json);
+    expect(fileData).not.toBeNull();
+
+    const els = fileData!.children
+      .map((d: any) => deserializeElement(d))
+      .filter(Boolean);
 
     expect(els).toHaveLength(1);
-    expect(els[0].type).toBe("rect");
-  });
-
-  it("反序列化时过滤 → 只返回匹配的元素", () => {
-    const rect = createEl(MockRect);
-    const circle = createEl(MockCircle);
-
-    const json = serializeToJSON([rect, circle]);
-    const els = importFromJSON(json, (el) => el.type === "circle");
-
-    expect(els).toHaveLength(1);
-    expect(els[0].type).toBe("circle");
+    expect(els[0]!.type).toBe("rect");
   });
 
   it("空列表往返", () => {
-    const json = serializeToJSON([]);
-    const els = importFromJSON(json);
-    expect(els).toHaveLength(0);
+    const root = createMockRoot([]);
+    const json = serializeSceneToJSON(root);
+    const fileData = parseFileData(json);
+    expect(fileData).not.toBeNull();
+    expect(fileData!.children).toHaveLength(0);
   });
 });

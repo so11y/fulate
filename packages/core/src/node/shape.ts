@@ -1,5 +1,14 @@
 import { Element, BaseElementOption } from "./element";
 import { Point } from "@fulate/util";
+import {
+  isGradient,
+  createCanvasGradient,
+  type GradientOption,
+  type BackgroundColor
+} from "../utils/gradient";
+
+export { isGradient };
+export type { GradientType, GradientStop, GradientOption, BackgroundColor } from "../utils/gradient";
 
 export type BorderPosition = "inside" | "outside";
 
@@ -18,7 +27,7 @@ export interface Outset {
 }
 
 export interface ShapeOption<T = Shape> extends BaseElementOption<T> {
-  backgroundColor?: string | null;
+  backgroundColor?: BackgroundColor | null;
   borderColor?: string | null;
   borderWidth?: number;
   borderPosition?: BorderPosition;
@@ -28,7 +37,7 @@ export interface ShapeOption<T = Shape> extends BaseElementOption<T> {
 }
 
 export class Shape extends Element {
-  backgroundColor: string | null = null;
+  backgroundColor: BackgroundColor | null = null;
   borderColor: string | null = null;
   borderWidth: number = 0;
   borderPosition: BorderPosition = "inside";
@@ -232,7 +241,11 @@ export class Shape extends Element {
   protected paintBackground(ctx: CanvasRenderingContext2D) {
     if (!this.backgroundColor) return;
     this.buildPath(ctx);
-    ctx.fillStyle = this.backgroundColor;
+    if (isGradient(this.backgroundColor)) {
+      ctx.fillStyle = createCanvasGradient(ctx, this.backgroundColor, this.width!, this.height!);
+    } else {
+      ctx.fillStyle = this.backgroundColor;
+    }
     ctx.fill();
   }
 

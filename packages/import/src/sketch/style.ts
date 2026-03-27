@@ -4,8 +4,9 @@ import type {
   SketchFill,
   SketchBorder,
   SketchShadow,
+  SketchGradient,
 } from "./types";
-import type { ShapeOption, ShadowOption, BorderPosition } from "@fulate/core";
+import type { ShapeOption, ShadowOption, BorderPosition, GradientOption } from "@fulate/core";
 
 export function sketchColorToCSS(c: SketchColor): string {
   const r = Math.round(c.red * 255);
@@ -32,14 +33,15 @@ export function convertStyle(style: SketchStyle | undefined): StyleConvertResult
     props.opacity = parseFloat(opacity.toFixed(3));
   }
 
-  // fill — take first enabled solid fill
-  const fill = findFirstEnabled(style.fills, (f) => f.fillType === 0);
-  if (fill) {
-    props.backgroundColor = sketchColorToCSS(fill.color);
-  }
+  // fill — prefer gradient, fallback to solid
   const gradientFill = findFirstEnabled(style.fills, (f) => f.fillType === 1);
-  if (gradientFill) {
-    warnings.push("Gradient fill not supported, using first solid fill or skipping");
+  if (gradientFill?.gradient) {
+    props.backgroundColor = convertGradient(gradientFill.gradient);
+  } else {
+    const fill = findFirstEnabled(style.fills, (f) => f.fillType === 0);
+    if (fill) {
+      props.backgroundColor = sketchColorToCSS(fill.color);
+    }
   }
 
   // border — take first enabled solid border
@@ -81,6 +83,27 @@ function convertShadow(s: SketchShadow): ShadowOption {
     offsetX: s.offsetX,
     offsetY: s.offsetY,
   };
+}
+
+function convertGradient(sg: SketchGradient): GradientOption {
+  const from = parseSketchNormalizedPoint(sg.from);
+  const to = parseSketchNormalizedPoint(sg.to);
+  return {
+    type: sg.gradientType === 0 ? "linear" : "radial",
+    from,
+    to,
+    ...(sg.gradientType === 1 ? { center: from, radius: 0.5 } : {}),
+    stops: sg.stops.map((s) => ({
+      color: sketchColorToCSS(s.color),
+      position: s.position,
+    })),
+  };
+}
+
+function parseSketchNormalizedPoint(str: string): { x: number; y: number } {
+  const match = str.match(/\{([^,]+),\s*([^}]+)\}/);
+  if (!match) return { x: 0.5, y: 0.5 };
+  return { x: parseFloat(match[1]), y: parseFloat(match[2]) };
 }
 
 function findFirstEnabled<T extends { isEnabled: boolean }>(

@@ -1,10 +1,30 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { store, refreshSelection } from "../store";
+import type { GradientOption, GradientStop } from "@fulate/core";
 
 const props = computed(() => store.selectedProps);
 const count = computed(() => store.selectedElements.length);
 const isMulti = computed(() => count.value >= 2);
+
+const fillMode = ref<"solid" | "linear" | "radial">("solid");
+const gradAngle = ref(90);
+const gradStops = ref<GradientStop[]>([
+  { color: "#667eea", position: 0 },
+  { color: "#764ba2", position: 1 },
+]);
+
+watch(props, (p) => {
+  if (!p) return;
+  if (p.backgroundGradient) {
+    const g = p.backgroundGradient as GradientOption;
+    fillMode.value = g.type;
+    gradAngle.value = g.angle ?? 90;
+    gradStops.value = g.stops.map((s: GradientStop) => ({ ...s }));
+  } else {
+    fillMode.value = "solid";
+  }
+}, { immediate: true });
 
 function updateProp(key: string, value: any) {
   const select = store.select;
@@ -41,6 +61,54 @@ function onColorInput(key: string, e: Event) {
 function onRangeInput(key: string, e: Event) {
   const input = e.target as HTMLInputElement;
   updateProp(key, Number(input.value));
+}
+
+function onFillModeChange(mode: "solid" | "linear" | "radial") {
+  fillMode.value = mode;
+  if (mode === "solid") {
+    updateProp("backgroundColor", gradStops.value[0]?.color ?? "#ffffff");
+  } else {
+    applyGradient();
+  }
+}
+
+function applyGradient() {
+  const mode = fillMode.value;
+  if (mode === "solid") return;
+
+  const g: GradientOption = {
+    type: mode,
+    stops: gradStops.value,
+    ...(mode === "linear" ? { angle: gradAngle.value } : { center: { x: 0.5, y: 0.5 }, radius: 0.5 }),
+  };
+  updateProp("backgroundColor", g);
+}
+
+function onGradAngle(e: Event) {
+  gradAngle.value = Number((e.target as HTMLInputElement).value);
+  applyGradient();
+}
+
+function onStopColor(idx: number, e: Event) {
+  gradStops.value[idx].color = (e.target as HTMLInputElement).value;
+  applyGradient();
+}
+
+function onStopPosition(idx: number, e: Event) {
+  gradStops.value[idx].position = Number((e.target as HTMLInputElement).value);
+  applyGradient();
+}
+
+function addStop() {
+  const last = gradStops.value[gradStops.value.length - 1];
+  gradStops.value.push({ color: last?.color ?? "#ffffff", position: 1 });
+  applyGradient();
+}
+
+function removeStop(idx: number) {
+  if (gradStops.value.length <= 2) return;
+  gradStops.value.splice(idx, 1);
+  applyGradient();
 }
 
 function align(type: string) {
@@ -99,14 +167,46 @@ function align(type: string) {
               Number(props.opacity).toFixed(2)
             }}</span>
           </div>
-          <div class="prop-row" v-if="props.backgroundColor !== undefined">
+
+          <!-- Fill mode selector -->
+          <div class="prop-row full" v-if="props.backgroundColor !== undefined || props.backgroundGradient !== null">
             <label>填充</label>
+            <div class="fill-mode-tabs">
+              <button :class="{ active: fillMode === 'solid' }" @click="onFillModeChange('solid')">纯色</button>
+              <button :class="{ active: fillMode === 'linear' }" @click="onFillModeChange('linear')">线性</button>
+              <button :class="{ active: fillMode === 'radial' }" @click="onFillModeChange('radial')">径向</button>
+            </div>
+          </div>
+
+          <!-- Solid color -->
+          <div class="prop-row full" v-if="fillMode === 'solid' && props.backgroundColor !== undefined">
+            <label>颜色</label>
             <div class="color-wrap">
               <input type="color" :value="props.backgroundColor || '#ffffff'"
                 @input="onColorInput('backgroundColor', $event)" />
               <span class="color-hex">{{ props.backgroundColor }}</span>
             </div>
           </div>
+
+          <!-- Gradient config -->
+          <template v-if="fillMode !== 'solid'">
+            <div class="prop-row full" v-if="fillMode === 'linear'">
+              <label>角度</label>
+              <input type="range" min="0" max="360" step="1" :value="gradAngle" @input="onGradAngle" />
+              <span class="range-val">{{ gradAngle }}°</span>
+            </div>
+            <div class="gradient-stops">
+              <div class="stop-row" v-for="(stop, idx) in gradStops" :key="idx">
+                <input type="color" :value="stop.color" @input="onStopColor(idx, $event)" />
+                <input type="range" min="0" max="1" step="0.01" :value="stop.position"
+                  @input="onStopPosition(idx, $event)" class="stop-pos" />
+                <span class="stop-val">{{ (stop.position * 100).toFixed(0) }}%</span>
+                <button class="stop-remove" v-if="gradStops.length > 2" @click="removeStop(idx)">×</button>
+              </div>
+              <button class="stop-add" @click="addStop">+ 添加色标</button>
+            </div>
+          </template>
+
           <div class="prop-row" v-if="props.radius !== undefined">
             <label>圆角</label>
             <input type="number" :value="props.radius" @change="onNumberInput('radius', $event)" min="0" />
@@ -348,5 +448,102 @@ function align(type: string) {
   margin-top: 16px;
   font-size: 11px;
   color: #ccc;
+}
+
+.fill-mode-tabs {
+  display: flex;
+  gap: 2px;
+  background: #eee;
+  border-radius: 5px;
+  padding: 2px;
+  flex: 1;
+}
+
+.fill-mode-tabs button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 3px 0;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.15s;
+}
+
+.fill-mode-tabs button.active {
+  background: #fff;
+  color: #1a73e8;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.gradient-stops {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.stop-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stop-row input[type="color"] {
+  width: 24px;
+  height: 22px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 1px;
+  cursor: pointer;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.stop-pos {
+  flex: 1;
+  height: 4px;
+}
+
+.stop-val {
+  font-size: 10px;
+  color: #888;
+  min-width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stop-remove {
+  border: none;
+  background: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.stop-remove:hover {
+  color: #e74c3c;
+}
+
+.stop-add {
+  border: 1px dashed #ddd;
+  background: none;
+  padding: 3px 0;
+  font-size: 11px;
+  color: #999;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.stop-add:hover {
+  border-color: #1a73e8;
+  color: #1a73e8;
 }
 </style>

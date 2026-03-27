@@ -1,5 +1,6 @@
 import { reactive, markRaw } from "vue";
 import type { Root, Artboard, Element } from "@fulate/core";
+import { isGradient } from "@fulate/core";
 import type { Select } from "@fulate/tools";
 
 export const store = reactive({
@@ -28,6 +29,8 @@ export function refreshSelection() {
 
   if (select.selectEls.length === 1) {
     const el = select.selectEls[0];
+    const bg = (el as any).backgroundColor ?? null;
+    const bgIsGradient = bg !== null && isGradient(bg);
     store.selectedProps = {
       type: el.type,
       left: Math.round(el.left),
@@ -36,7 +39,8 @@ export function refreshSelection() {
       height: Math.round(el.height ?? 0),
       angle: Math.round(el.angle ?? 0),
       opacity: (el as any).opacity ?? 1,
-      backgroundColor: (el as any).backgroundColor ?? null,
+      backgroundColor: bgIsGradient ? null : bg,
+      backgroundGradient: bgIsGradient ? bg : null,
       borderColor: (el as any).borderColor ?? null,
       borderWidth: (el as any).borderWidth ?? 0,
       radius: (el as any).radius ?? 0,
