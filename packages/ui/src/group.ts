@@ -93,7 +93,7 @@ export class Group extends Element {
     return;
   }
 
-  toJson(includeChildren = false): BaseElementOption {
+  toJson(includeChildren = false): BaseElementOption<any> {
     const json = super.toJson(includeChildren) as any;
     if (includeChildren && this.groupEls.length) {
       const layers = this.root?.layers;

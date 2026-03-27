@@ -80,12 +80,7 @@ export function deserializeElement(data: any): Element | undefined {
   if (!Ctor) return;
 
   delete props.key;
-  const el = new Ctor(props);
-
-  if ((el as any)._initProps) {
-    el.attrs((el as any)._initProps);
-    (el as any)._initProps = null;
-  }
+  const el = new Ctor(props).syncProps();
 
   if (children?.length) {
     const deserialized = children

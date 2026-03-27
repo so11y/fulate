@@ -269,7 +269,7 @@ export class Shape extends Element {
     ctx.restore();
   }
 
-  toJson(includeChildren = false): ShapeOption {
+  toJson(includeChildren = false): ShapeOption<any> {
     const json = super.toJson(includeChildren) as any;
     if (this.backgroundColor !== null) json.backgroundColor = this.backgroundColor;
     if (this.borderColor !== null) json.borderColor = this.borderColor;

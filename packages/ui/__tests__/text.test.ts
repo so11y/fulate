@@ -44,7 +44,7 @@ function createMockCtx() {
 
 /**
  * 创建可直接测试的 Text 实例。
- * Element 构造器将 options 存入 _initProps，仅在 mounted() 时才 apply。
+ * Element 构造器将 options 暂存，可通过 syncProps() 立即 apply。
  * Text 自己在构造器中额外调用了 this.attrs(options)，
  * 但 width/height 等需要通过 _hasExplicitWidth 标记的逻辑仍需手动准备。
  */

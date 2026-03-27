@@ -1,16 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Element, registerElement } from "@fulate/core";
 import {
-  serializeElements,
-  serializeToJSON,
   deserializeElement,
-  deserializeElements,
   isValidFileData,
   parseFileData,
   exportToFile,
-  importFromJSON,
+  serializeSceneToJSON,
 } from "../../src/file/index";
-import type { ElementFilter, FileData } from "../../src/file/index";
+import type { FileData } from "../../src/file/index";
 
 // ─── Mock Element ────────────────────────────────────────────
 
@@ -57,92 +54,9 @@ function createEl(
   Ctor: new (opts?: any) => Element,
   overrides: Record<string, any> = {}
 ) {
-  const el = new Ctor({ left: 0, top: 0, width: 100, height: 100, ...overrides });
-  if ((el as any)._initProps) {
-    el.attrs((el as any)._initProps);
-    (el as any)._initProps = null;
-  }
+  const el = new Ctor({ left: 0, top: 0, width: 100, height: 100, ...overrides }).syncProps();
   return el;
 }
-
-// ─── serializeElements ──────────────────────────────────────
-
-describe("serializeElements", () => {
-  it("序列化单个元素", () => {
-    const rect = createEl(MockRect, { left: 10, top: 20, width: 50, height: 30 });
-    const result = serializeElements([rect]);
-
-    expect(result.__fulate_file__).toBe(true);
-    expect(result.version).toBe(1);
-    expect(result.elements).toHaveLength(1);
-    expect(result.elements[0].type).toBe("rect");
-    expect(result.elements[0].left).toBe(10);
-  });
-
-  it("序列化多个元素", () => {
-    const rect = createEl(MockRect);
-    const circle = createEl(MockCircle);
-    const text = createEl(MockText, { text: "hello" });
-    const result = serializeElements([rect, circle, text]);
-
-    expect(result.elements).toHaveLength(3);
-    expect(result.elements[0].type).toBe("rect");
-    expect(result.elements[1].type).toBe("circle");
-    expect(result.elements[2].type).toBe("text");
-  });
-
-  it("空元素数组 → 返回空 elements", () => {
-    const result = serializeElements([]);
-    expect(result.__fulate_file__).toBe(true);
-    expect(result.elements).toHaveLength(0);
-  });
-
-  it("传入过滤函数 → 过滤掉不需要的元素", () => {
-    const rect = createEl(MockRect);
-    const circle = createEl(MockCircle);
-    const text = createEl(MockText);
-    const filter: ElementFilter = (el) => el.type !== "circle";
-
-    const result = serializeElements([rect, circle, text], filter);
-    expect(result.elements).toHaveLength(2);
-    expect(result.elements.every((e: any) => e.type !== "circle")).toBe(true);
-  });
-
-  it("过滤函数过滤掉全部 → elements 为空", () => {
-    const rect = createEl(MockRect);
-    const result = serializeElements([rect], () => false);
-    expect(result.elements).toHaveLength(0);
-  });
-
-  it("保留元素自定义属性", () => {
-    const rect = createEl(MockRect, { backgroundColor: "#ff0000" });
-    const result = serializeElements([rect]);
-    expect(result.elements[0].backgroundColor).toBe("#ff0000");
-  });
-});
-
-// ─── serializeToJSON ────────────────────────────────────────
-
-describe("serializeToJSON", () => {
-  it("返回合法 JSON 字符串", () => {
-    const rect = createEl(MockRect, { left: 5, top: 10 });
-    const json = serializeToJSON([rect]);
-
-    const parsed = JSON.parse(json);
-    expect(parsed.__fulate_file__).toBe(true);
-    expect(parsed.elements).toHaveLength(1);
-  });
-
-  it("支持过滤函数", () => {
-    const rect = createEl(MockRect);
-    const circle = createEl(MockCircle);
-    const json = serializeToJSON([rect, circle], (el) => el.type === "rect");
-
-    const parsed = JSON.parse(json);
-    expect(parsed.elements).toHaveLength(1);
-    expect(parsed.elements[0].type).toBe("rect");
-  });
-});
 
 // ─── deserializeElement ─────────────────────────────────────
 
@@ -219,54 +133,6 @@ describe("deserializeElement", () => {
   });
 });
 
-// ─── deserializeElements ────────────────────────────────────
-
-describe("deserializeElements", () => {
-  it("批量反序列化多个元素", () => {
-    const data = [
-      { type: "rect", left: 0, top: 0 },
-      { type: "circle", left: 10, top: 10 },
-    ];
-    const els = deserializeElements(data);
-    expect(els).toHaveLength(2);
-    expect(els[0].type).toBe("rect");
-    expect(els[1].type).toBe("circle");
-  });
-
-  it("跳过反序列化失败的元素", () => {
-    const data = [
-      { type: "rect", left: 0, top: 0 },
-      { type: "unknown", left: 0, top: 0 },
-      { type: "circle", left: 10, top: 10 },
-    ];
-    const els = deserializeElements(data);
-    expect(els).toHaveLength(2);
-  });
-
-  it("传入过滤函数 → 反序列化后再过滤", () => {
-    const data = [
-      { type: "rect", left: 0, top: 0 },
-      { type: "circle", left: 10, top: 10 },
-      { type: "text", left: 20, top: 20 },
-    ];
-    const filter: ElementFilter = (el) => el.type !== "circle";
-    const els = deserializeElements(data, filter);
-    expect(els).toHaveLength(2);
-    expect(els.every((el) => el.type !== "circle")).toBe(true);
-  });
-
-  it("空数组 → 返回空", () => {
-    const els = deserializeElements([]);
-    expect(els).toHaveLength(0);
-  });
-
-  it("过滤函数过滤掉全部 → 返回空", () => {
-    const data = [{ type: "rect", left: 0, top: 0 }];
-    const els = deserializeElements(data, () => false);
-    expect(els).toHaveLength(0);
-  });
-});
-
 // ─── isValidFileData ────────────────────────────────────────
 
 describe("isValidFileData", () => {
@@ -274,24 +140,24 @@ describe("isValidFileData", () => {
     const data: FileData = {
       __fulate_file__: true,
       version: 1,
-      elements: [],
+      children: [],
     };
     expect(isValidFileData(data)).toBe(true);
   });
 
   it("缺少标记 → false", () => {
-    expect(isValidFileData({ version: 1, elements: [] })).toBe(false);
+    expect(isValidFileData({ version: 1, children: [] })).toBe(false);
   });
 
   it("标记为 false → false", () => {
     expect(
-      isValidFileData({ __fulate_file__: false, version: 1, elements: [] })
+      isValidFileData({ __fulate_file__: false, version: 1, children: [] })
     ).toBe(false);
   });
 
-  it("elements 不是数组 → false", () => {
+  it("children 不是数组 → false", () => {
     expect(
-      isValidFileData({ __fulate_file__: true, version: 1, elements: "bad" })
+      isValidFileData({ __fulate_file__: true, version: 1, children: "bad" })
     ).toBe(false);
   });
 
@@ -315,11 +181,11 @@ describe("parseFileData", () => {
     const fileData: FileData = {
       __fulate_file__: true,
       version: 1,
-      elements: [{ type: "rect", left: 0, top: 0 }],
+      children: [{ type: "rect", left: 0, top: 0 }],
     };
     const result = parseFileData(JSON.stringify(fileData));
     expect(result).not.toBeNull();
-    expect(result!.elements).toHaveLength(1);
+    expect(result!.children).toHaveLength(1);
   });
 
   it("非法 JSON → 返回 null", () => {
@@ -336,65 +202,6 @@ describe("parseFileData", () => {
 
   it("空字符串 → 返回 null", () => {
     expect(parseFileData("")).toBeNull();
-  });
-});
-
-// ─── importFromJSON ─────────────────────────────────────────
-
-describe("importFromJSON", () => {
-  it("合法 JSON → 返回反序列化的元素", () => {
-    const fileData: FileData = {
-      __fulate_file__: true,
-      version: 1,
-      elements: [
-        { type: "rect", left: 10, top: 20, width: 50, height: 30 },
-        { type: "circle", left: 40, top: 50 },
-      ],
-    };
-    const els = importFromJSON(JSON.stringify(fileData));
-    expect(els).toHaveLength(2);
-    expect(els[0].type).toBe("rect");
-    expect(els[0].left).toBe(10);
-    expect(els[1].type).toBe("circle");
-  });
-
-  it("非法 JSON → 返回空数组", () => {
-    const els = importFromJSON("bad json");
-    expect(els).toHaveLength(0);
-  });
-
-  it("合法 JSON 但非 FileData → 返回空数组", () => {
-    const els = importFromJSON(JSON.stringify({ random: true }));
-    expect(els).toHaveLength(0);
-  });
-
-  it("传入过滤函数 → 过滤反序列化后的元素", () => {
-    const fileData: FileData = {
-      __fulate_file__: true,
-      version: 1,
-      elements: [
-        { type: "rect", left: 0, top: 0 },
-        { type: "circle", left: 0, top: 0 },
-        { type: "text", left: 0, top: 0 },
-      ],
-    };
-    const els = importFromJSON(JSON.stringify(fileData), (el) => el.type === "rect");
-    expect(els).toHaveLength(1);
-    expect(els[0].type).toBe("rect");
-  });
-
-  it("elements 中部分 type 未注册 → 跳过", () => {
-    const fileData: FileData = {
-      __fulate_file__: true,
-      version: 1,
-      elements: [
-        { type: "rect", left: 0, top: 0 },
-        { type: "not-registered", left: 0, top: 0 },
-      ],
-    };
-    const els = importFromJSON(JSON.stringify(fileData));
-    expect(els).toHaveLength(1);
-    expect(els[0].type).toBe("rect");
   });
 });
 

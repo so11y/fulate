@@ -11,10 +11,6 @@ import {
 
 // ==================== 辅助 ====================
 
-/**
- * 初始化节点的 id / uIndex / _provides / root / layer，
- * 并应用 _initProps（模拟 mounted + activate）。
- */
 function initNode(node: any, mockRoot: any, mockLayer: any) {
   node.id = Node.genKey();
   node.uIndex = Node.uIndex++;
@@ -23,12 +19,7 @@ function initNode(node: any, mockRoot: any, mockLayer: any) {
   node._layer = mockLayer;
   node.isMounted = true;
   node.isActiveed = true;
-
-  if (node._initProps) {
-    node.attrs(node._initProps);
-    node._initProps = null;
-  }
-
+  node.syncProps();
   mockRoot.idElements.set(node.id, node);
 }
 

@@ -7,7 +7,6 @@ import {
   resetNodeStatics,
 } from "./helpers";
 
-// viewport: world rect = { left: 0, top: 0, width: 800, height: 600 }
 const VIEW = { left: 0, top: 0, width: 800, height: 600 };
 
 function activateElement<T extends Element>(
@@ -21,6 +20,7 @@ function activateElement<T extends Element>(
   el._layer = mockLayer as any;
   el.isMounted = true;
   el.isActiveed = true;
+  el.syncProps();
   el.calcWorldMatrix();
   return el;
 }

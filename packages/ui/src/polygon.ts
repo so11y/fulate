@@ -99,7 +99,7 @@ export class Polygon extends Shape {
     });
   }
 
-  toJson(includeChildren = false): PolygonOption {
+  toJson(includeChildren = false): ShapeOption<any> {
     const json = super.toJson(includeChildren) as any;
     json.points = this.points.map((p) => ({ x: p.x, y: p.y }));
     return json;

@@ -134,11 +134,16 @@ export class Element extends Transformable {
     }
   }
 
-  mounted() {
+  syncProps(): this {
     if (this._initProps) {
       this.attrs(this._initProps);
       this._initProps = null;
     }
+    return this;
+  }
+
+  mounted() {
+    this.syncProps();
     super.mounted();
     if (this._anchors?.length) this._syncAnchorIndicators();
   }
@@ -559,7 +564,7 @@ export class Element extends Transformable {
     this.layer?.requestRender();
   }
 
-  toJson(includeChildren = false): BaseElementOption {
+  toJson(includeChildren = false): BaseElementOption<any> {
     const json = { type: this.type, id: this.id } as any;
 
     if (this.left !== 0) json.left = this.left;
