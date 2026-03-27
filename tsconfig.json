@@ -21,7 +21,9 @@
       "@fulate/vue": ["packages/vue/src/index.ts"],
       "@fulate/vue/*": ["packages/vue/src/*"],
       "@fulate/echart": ["packages/echart/src/index.ts"],
-      "@fulate/echart/*": ["packages/echart/src/*"]
+      "@fulate/echart/*": ["packages/echart/src/*"],
+      "@fulate/import": ["packages/import/src/index.ts"],
+      "@fulate/import/*": ["packages/import/src/*"]
     }
   },
   "include": [

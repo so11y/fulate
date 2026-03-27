@@ -8,7 +8,7 @@
     "test:watch": "vitest",
     "playground": "vite --config packages/playground/vite.config.ts",
     "editor": "vite --config packages/playground-editor/vite.config.ts",
-    "typecheck": "tsc -b packages/util packages/core packages/ui packages/tools packages/yoga --emitDeclarationOnly"
+    "typecheck": "tsc -b packages/util packages/core packages/ui packages/tools packages/yoga packages/import --emitDeclarationOnly"
   },
   "devDependencies": {
     "@types/node": "^25.4.0",
@@ -23,6 +23,7 @@
     "@fulate/components": "*",
     "@fulate/core": "*",
     "@fulate/echart": "*",
+    "@fulate/import": "*",
     "@fulate/playground": "*",
     "@fulate/tools": "*",
     "@fulate/ui": "*",
