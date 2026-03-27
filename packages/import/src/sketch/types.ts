@@ -127,6 +127,7 @@ export interface SketchBorder {
   thickness: number;
   position: number; // 0=center, 1=inside, 2=outside
   fillType: number;
+  gradient?: SketchGradient;
 }
 
 export interface SketchShadow {

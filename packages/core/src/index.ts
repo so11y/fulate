@@ -42,6 +42,10 @@ export type {
   BackgroundColor
 } from "./utils/gradient";
 
+// Theme
+export { defaultTheme } from "./theme";
+export type { Theme, TextStyleConfig } from "./theme";
+
 // Root
 export { Root } from "./root/index";
 export { Viewport } from "./root/viewport";

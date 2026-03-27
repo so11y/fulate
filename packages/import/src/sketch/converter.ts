@@ -37,7 +37,7 @@ export function convertSketchToFileData(sketch: SketchFile): ImportResult {
     zipImages: sketch.images,
     imageDataURLs,
     warnings,
-    out: children,
+    out: children
   };
 
   for (const page of sketch.pages) {
@@ -49,7 +49,7 @@ export function convertSketchToFileData(sketch: SketchFile): ImportResult {
   const fileData: FileData = {
     __fulate_file__: true,
     version: 1,
-    children,
+    children
   };
 
   return { fileData, images: imageDataURLs, warnings };
@@ -75,7 +75,7 @@ function flattenLayer(layer: SketchLayer, ctx: FlattenContext) {
       flipH: false,
       flipV: false,
       groupW: 0,
-      groupH: 0,
+      groupH: 0
     };
     for (const child of layer.layers ?? []) {
       flattenLayer(child, childCtx);
@@ -87,8 +87,10 @@ function flattenLayer(layer: SketchLayer, ctx: FlattenContext) {
     let cx = ctx.offsetX + layer.frame.x;
     let cy = ctx.offsetY + layer.frame.y;
 
-    if (ctx.flipH) cx = ctx.offsetX + (ctx.groupW - layer.frame.x - layer.frame.width);
-    if (ctx.flipV) cy = ctx.offsetY + (ctx.groupH - layer.frame.y - layer.frame.height);
+    if (ctx.flipH)
+      cx = ctx.offsetX + (ctx.groupW - layer.frame.x - layer.frame.width);
+    if (ctx.flipV)
+      cy = ctx.offsetY + (ctx.groupH - layer.frame.y - layer.frame.height);
 
     const childCtx: FlattenContext = {
       ...ctx,
@@ -97,7 +99,7 @@ function flattenLayer(layer: SketchLayer, ctx: FlattenContext) {
       flipH: ctx.flipH !== !!layer.isFlippedHorizontal,
       flipV: ctx.flipV !== !!layer.isFlippedVertical,
       groupW: layer.frame.width,
-      groupH: layer.frame.height,
+      groupH: layer.frame.height
     };
 
     for (const child of layer.layers ?? []) {
@@ -149,8 +151,11 @@ function buildBase(layer: SketchLayer, type: string, ctx: FlattenContext) {
   let left = ctx.offsetX + layer.frame.x;
   let top = ctx.offsetY + layer.frame.y;
 
-  if (ctx.flipH) left = ctx.offsetX + (ctx.groupW - layer.frame.x - layer.frame.width);
-  if (ctx.flipV) top = ctx.offsetY + (ctx.groupH - layer.frame.y - layer.frame.height);
+  if (ctx.flipH)
+    left = ctx.offsetX + (ctx.groupW - layer.frame.x - layer.frame.width);
+  if (ctx.flipV)
+    top = ctx.offsetY + (ctx.groupH - layer.frame.y - layer.frame.height);
+
 
   const base: any = {
     type,
@@ -158,7 +163,7 @@ function buildBase(layer: SketchLayer, type: string, ctx: FlattenContext) {
     top,
     width: layer.frame.width,
     height: layer.frame.height,
-    ...props,
+    ...props
   };
 
   if (layer.rotation) {
@@ -183,7 +188,7 @@ const CLASS_MAP: Record<string, string> = {
   polygon: "polygon",
   slice: "",
   hotspot: "",
-  MSImmutableHotspotLayer: "",
+  MSImmutableHotspotLayer: ""
 };
 
 function mapSketchClass(
@@ -231,17 +236,38 @@ function resolveShapePath(
     return "polygon";
   }
 
-  const hasCurve = points.some((p) => !isStraightPoint(p));
-  if (hasCurve) {
-    warnings.push(`[${layer.name}] curve shapePath not supported, skipped`);
-    return null;
+  // Two-point paths are always straight lines regardless of curveMode
+  if (points.length > 2) {
+    const hasCurve = points.some((p) => !isStraightPoint(p));
+    if (hasCurve) {
+      warnings.push(`[${layer.name}] curve shapePath not supported, skipped`);
+      return null;
+    }
   }
 
   return "line";
 }
 
 function isStraightPoint(p: SketchCurvePoint): boolean {
-  return p.curveMode === 1 && p.point === p.curveFrom && p.point === p.curveTo;
+  if (p.curveMode !== 1) return false;
+  return (
+    sketchPointsNearEqual(p.point, p.curveFrom) &&
+    sketchPointsNearEqual(p.point, p.curveTo)
+  );
+}
+
+function sketchPointsNearEqual(a: string, b: string, eps = 1e-6): boolean {
+  if (a === b) return true;
+  const pa = parseSketchPointRaw(a);
+  const pb = parseSketchPointRaw(b);
+  if (!pa || !pb) return false;
+  return Math.abs(pa.x - pb.x) < eps && Math.abs(pa.y - pb.y) < eps;
+}
+
+function parseSketchPointRaw(str: string): { x: number; y: number } | null {
+  const match = str.match(/\{([^,]+),\s*([^}]+)\}/);
+  if (!match) return null;
+  return { x: parseFloat(match[1]), y: parseFloat(match[2]) };
 }
 
 // ─── polygon points ─────────────────────────────────────────
@@ -261,7 +287,22 @@ function assignLinePoints(base: any, layer: SketchLayer) {
   if (!points?.length) return;
 
   const { width, height } = layer.frame;
-  const parsed = points.map((p) => parseSketchPoint(p.point, width, height));
+  let parsed = points.map((p) => parseSketchPoint(p.point, width, height));
+
+  // Sketch rotates around frame center, but fulate Line has no proper
+  // rotation pivot. Bake the rotation into the point coordinates.
+  if (base.angle) {
+    const cx = width / 2;
+    const cy = height / 2;
+    const rad = (base.angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    parsed = parsed.map((p) => ({
+      x: cx + (p.x - cx) * cos - (p.y - cy) * sin,
+      y: cy + (p.x - cx) * sin + (p.y - cy) * cos
+    }));
+    delete base.angle;
+  }
 
   const origin = parsed[0];
 
@@ -270,7 +311,7 @@ function assignLinePoints(base: any, layer: SketchLayer) {
 
   base.linePoints = parsed.map((p) => ({
     x: p.x - origin.x,
-    y: p.y - origin.y,
+    y: p.y - origin.y
   }));
 
   delete base.width;
@@ -299,17 +340,13 @@ function parseSketchPoint(
   if (!match) return { x: 0, y: 0 };
   return {
     x: parseFloat(match[1]) * frameW,
-    y: parseFloat(match[2]) * frameH,
+    y: parseFloat(match[2]) * frameH
   };
 }
 
 // ─── image ─────────────────────────────────────────────────
 
-function assignImageSrc(
-  base: any,
-  layer: SketchLayer,
-  ctx: FlattenContext
-) {
+function assignImageSrc(base: any, layer: SketchLayer, ctx: FlattenContext) {
   const src = resolveImageSrc(layer, ctx.zipImages);
   if (src) {
     base.src = src;

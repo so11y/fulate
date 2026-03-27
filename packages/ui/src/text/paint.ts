@@ -90,7 +90,7 @@ export interface TextStrokeOptions {
   y: number;
   font: string;
   letterSpacing: number;
-  strokeColor: string;
+  strokeColor: string | CanvasGradient;
   strokeWidth: number;
 }
 
@@ -186,9 +186,12 @@ export function paintTextContent(self: Text, ctx: CanvasRenderingContext2D) {
   const ts = style.textShadow;
   const hasTextShadow = !!(ts && ts.color);
   const hasStroke = !!(style.textStrokeColor && style.textStrokeWidth && style.textStrokeWidth > 0);
+  const resolvedStrokeColor = hasStroke
+    ? (isGradient(style.textStrokeColor) ? createCanvasGradient(ctx, style.textStrokeColor, w, h) : style.textStrokeColor!)
+    : "";
   const hasDecoration = style.underline || style.strikethrough;
   const decoColor = hasDecoration
-    ? (typeof style.color === "string" ? style.color : (style.textStrokeColor || "#000"))
+    ? (typeof style.color === "string" ? style.color : (typeof style.textStrokeColor === "string" ? style.textStrokeColor : "#000"))
     : "";
 
   for (let i = 0; i < lines.length; i++) {
@@ -204,7 +207,7 @@ export function paintTextContent(self: Text, ctx: CanvasRenderingContext2D) {
     if (hasStroke) {
       drawTextWithStroke(ctx, {
         line, x: lineX, y, font, letterSpacing: ls,
-        strokeColor: style.textStrokeColor!,
+        strokeColor: resolvedStrokeColor,
         strokeWidth: style.textStrokeWidth!,
       });
     }

@@ -28,7 +28,7 @@ export interface Outset {
 
 export interface ShapeOption<T = Shape> extends BaseElementOption<T> {
   backgroundColor?: BackgroundColor | null;
-  borderColor?: string | null;
+  borderColor?: BackgroundColor | null;
   borderWidth?: number;
   borderPosition?: BorderPosition;
   opacity?: number;
@@ -38,7 +38,7 @@ export interface ShapeOption<T = Shape> extends BaseElementOption<T> {
 
 export class Shape extends Element {
   backgroundColor: BackgroundColor | null = null;
-  borderColor: string | null = null;
+  borderColor: BackgroundColor | null = null;
   borderWidth: number = 0;
   borderPosition: BorderPosition = "inside";
   opacity: number = 1;
@@ -252,7 +252,11 @@ export class Shape extends Element {
   protected paintBorder(ctx: CanvasRenderingContext2D) {
     if (!this.borderColor || !this.borderWidth) return;
     this.buildBorderPath(ctx);
-    ctx.strokeStyle = this.borderColor;
+    if (isGradient(this.borderColor)) {
+      ctx.strokeStyle = createCanvasGradient(ctx, this.borderColor, this.width!, this.height!);
+    } else {
+      ctx.strokeStyle = this.borderColor;
+    }
     ctx.lineWidth = this.borderWidth;
     ctx.stroke();
   }

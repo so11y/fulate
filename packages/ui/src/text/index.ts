@@ -42,7 +42,7 @@ export interface TextOption extends ShapeOption {
   placeholder?: string;
   placeholderColor?: string;
   letterSpacing?: number;
-  textStrokeColor?: string;
+  textStrokeColor?: BackgroundColor;
   textStrokeWidth?: number;
   textShadow?: ShadowOption | null;
 }
@@ -71,7 +71,7 @@ export class Text extends Shape {
   placeholder: string = "";
   placeholderColor: string = "";
   letterSpacing?: number;
-  textStrokeColor?: string;
+  textStrokeColor?: BackgroundColor;
   textStrokeWidth?: number;
   textShadow?: ShadowOption | null;
   fitWidth = true;

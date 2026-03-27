@@ -11,6 +11,8 @@ import {
   searchHitElements as searchHitElementsImpl,
   searchArea as searchAreaImpl
 } from "./hit-test";
+import { defaultTheme } from "../theme";
+import type { Theme } from "../theme";
 
 export class Root extends Node {
   type = "root";
@@ -50,7 +52,7 @@ export class Root extends Node {
       width?: number;
       height?: number;
       scale?: { min?: number; max?: number };
-      textStyle?: Record<string, any>;
+      theme?: Partial<Theme>;
     }
   ) {
     super();
@@ -70,24 +72,8 @@ export class Root extends Node {
 
     this.provide("root", this);
     this.textDefaults = {
-      color: "#000000",
-      fontSize: 14,
-      fontFamily: "Arial",
-      fontWeight: "normal",
-      fontStyle: "normal",
-      textAlign: "center",
-      textBaseline: "top",
-      verticalAlign: "middle",
-      underline: false,
-      strikethrough: false,
-      lineHeight: 1.5,
-      wordWrap: true,
-      maxLines: 0,
-      letterSpacing: 0,
-      textStrokeColor: "",
-      textStrokeWidth: 0,
-      textShadow: null,
-      ...options?.textStyle,
+      ...defaultTheme.text,
+      ...options?.theme?.text,
     };
   }
 

@@ -4,9 +4,14 @@ import type {
   SketchFill,
   SketchBorder,
   SketchShadow,
-  SketchGradient,
+  SketchGradient
 } from "./types";
-import type { ShapeOption, ShadowOption, BorderPosition, GradientOption } from "@fulate/core";
+import type {
+  ShapeOption,
+  ShadowOption,
+  BorderPosition,
+  GradientOption
+} from "@fulate/core";
 
 export function sketchColorToCSS(c: SketchColor): string {
   const r = Math.round(c.red * 255);
@@ -21,7 +26,9 @@ export interface StyleConvertResult {
   warnings: string[];
 }
 
-export function convertStyle(style: SketchStyle | undefined): StyleConvertResult {
+export function convertStyle(
+  style: SketchStyle | undefined
+): StyleConvertResult {
   const props: Partial<ShapeOption> = {};
   const warnings: string[] = [];
 
@@ -44,12 +51,19 @@ export function convertStyle(style: SketchStyle | undefined): StyleConvertResult
     }
   }
 
-  // border — take first enabled solid border
-  const border = findFirstEnabled(style.borders);
-  if (border) {
-    props.borderColor = sketchColorToCSS(border.color);
-    props.borderWidth = border.thickness;
-    props.borderPosition = convertBorderPosition(border.position);
+  // border — prefer gradient, fallback to solid (same as fill)
+  const gradientBorder = findFirstEnabled(style.borders, (b) => b.fillType === 1);
+  if (gradientBorder?.gradient) {
+    props.borderColor = convertGradient(gradientBorder.gradient);
+    props.borderWidth = gradientBorder.thickness;
+    props.borderPosition = convertBorderPosition(gradientBorder.position);
+  } else {
+    const border = findFirstEnabled(style.borders, (b) => b.fillType === 0);
+    if (border) {
+      props.borderColor = sketchColorToCSS(border.color);
+      props.borderWidth = border.thickness;
+      props.borderPosition = convertBorderPosition(border.position);
+    }
   }
 
   // shadow — take first enabled outer shadow
@@ -81,7 +95,7 @@ function convertShadow(s: SketchShadow): ShadowOption {
     color: sketchColorToCSS(s.color),
     blur: s.blurRadius,
     offsetX: s.offsetX,
-    offsetY: s.offsetY,
+    offsetY: s.offsetY
   };
 }
 
@@ -95,8 +109,8 @@ function convertGradient(sg: SketchGradient): GradientOption {
     ...(sg.gradientType === 1 ? { center: from, radius: 0.5 } : {}),
     stops: sg.stops.map((s) => ({
       color: sketchColorToCSS(s.color),
-      position: s.position,
-    })),
+      position: s.position
+    }))
   };
 }
 
