@@ -59,7 +59,7 @@ export class Rule extends Element {
     ctx.fillRect(rulerSize, 0, Math.max(0, w - rulerSize), rulerSize);
 
     const stepX = niceStep(pxPerTick, viewport.scale);
-    const vpRect = this.root.getViewportRect();
+    const vpRect = this.root.viewport.getWorldRect();
     const startWorldX = vpRect.left;
     const endWorldX = vpRect.left + vpRect.width;
     const firstTickX = Math.floor(startWorldX / stepX) * stepX;

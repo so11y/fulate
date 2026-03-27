@@ -139,7 +139,7 @@ export function initEditor(container: HTMLElement) {
   store.viewportScale = root.viewport.scale;
 
   root.addEventListener("zoom", () => {
-    store.viewportScale = root.getZoom();
+    store.viewportScale = root.viewport.getZoom();
   });
 
   root.addEventListener("pointerup", () => setTimeout(refreshSelection, 30));

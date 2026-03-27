@@ -321,7 +321,7 @@ export class LineTool extends Element {
 
     const ctx = this.layer.ctx;
     ctx.save();
-    this.root.applyViewPointTransform(ctx);
+    this.root.viewport.applyViewPointTransform(ctx);
 
     const scale = this.root.viewport.scale;
     const pointSize = 4 / scale;
@@ -395,7 +395,7 @@ export class LineTool extends Element {
 
     const size = 3 / scale;
     const excludes = this._excludes;
-    this.root.searchArea(this.root.getViewportRect(), ({ element }) => {
+    this.root.searchArea(this.root.viewport.getWorldRect(), ({ element }) => {
       const resolved = checkElement(element, excludes);
       if (!resolved || resolved.type === "line") return;
 

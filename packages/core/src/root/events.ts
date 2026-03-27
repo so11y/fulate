@@ -1,6 +1,5 @@
 import { CustomEvent } from "../event";
 import type { Root } from "./index";
-import { applyCssTransform } from "./viewport";
 import { checkHit } from "./hit-test";
 
 export function initRootEvents(root: Root) {
@@ -40,7 +39,7 @@ export function initRootEvents(root: Root) {
         root.lastPointerPos.y = e.clientY;
 
         root.dispatchEvent(new CustomEvent("translation"));
-        applyCssTransform(root);
+        root.viewport._applyCssTransform();
       } else {
         root.lastPointerPos.x = e.clientX;
         root.lastPointerPos.y = e.clientY;
@@ -109,7 +108,7 @@ export function initRootEvents(root: Root) {
       const cy = e.clientY - rect.top;
       const factor = e.deltaY < 0 ? 1.1 : 0.9;
 
-      root.zoomViewport(factor, { x: cx, y: cy }, true);
+      root.viewport.zoom(factor, { x: cx, y: cy }, true);
 
       root.lastPointerPos.x = e.clientX;
       root.lastPointerPos.y = e.clientY;

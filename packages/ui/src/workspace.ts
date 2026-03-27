@@ -13,7 +13,7 @@ export class Workspace extends Element {
   mounted() {
     super.mounted();
     this.root.nextTick(() =>
-      this.root.focusNode(this.getBoundingRect(), {
+      this.root.viewport.focus(this.getBoundingRect(), {
         animate: {
           duration: 300
         }

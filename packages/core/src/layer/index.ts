@@ -75,7 +75,7 @@ export class Layer extends Element {
     this.width = width;
     this.height = height;
 
-    const dpr = root.dpr;
+    const dpr = root.viewport.dpr;
     this.canvasEl.width = this.width * dpr;
     this.canvasEl.height = this.height * dpr;
 
@@ -231,9 +231,9 @@ export class Layer extends Element {
       ctx.clearRect(r.left, r.top, r.width, r.height);
 
     const visitSet = new Set<Element>();
-    const m = this.root.getViewPointMtrix();
+    const m = this.root.viewport.getViewPointMtrix();
     //因为有去整，这里对去整进行补偿，才不会多clear白边出来
-    const queryPad = 1 / (m.a * this.root.dpr);
+    const queryPad = 1 / (m.a * this.root.viewport.dpr);
     for (const wr of this.finalDirtyRects!) {
       const padded = {
         left: wr.left - queryPad,
@@ -296,8 +296,8 @@ export class Layer extends Element {
     }
 
     if (worldRects) {
-      const m = this.root.getViewPointMtrix();
-      const dpr = this.root.dpr;
+      const m = this.root.viewport.getViewPointMtrix();
+      const dpr = this.root.viewport.dpr;
       for (const wr of worldRects) {
         const hits = this.searchAreaElements(wr);
         for (const hit of hits) {
@@ -332,7 +332,7 @@ export class Layer extends Element {
   flushPaint() {
     if (this.isUnmounted || this.shouldRepaint() === false) return;
 
-    if (this.root?._isCssTransforming && this.cssTransformable) {
+    if (this.root?.viewport._isCssTransforming && this.cssTransformable) {
       return;
     }
 
@@ -349,7 +349,7 @@ export class Layer extends Element {
     if (this.enableDirtyRect && hasDirty) {
       this.isRenderDirtyMode = true;
 
-      const m = this.root.getViewPointMtrix();
+      const m = this.root.viewport.getViewPointMtrix();
       const worldPad = 2 / m.a;
 
       const worldRects: RectPoint[] = [];
@@ -404,8 +404,8 @@ export class Layer extends Element {
   }
 
   private _worldToScreenRects(worldRects: RectPoint[]): RectPoint[] {
-    const m = this.root.getViewPointMtrix();
-    const dpr = this.root.dpr;
+    const m = this.root.viewport.getViewPointMtrix();
+    const dpr = this.root.viewport.dpr;
     return worldRects.map((r) => {
       const sl = Math.floor((r.left * m.a + m.e) * dpr);
       const st = Math.floor((r.top * m.d + m.f) * dpr);
@@ -416,8 +416,8 @@ export class Layer extends Element {
   }
 
   private _flashFullRepaint() {
-    const canvasW = this.width * this.root.dpr;
-    const canvasH = this.height * this.root.dpr;
+    const canvasW = this.width * this.root.viewport.dpr;
+    const canvasH = this.height * this.root.viewport.dpr;
     this._flashRects(
       [{ left: 0, top: 0, width: canvasW, height: canvasH }],
       "rgba(0, 100, 255, 0.2)"
@@ -446,8 +446,8 @@ export class Layer extends Element {
     this.ctx.clearRect(
       0,
       0,
-      this.width * this.root.dpr,
-      this.height * this.root.dpr
+      this.width * this.root.viewport.dpr,
+      this.height * this.root.viewport.dpr
     );
     this.ctx.restore();
   }

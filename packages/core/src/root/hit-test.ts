@@ -25,7 +25,7 @@ export function checkHit(root: Root, point?: Point) {
   if (root.hasLockPoint) return;
 
   if (!point) {
-    point = root.getLogicalPosition(
+    point = root.viewport.getLogicalPosition(
       root.lastPointerPos.x,
       root.lastPointerPos.y
     );

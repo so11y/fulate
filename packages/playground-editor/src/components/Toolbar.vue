@@ -22,13 +22,13 @@ function redo() {
   setTimeout(refreshSelection, 50);
 }
 function zoomIn() {
-  store.root?.zoomViewport(1.25);
+  store.root?.viewport.zoom(1.25);
 }
 function zoomOut() {
-  store.root?.zoomViewport(0.8);
+  store.root?.viewport.zoom(0.8);
 }
 function resetZoom() {
-  store.root?.resetViewport();
+  store.root?.viewport.reset();
 }
 function save() {
   if (store.root) saveToStorage(store.root as any);

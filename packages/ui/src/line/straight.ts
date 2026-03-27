@@ -14,7 +14,7 @@ export class Line extends BaseLine {
     if (this.linePoints.length < 2 || !this.visible) return;
 
     ctx.save();
-    this.root.applyViewPointTransform(ctx);
+    this.root.viewport.applyViewPointTransform(ctx);
 
     const scale = this.root.viewport.scale;
     const wp = this.getWorldLinePoints();
@@ -260,7 +260,7 @@ function getLineControlSchema(line: Line) {
       const wp = el.getWorldLinePoints();
 
       ctx.save();
-      select.root.applyViewPointTransform(ctx);
+      select.root.viewport.applyViewPointTransform(ctx);
 
       ctx.strokeStyle = el.strokeColor;
       ctx.lineWidth = el.strokeWidth;

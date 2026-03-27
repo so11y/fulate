@@ -79,7 +79,7 @@ export class ForkNode extends Element {
     const cy = m.f + (this.height / 2) * m.d;
 
     ctx.save();
-    this.root.applyViewPointTransform(ctx);
+    this.root.viewport.applyViewPointTransform(ctx);
     ctx.globalAlpha = 0.4;
     ctx.fillStyle = "#22c55e";
     ctx.beginPath();

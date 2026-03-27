@@ -8,6 +8,8 @@
   "include": ["src/**/*.ts"],
   "references": [
     { "path": "../util" },
-    { "path": "../core" }
+    { "path": "../core" },
+    { "path": "../ui" },
+    { "path": "../tools" }
   ]
 }

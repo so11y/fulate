@@ -283,7 +283,7 @@ export class ScrollView extends Shape {
   private _initDragInteraction() {
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
-      const logical = this.root.getLogicalPosition(e.clientX, e.clientY);
+      const logical = this.root.viewport.getLogicalPosition(e.clientX, e.clientY);
       const local = this.getGlobalToLocal(new Point(logical.x, logical.y));
       const axis = this._hitThumb(local);
       if (!axis) return;

@@ -228,7 +228,7 @@ export class Image extends Shape {
     naturalW: number,
     naturalH: number
   ): { w: number; h: number } {
-    const dpr = this._root?.dpr ?? 1;
+    const dpr = this._root?.viewport?.dpr ?? 1;
     const zoom = this._root?.viewport?.scale ?? 1;
     const targetW = Math.ceil((this.width || naturalW) * zoom * dpr);
     const targetH = Math.ceil((this.height || naturalH) * zoom * dpr);
@@ -254,7 +254,7 @@ export class Image extends Shape {
   private _checkResolution() {
     if (!this._isLoaded || !this.src || this._isProcessing) return;
 
-    const dpr = this._root?.dpr ?? 1;
+    const dpr = this._root?.viewport?.dpr ?? 1;
     const zoom = this._root?.viewport?.scale ?? 1;
     const needW = Math.ceil((this.width || this._naturalWidth) * zoom * dpr);
     const needH = Math.ceil((this.height || this._naturalHeight) * zoom * dpr);

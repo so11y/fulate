@@ -95,9 +95,7 @@ export function restoreScene(
   fileData: FileData,
   filter?: ElementFilter
 ) {
-  root.viewport.x = 0;
-  root.viewport.y = 0;
-  root.viewport.scale = 1;
+  root.viewport.reset();
 
   const select = root.find<any>("select");
   select?.history?.clear();

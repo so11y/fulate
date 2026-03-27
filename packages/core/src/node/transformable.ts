@@ -118,7 +118,7 @@ export class Transformable extends Node {
   }
 
   applyTransformToCtx(ctx: CanvasRenderingContext2D) {
-    this.root.applyViewPointTransform(ctx, this._ownMatrixCache);
+    this.root.viewport.applyViewPointTransform(ctx, this._ownMatrixCache);
   }
 
   getWorldPoint(point: Point) {

@@ -201,7 +201,7 @@ export class Snap extends Element {
   ) {
     const processed = new Set<Element>();
 
-    this.root.searchArea(this.root.getViewportRect(), ({ element }) => {
+    this.root.searchArea(this.root.viewport.getWorldRect(), ({ element }) => {
       const resolved = checkElement(element, excludes);
       if (!resolved || processed.has(resolved)) return;
       processed.add(resolved);
@@ -493,7 +493,7 @@ export class Snap extends Element {
 
     ctx.save();
 
-    this.root.applyViewPointTransform(ctx);
+    this.root.viewport.applyViewPointTransform(ctx);
 
     ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = this.lineColor;

@@ -273,7 +273,7 @@ export class AnchorIndicator extends Shape {
     if (!label) return;
 
     const vp = root.viewport;
-    const dpr = root.dpr;
+    const dpr = root.viewport.dpr;
     const { font, color } = this._getLabelFont(FONT_SIZE * vp.scale);
 
     ctx.save();

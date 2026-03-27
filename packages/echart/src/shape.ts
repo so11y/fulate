@@ -40,7 +40,7 @@ export class EChartsShape extends Image {
   }
 
   resizeChart() {
-    this._pool?.resize(this._chartId, this.width!, this.height!, this.root.dpr);
+    this._pool?.resize(this._chartId, this.width!, this.height!, this.root.viewport.dpr);
   }
 
   setOptions(options?: any, syncCalc = false) {
@@ -119,7 +119,7 @@ export class EChartsShape extends Image {
       this._chartId,
       this.width!,
       this.height!,
-      this.root.dpr,
+      this.root.viewport.dpr,
       this._echartsOpts,
       (bitmap) => this._onFrame(bitmap)
     );

@@ -336,7 +336,7 @@ export function setupInteraction(select: Select): () => void {
     const el = select.selectEls[0];
 
     if (select.canDiveIn(el)) {
-      const point = select.root.getLogicalPosition(
+      const point = select.root.viewport.getLogicalPosition(
         select.root.lastPointerPos.x,
         select.root.lastPointerPos.y
       );

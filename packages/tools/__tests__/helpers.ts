@@ -199,13 +199,10 @@ export interface ToolsMockRoot {
   nextTick: Mock;
   find: Mock;
   getCurrnetEelement: Mock;
-  getViewportRect: Mock;
-  getLogicalPosition: Mock;
   lastPointerPos: { x: number; y: number };
   addEventListener: Mock;
   removeEventListener: Mock;
   checkHit: Mock;
-  applyViewPointTransform: Mock;
 }
 
 export function createToolsMockRoot(
@@ -220,7 +217,29 @@ export function createToolsMockRoot(
     _provides: {},
     isUnmounted: false,
     _pendingLayers: new Set(),
-    viewport: { scale: 1, x: 0, y: 0 },
+    viewport: {
+      scale: 1, x: 0, y: 0,
+      dpr: 1,
+      getWorldRect: vi.fn(() => ({ left: 0, top: 0, width: 1000, height: 1000 })),
+      getLogicalPosition: vi.fn((x: number, y: number) => new Point(x, y)),
+      applyViewPointTransform: vi.fn(),
+      getViewPointMtrix: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
+      getZoom: vi.fn(() => 1),
+      zoom: vi.fn(() => 1),
+      reset: vi.fn(),
+      focus: vi.fn(() => Promise.resolve()),
+      syncPaintedViewport: vi.fn(),
+      _applyCssTransform: vi.fn(),
+      _flushCssTransform: vi.fn(),
+      dispose: vi.fn(),
+      _tweenGroup: { getAll: vi.fn(() => []), update: vi.fn(), removeAll: vi.fn() },
+      _paintedViewport: { x: 0, y: 0, scale: 1 },
+      _cssTransformTimer: null,
+      _isCssTransforming: false,
+      cssTransformThreshold: 0.45,
+      minScale: 0.1,
+      maxScale: 10,
+    },
     container,
     layers: [],
     searchArea: vi.fn(),
@@ -228,13 +247,10 @@ export function createToolsMockRoot(
     nextTick: vi.fn((fn: () => void) => fn()),
     find: vi.fn(),
     getCurrnetEelement: vi.fn(() => null),
-    getViewportRect: vi.fn(() => ({ left: 0, top: 0, width: 1000, height: 1000 })),
-    getLogicalPosition: vi.fn((x: number, y: number) => new Point(x, y)),
     lastPointerPos: { x: 0, y: 0 },
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     checkHit: vi.fn(),
-    applyViewPointTransform: vi.fn(),
     ...overrides,
   };
 }

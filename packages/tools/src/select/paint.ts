@@ -39,7 +39,7 @@ function drawChildBorders(select: Select, ctx: CanvasRenderingContext2D) {
   const scale = select.root.viewport.scale;
   for (const el of select.selectEls) {
     ctx.save();
-    select.root.applyViewPointTransform(ctx);
+    select.root.viewport.applyViewPointTransform(ctx);
     el.paintHover(ctx, scale);
     ctx.restore();
   }
@@ -80,8 +80,8 @@ function drawControlPoints(select: Select, ctx: CanvasRenderingContext2D) {
 }
 
 function drawInfoPanel(select: Select, ctx: CanvasRenderingContext2D) {
-  const vp = select.root.getViewPointMtrix();
-  const dpr = select.root.dpr;
+  const vp = select.root.viewport.getViewPointMtrix();
+  const dpr = select.root.viewport.dpr;
   const controlCoords = select.getControlCoords();
   let minX = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const p of controlCoords) {
@@ -123,7 +123,7 @@ function drawHoverBorder(select: Select, ctx: CanvasRenderingContext2D) {
   const scale = select.root.viewport.scale;
 
   ctx.save();
-  select.root.applyViewPointTransform(ctx);
+  select.root.viewport.applyViewPointTransform(ctx);
   el.paintHover(ctx, scale);
   ctx.restore();
 }

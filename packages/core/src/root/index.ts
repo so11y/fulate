@@ -4,15 +4,8 @@ import { Element, RBushItem } from "../node/element";
 import { CustomEvent } from "../event";
 import { Point } from "@fulate/util";
 import { RectWithCenter } from "@fulate/util";
-import { Group } from "@tweenjs/tween.js";
 import { initRootEvents } from "./events";
-import {
-  Viewport,
-  syncPaintedViewport,
-  focusNode as focusNodeImpl,
-  zoomViewport as zoomViewportImpl,
-  resetViewport as resetViewportImpl,
-} from "./viewport";
+import { Viewport } from "./viewport";
 import {
   checkHit as checkHitImpl,
   searchHitElements as searchHitElementsImpl,
@@ -25,7 +18,7 @@ export class Root extends Node {
   container: HTMLElement;
   textDefaults: Record<string, any> = {};
 
-  viewport = new Viewport(this);
+  viewport: Viewport;
   currentElement?: RBushItem;
   keyElmenet = new Map<string, Element>();
   idElements = new Map<string, Element>();
@@ -39,10 +32,6 @@ export class Root extends Node {
 
   width: number;
   height: number;
-  dpr = window.devicePixelRatio || 1;
-
-  minScale: number;
-  maxScale: number;
 
   private _containerRect!: DOMRect;
 
@@ -55,27 +44,36 @@ export class Root extends Node {
   private _nextTickPromise: Promise<void> | null = null;
   private _nextTickResolve: (() => void) | null = null;
 
-  _viewportTweenGroup = new Group();
-
-  _paintedViewport = { x: 0, y: 0, scale: 1 };
-  _cssTransformTimer: ReturnType<typeof setTimeout> | null = null;
-  _isCssTransforming = false;
-  cssTransformThreshold = 0.45;
-
-  constructor(el: HTMLElement, options?: { width?: number; height?: number; minScale?: number; maxScale?: number }) {
+  constructor(
+    el: HTMLElement,
+    options?: {
+      width?: number;
+      height?: number;
+      scale?: { min?: number; max?: number };
+      textStyle?: Record<string, any>;
+    }
+  ) {
     super();
     this.container = el;
     this.width = options?.width ?? el.clientWidth;
     this.height = options?.height ?? el.clientHeight;
-    this.minScale = options?.minScale ?? 0.1;
-    this.maxScale = options?.maxScale ?? 10;
+
+    this.viewport = new Viewport(this, {
+      minScale: options?.scale?.min ?? 0.1,
+      maxScale: options?.scale?.max ?? 10,
+    });
+
     this.container.style.position = "relative";
     this.container.style.userSelect = "none";
     this.container.style.touchAction = "none";
     this.container.style.overflow = "hidden";
 
     this.provide("root", this);
-    this.textDefaults = { color: "#000000", fontSize: 14 };
+    this.textDefaults = {
+      color: "#000000",
+      fontSize: 14,
+      ...options?.textStyle,
+    };
   }
 
   mount() {
@@ -84,7 +82,7 @@ export class Root extends Node {
 
     const onRectChange = () => {
       this._updateContainerRect();
-      this.dpr = window.devicePixelRatio || 1;
+      this.viewport.dpr = window.devicePixelRatio || 1;
     };
     window.addEventListener("resize", onRectChange);
     window.addEventListener("scroll", onRectChange, true);
@@ -94,7 +92,7 @@ export class Root extends Node {
     });
 
     initRootEvents(this);
-    syncPaintedViewport(this);
+    this.viewport.syncPaintedViewport();
     this.requestRender();
   }
 
@@ -142,8 +140,8 @@ export class Root extends Node {
 
       if (this.isUnmounted) return;
 
-      if (this._viewportTweenGroup.getAll().length > 0) {
-        this._viewportTweenGroup.update(time);
+      if (this.viewport._tweenGroup.getAll().length > 0) {
+        this.viewport._tweenGroup.update(time);
       }
 
       for (const l of this.layers) {
@@ -172,7 +170,7 @@ export class Root extends Node {
       this._rafScheduled = false;
 
       const hasActiveTweens =
-        this._viewportTweenGroup.getAll().length > 0 ||
+        this.viewport._tweenGroup.getAll().length > 0 ||
         this.layers.some((l) => l.tweenGroup.getAll().length > 0);
 
       if (hasActiveTweens) {
@@ -199,59 +197,6 @@ export class Root extends Node {
     this._nextTickPromise.then(callback);
   }
 
-  // ================= 坐标变换 =================
-
-  getViewportRect() {
-    return this.viewport.getWorldRect();
-  }
-
-  getLogicalPosition(clientX: number, clientY: number) {
-    const rect = this._containerRect;
-    return new Point(
-      (clientX - rect.left - this.viewport.x) / this.viewport.scale,
-      (clientY - rect.top - this.viewport.y) / this.viewport.scale
-    );
-  }
-
-  getViewPointMtrix() {
-    const m = this.viewport.matrix;
-    m.a = this.viewport.scale;
-    m.b = 0;
-    m.c = 0;
-    m.d = this.viewport.scale;
-    m.e = this.viewport.x;
-    m.f = this.viewport.y;
-    return m;
-  }
-
-  applyViewPointTransform(
-    ctx: CanvasRenderingContext2D,
-    ownMatrix?: DOMMatrix
-  ) {
-    const d = this.dpr;
-    const vp = this.getViewPointMtrix();
-    if (!ownMatrix) {
-      ctx.setTransform(
-        vp.a * d,
-        vp.b * d,
-        vp.c * d,
-        vp.d * d,
-        vp.e * d,
-        vp.f * d
-      );
-      return;
-    }
-    const m = ownMatrix;
-    ctx.setTransform(
-      (vp.a * m.a + vp.c * m.b) * d,
-      (vp.b * m.a + vp.d * m.b) * d,
-      (vp.a * m.c + vp.c * m.d) * d,
-      (vp.b * m.c + vp.d * m.d) * d,
-      (vp.a * m.e + vp.c * m.f + vp.e) * d,
-      (vp.b * m.e + vp.d * m.f + vp.f) * d
-    );
-  }
-
   // ================= 查询 =================
 
   getCurrnetEelement() {
@@ -276,30 +221,6 @@ export class Root extends Node {
     return searchAreaImpl(this, area, callback);
   }
 
-  // ================= 视口（委托） =================
-
-  zoomViewport(delta: number, center?: { x: number; y: number }, useCssTransform = false): number {
-    return zoomViewportImpl(this, delta, center, useCssTransform);
-  }
-
-  resetViewport() {
-    resetViewportImpl(this);
-  }
-
-  getZoom(): number {
-    return this.viewport.scale;
-  }
-
-  focusNode(
-    rect: RectWithCenter,
-    options: {
-      padding?: number;
-      animate?: { duration?: number; easing?: (amount: number) => number };
-    }
-  ): Promise<void> {
-    return focusNodeImpl(this, rect, options);
-  }
-
   // ================= 事件分发 =================
 
   _notify(
@@ -309,7 +230,7 @@ export class Root extends Node {
   ) {
     if (this.isSpacePressed || this.isPanning) return;
 
-    const { x, y } = this.getLogicalPosition(e.clientX, e.clientY);
+    const { x, y } = this.viewport.getLogicalPosition(e.clientX, e.clientY);
 
     const element = targetEl?.element;
 
@@ -349,6 +270,17 @@ export class Root extends Node {
     });
   }
 
+  // ================= 序列化 =================
+
+  toJSON() {
+    return {
+      viewport: this.viewport.toJSON(),
+      textDefaults: { ...this.textDefaults },
+      width: this.width,
+      height: this.height,
+    };
+  }
+
   unmounted() {
     if (this._rafId) {
       cancelAnimationFrame(this._rafId);
@@ -357,10 +289,7 @@ export class Root extends Node {
     this._pendingLayers.clear();
     this._rafScheduled = false;
 
-    if (this._cssTransformTimer) {
-      clearTimeout(this._cssTransformTimer);
-      this._cssTransformTimer = null;
-    }
+    this.viewport.dispose();
 
     super.unmounted();
   }

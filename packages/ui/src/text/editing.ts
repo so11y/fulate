@@ -301,7 +301,7 @@ export function enterEditing(self: Text, initialClickLocal?: { x: number; y: num
     (e) => {
       if (!self.isEditing) return;
       e.preventDefault();
-      const logicalPos = root.getLogicalPosition(e.clientX, e.clientY);
+      const logicalPos = root.viewport.getLogicalPosition(e.clientX, e.clientY);
       if (self.hasPointHint(logicalPos)) {
         const localPoint = self.getGlobalToLocal(logicalPos);
         const caretIdx = hitTestCaret(self, localPoint.x, localPoint.y);
@@ -324,7 +324,7 @@ export function enterEditing(self: Text, initialClickLocal?: { x: number; y: num
     "pointermove",
     (e) => {
       if (self._selAnchor < 0 || !self.isEditing) return;
-      const logicalPos = root.getLogicalPosition(e.clientX, e.clientY);
+      const logicalPos = root.viewport.getLogicalPosition(e.clientX, e.clientY);
       const localPoint = self.getGlobalToLocal(logicalPos);
       const caretIdx = hitTestCaret(self, localPoint.x, localPoint.y);
       const start = Math.min(self._selAnchor, caretIdx);
@@ -387,7 +387,7 @@ export function setupClickToEdit(self: Text): (() => void) | null {
   if (!container) return null;
   const handler = (e: PointerEvent) => {
     if (!self.editable || self.isEditing || !self.isActiveed || !root) return;
-    const logicalPos = root.getLogicalPosition(e.clientX, e.clientY);
+    const logicalPos = root.viewport.getLogicalPosition(e.clientX, e.clientY);
     if (!self.hasPointHint(logicalPos)) return;
     e.preventDefault();
     const localPoint = self.getGlobalToLocal(logicalPos);
