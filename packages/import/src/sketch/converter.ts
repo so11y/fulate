@@ -108,6 +108,15 @@ function flattenLayer(layer: SketchLayer, ctx: FlattenContext) {
     return;
   }
 
+  if (cls === "shapeGroup") {
+    const base = buildBase(layer, "rectangle", ctx);
+    ctx.warnings.push(
+      `[${layer.name}] shapeGroup mapped to rectangle (boolean ops not supported)`
+    );
+    ctx.out.push(base);
+    return;
+  }
+
   const type = mapSketchClass(cls, layer, ctx.warnings);
   if (!type) return;
 
@@ -170,6 +179,13 @@ function buildBase(layer: SketchLayer, type: string, ctx: FlattenContext) {
     base.angle = -layer.rotation;
   }
 
+  if (layer.fixedRadius) {
+    base.radius = layer.fixedRadius;
+  } else if (layer.points?.length) {
+    const cr = layer.points[0].cornerRadius;
+    if (cr > 0) base.radius = cr;
+  }
+
   if (layer.isFlippedHorizontal) base.scaleX = -1;
   if (layer.isFlippedVertical) base.scaleY = -1;
 
@@ -210,10 +226,7 @@ function mapSketchClass(
   }
 
   if (cls === "shapeGroup") {
-    warnings.push(
-      `[${layer.name}] shapeGroup mapped to rectangle (boolean ops not supported)`
-    );
-    return "rectangle";
+    return null;
   }
 
   warnings.push(`[${layer.name}] unsupported layer class "${cls}", skipped`);

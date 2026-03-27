@@ -72,6 +72,9 @@ export interface SketchLayer {
   // bitmap
   image?: SketchImageRef;
 
+  // rectangle corner radius
+  fixedRadius?: number;
+
   // shapePath
   points?: SketchCurvePoint[];
   isClosed?: boolean;
