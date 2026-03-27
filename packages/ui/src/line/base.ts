@@ -1,6 +1,6 @@
 import { Intersection } from "@fulate/util";
 import { Point } from "@fulate/util";
-import { makeBoundingBoxFromPoints, RectWithCenter } from "@fulate/util";
+import { makeBoundingBoxFromPoints, Bound } from "@fulate/util";
 import { BaseElementOption, Element } from "@fulate/core";
 import type { ForkNode } from "../fork-node";
 import {
@@ -270,18 +270,11 @@ export abstract class BaseLine extends Element {
     return this.linePoints.map((p) => new Point(p.x, p.y));
   }
 
-  getBoundingRect(): RectWithCenter {
+  getBoundingRect(): Bound {
     if (this._boundingRectCache) return this._boundingRectCache;
 
-    const worldPoints = this.getWorldLinePoints();
-    const rect = makeBoundingBoxFromPoints(worldPoints);
-    const pad = this._getVisualPadding();
-    rect.left -= pad;
-    rect.top -= pad;
-    rect.width = rect.width + pad * 2 || 1;
-    rect.height = rect.height + pad * 2 || 1;
-
-    this._boundingRectCache = rect;
+    this._boundingRectCache = Bound.fromPoints(this.getWorldLinePoints())
+      .expand(this._getVisualPadding(), 1);
     return this._boundingRectCache;
   }
 

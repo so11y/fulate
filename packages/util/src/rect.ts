@@ -116,6 +116,26 @@ export class Bound implements RectWithCenter {
     return this;
   }
 
+  expand(padding: number, minSize = 0): this {
+    this.minX -= padding;
+    this.minY -= padding;
+    this.maxX += padding;
+    this.maxY += padding;
+    if (minSize > 0) {
+      if (this.maxX - this.minX < minSize) {
+        const cx = (this.minX + this.maxX) / 2;
+        this.minX = cx - minSize / 2;
+        this.maxX = cx + minSize / 2;
+      }
+      if (this.maxY - this.minY < minSize) {
+        const cy = (this.minY + this.maxY) / 2;
+        this.minY = cy - minSize / 2;
+        this.maxY = cy + minSize / 2;
+      }
+    }
+    return this;
+  }
+
   static fromRect(r: RectWithCenter): Bound {
     return new Bound(r.left, r.top, r.left + r.width, r.top + r.height);
   }

@@ -1,5 +1,5 @@
 import { Element, Shape } from "@fulate/core";
-import { Point, RectWithCenter, makeBoundingBoxFromPoints } from "@fulate/util";
+import { Point, Bound, makeBoundingBoxFromPoints } from "@fulate/util";
 import {
   getMeasureContext,
   measureStringWidth,
@@ -294,11 +294,11 @@ export class AnchorIndicator extends Shape {
     ctx.restore();
   }
 
-  getBoundingRect(): RectWithCenter {
+  getBoundingRect(): Bound {
     if (this._boundingRectCache) return this._boundingRectCache;
 
     if (!this.keepLabelUpright || !this.parent) {
-      this._boundingRectCache = makeBoundingBoxFromPoints(this.getCoords());
+      this._boundingRectCache = Bound.fromPoints(this.getCoords());
       return this._boundingRectCache;
     }
 
@@ -316,14 +316,7 @@ export class AnchorIndicator extends Shape {
     const maxX = Math.max(textLeft + w, dotWorld.x + DOT_RADIUS);
     const maxY = Math.max(textTop + lineH, dotWorld.y + DOT_RADIUS);
 
-    this._boundingRectCache = {
-      left: minX,
-      top: minY,
-      width: maxX - minX,
-      height: maxY - minY,
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2
-    };
+    this._boundingRectCache = new Bound(minX, minY, maxX, maxY);
     return this._boundingRectCache;
   }
 
