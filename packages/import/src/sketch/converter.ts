@@ -113,6 +113,11 @@ function flattenLayer(layer: SketchLayer, ctx: FlattenContext) {
 
   switch (type) {
     case "text":
+      delete base.backgroundColor;
+      delete base.borderColor;
+      delete base.borderWidth;
+      delete base.borderPosition;
+      delete base.shadow;
       Object.assign(base, convertTextProps(layer));
       break;
     case "image":

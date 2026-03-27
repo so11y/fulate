@@ -15,13 +15,14 @@ export function getAlignOffsetX(
   lineText: string,
   ctx: CanvasRenderingContext2D,
   font: string,
-  textAlign: string
+  textAlign: string,
+  letterSpacing = 0
 ): number {
   if (textAlign === "center") {
-    return (width - measureStringWidth(ctx, lineText, font)) / 2;
+    return (width - measureStringWidth(ctx, lineText, font, letterSpacing)) / 2;
   }
   if (textAlign === "right") {
-    return width - measureStringWidth(ctx, lineText, font);
+    return width - measureStringWidth(ctx, lineText, font, letterSpacing);
   }
   return 0;
 }
@@ -50,6 +51,7 @@ export function getCaretLocalXY(
   const ctx = getMeasureContext();
   const font = self.getFontString(style);
   ctx.font = font;
+  const ls = style.letterSpacing ?? 0;
 
   const lines = self._lines;
   const offsets = self._lineCharOffsets;
@@ -57,7 +59,7 @@ export function getCaretLocalXY(
   if (lines.length === 0) {
     const bvo = getBlockVerticalOffset(self.height || 0, lineHeightPx, style.verticalAlign);
     return {
-      x: getAlignOffsetX(self.width || 0, "", ctx, font, style.textAlign),
+      x: getAlignOffsetX(self.width || 0, "", ctx, font, style.textAlign, ls),
       y: bvo + intraLine,
       h: style.fontSize
     };
@@ -78,8 +80,8 @@ export function getCaretLocalXY(
   const charInLine = Math.min(caretIndex - lineStart, lines[lineIdx]?.length ?? 0);
   const lineText = lines[lineIdx] ?? "";
   const textBeforeCaret = lineText.slice(0, charInLine);
-  const caretXInLine = measureStringWidth(ctx, textBeforeCaret, font);
-  const alignX = getAlignOffsetX(self.width || 0, lineText, ctx, font, style.textAlign);
+  const caretXInLine = measureStringWidth(ctx, textBeforeCaret, font, ls);
+  const alignX = getAlignOffsetX(self.width || 0, lineText, ctx, font, style.textAlign, ls);
 
   return {
     x: alignX + caretXInLine,
@@ -94,6 +96,7 @@ function hitTestCaret(self: Text, localX: number, localY: number): number {
   const ctx = getMeasureContext();
   const font = self.getFontString(style);
   ctx.font = font;
+  const ls = style.letterSpacing ?? 0;
 
   const lines = self._lines;
   const offsets = self._lineCharOffsets;
@@ -106,14 +109,14 @@ function hitTestCaret(self: Text, localX: number, localY: number): number {
 
   const line = lines[lineIdx];
   const lineOffset = offsets[lineIdx] ?? 0;
-  const alignX = getAlignOffsetX(self.width || 0, line, ctx, font, style.textAlign);
+  const alignX = getAlignOffsetX(self.width || 0, line, ctx, font, style.textAlign, ls);
   const relX = localX - alignX + self._scrollX;
 
   if (relX <= 0) return lineOffset;
 
   let accumulated = 0;
   for (let i = 0; i < line.length; i++) {
-    const charW = getCharWidth(ctx, line[i], font);
+    const charW = getCharWidth(ctx, line[i], font) + (i < line.length - 1 ? ls : 0);
     if (accumulated + charW / 2 >= relX) return lineOffset + i;
     accumulated += charW;
   }

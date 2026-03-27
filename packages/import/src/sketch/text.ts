@@ -1,6 +1,6 @@
 import type { SketchLayer, SketchStringAttribute } from "./types";
 import type { TextOption } from "@fulate/ui";
-import { sketchColorToCSS } from "./style";
+import { sketchColorToCSS, convertStyle } from "./style";
 
 export function convertTextProps(layer: SketchLayer): Partial<TextOption> {
   const result: Partial<TextOption> = {};
@@ -41,6 +41,32 @@ export function convertTextProps(layer: SketchLayer): Partial<TextOption> {
 
   if (dominant.attributes.underlineStyle) {
     result.underline = true;
+  }
+
+  if (dominant.attributes.strikethroughStyle) {
+    result.strikethrough = true;
+  }
+
+  if (dominant.attributes.kerning) {
+    result.letterSpacing = dominant.attributes.kerning;
+  }
+
+  // layer-level style: gradient fill, border (text stroke), shadow (text glow)
+  if (layer.style) {
+    const { props } = convertStyle(layer.style);
+
+    if (props.backgroundColor) {
+      result.color = props.backgroundColor;
+    }
+
+    if (props.borderColor && props.borderWidth) {
+      result.textStrokeColor = props.borderColor;
+      result.textStrokeWidth = props.borderWidth;
+    }
+
+    if (props.shadow) {
+      result.textShadow = props.shadow;
+    }
   }
 
   return result;

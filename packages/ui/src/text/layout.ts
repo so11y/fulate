@@ -4,11 +4,13 @@ export function findWrapIndex(
   ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
-  font: string
+  font: string,
+  letterSpacing = 0
 ): number {
   let width = 0;
   for (let i = 0; i < text.length; i++) {
     width += getCharWidth(ctx, text[i], font);
+    if (i > 0 && letterSpacing) width += letterSpacing;
     if (width > maxWidth) return i;
   }
   return text.length;
@@ -19,7 +21,8 @@ export function wrapText(
   text: string,
   maxWidth: number,
   font: string,
-  wordWrap: boolean
+  wordWrap: boolean,
+  letterSpacing = 0
 ): { lines: string[]; offsets: number[] } {
   const normalized = text.replace(/\r\n/g, "\n");
   const paragraphs = normalized.split("\n");
@@ -40,7 +43,7 @@ export function wrapText(
       let localOffset = 0;
       let remainingText = paragraph;
       while (remainingText.length > 0) {
-        const wrapIdx = findWrapIndex(ctx, remainingText, maxWidth, font);
+        const wrapIdx = findWrapIndex(ctx, remainingText, maxWidth, font, letterSpacing);
 
         if (wrapIdx === 0) {
           offsets.push(globalOffset + localOffset);
@@ -66,18 +69,20 @@ export function fitLineWithEllipsis(
   ctx: CanvasRenderingContext2D,
   line: string,
   maxWidth: number,
-  font: string
+  font: string,
+  letterSpacing = 0
 ): string {
   const ellipsis = "...";
   if (maxWidth <= 0) return "";
 
-  const ellipsisWidth = measureStringWidth(ctx, ellipsis, font);
+  const ellipsisWidth = measureStringWidth(ctx, ellipsis, font, letterSpacing);
   if (ellipsisWidth > maxWidth) return "";
 
   const availWidth = maxWidth - ellipsisWidth;
   let width = 0;
   for (let i = 0; i < line.length; i++) {
     width += getCharWidth(ctx, line[i], font);
+    if (i > 0 && letterSpacing) width += letterSpacing;
     if (width > availWidth) {
       return line.slice(0, i) + ellipsis;
     }

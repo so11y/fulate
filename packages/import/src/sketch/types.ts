@@ -200,6 +200,7 @@ export interface SketchStringAttribute {
     kerning?: number;
     textStyleVerticalAlignmentKey?: number;
     underlineStyle?: number;
+    strikethroughStyle?: number;
   };
 }
 

@@ -1,7 +1,8 @@
 import type { Node } from "@fulate/core";
+import type { BackgroundColor, ShadowOption } from "@fulate/core";
 
 export interface TextStyleConfig {
-  color?: string;
+  color?: BackgroundColor;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string | number;
@@ -10,9 +11,14 @@ export interface TextStyleConfig {
   textBaseline?: CanvasTextBaseline;
   verticalAlign?: "top" | "middle" | "bottom";
   underline?: boolean;
+  strikethrough?: boolean;
   lineHeight?: number;
   wordWrap?: boolean;
   maxLines?: number;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  textShadow?: ShadowOption | null;
 }
 
 export function buildFontString(style: {
@@ -47,9 +53,14 @@ export const TEXT_STYLE_KEYS = [
   "textBaseline",
   "verticalAlign",
   "underline",
+  "strikethrough",
   "lineHeight",
   "wordWrap",
-  "maxLines"
+  "maxLines",
+  "letterSpacing",
+  "textStrokeColor",
+  "textStrokeWidth",
+  "textShadow"
 ] as const;
 
 export type TextStyleKey = (typeof TEXT_STYLE_KEYS)[number];

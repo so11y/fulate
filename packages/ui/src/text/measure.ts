@@ -53,7 +53,8 @@ export function getCharWidth(
 export function measureStringWidth(
   ctx: CanvasRenderingContext2D,
   str: string,
-  font: string
+  font: string,
+  letterSpacing = 0
 ): number {
   const cache = getFontCache(font);
   let width = 0;
@@ -65,6 +66,9 @@ export function measureStringWidth(
       cache.set(str[i], w);
     }
     width += w;
+    if (letterSpacing && i < str.length - 1) {
+      width += letterSpacing;
+    }
   }
   return width;
 }

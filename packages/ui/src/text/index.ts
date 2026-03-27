@@ -1,5 +1,6 @@
 import { ShapeOption, Shape } from "@fulate/core";
 import { CustomEvent } from "@fulate/core";
+import type { BackgroundColor, ShadowOption } from "@fulate/core";
 import {
   getMeasureContext,
   preCalculateChars,
@@ -26,11 +27,12 @@ export interface TextOption extends ShapeOption {
   fontFamily?: string;
   fontWeight?: string | number;
   fontStyle?: string;
-  color?: string;
+  color?: BackgroundColor;
   textAlign?: "left" | "center" | "right";
   textBaseline?: CanvasTextBaseline;
   verticalAlign?: "top" | "middle" | "bottom";
   underline?: boolean;
+  strikethrough?: boolean;
   lineHeight?: number;
   wordWrap?: boolean;
   maxLines?: number;
@@ -39,6 +41,10 @@ export interface TextOption extends ShapeOption {
   editable?: boolean;
   placeholder?: string;
   placeholderColor?: string;
+  letterSpacing?: number;
+  textStrokeColor?: string;
+  textStrokeWidth?: number;
+  textShadow?: ShadowOption | null;
 }
 
 export type ResolvedTextStyle = Required<TextStyleConfig>;
@@ -51,11 +57,12 @@ export class Text extends Shape {
   fontFamily: string = "Arial";
   fontWeight: string | number = "normal";
   fontStyle: string = "normal";
-  color: string = "#000000";
+  color: BackgroundColor = "#000000";
   textAlign: "left" | "center" | "right" = "center";
   textBaseline: CanvasTextBaseline = "top";
   verticalAlign: "top" | "middle" | "bottom" = "middle";
   underline: boolean = false;
+  strikethrough: boolean = false;
   lineHeight: number = 1.5;
   wordWrap: boolean = true;
   maxLines?: number;
@@ -63,6 +70,10 @@ export class Text extends Shape {
   editable: boolean = false;
   placeholder: string = "";
   placeholderColor: string = "";
+  letterSpacing: number = 0;
+  textStrokeColor: string = "";
+  textStrokeWidth: number = 0;
+  textShadow: ShadowOption | null = null;
   fitWidth = true;
   fitHeight = true;
 
@@ -125,7 +136,7 @@ export class Text extends Shape {
 
   // ───────── layout ─────────
 
-  private resolveWidth(ctx: CanvasRenderingContext2D, font: string) {
+  private resolveWidth(ctx: CanvasRenderingContext2D, font: string, letterSpacing = 0) {
     if (this._hasExplicitWidth || this.fitWidth) {
       return Math.max(this.width ?? 0, 0);
     }
@@ -134,7 +145,7 @@ export class Text extends Shape {
     return Math.max(
       ...this.text
         .split(/\r?\n/)
-        .map((line) => measureStringWidth(ctx, line, font)),
+        .map((line) => measureStringWidth(ctx, line, font, letterSpacing)),
       0
     );
   }
@@ -153,7 +164,8 @@ export class Text extends Shape {
     preCalculateChars(ctx, font);
 
     const lineHeightPx = style.fontSize * style.lineHeight;
-    const width = this.resolveWidth(ctx, font);
+    const ls = style.letterSpacing ?? 0;
+    const width = this.resolveWidth(ctx, font, ls);
     this.width = width;
 
     if (!this.text) {
@@ -171,7 +183,8 @@ export class Text extends Shape {
       this.text,
       width,
       font,
-      style.wordWrap
+      style.wordWrap,
+      style.letterSpacing ?? 0
     );
     const resolvedHeight = this.getResolvedHeight(lineHeightPx);
 
@@ -194,7 +207,8 @@ export class Text extends Shape {
           ctx,
           lines[lines.length - 1],
           width,
-          font
+          font,
+          style.letterSpacing ?? 0
         );
       }
     }
@@ -256,6 +270,7 @@ export class Text extends Shape {
     if (this.textBaseline !== "top") json.textBaseline = this.textBaseline;
     if (this.verticalAlign !== "middle") json.verticalAlign = this.verticalAlign;
     if (this.underline !== false) json.underline = this.underline;
+    if (this.strikethrough !== false) json.strikethrough = this.strikethrough;
     if (this.lineHeight !== 1.5) json.lineHeight = this.lineHeight;
     if (this.wordWrap !== true) json.wordWrap = this.wordWrap;
     if (this.maxLines !== undefined) json.maxLines = this.maxLines;
@@ -263,6 +278,10 @@ export class Text extends Shape {
     if (this.editable !== false) json.editable = this.editable;
     if (this.placeholder !== "") json.placeholder = this.placeholder;
     if (this.placeholderColor !== "") json.placeholderColor = this.placeholderColor;
+    if (this.letterSpacing !== 0) json.letterSpacing = this.letterSpacing;
+    if (this.textStrokeColor !== "") json.textStrokeColor = this.textStrokeColor;
+    if (this.textStrokeWidth !== 0) json.textStrokeWidth = this.textStrokeWidth;
+    if (this.textShadow !== null) json.textShadow = this.textShadow;
     return json;
   }
 
