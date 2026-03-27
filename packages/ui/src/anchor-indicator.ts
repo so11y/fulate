@@ -1,11 +1,8 @@
 import { Element, Shape } from "@fulate/core";
 import { Point, Bound, makeBoundingBoxFromPoints } from "@fulate/util";
-import {
-  getMeasureContext,
-  measureStringWidth,
-  getCharWidth
-} from "./text/measure";
+import { getMeasureContext } from "./text/measure";
 import { buildFontString, getTextDefaults } from "./text/style";
+import { fitLineWithEllipsis } from "./text/layout";
 
 const DOT_RADIUS = 4;
 const GAP = 3;
@@ -169,15 +166,7 @@ export class AnchorIndicator extends Shape {
   private _ellipsis(text: string, maxW: number): string {
     const { font } = this._getLabelFont();
     const ctx = getMeasureContext();
-    if (measureStringWidth(ctx, text, font) <= maxW) return text;
-    const ew = measureStringWidth(ctx, "\u2026", font);
-    let w = ew;
-    let i = 0;
-    for (; i < text.length; i++) {
-      w += getCharWidth(ctx, text[i], font);
-      if (w > maxW) break;
-    }
-    return text.slice(0, i) + "\u2026";
+    return fitLineWithEllipsis(ctx, text, maxW, font);
   }
 
   private _labelWorldRect(): {

@@ -70,10 +70,11 @@ export function fitLineWithEllipsis(
   line: string,
   maxWidth: number,
   font: string,
-  letterSpacing = 0
+  letterSpacing = 0,
+  ellipsis = "\u2026"
 ): string {
-  const ellipsis = "...";
   if (maxWidth <= 0) return "";
+  if (measureStringWidth(ctx, line, font, letterSpacing) <= maxWidth) return line;
 
   const ellipsisWidth = measureStringWidth(ctx, ellipsis, font, letterSpacing);
   if (ellipsisWidth > maxWidth) return "";

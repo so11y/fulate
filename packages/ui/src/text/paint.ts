@@ -2,8 +2,9 @@ import { measureStringWidth, getCharWidth } from "./measure";
 import { getAlignOffsetX, getBlockVerticalOffset, getCaretLocalXY, SELECTION_COLOR } from "./editing";
 import type { Text, ResolvedTextStyle } from "./index";
 import { isGradient, createCanvasGradient } from "@fulate/core";
+import type { ShadowOption } from "@fulate/core";
 
-function resolveColorFill(
+export function resolveColorFill(
   ctx: CanvasRenderingContext2D,
   color: ResolvedTextStyle["color"],
   w: number,
@@ -15,14 +16,13 @@ function resolveColorFill(
   return color as string;
 }
 
-function drawTextLine(
+export function drawTextLine(
   ctx: CanvasRenderingContext2D,
   line: string,
   x: number,
   y: number,
-  letterSpacing: number,
-  textAlign: string,
   font: string,
+  letterSpacing: number,
   doFill: boolean,
   doStroke: boolean
 ) {
@@ -32,44 +32,100 @@ function drawTextLine(
     return;
   }
 
-  const totalWidth = measureStringWidth(ctx, line, font, letterSpacing);
-  let startX = x;
-  if (textAlign === "center") {
-    startX = x - totalWidth / 2;
-  } else if (textAlign === "right") {
-    startX = x - totalWidth;
-  }
-
-  const savedAlign = ctx.textAlign;
-  ctx.textAlign = "left";
-  let cx = startX;
+  let cx = x;
   for (let i = 0; i < line.length; i++) {
     if (doFill) ctx.fillText(line[i], cx, y);
     if (doStroke) ctx.strokeText(line[i], cx, y);
     cx += getCharWidth(ctx, line[i], font) + letterSpacing;
   }
-  ctx.textAlign = savedAlign;
 }
 
-function getLineLeftX(
-  w: number,
-  line: string,
+export interface TextDecorationOptions {
+  x: number;
+  y: number;
+  width: number;
+  fontSize: number;
+  textBaseline: string;
+  underline?: boolean;
+  strikethrough?: boolean;
+  color: string;
+  thickness?: number;
+}
+
+export function drawTextDecoration(
   ctx: CanvasRenderingContext2D,
-  font: string,
-  textAlign: string,
-  letterSpacing: number
-): number {
-  const lineWidth = measureStringWidth(ctx, line, font, letterSpacing);
-  if (textAlign === "center") return (w - lineWidth) / 2;
-  if (textAlign === "right") return w - lineWidth;
-  return 0;
+  opts: TextDecorationOptions
+) {
+  if (!opts.underline && !opts.strikethrough) return;
+
+  const thickness = opts.thickness ?? Math.max(1, opts.fontSize / 15);
+  ctx.strokeStyle = opts.color;
+  ctx.lineWidth = thickness;
+
+  if (opts.underline) {
+    const underlineY =
+      opts.y +
+      opts.fontSize * 0.1 +
+      (opts.textBaseline === "top" ? opts.fontSize : 0);
+    ctx.beginPath();
+    ctx.moveTo(opts.x, underlineY);
+    ctx.lineTo(opts.x + opts.width, underlineY);
+    ctx.stroke();
+  }
+
+  if (opts.strikethrough) {
+    const strikeY =
+      opts.y +
+      (opts.textBaseline === "top" ? opts.fontSize * 0.5 : 0);
+    ctx.beginPath();
+    ctx.moveTo(opts.x, strikeY);
+    ctx.lineTo(opts.x + opts.width, strikeY);
+    ctx.stroke();
+  }
+}
+
+export interface TextStrokeOptions {
+  line: string;
+  x: number;
+  y: number;
+  font: string;
+  letterSpacing: number;
+  strokeColor: string;
+  strokeWidth: number;
+}
+
+export function drawTextWithStroke(
+  ctx: CanvasRenderingContext2D,
+  opts: TextStrokeOptions
+) {
+  ctx.strokeStyle = opts.strokeColor;
+  ctx.lineWidth = opts.strokeWidth;
+  ctx.lineJoin = "round";
+  drawTextLine(ctx, opts.line, opts.x, opts.y, opts.font, opts.letterSpacing, false, true);
+}
+
+export function applyTextShadow(
+  ctx: CanvasRenderingContext2D,
+  shadow: ShadowOption
+) {
+  ctx.shadowColor = shadow.color ?? "rgba(0,0,0,0.3)";
+  ctx.shadowBlur = shadow.blur ?? 0;
+  ctx.shadowOffsetX = shadow.offsetX ?? 0;
+  ctx.shadowOffsetY = shadow.offsetY ?? 0;
+}
+
+export function clearTextShadow(ctx: CanvasRenderingContext2D) {
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
 }
 
 export function paintTextContent(self: Text, ctx: CanvasRenderingContext2D) {
   const style = self.getResolvedTextStyle();
   const font = self.getFontString(style);
   ctx.font = font;
-  ctx.textAlign = style.textAlign;
+  ctx.textAlign = "left";
   ctx.textBaseline = style.textBaseline;
 
   const w = self.width || 0;
@@ -100,7 +156,6 @@ export function paintTextContent(self: Text, ctx: CanvasRenderingContext2D) {
   const lines = self._lines;
   const offsets = self._lineCharOffsets;
 
-  // selection highlight (editing mode)
   if (self.isEditing && self._textarea) {
     const selStart = self._textarea.selectionStart ?? 0;
     const selEnd = self._textarea.selectionEnd ?? 0;
@@ -125,105 +180,64 @@ export function paintTextContent(self: Text, ctx: CanvasRenderingContext2D) {
     }
   }
 
-  // resolve fill style (solid or gradient)
   const fillStyle = resolveColorFill(ctx, style.color, w, h);
   ctx.fillStyle = fillStyle;
 
-  // text shadow setup
   const ts = style.textShadow;
   const hasTextShadow = !!(ts && ts.color);
-
-  // text stroke setup
   const hasStroke = !!(style.textStrokeColor && style.textStrokeWidth && style.textStrokeWidth > 0);
+  const hasDecoration = style.underline || style.strikethrough;
+  const decoColor = hasDecoration
+    ? (typeof style.color === "string" ? style.color : (style.textStrokeColor || "#000"))
+    : "";
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    let x = 0;
-
-    if (style.textAlign === "center") {
-      x = w / 2;
-    } else if (style.textAlign === "right") {
-      x = w;
-    }
-
+    const lineX = getAlignOffsetX(w, line, ctx, font, style.textAlign, ls);
+    const lineWidth = hasDecoration ? measureStringWidth(ctx, line, font, ls) : 0;
     const y = startY + i * lineHeightPx + blockOffset + intraLine;
 
-    // apply text shadow for this line
     if (hasTextShadow) {
-      ctx.shadowColor = ts!.color ?? "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = ts!.blur ?? 0;
-      ctx.shadowOffsetX = ts!.offsetX ?? 0;
-      ctx.shadowOffsetY = ts!.offsetY ?? 0;
+      applyTextShadow(ctx, ts!);
     }
 
-    // stroke first (behind fill)
     if (hasStroke) {
-      ctx.strokeStyle = style.textStrokeColor!;
-      ctx.lineWidth = style.textStrokeWidth!;
-      ctx.lineJoin = "round";
-      drawTextLine(ctx, line, x, y, ls, style.textAlign, font, false, true);
+      drawTextWithStroke(ctx, {
+        line, x: lineX, y, font, letterSpacing: ls,
+        strokeColor: style.textStrokeColor!,
+        strokeWidth: style.textStrokeWidth!,
+      });
     }
 
-    // fill text
     ctx.fillStyle = fillStyle;
-    drawTextLine(ctx, line, x, y, ls, style.textAlign, font, true, false);
+    drawTextLine(ctx, line, lineX, y, font, ls, true, false);
 
-    // clear shadow after first fill so decorations don't get shadowed
     if (hasTextShadow) {
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
+      clearTextShadow(ctx);
     }
 
-    // underline / strikethrough decorations
-    const hasDecoration = style.underline || style.strikethrough;
     if (hasDecoration) {
-      const lineWidth = measureStringWidth(ctx, line, font, ls);
-      const lineX = getLineLeftX(w, line, ctx, font, style.textAlign, ls);
-      const decoThickness = Math.max(1, style.fontSize / 15);
-      const colorStr = typeof style.color === "string" ? style.color : (style.textStrokeColor || "#000");
-
-      ctx.strokeStyle = colorStr;
-      ctx.lineWidth = decoThickness;
-
-      if (style.underline) {
-        const underlineY =
-          y +
-          style.fontSize * 0.1 +
-          (style.textBaseline === "top" ? style.fontSize : 0);
-        ctx.beginPath();
-        ctx.moveTo(lineX, underlineY);
-        ctx.lineTo(lineX + lineWidth, underlineY);
-        ctx.stroke();
-      }
-
-      if (style.strikethrough) {
-        const strikeY =
-          y +
-          (style.textBaseline === "top" ? style.fontSize * 0.5 : 0);
-        ctx.beginPath();
-        ctx.moveTo(lineX, strikeY);
-        ctx.lineTo(lineX + lineWidth, strikeY);
-        ctx.stroke();
-      }
+      drawTextDecoration(ctx, {
+        x: lineX,
+        y,
+        width: lineWidth,
+        fontSize: style.fontSize,
+        textBaseline: style.textBaseline,
+        underline: style.underline,
+        strikethrough: style.strikethrough,
+        color: decoColor,
+      });
     }
   }
 
-  // placeholder
   if (lines.length === 0 && self.placeholder) {
     ctx.fillStyle = self.placeholderColor || fillStyle;
-
-    let phX = 0;
-    if (style.textAlign === "center") phX = w / 2;
-    else if (style.textAlign === "right") phX = w;
-
+    const phX = getAlignOffsetX(w, self.placeholder, ctx, font, style.textAlign, ls);
     const phBlockOffset = getBlockVerticalOffset(h, lineHeightPx, style.verticalAlign);
-    drawTextLine(ctx, self.placeholder, phX, startY + phBlockOffset + intraLine, ls, style.textAlign, font, true, false);
+    drawTextLine(ctx, self.placeholder, phX, startY + phBlockOffset + intraLine, font, ls, true, false);
     ctx.fillStyle = fillStyle;
   }
 
-  // caret (editing mode)
   if (self.isEditing && self._caretVisible && self._textarea) {
     const selStart = self._textarea.selectionStart ?? 0;
     const selEnd = self._textarea.selectionEnd ?? 0;
