@@ -78,6 +78,9 @@ export interface SketchLayer {
 
   // boolean op for shapeGroup children
   booleanOperation?: number;
+
+  // clipping mask
+  hasClippingMask?: boolean;
 }
 
 // ─── geometry ──────────────────────────────────────────────

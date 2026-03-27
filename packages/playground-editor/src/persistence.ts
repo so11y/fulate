@@ -3,10 +3,12 @@ import {
   serializeSceneToJSON,
   restoreScene,
   parseFileData,
+  deserializeElement,
   exportToFile as toolsExportToFile,
   importFromFile as toolsImportFromFile,
   type ElementFilter,
 } from "@fulate/tools";
+import { importSketch } from "@fulate/import";
 
 const STORAGE_KEY = "fulate-editor-save";
 
@@ -41,4 +43,34 @@ export function exportToFile(root: Root) {
 
 export async function importFromFile(root: Root): Promise<boolean> {
   return toolsImportFromFile(root, CONTENT_FILTER);
+}
+
+export function importSketchFile(artboard: Element): Promise<boolean> {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".sketch";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return resolve(false);
+      try {
+        const result = await importSketch(file);
+        if (result.warnings.length) {
+          console.warn("[Sketch Import]", result.warnings);
+        }
+        const els = result.fileData.children
+          .map((data: any) => deserializeElement(data))
+          .filter(Boolean);
+        if (els.length) {
+          (artboard as any).append(...els);
+          (artboard as any).root?.requestRender();
+        }
+        resolve(els.length > 0);
+      } catch (e) {
+        console.error("[Sketch Import] failed:", e);
+        resolve(false);
+      }
+    };
+    input.click();
+  });
 }

@@ -8,6 +8,9 @@ export function convertTextProps(layer: SketchLayer): Partial<TextOption> {
   if (!attrStr) return result;
 
   result.text = attrStr.string;
+  result.overflow = "visible";
+  result.verticalAlign = "top";
+  result.wordWrap = false;
 
   // use the first (or longest) attribute range as the dominant style
   const dominant = getDominantAttribute(attrStr.attributes);

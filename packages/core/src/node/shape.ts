@@ -142,8 +142,12 @@ export class Shape extends Element {
       } = this.getVisualOutset();
       const absSx = Math.abs(m.a);
       const absSy = Math.abs(m.d);
-      const nodeLeft = m.e - oL * absSx;
-      const nodeTop = m.f - oT * absSy;
+      const baseW = this.width * absSx;
+      const baseH = this.height * absSy;
+      const baseLeft = m.a >= 0 ? m.e : m.e - baseW;
+      const baseTop = m.d >= 0 ? m.f : m.f - baseH;
+      const nodeLeft = baseLeft - oL * absSx;
+      const nodeTop = baseTop - oT * absSy;
       const w = (this.width + oL + oR) * absSx;
       const h = (this.height + oT + oB) * absSy;
 

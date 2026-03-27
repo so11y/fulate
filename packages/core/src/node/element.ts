@@ -395,12 +395,10 @@ export class Element extends Transformable {
     let inRootViewport: boolean;
 
     if (m.b === 0 && m.c === 0) {
-      const sx = m.a;
-      const sy = m.d;
-      const left = m.e;
-      const top = m.f;
-      const w = this.width * Math.abs(sx);
-      const h = this.height * Math.abs(sy);
+      const w = this.width * Math.abs(m.a);
+      const h = this.height * Math.abs(m.d);
+      const left = m.a >= 0 ? m.e : m.e - w;
+      const top = m.d >= 0 ? m.f : m.f - h;
 
       inRootViewport =
         left + w > viewLeft &&

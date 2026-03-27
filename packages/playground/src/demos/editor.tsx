@@ -4,6 +4,7 @@ import {
   Rectangle,
   Circle,
   Triangle,
+  Polygon,
   Text,
   Workspace,
   Pinned
@@ -146,6 +147,20 @@ registerDemo("editor", {
           width: 140,
           height: 120,
           backgroundColor: "#2ecc71"
+        }),
+        new Polygon({
+          left: 550,
+          top: 120,
+          backgroundColor: "#e67e22",
+          borderColor: "#d35400",
+          borderWidth: 2,
+          points: [
+            { x: 50, y: 0 },
+            { x: 100, y: 38 },
+            { x: 81, y: 100 },
+            { x: 19, y: 100 },
+            { x: 0, y: 38 }
+          ]
         }),
         new Text({
           left: 150,

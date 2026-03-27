@@ -3,6 +3,7 @@ const elements = [
   { type: "rectangle", label: "矩形", icon: "▭" },
   { type: "circle", label: "圆形", icon: "○" },
   { type: "triangle", label: "三角形", icon: "△" },
+  { type: "polygon", label: "多边形", icon: "⬠" },
   { type: "text", label: "文本", icon: "T" },
   { type: "image", label: "图片", icon: "🖼" },
   { type: "customer", label: "自定义", icon: "🤔" },

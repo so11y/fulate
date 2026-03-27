@@ -3,6 +3,7 @@ import {
   Rectangle,
   Circle,
   Triangle,
+  Polygon,
   Text,
   Image,
   Workspace,
@@ -45,6 +46,18 @@ export function initEditor(container: HTMLElement) {
       width: 140,
       height: 120,
       backgroundColor: "#2ECC71"
+    }),
+    new Polygon({
+      left: 600,
+      top: 300,
+      backgroundColor: "#E67E22",
+      points: [
+        { x: 50, y: 0 },
+        { x: 100, y: 38 },
+        { x: 81, y: 100 },
+        { x: 19, y: 100 },
+        { x: 0, y: 38 }
+      ]
     }),
     new Text({
       left: 150,
@@ -198,6 +211,19 @@ export function addElementToCanvas(
         width: 120,
         height: 100,
         backgroundColor: randomColor()
+      }),
+    polygon: () =>
+      new Polygon({
+        left: x - 50,
+        top: y - 50,
+        backgroundColor: randomColor(),
+        points: [
+          { x: 50, y: 0 },
+          { x: 100, y: 38 },
+          { x: 81, y: 100 },
+          { x: 19, y: 100 },
+          { x: 0, y: 38 }
+        ]
       }),
     text: () =>
       new Text({

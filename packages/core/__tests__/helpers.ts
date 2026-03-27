@@ -133,8 +133,13 @@ export interface MockRoot {
   textDefaults: Record<string, any>;
 }
 
-export function createMockRoot(): MockRoot {
-  return {
+export function createMockRoot(viewportRect?: {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}): MockRoot {
+  const root: MockRoot = {
     idElements: new Map(),
     keyElmenet: new Map(),
     _provides: {},
@@ -142,6 +147,12 @@ export function createMockRoot(): MockRoot {
     _pendingLayers: new Set(),
     textDefaults: {},
   };
+  if (viewportRect) {
+    (root as any).viewport = {
+      getWorldRect: () => ({ ...viewportRect }),
+    };
+  }
+  return root;
 }
 
 export interface MockLayer {

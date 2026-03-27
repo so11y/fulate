@@ -21,6 +21,7 @@ export default defineConfig({
       { find: /^@fulate\/tools(.*)$/, replacement: path.resolve(root, "packages/tools/src$1") },
       { find: /^@fulate\/yoga(.*)$/, replacement: path.resolve(root, "packages/yoga/src$1") },
       { find: /^@fulate\/vue(.*)$/, replacement: path.resolve(root, "packages/vue/src$1") },
+      { find: /^@fulate\/import(.*)$/, replacement: path.resolve(root, "packages/import/src$1") },
     ],
   },
   optimizeDeps: {

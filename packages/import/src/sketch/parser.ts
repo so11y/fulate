@@ -1,16 +1,17 @@
-import JSZip from "jszip";
+import { loadAsync, JSZipObject } from "jszip";
 import type {
   SketchFile,
   SketchDocument,
   SketchMeta,
-  SketchPage,
+  SketchPage
 } from "./types";
+import * as JSZip from "jszip";
 
 export async function parseSketchFile(
   data: File | ArrayBuffer
 ): Promise<SketchFile> {
   const buf = data instanceof File ? await data.arrayBuffer() : data;
-  const zip = await JSZip.loadAsync(buf);
+  const zip = await loadAsync(buf);
 
   const document = await readJSON<SketchDocument>(zip, "document.json");
   const meta = await readJSON<SketchMeta>(zip, "meta.json");
@@ -24,7 +25,7 @@ export async function parseSketchFile(
   const images = new Map<string, ArrayBuffer>();
   const imagesFolder = zip.folder("images");
   if (imagesFolder) {
-    const entries: { name: string; file: JSZip.JSZipObject }[] = [];
+    const entries: { name: string; file: JSZipObject }[] = [];
     imagesFolder.forEach((relativePath, file) => {
       if (!file.dir) entries.push({ name: relativePath, file });
     });

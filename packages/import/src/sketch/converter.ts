@@ -5,17 +5,44 @@ import { convertStyle } from "./style";
 import { convertTextProps } from "./text";
 import { resolveImageSrc } from "./image";
 
+// ─── context ──────────────────────────────────────────────
+
+interface FlattenContext {
+  offsetX: number;
+  offsetY: number;
+  flipH: boolean;
+  flipV: boolean;
+  groupW: number;
+  groupH: number;
+  zipImages: Map<string, ArrayBuffer>;
+  imageDataURLs: Map<string, string>;
+  warnings: string[];
+  out: any[];
+}
+
 // ─── public API ────────────────────────────────────────────
 
 export function convertSketchToFileData(sketch: SketchFile): ImportResult {
   const warnings: string[] = [];
   const imageDataURLs = new Map<string, string>();
-
   const children: any[] = [];
+
+  const ctx: FlattenContext = {
+    offsetX: 0,
+    offsetY: 0,
+    flipH: false,
+    flipV: false,
+    groupW: 0,
+    groupH: 0,
+    zipImages: sketch.images,
+    imageDataURLs,
+    warnings,
+    out: children,
+  };
+
   for (const page of sketch.pages) {
     for (const layer of page.layers ?? []) {
-      const converted = convertLayer(layer, sketch.images, imageDataURLs, warnings);
-      if (converted) children.push(converted);
+      flattenLayer(layer, ctx);
     }
   }
 
@@ -28,70 +55,108 @@ export function convertSketchToFileData(sketch: SketchFile): ImportResult {
   return { fileData, images: imageDataURLs, warnings };
 }
 
-// ─── recursive layer conversion ───────────────────────────
+// ─── flatten layer tree ───────────────────────────────────
+// Sketch uses nested groups with relative coordinates.
+// fulate groups work via id-reference, not tree nesting.
+// We flatten groups/artboards and accumulate coordinate offsets.
+// flipH/flipV and groupW/groupH track inherited group flipping.
 
-function convertLayer(
-  layer: SketchLayer,
-  zipImages: Map<string, ArrayBuffer>,
-  imageDataURLs: Map<string, string>,
-  warnings: string[]
-): any | null {
-  if (!layer.isVisible) return null;
+function flattenLayer(layer: SketchLayer, ctx: FlattenContext) {
+  if (!layer.isVisible) return;
+  if (layer.hasClippingMask) return;
 
-  const type = mapSketchClass(layer._class, layer, warnings);
-  if (!type) return null;
+  const cls = layer._class;
 
-  const base = buildBase(layer, type, warnings);
+  if (cls === "artboard") {
+    const childCtx: FlattenContext = {
+      ...ctx,
+      offsetX: ctx.offsetX,
+      offsetY: ctx.offsetY,
+      flipH: false,
+      flipV: false,
+      groupW: 0,
+      groupH: 0,
+    };
+    for (const child of layer.layers ?? []) {
+      flattenLayer(child, childCtx);
+    }
+    return;
+  }
 
-  // type-specific props
+  if (cls === "group") {
+    let cx = ctx.offsetX + layer.frame.x;
+    let cy = ctx.offsetY + layer.frame.y;
+
+    if (ctx.flipH) cx = ctx.offsetX + (ctx.groupW - layer.frame.x - layer.frame.width);
+    if (ctx.flipV) cy = ctx.offsetY + (ctx.groupH - layer.frame.y - layer.frame.height);
+
+    const childCtx: FlattenContext = {
+      ...ctx,
+      offsetX: cx,
+      offsetY: cy,
+      flipH: ctx.flipH !== !!layer.isFlippedHorizontal,
+      flipV: ctx.flipV !== !!layer.isFlippedVertical,
+      groupW: layer.frame.width,
+      groupH: layer.frame.height,
+    };
+
+    for (const child of layer.layers ?? []) {
+      flattenLayer(child, childCtx);
+    }
+    return;
+  }
+
+  const type = mapSketchClass(cls, layer, ctx.warnings);
+  if (!type) return;
+
+  const base = buildBase(layer, type, ctx);
+
   switch (type) {
     case "text":
       Object.assign(base, convertTextProps(layer));
       break;
-
     case "image":
-      assignImageSrc(base, layer, zipImages, imageDataURLs, warnings);
+      assignImageSrc(base, layer, ctx);
       break;
-
     case "line":
-      assignLinePoints(base, layer, warnings);
+      assignLinePoints(base, layer);
+      break;
+    case "polygon":
+      assignPolygonPoints(base, layer);
       break;
   }
 
-  // recurse children (group, workspace, etc.)
-  if (type !== "line" && layer.layers?.length) {
-    const childResults: any[] = [];
-    for (const child of layer.layers) {
-      const converted = convertLayer(child, zipImages, imageDataURLs, warnings);
-      if (converted) childResults.push(converted);
-    }
-    if (childResults.length) base.children = childResults;
-  }
+  if (ctx.flipH) base.scaleX = (base.scaleX ?? 1) * -1;
+  if (ctx.flipV) base.scaleY = (base.scaleY ?? 1) * -1;
 
-  return base;
+  ctx.out.push(base);
 }
 
 // ─── base props ────────────────────────────────────────────
 
-function buildBase(layer: SketchLayer, type: string, warnings: string[]) {
+function buildBase(layer: SketchLayer, type: string, ctx: FlattenContext) {
   const { props, warnings: styleWarnings } = convertStyle(layer.style);
 
   for (const w of styleWarnings) {
-    warnings.push(`[${layer.name}] ${w}`);
+    ctx.warnings.push(`[${layer.name}] ${w}`);
   }
+
+  let left = ctx.offsetX + layer.frame.x;
+  let top = ctx.offsetY + layer.frame.y;
+
+  if (ctx.flipH) left = ctx.offsetX + (ctx.groupW - layer.frame.x - layer.frame.width);
+  if (ctx.flipV) top = ctx.offsetY + (ctx.groupH - layer.frame.y - layer.frame.height);
 
   const base: any = {
     type,
-    left: layer.frame.x,
-    top: layer.frame.y,
+    left,
+    top,
     width: layer.frame.width,
     height: layer.frame.height,
     ...props,
   };
 
   if (layer.rotation) {
-    // Sketch stores rotation in degrees, counter-clockwise positive.
-    // fulate uses clockwise positive.
     base.angle = -layer.rotation;
   }
 
@@ -104,17 +169,15 @@ function buildBase(layer: SketchLayer, type: string, warnings: string[]) {
 // ─── class mapping ─────────────────────────────────────────
 
 const CLASS_MAP: Record<string, string> = {
-  artboard: "workspace",
-  group: "group",
   rectangle: "rectangle",
   oval: "circle",
   triangle: "triangle",
   text: "text",
   bitmap: "image",
-  star: "rectangle",         // fallback
-  polygon: "rectangle",     // fallback
-  slice: "",                 // skip
-  hotspot: "",               // skip
+  star: "polygon",
+  polygon: "polygon",
+  slice: "",
+  hotspot: "",
   MSImmutableHotspotLayer: "",
 };
 
@@ -123,22 +186,19 @@ function mapSketchClass(
   layer: SketchLayer,
   warnings: string[]
 ): string | null {
-  // direct mapping
   if (cls in CLASS_MAP) {
     const mapped = CLASS_MAP[cls];
-    if (!mapped) return null; // skip
-    if (cls === "star" || cls === "polygon") {
-      warnings.push(`[${layer.name}] "${cls}" mapped to rectangle (no native type)`);
+    if (!mapped) return null;
+    if (cls === "star") {
+      warnings.push(`[${layer.name}] "${cls}" mapped to polygon`);
     }
     return mapped;
   }
 
-  // shapePath → line (straight only) or skip (curve)
   if (cls === "shapePath") {
     return resolveShapePath(layer, warnings);
   }
 
-  // shapeGroup → rectangle fallback
   if (cls === "shapeGroup") {
     warnings.push(
       `[${layer.name}] shapeGroup mapped to rectangle (boolean ops not supported)`
@@ -146,7 +206,6 @@ function mapSketchClass(
     return "rectangle";
   }
 
-  // symbolInstance etc. — skip with warning
   warnings.push(`[${layer.name}] unsupported layer class "${cls}", skipped`);
   return null;
 }
@@ -163,19 +222,13 @@ function resolveShapePath(
     return null;
   }
 
-  // closed paths are not lines
   if (layer.isClosed) {
-    warnings.push(
-      `[${layer.name}] closed shapePath not supported, skipped`
-    );
-    return null;
+    return "polygon";
   }
 
   const hasCurve = points.some((p) => !isStraightPoint(p));
   if (hasCurve) {
-    warnings.push(
-      `[${layer.name}] curve shapePath not supported, skipped`
-    );
+    warnings.push(`[${layer.name}] curve shapePath not supported, skipped`);
     return null;
   }
 
@@ -186,33 +239,38 @@ function isStraightPoint(p: SketchCurvePoint): boolean {
   return p.curveMode === 1 && p.point === p.curveFrom && p.point === p.curveTo;
 }
 
-// ─── line points ───────────────────────────────────────────
+// ─── polygon points ─────────────────────────────────────────
 
-function assignLinePoints(
-  base: any,
-  layer: SketchLayer,
-  warnings: string[]
-) {
+function assignPolygonPoints(base: any, layer: SketchLayer) {
   const points = layer.points;
   if (!points?.length) return;
 
   const { width, height } = layer.frame;
+  base.points = points.map((p) => parseSketchPoint(p.point, width, height));
+}
 
-  // Sketch curvePoint.point is normalized "{x, y}" in 0~1 range relative to frame
+// ─── line points ───────────────────────────────────────────
+
+function assignLinePoints(base: any, layer: SketchLayer) {
+  const points = layer.points;
+  if (!points?.length) return;
+
+  const { width, height } = layer.frame;
   const parsed = points.map((p) => parseSketchPoint(p.point, width, height));
 
-  // fulate Line stores linePoints relative to left/top (first point is origin)
   const origin = parsed[0];
+
+  base.left += origin.x;
+  base.top += origin.y;
+
   base.linePoints = parsed.map((p) => ({
     x: p.x - origin.x,
     y: p.y - origin.y,
   }));
 
-  // line doesn't use width/height for sizing
   delete base.width;
   delete base.height;
 
-  // line-specific style: convert border to strokeColor/strokeWidth
   if (base.borderColor) {
     base.strokeColor = base.borderColor;
     delete base.borderColor;
@@ -222,12 +280,11 @@ function assignLinePoints(
     delete base.borderWidth;
   }
   delete base.borderPosition;
+
+  base.headDecoration = "none";
+  base.tailDecoration = "none";
 }
 
-/**
- * Sketch point strings look like "{0.5, 0.3}" — normalized 0~1 values.
- * Convert to absolute pixel coords within the frame.
- */
 function parseSketchPoint(
   str: string,
   frameW: number,
@@ -246,16 +303,14 @@ function parseSketchPoint(
 function assignImageSrc(
   base: any,
   layer: SketchLayer,
-  zipImages: Map<string, ArrayBuffer>,
-  imageDataURLs: Map<string, string>,
-  warnings: string[]
+  ctx: FlattenContext
 ) {
-  const src = resolveImageSrc(layer, zipImages);
+  const src = resolveImageSrc(layer, ctx.zipImages);
   if (src) {
     base.src = src;
     const ref = layer.image?._ref;
-    if (ref) imageDataURLs.set(ref, src);
+    if (ref) ctx.imageDataURLs.set(ref, src);
   } else {
-    warnings.push(`[${layer.name}] image resource not found`);
+    ctx.warnings.push(`[${layer.name}] image resource not found`);
   }
 }

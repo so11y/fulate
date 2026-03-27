@@ -5,6 +5,7 @@ import {
   saveToStorage,
   exportToFile,
   importFromFile,
+  importSketchFile,
   clearStorage,
 } from "../persistence";
 
@@ -38,6 +39,9 @@ function doExport() {
 }
 async function doImport() {
   if (store.root) await importFromFile(store.root as any);
+}
+async function doImportSketch() {
+  if (store.artboard) await importSketchFile(store.artboard as any);
 }
 function deleteSelected() {
   store.select?.delete();
@@ -114,6 +118,9 @@ function clearAll() {
       </button>
       <button class="tb" @click="doImport" title="导入JSON">
         <span class="tb-label">导入</span>
+      </button>
+      <button class="tb sketch" @click="doImportSketch" title="导入Sketch文件">
+        <span class="tb-label">Sketch</span>
       </button>
       <button class="tb danger" @click="clearAll" title="清空画布">
         <span class="tb-label">清空</span>
@@ -202,6 +209,16 @@ function clearAll() {
 
 .tb.accent:hover {
   background: #d2e3fc;
+}
+
+.tb.sketch {
+  background: #fff4e5;
+  color: #e8850c;
+  font-weight: 600;
+}
+
+.tb.sketch:hover {
+  background: #ffe8cc;
 }
 
 .tb.danger {
