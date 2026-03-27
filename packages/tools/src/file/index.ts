@@ -1,4 +1,4 @@
-import type { Element } from "@fulate/core";
+import type { Root, Element } from "@fulate/core";
 import { getElementCtor } from "@fulate/core";
 
 const FILE_MARKER = "__fulate_file__";
@@ -11,11 +11,7 @@ export interface FileData {
   [key: string]: any;
   __fulate_file__: true;
   version: number;
-  elements: any[];
-}
-
-function defaultFilter(_el: Element): boolean {
-  return true;
+  children: any[];
 }
 
 // ─── deserialize plugin registry ────────────────────────────
@@ -31,23 +27,27 @@ export function registerDeserializePlugin(
 
 // ─── serialize ──────────────────────────────────────────────
 
-export function serializeElements(
-  elements: Element[],
-  filter: ElementFilter = defaultFilter
+export function serializeScene(
+  root: Root,
+  filter?: ElementFilter
 ): FileData {
-  const filtered = elements.filter(filter);
+  const all = (root.children ?? []) as unknown as Element[];
+  const children = all
+    .filter((c) => !filter || filter(c))
+    .map((c) => c.toJson(true));
+
   return {
     [FILE_MARKER]: true,
     version: FILE_VERSION,
-    elements: filtered.map((el) => el.toJson(true)),
+    children,
   };
 }
 
-export function serializeToJSON(
-  elements: Element[],
+export function serializeSceneToJSON(
+  root: Root,
   filter?: ElementFilter
 ): string {
-  return JSON.stringify(serializeElements(elements, filter));
+  return JSON.stringify(serializeScene(root, filter));
 }
 
 // ─── deserialize ────────────────────────────────────────────
@@ -88,18 +88,28 @@ export function deserializeElement(data: any): Element | undefined {
   return el;
 }
 
-export function deserializeElements(
-  data: any[],
+// ─── restore ────────────────────────────────────────────────
+
+export function restoreScene(
+  root: Root,
+  fileData: FileData,
   filter?: ElementFilter
-): Element[] {
-  const elements: Element[] = [];
-  for (const item of data) {
-    const el = deserializeElement(item);
-    if (el && (!filter || filter(el))) {
-      elements.push(el);
-    }
-  }
-  return elements;
+) {
+  root.viewport.x = 0;
+  root.viewport.y = 0;
+  root.viewport.scale = 1;
+
+  const all = (root.children ?? []) as unknown as Element[];
+  const toRemove = all.filter((c) => !filter || filter(c));
+  if (toRemove.length) root.removeChild(...toRemove);
+
+  const els = fileData.children
+    .map((data: any) => deserializeElement(data))
+    .filter(Boolean) as Element[];
+
+  if (els.length) root.append(...els);
+
+  root.requestRender();
 }
 
 // ─── file data validation ───────────────────────────────────
@@ -108,7 +118,7 @@ export function isValidFileData(data: any): data is FileData {
   return (
     data != null &&
     data[FILE_MARKER] === true &&
-    Array.isArray(data.elements)
+    Array.isArray(data.children)
   );
 }
 
@@ -121,14 +131,14 @@ export function parseFileData(json: string): FileData | null {
   }
 }
 
-// ─── export to file ─────────────────────────────────────────
+// ─── export to file (download) ──────────────────────────────
 
 export function exportToFile(
-  elements: Element[],
+  root: Root,
   filename = "fulate-design.json",
   filter?: ElementFilter
 ) {
-  const json = serializeToJSON(elements, filter);
+  const json = serializeSceneToJSON(root, filter);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -138,43 +148,33 @@ export function exportToFile(
   URL.revokeObjectURL(url);
 }
 
-// ─── import from file ───────────────────────────────────────
+// ─── import from file (file picker) ─────────────────────────
 
 export function importFromFile(
+  root: Root,
   filter?: ElementFilter
-): Promise<Element[]> {
+): Promise<boolean> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
     input.onchange = () => {
       const file = input.files?.[0];
-      if (!file) return resolve([]);
+      if (!file) return resolve(false);
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const json = reader.result as string;
-          const fileData = parseFileData(json);
-          if (!fileData) return resolve([]);
-          resolve(deserializeElements(fileData.elements, filter));
+          const fileData = parseFileData(reader.result as string);
+          if (!fileData) return resolve(false);
+          restoreScene(root, fileData, filter);
+          resolve(true);
         } catch {
-          resolve([]);
+          resolve(false);
         }
       };
-      reader.onerror = () => resolve([]);
+      reader.onerror = () => resolve(false);
       reader.readAsText(file);
     };
     input.click();
   });
-}
-
-// ─── import from JSON string ────────────────────────────────
-
-export function importFromJSON(
-  json: string,
-  filter?: ElementFilter
-): Element[] {
-  const fileData = parseFileData(json);
-  if (!fileData) return [];
-  return deserializeElements(fileData.elements, filter);
 }

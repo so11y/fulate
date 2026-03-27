@@ -1,7 +1,8 @@
-import type { Artboard, Element } from "@fulate/core";
+import type { Root, Element } from "@fulate/core";
 import {
-  serializeToJSON,
-  deserializeElements,
+  serializeSceneToJSON,
+  restoreScene,
+  parseFileData,
   exportToFile as toolsExportToFile,
   importFromFile as toolsImportFromFile,
   type ElementFilter,
@@ -9,43 +10,35 @@ import {
 
 const STORAGE_KEY = "fulate-editor-save";
 
-const TOOLS_FILTER: ElementFilter = (el: Element) => {
+const CONTENT_FILTER: ElementFilter = (el: Element) => {
   const t = el.type;
-  return t !== "select" && t !== "snap" && t !== "rule" && t !== "lineTool";
+  return t !== "editer-layer" && t !== "layer-overlay";
 };
 
-export function saveToStorage(artboard: Artboard) {
-  const json = serializeToJSON(artboard.children as Element[], TOOLS_FILTER);
+export { CONTENT_FILTER };
+
+export function saveToStorage(root: Root) {
+  const json = serializeSceneToJSON(root, CONTENT_FILTER);
   localStorage.setItem(STORAGE_KEY, json);
 }
 
-export function loadFromStorage(artboard: Artboard): boolean {
+export function loadFromStorage(root: Root): boolean {
   const json = localStorage.getItem(STORAGE_KEY);
   if (!json) return false;
-  try {
-    const parsed = JSON.parse(json);
-    const items = Array.isArray(parsed)
-      ? parsed
-      : parsed?.elements;
-    if (!Array.isArray(items) || items.length === 0) return false;
-    const els = deserializeElements(items);
-    for (const el of els) artboard.append(el);
-    return els.length > 0;
-  } catch {
-    return false;
-  }
+  const fileData = parseFileData(json);
+  if (!fileData) return false;
+  restoreScene(root, fileData, CONTENT_FILTER);
+  return true;
 }
 
 export function clearStorage() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-export function exportToFile(artboard: Artboard) {
-  toolsExportToFile(artboard.children as Element[], "fulate-design.json", TOOLS_FILTER);
+export function exportToFile(root: Root) {
+  toolsExportToFile(root, "fulate-design.json", CONTENT_FILTER);
 }
 
-export async function importFromFile(artboard: Artboard): Promise<boolean> {
-  const els = await toolsImportFromFile();
-  for (const el of els) artboard.append(el);
-  return els.length > 0;
+export async function importFromFile(root: Root): Promise<boolean> {
+  return toolsImportFromFile(root, CONTENT_FILTER);
 }

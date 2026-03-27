@@ -20,15 +20,14 @@ export { alignElements } from "./select/align";
 export type { AlignType } from "./select/align";
 export { copyElements, pasteElements, registerClipboardPlugin } from "./select/clipboard";
 export {
-  serializeElements,
-  serializeToJSON,
+  serializeScene,
+  serializeSceneToJSON,
   deserializeElement,
-  deserializeElements,
   registerDeserializePlugin,
+  restoreScene,
   isValidFileData,
   parseFileData,
   exportToFile,
-  importFromFile,
-  importFromJSON
+  importFromFile
 } from "./file/index";
 export type { ElementFilter, FileData, DeserializeFactory } from "./file/index";

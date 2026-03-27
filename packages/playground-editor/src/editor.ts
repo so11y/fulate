@@ -22,97 +22,94 @@ export function initEditor(container: HTMLElement) {
   (root as any)._overlay = overlayLayer;
 
   const artboard = new Artboard();
-
-  if (!loadFromStorage(artboard)) {
-    artboard.append(
-      new Rectangle({
-        left: 120,
-        top: 80,
-        width: 200,
-        height: 150,
-        backgroundColor: "#4A90D9",
-        radius: 8,
-        shadow: { color: "rgba(0,0,0,0.12)", blur: 8, offsetY: 2 }
-      }),
-      new Circle({
-        left: 420,
-        top: 100,
-        width: 120,
-        height: 120,
-        backgroundColor: "#E74C3C"
-      }),
-      new Triangle({
-        left: 280,
-        top: 300,
-        width: 140,
-        height: 120,
-        backgroundColor: "#2ECC71"
-      }),
-      new Text({
-        left: 150,
-        top: 460,
-        width: 320,
-        height: 50,
-        text: "Fulate Editor Demo",
-        textAlign: "center",
-        verticalAlign: "middle",
-        backgroundColor: "#F39C12",
-        color: "#fff",
-        fontSize: 20,
-        radius: 6
-      }),
-      new Rectangle({
-        left: 550,
-        top: 280,
-        width: 160,
-        height: 100,
-        backgroundColor: "#9B59B6",
-        radius: 12,
-        borderColor: "#7D3C98",
-        borderWidth: 2,
-        children: [
-          new Pinned({
-            target: (e: any) => e.parent!,
-            isPin: true,
-            anchorX: 1,
-            anchorY: 0,
-            pivotX: 0.5,
-            pivotY: 1,
-            left: 0,
-            top: -8,
-            width: 52,
-            height: 22,
-            backgroundColor: "#1ABC9C",
-            radius: 5,
-            children: [
-              new Text({
-                left: 0,
-                top: 0,
-                width: 52,
-                height: 22,
-                text: "Pin",
-                color: "#fff",
-                fontSize: 11,
-                textAlign: "center",
-                verticalAlign: "middle",
-                silent: true,
-                pickable: false
-              })
-            ]
-          }) as any
-        ]
-      }),
-      new Rectangle({
-        left: 600,
-        top: 80,
-        width: 120,
-        height: 80,
-        backgroundColor: "#3498DB",
-        radius: 6,
-        opacity: 0.7
-      })
-    );
-  }
+  artboard.append(
+    new Rectangle({
+      left: 120,
+      top: 80,
+      width: 200,
+      height: 150,
+      backgroundColor: "#4A90D9",
+      radius: 8,
+      shadow: { color: "rgba(0,0,0,0.12)", blur: 8, offsetY: 2 }
+    }),
+    new Circle({
+      left: 420,
+      top: 100,
+      width: 120,
+      height: 120,
+      backgroundColor: "#E74C3C"
+    }),
+    new Triangle({
+      left: 280,
+      top: 300,
+      width: 140,
+      height: 120,
+      backgroundColor: "#2ECC71"
+    }),
+    new Text({
+      left: 150,
+      top: 460,
+      width: 320,
+      height: 50,
+      text: "Fulate Editor Demo",
+      textAlign: "center",
+      verticalAlign: "middle",
+      backgroundColor: "#F39C12",
+      color: "#fff",
+      fontSize: 20,
+      radius: 6
+    }),
+    new Rectangle({
+      left: 550,
+      top: 280,
+      width: 160,
+      height: 100,
+      backgroundColor: "#9B59B6",
+      radius: 12,
+      borderColor: "#7D3C98",
+      borderWidth: 2,
+      children: [
+        new Pinned({
+          target: (e: any) => e.parent!,
+          isPin: true,
+          anchorX: 1,
+          anchorY: 0,
+          pivotX: 0.5,
+          pivotY: 1,
+          left: 0,
+          top: -8,
+          width: 52,
+          height: 22,
+          backgroundColor: "#1ABC9C",
+          radius: 5,
+          children: [
+            new Text({
+              left: 0,
+              top: 0,
+              width: 52,
+              height: 22,
+              text: "Pin",
+              color: "#fff",
+              fontSize: 11,
+              textAlign: "center",
+              verticalAlign: "middle",
+              silent: true,
+              pickable: false
+            })
+          ]
+        }) as any
+      ]
+    }),
+    new Rectangle({
+      left: 600,
+      top: 80,
+      width: 120,
+      height: 80,
+      backgroundColor: "#3498DB",
+      radius: 6,
+      opacity: 0.7
+    })
+  );
 
   const workspace = new Workspace({
     width: 1920,
@@ -133,6 +130,8 @@ export function initEditor(container: HTMLElement) {
 
   root.append(contentLayer, editerLayer, overlayLayer);
   root.mount();
+
+  loadFromStorage(root);
 
   store.root = markRaw(root);
   store.artboard = markRaw(artboard);

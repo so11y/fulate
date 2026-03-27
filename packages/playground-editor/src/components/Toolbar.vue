@@ -31,17 +31,13 @@ function resetZoom() {
   store.root?.resetViewport();
 }
 function save() {
-  if (store.artboard) {
-    saveToStorage(store.artboard as any);
-  }
+  if (store.root) saveToStorage(store.root as any);
 }
 function doExport() {
-  if (store.artboard) exportToFile(store.artboard as any);
+  if (store.root) exportToFile(store.root as any);
 }
 async function doImport() {
-  if (store.artboard) {
-    await importFromFile(store.artboard as any);
-  }
+  if (store.root) await importFromFile(store.root as any);
 }
 function deleteSelected() {
   store.select?.delete();
