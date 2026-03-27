@@ -249,6 +249,12 @@ export class Viewport {
   }
 
   toJSON() {
-    return { x: this.x, y: this.y, scale: this.scale };
+    return {
+      x: this.x,
+      y: this.y,
+      scale: this.scale,
+      minScale: this.minScale,
+      maxScale: this.maxScale,
+    };
   }
 }

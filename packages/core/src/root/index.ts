@@ -96,6 +96,25 @@ export class Root extends Node {
     this.requestRender();
   }
 
+  resize(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+
+    const dpr = this.viewport.dpr;
+    for (const layer of this.layers) {
+      layer.width = width;
+      layer.height = height;
+      layer.canvasEl.width = width * dpr;
+      layer.canvasEl.height = height * dpr;
+      layer.canvasEl.style.width = width + "px";
+      layer.canvasEl.style.height = height + "px";
+    }
+
+    this._updateContainerRect();
+    this.viewport.syncPaintedViewport();
+    this.requestRender();
+  }
+
   private _updateContainerRect() {
     this._containerRect = this.container.getBoundingClientRect();
   }
