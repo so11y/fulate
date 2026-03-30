@@ -43,7 +43,6 @@ export function restoreScene(options: RestoreOptions) {
     }
   }
 
-  console.log("??");
   root.viewport.reset();
 
   const select = root.find<any>("select");
@@ -62,6 +61,18 @@ export function restoreScene(options: RestoreOptions) {
   if (els.length) append(els, root);
 
   root.requestRender();
+}
+
+// ─── file picker ────────────────────────────────────────────
+
+export function pickFile(accept: string): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.onchange = () => resolve(input.files?.[0] ?? null);
+    input.click();
+  });
 }
 
 // ─── binary helpers ─────────────────────────────────────────

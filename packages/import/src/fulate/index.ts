@@ -1,6 +1,6 @@
 import type { Root, Element } from "@fulate/core";
 import { getElementCtor } from "@fulate/core";
-import { restoreScene as restoreSceneBase } from "../util";
+import { restoreScene as restoreSceneBase, pickFile } from "../util";
 import type { ElementFilter } from "../util";
 
 export type { ElementFilter };
@@ -147,31 +147,25 @@ export function exportToFile(
 
 // ─── import from file (file picker) ─────────────────────────
 
-export function importFromFile(
+export async function importFromFile(
   root: Root,
   filter?: ElementFilter
 ): Promise<boolean> {
+  const file = await pickFile(".json");
+  if (!file) return false;
   return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return resolve(false);
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const fileData = parseFileData(reader.result as string);
-          if (!fileData) return resolve(false);
-          restoreScene(root, fileData, filter);
-          resolve(true);
-        } catch {
-          resolve(false);
-        }
-      };
-      reader.onerror = () => resolve(false);
-      reader.readAsText(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const fileData = parseFileData(reader.result as string);
+        if (!fileData) return resolve(false);
+        restoreScene(root, fileData, filter);
+        resolve(true);
+      } catch {
+        resolve(false);
+      }
     };
-    input.click();
+    reader.onerror = () => resolve(false);
+    reader.readAsText(file);
   });
 }

@@ -1,19 +1,18 @@
-import type { Root, Element } from "@fulate/core";
+import type { Root } from "@fulate/core";
 import {
   serializeSceneToJSON,
   restoreScene,
-  restoreSceneBase,
   parseFileData,
   deserializeElement,
   exportToFile as toolsExportToFile,
   importFromFile as toolsImportFromFile,
-  importSketch,
+  importSketchFile as toolsImportSketchFile,
   type ElementFilter,
 } from "@fulate/import";
 
 const STORAGE_KEY = "fulate-editor-save";
 
-const CONTENT_FILTER: ElementFilter = (el: Element) => {
+const CONTENT_FILTER: ElementFilter = (el) => {
   const t = el.type;
   return t !== "editer-layer" && t !== "layer-overlay";
 };
@@ -46,32 +45,6 @@ export async function importFromFile(root: Root): Promise<boolean> {
   return toolsImportFromFile(root, CONTENT_FILTER);
 }
 
-export function importSketchFile(root: Root, artboard: Element): Promise<boolean> {
-  return new Promise((resolve) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".sketch";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return resolve(false);
-      try {
-        const result = await importSketch(file);
-        if (result.warnings.length) {
-          console.warn("[Sketch Import]", result.warnings);
-        }
-        restoreSceneBase({
-          root,
-          fileData: result.fileData,
-          deserialize: deserializeElement,
-          append: (els) => (artboard as any).append(...els),
-          filter: CONTENT_FILTER,
-        });
-        resolve(result.fileData.children.length > 0);
-      } catch (e) {
-        console.error("[Sketch Import] failed:", e);
-        resolve(false);
-      }
-    };
-    input.click();
-  });
+export function importSketchFile(root: Root): Promise<boolean> {
+  return toolsImportSketchFile(root, deserializeElement, CONTENT_FILTER);
 }
