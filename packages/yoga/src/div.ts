@@ -156,6 +156,9 @@ export function withYoga<T extends new (...arg: any[]) => BaseRectangle>(
         }
       }
 
+      if (options.width !== undefined) this._hasExplicitWidth = true;
+      if (options.height !== undefined) this._hasExplicitHeight = true;
+
       const rest: any = {};
       for (const key of Object.keys(options)) {
         if (!ExtractKey.has(key)) {

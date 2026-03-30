@@ -43,14 +43,12 @@ const FormPanel = defineComponent({
         borderWidth={0.5}
         borderPosition="inside"
       >
-        <f-text
+        <f-span
           text={props.title}
           fontSize={16}
           fontWeight={600}
           fontFamily={MD3.fontFamily}
           color={MD3.onSurface}
-          height={24}
-          verticalAlign="middle"
         />
 
         <FSelect
@@ -233,7 +231,7 @@ registerDemo("editor", {
           title: "Shape Controls",
           left: 600,
           top: 100,
-          width: 300,
+          width: 350,
           height: 250
         }),
         fromVueToFulate(FButton, {
