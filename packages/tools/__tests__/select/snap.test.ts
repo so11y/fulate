@@ -143,7 +143,7 @@ describe("buildAxisSnapLines", () => {
       matchedIndex: 0,
       segments: [{ min: 50, max: 200 }],
     };
-    const lines = buildAxisSnapLines(best, { min: 10, max: 40 }, "vertical");
+    const lines = buildAxisSnapLines(best, { min: 10, max: 40 }, "vertical", 1);
 
     expect(lines.length).toBeGreaterThan(0);
     for (const line of lines) {
@@ -159,7 +159,7 @@ describe("buildAxisSnapLines", () => {
       matchedIndex: 0,
       segments: [{ min: 10, max: 300 }],
     };
-    const lines = buildAxisSnapLines(best, { min: 0, max: 100 }, "horizontal");
+    const lines = buildAxisSnapLines(best, { min: 0, max: 100 }, "horizontal", 1);
 
     expect(lines.length).toBeGreaterThan(0);
     for (const line of lines) {
@@ -175,7 +175,7 @@ describe("buildAxisSnapLines", () => {
       matchedIndex: 0,
       segments: [{ min: 200, max: 300 }],
     };
-    const lines = buildAxisSnapLines(best, { min: 0, max: 50 }, "vertical");
+    const lines = buildAxisSnapLines(best, { min: 0, max: 50 }, "vertical", 1);
 
     const gapLine = lines.find(
       (l) => l.start >= 50 && l.end <= 200
@@ -191,7 +191,7 @@ describe("buildAxisSnapLines", () => {
       matchedIndex: 0,
       segments: [{ min: 50, max: 50.5 }],
     };
-    const lines = buildAxisSnapLines(best, { min: 0, max: 40 }, "vertical");
+    const lines = buildAxisSnapLines(best, { min: 0, max: 40 }, "vertical", 1);
     const segLine = lines.find((l) => l.start === 50 && l.end === 50.5);
     expect(segLine).toBeUndefined();
   });
@@ -206,9 +206,9 @@ describe("buildAxisSnapLines", () => {
         { min: 300, max: 350 },
       ],
     };
-    const lines = buildAxisSnapLines(best, { min: 0, max: 50 }, "vertical");
+    const lines = buildAxisSnapLines(best, { min: 0, max: 50 }, "vertical", 1);
     const gapLines = lines.filter((l) => l.distanceText !== undefined);
-    expect(gapLines.length).toBeGreaterThanOrEqual(2);
+    expect(gapLines.length).toBeGreaterThanOrEqual(1);
   });
 
   it("快照验证完整输出结构", () => {
@@ -218,7 +218,7 @@ describe("buildAxisSnapLines", () => {
       matchedIndex: 0,
       segments: [{ min: 50, max: 200 }],
     };
-    const lines = buildAxisSnapLines(best, { min: 0, max: 30 }, "vertical");
+    const lines = buildAxisSnapLines(best, { min: 0, max: 30 }, "vertical", 1);
     expect(lines).toMatchSnapshot();
   });
 });

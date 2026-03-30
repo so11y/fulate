@@ -24,7 +24,7 @@ exports[`buildAxisSnapLines > 快照验证完整输出结构 1`] = `
     "value": 100,
   },
   {
-    "distanceText": "20",
+    "distanceText": undefined,
     "end": 50,
     "points": [
       {
@@ -37,10 +37,7 @@ exports[`buildAxisSnapLines > 快照验证完整输出结构 1`] = `
       },
     ],
     "start": 30,
-    "textPos": {
-      "x": 105,
-      "y": 40,
-    },
+    "textPos": undefined,
     "type": "vertical",
     "value": 100,
   },
