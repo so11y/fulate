@@ -1,4 +1,4 @@
-import type { FileData } from "@fulate/tools";
+import type { FileData } from "./fulate";
 
 export interface ImportResult {
   fileData: FileData;

@@ -29,5 +29,5 @@ export {
   parseFileData,
   exportToFile,
   importFromFile
-} from "./file/index";
-export type { ElementFilter, FileData, DeserializeFactory } from "./file/index";
+} from "@fulate/import";
+export type { ElementFilter, FileData, DeserializeFactory } from "@fulate/import";

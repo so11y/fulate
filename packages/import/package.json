@@ -12,7 +12,6 @@
     "@fulate/util": "*",
     "@fulate/core": "*",
     "@fulate/ui": "*",
-    "@fulate/tools": "*",
     "jszip": "^3.10.1"
   }
 }

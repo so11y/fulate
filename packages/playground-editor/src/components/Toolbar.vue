@@ -41,7 +41,7 @@ async function doImport() {
   if (store.root) await importFromFile(store.root as any);
 }
 async function doImportSketch() {
-  if (store.artboard) await importSketchFile(store.artboard as any);
+  if (store.root && store.artboard) await importSketchFile(store.root as any, store.artboard as any);
 }
 function deleteSelected() {
   store.select?.delete();

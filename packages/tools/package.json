@@ -11,6 +11,7 @@
   "dependencies": {
     "@fulate/util": "*",
     "@fulate/core": "*",
-    "@fulate/ui": "*"
+    "@fulate/ui": "*",
+    "@fulate/import": "*"
   }
 }

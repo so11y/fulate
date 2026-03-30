@@ -1,10 +1,13 @@
 import type { Root, Element } from "@fulate/core";
 import { getElementCtor } from "@fulate/core";
+import { restoreScene as restoreSceneBase } from "../util";
+import type { ElementFilter } from "../util";
+
+export type { ElementFilter };
 
 const FILE_MARKER = "__fulate_file__";
 const FILE_VERSION = 1;
 
-export type ElementFilter = (element: Element) => boolean;
 export type DeserializeFactory = (data: any) => Element | undefined;
 
 export interface FileData {
@@ -103,34 +106,7 @@ export function restoreScene(
   fileData: FileData,
   filter?: ElementFilter
 ) {
-  if (fileData.root) {
-    const { viewport, textDefaults, width, height } = fileData.root;
-    if (textDefaults) Object.assign(root.textDefaults, textDefaults);
-    if (width != null && height != null) {
-      root.resize(width, height);
-    }
-    if (viewport) {
-      if (viewport.minScale != null) root.viewport.minScale = viewport.minScale;
-      if (viewport.maxScale != null) root.viewport.maxScale = viewport.maxScale;
-    }
-  }
-
-  root.viewport.reset();
-
-  const select = root.find<any>("select");
-  select?.history?.clear();
-
-  const all = (root.children ?? []) as unknown as Element[];
-  const toRemove = all.filter((c) => !filter || filter(c));
-  if (toRemove.length) root.removeChild(...toRemove);
-
-  const els = fileData.children
-    .map((data: any) => deserializeElement(data))
-    .filter(Boolean) as Element[];
-
-  if (els.length) root.append(...els);
-
-  root.requestRender();
+  restoreSceneBase({ root, fileData, deserialize: deserializeElement, filter });
 }
 
 // ─── file data validation ───────────────────────────────────

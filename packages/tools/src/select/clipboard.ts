@@ -3,8 +3,8 @@ import type { Select } from "./index";
 import {
   deserializeElement,
   registerDeserializePlugin,
-} from "../file/index";
-import type { DeserializeFactory } from "../file/index";
+} from "@fulate/import";
+import type { DeserializeFactory } from "@fulate/import";
 
 const CLIPBOARD_MARKER = "__fulate_clipboard__";
 const PASTE_OFFSET = 20;

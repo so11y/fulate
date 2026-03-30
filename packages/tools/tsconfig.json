@@ -9,6 +9,7 @@
   "references": [
     { "path": "../util" },
     { "path": "../core" },
-    { "path": "../ui" }
+    { "path": "../ui" },
+    { "path": "../import" }
   ]
 }

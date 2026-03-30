@@ -1,6 +1,6 @@
 import type { SketchFile, SketchLayer, SketchCurvePoint } from "./types";
 import type { ImportResult } from "../types";
-import type { FileData } from "@fulate/tools";
+import type { FileData } from "../fulate";
 import { convertStyle } from "./style";
 import { convertTextProps } from "./text";
 import { resolveImageSrc } from "./image";
