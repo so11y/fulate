@@ -251,14 +251,25 @@ export class Shape extends Element {
 
   protected paintBorder(ctx: CanvasRenderingContext2D) {
     if (!this.borderColor || !this.borderWidth) return;
+
     this.buildBorderPath(ctx);
     if (isGradient(this.borderColor)) {
       ctx.strokeStyle = createCanvasGradient(ctx, this.borderColor, this.width!, this.height!);
     } else {
       ctx.strokeStyle = this.borderColor;
     }
-    ctx.lineWidth = this.borderWidth;
-    ctx.stroke();
+
+    if (this.borderPosition === "inside") {
+      ctx.save();
+      this.buildPath(ctx);
+      ctx.clip();
+      ctx.lineWidth = this.borderWidth * 2;
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.lineWidth = this.borderWidth;
+      ctx.stroke();
+    }
   }
 
   private paintShadow(ctx: CanvasRenderingContext2D, fn: () => void) {

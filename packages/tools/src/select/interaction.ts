@@ -153,13 +153,13 @@ function handleControl(select: Select, e: FulateEvent) {
   );
 }
 
-function handleSelectMove(select: Select, e: FulateEvent) {
+function handleSelectMove(select: Select, e: FulateEvent, forceDisableSnap = false) {
   const startPoint = new Point(e.detail.x, e.detail.y);
 
   select.history.snapshot(select.selectEls);
   const schema = select.getActiveSchema();
   const snapExcludes = schema.getSnapExcludes?.(select);
-  const disableSnap = snapExcludes?.disableSnap === true;
+  const disableSnap = forceDisableSnap || snapExcludes?.disableSnap === true;
   if (!disableSnap) {
     const excludeEls = select.selectEls.concat(select as any);
     if (snapExcludes?.excludeElements) {
@@ -319,6 +319,22 @@ export function setupInteraction(select: Select): () => void {
       return;
     }
 
+    if (isCtrl && e.key === "a") {
+      e.preventDefault();
+      const allElements = new Set<Element>();
+      for (const layer of select.root.layers) {
+        const items = layer.rbush.all();
+        for (const item of items) {
+          const el = item.element;
+          if (!el.isActiveed || !el.visible) continue;
+          const resolved = checkElement(el, [select]);
+          if (resolved) allElements.add(resolved);
+        }
+      }
+      select.select(Array.from(allElements));
+      return;
+    }
+
     if (e.key === "Escape") {
       e.preventDefault();
       select.select([]);
@@ -328,6 +344,25 @@ export function setupInteraction(select: Select): () => void {
     if (e.key === "Delete" || e.key === "Backspace") {
       e.preventDefault();
       select.delete();
+      return;
+    }
+
+    if (
+      (e.key === "ArrowUp" || e.key === "ArrowDown" ||
+       e.key === "ArrowLeft" || e.key === "ArrowRight") &&
+      select.selectEls.length > 0
+    ) {
+      e.preventDefault();
+      const step = e.shiftKey ? 10 : 1;
+      let dx = 0, dy = 0;
+      if (e.key === "ArrowLeft") dx = -step;
+      else if (e.key === "ArrowRight") dx = step;
+      else if (e.key === "ArrowUp") dy = -step;
+      else if (e.key === "ArrowDown") dy = step;
+
+      handleSelectMove(select, { detail: { x: 0, y: 0 } } as any, true);
+      select.root.dispatchEvent("pointermove", { x: dx, y: dy });
+      select.root.dispatchEvent("pointerup", { x: dx, y: dy });
     }
   };
 

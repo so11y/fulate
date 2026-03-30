@@ -27,7 +27,6 @@ export type { RippleOption } from "./ripple";
 export { AnchorIndicator } from "./anchor-indicator";
 export { ForkNode } from "./fork-node";
 export type { ForkNodeOption } from "./fork-node";
-
 // Line
 export {
   BaseLine,
