@@ -142,12 +142,8 @@ function flattenLayer(layer: SketchLayer, ctx: FlattenContext) {
       break;
   }
 
-  const needFlipH = ctx.flipH !== !!layer.isFlippedHorizontal;
-  const needFlipV = ctx.flipV !== !!layer.isFlippedVertical;
-
-  if (needFlipH || needFlipV) {
-    mirrorElementData(base, type, needFlipH, needFlipV, ctx.warnings);
-  }
+  if (ctx.flipH) base.scaleX = (base.scaleX ?? 1) * -1;
+  if (ctx.flipV) base.scaleY = (base.scaleY ?? 1) * -1;
 
   ctx.out.push(base);
 }
@@ -189,6 +185,9 @@ function buildBase(layer: SketchLayer, type: string, ctx: FlattenContext) {
     const cr = layer.points[0].cornerRadius;
     if (cr > 0) base.radius = cr;
   }
+
+  if (layer.isFlippedHorizontal) base.scaleX = -1;
+  if (layer.isFlippedVertical) base.scaleY = -1;
 
   return base;
 }
@@ -368,75 +367,5 @@ function assignImageSrc(base: any, layer: SketchLayer, ctx: FlattenContext) {
     if (ref) ctx.imageDataURLs.set(ref, src);
   } else {
     ctx.warnings.push(`[${layer.name}] image resource not found`);
-  }
-}
-
-// ─── data-level flip ────────────────────────────────────────
-
-function mirrorElementData(
-  base: any,
-  type: string,
-  flipH: boolean,
-  flipV: boolean,
-  warnings: string[]
-) {
-  if (type === "line" && base.linePoints) {
-    mirrorLinePoints(base, flipH, flipV);
-    return;
-  }
-
-  if (type === "polygon" && base.points) {
-    mirrorPolygonPoints(base, flipH, flipV);
-    return;
-  }
-
-  if (type === "image") {
-    if (flipH) base.scaleX = (base.scaleX ?? 1) * -1;
-    if (flipV) base.scaleY = (base.scaleY ?? 1) * -1;
-    return;
-  }
-
-  if (type === "text") {
-    warnings.push(`[text] flip on text is not supported, ignored`);
-    return;
-  }
-
-  // rectangle, circle, triangle — symmetric, nothing to do
-}
-
-function mirrorLinePoints(base: any, flipH: boolean, flipV: boolean) {
-  const pts: { x: number; y: number }[] = base.linePoints;
-  if (!pts.length) return;
-
-  if (flipH) {
-    const maxX = Math.max(...pts.map((p) => p.x));
-    for (const p of pts) p.x = maxX - p.x;
-  }
-  if (flipV) {
-    const maxY = Math.max(...pts.map((p) => p.y));
-    for (const p of pts) p.y = maxY - p.y;
-  }
-
-  const origin = pts[0];
-  if (origin.x !== 0 || origin.y !== 0) {
-    base.left += origin.x;
-    base.top += origin.y;
-    for (const p of pts) {
-      p.x -= origin.x;
-      p.y -= origin.y;
-    }
-  }
-}
-
-function mirrorPolygonPoints(base: any, flipH: boolean, flipV: boolean) {
-  const pts: { x: number; y: number }[] = base.points;
-  if (!pts.length) return;
-
-  const w = base.width ?? 0;
-  const h = base.height ?? 0;
-
-  for (const p of pts) {
-    if (flipH) p.x = w - p.x;
-    if (flipV) p.y = h - p.y;
   }
 }
