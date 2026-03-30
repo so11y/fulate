@@ -191,6 +191,50 @@ describe("undo / redo", () => {
     expect(parent.append).toHaveBeenCalled();
   });
 
+  it("undo 恢复 angle 从非零到默认值零", () => {
+    const el = mockElement({ left: 10, angle: 0 });
+    history.snapshot([el]);
+    el.angle = 45;
+    history.commit();
+
+    history.undo();
+    expect(el.angle).toBe(0);
+  });
+
+  it("undo 恢复 left/top 从非零到默认值零", () => {
+    const el = mockElement({ left: 0, top: 0 });
+    history.snapshot([el]);
+    el.left = 100;
+    el.top = 50;
+    history.commit();
+
+    history.undo();
+    expect(el.left).toBe(0);
+    expect(el.top).toBe(0);
+  });
+
+  it("undo 恢复 scaleX/scaleY 从非一到默认值一", () => {
+    const el = mockElement({ scaleX: 1, scaleY: 1 });
+    history.snapshot([el]);
+    el.scaleX = 2;
+    el.scaleY = 0.5;
+    history.commit();
+
+    history.undo();
+    expect(el.scaleX).toBe(1);
+    expect(el.scaleY).toBe(1);
+  });
+
+  it("undo 恢复 skewX 从非零到默认值零", () => {
+    const el = mockElement({ skewX: 0 });
+    history.snapshot([el]);
+    el.skewX = 15;
+    history.commit();
+
+    history.undo();
+    expect(el.skewX).toBe(0);
+  });
+
   it("undo → 调用 restoreSelect 恢复选区快照", () => {
     mockSelect.selectEls = [];
     mockSelect.width = 100;

@@ -64,10 +64,18 @@ export class HistoryManager {
     const parent = element.parent;
     const index =
       parent && parent.children ? parent.children.indexOf(element) : -1;
+    const props = JSON.parse(JSON.stringify(element.toJson()));
+    props.left ??= 0;
+    props.top ??= 0;
+    props.angle ??= 0;
+    props.scaleX ??= 1;
+    props.scaleY ??= 1;
+    props.skewX ??= 0;
+    props.skewY ??= 0;
     return {
       isMounted: element.isMounted,
       isActiveed: element.isActiveed,
-      props: JSON.parse(JSON.stringify(element.toJson())),
+      props,
       parent,
       index
     };

@@ -9,8 +9,8 @@ import {
   parseFileData,
   exportToFile,
   restoreScene,
-} from "../../src/file/index";
-import type { ElementFilter, FileData } from "../../src/file/index";
+} from "../../src/fulate/index";
+import type { ElementFilter, FileData } from "../../src/fulate/index";
 
 // ─── Mock Element ────────────────────────────────────────────
 
