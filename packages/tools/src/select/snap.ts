@@ -108,11 +108,19 @@ export function collectSnapData(
 export function buildAxisSnapLines(
   best: ClosestMatch,
   movingRange: { min: number; max: number },
-  type: "vertical" | "horizontal"
+  type: "vertical" | "horizontal",
+  scale: number
 ): SnapLine[] {
   const lines: SnapLine[] = [];
   const val = best.targetVal;
   const isVert = type === "vertical";
+
+  const charWidth = 7;
+  const padding = 10;
+  const hasRoom = (dist: number) => {
+    const textPx = `${Math.round(dist)}`.length * charWidth + padding;
+    return dist * scale >= textPx;
+  };
 
   const allRanges: { min: number; max: number; isMoving: boolean }[] = [
     { ...movingRange, isMoving: true }
@@ -126,23 +134,28 @@ export function buildAxisSnapLines(
   }
   allRanges.sort((a, b) => a.min - b.min);
 
+  const movingIdx = allRanges.findIndex((r) => r.isMoving);
+
   const mkPt = (along: number): PointType =>
     isVert ? { x: val, y: along } : { x: along, y: val };
   const mkTextPos = (mid: number): PointType =>
     isVert ? { x: val + 5, y: mid } : { x: mid, y: val - 5 };
 
-  for (const range of allRanges) {
+  for (let idx = 0; idx < allRanges.length; idx++) {
+    const range = allRanges[idx];
     if (range.isMoving) continue;
     const dist = range.max - range.min;
     if (dist > 1) {
+      const isNeighbor = idx === movingIdx - 1 || idx === movingIdx + 1;
+      const show = isNeighbor && hasRoom(dist);
       lines.push({
         type,
         value: val,
         start: range.min,
         end: range.max,
-        points: [mkPt(range.min), mkPt(range.max)],
-        distanceText: `${Math.round(dist)}`,
-        textPos: mkTextPos((range.min + range.max) / 2)
+        points: isNeighbor ? [mkPt(range.min), mkPt(range.max)] : [],
+        distanceText: show ? `${Math.round(dist)}` : undefined,
+        textPos: show ? mkTextPos((range.min + range.max) / 2) : undefined
       });
     }
   }
@@ -154,14 +167,16 @@ export function buildAxisSnapLines(
       if (next.min > maxReach) {
         const distance = next.min - maxReach;
         if (distance > 0) {
+          const isNeighbor = i - 1 === movingIdx || i === movingIdx;
+          const show = isNeighbor && hasRoom(distance);
           lines.push({
             type,
             value: val,
             start: maxReach,
             end: next.min,
-            points: [mkPt(maxReach), mkPt(next.min)],
-            distanceText: `${Math.round(distance)}`,
-            textPos: mkTextPos((maxReach + next.min) / 2)
+            points: isNeighbor ? [mkPt(maxReach), mkPt(next.min)] : [],
+            distanceText: show ? `${Math.round(distance)}` : undefined,
+            textPos: show ? mkTextPos((maxReach + next.min) / 2) : undefined
           });
         }
       }
@@ -294,7 +309,7 @@ export class Snap extends Element {
         final_dy,
         "x"
       );
-      this.snapLines.push(...buildAxisSnapLines(bestX, range, "vertical"));
+      this.snapLines.push(...buildAxisSnapLines(bestX, range, "vertical", this.root.viewport.scale));
     }
     if (bestY) {
       const range = this.computeMovingRange(
@@ -306,7 +321,7 @@ export class Snap extends Element {
         final_dy,
         "y"
       );
-      this.snapLines.push(...buildAxisSnapLines(bestY, range, "horizontal"));
+      this.snapLines.push(...buildAxisSnapLines(bestY, range, "horizontal", this.root.viewport.scale));
     }
 
     this.layer.requestRender();
