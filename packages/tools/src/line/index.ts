@@ -1,8 +1,7 @@
 import { BaseElementOption, Element } from "@fulate/core";
 import { FulateEvent } from "@fulate/core";
-import { getElementAnchorPoints, isAnchorAvailable } from "@fulate/core";
 import { Line, LinePointData, ForkNode } from "@fulate/ui";
-import { checkElement } from "../select/checkElement";
+import type { Snap } from "../select/snap";
 
 export class LineTool extends Element {
   type = "lineTool";
@@ -19,16 +18,6 @@ export class LineTool extends Element {
     anchorType: string;
   } | null = null;
 
-  disabledAnchorStyle: {
-    fillStyle: string;
-    strokeStyle: string;
-  } = {
-    fillStyle: "rgba(180, 180, 180, 0.4)",
-    strokeStyle: "rgba(180, 180, 180, 0.6)"
-  };
-
-  private _disabledAnchors: Array<{ x: number; y: number }> = [];
-  private _anchorThreshold = 10;
   private _cleanups: Array<() => void> = [];
 
   private _forkMode = false;
@@ -62,6 +51,13 @@ export class LineTool extends Element {
     this._forkSourceLine = null;
     this._forkNode = null;
     this.root.container.style.cursor = "default";
+
+    const snap = this._snap;
+    if (snap) {
+      snap.anchorHighlights = [];
+      snap.layer.requestRender();
+    }
+
     this.markNeedsLayout();
   }
 
@@ -106,7 +102,7 @@ export class LineTool extends Element {
       document.removeEventListener("keydown", onKeyDown)
     );
 
-    const onPointerDown = (e: FulateEvent) => {
+    const onPointerDown = async (e: FulateEvent) => {
       if (!this.isDrawingMode) return;
 
       const x = e.detail.x;
@@ -114,6 +110,23 @@ export class LineTool extends Element {
 
       if (this._forkMode && this.tempPoints.length === 0 && this._forkSourceLine) {
         this._createForkNodeOnFirstClick();
+      }
+
+      if (this.nearestAnchor && this.tempPoints.length >= 1) {
+        const snap = this._snap;
+        if (snap) {
+          const firstAnchor = this.tempPoints[0]?.anchor;
+          const allowed = await snap.validateAnchorConnection({
+            from: firstAnchor
+              ? { elementId: firstAnchor.elementId, anchorId: firstAnchor.anchorType }
+              : null,
+            to: {
+              elementId: this.nearestAnchor.elementId,
+              anchorId: this.nearestAnchor.anchorType
+            }
+          });
+          if (!allowed) return;
+        }
       }
 
       let pointData: LinePointData;
@@ -245,45 +258,21 @@ export class LineTool extends Element {
     return select ? [this, select] : [this];
   }
 
+  private get _snap(): Snap | null {
+    return (this.root.keyElmenet.get("snap") as Snap) ?? null;
+  }
+
   private _detectAnchor(mx: number, my: number) {
-    this.nearestAnchor = null;
-    this._disabledAnchors = [];
-    const threshold = this._anchorThreshold / this.root.viewport.scale;
-    let bestDist = threshold * threshold;
-    const excludes = this._excludes;
+    const snap = this._snap;
+    if (!snap) {
+      this.nearestAnchor = null;
+      return;
+    }
+    const role: "output" | "input" =
+      this.tempPoints.length === 0 ? "output" : "input";
 
-    this.root.searchArea(
-      {
-        left: mx - threshold,
-        top: my - threshold,
-        width: threshold * 2,
-        height: threshold * 2
-      },
-      ({ element }) => {
-        const resolved = checkElement(element, excludes);
-        if (!resolved || resolved.type === "line") return;
-
-        const anchors = getElementAnchorPoints(element);
-        for (const a of anchors) {
-          if (a.type === "center") continue;
-          if (!isAnchorAvailable(element, a.type)) {
-            this._disabledAnchors.push({ x: a.x, y: a.y });
-            continue;
-          }
-          const dx = a.x - mx;
-          const dy = a.y - my;
-          const d2 = dx * dx + dy * dy;
-          if (d2 < bestDist) {
-            bestDist = d2;
-            this.nearestAnchor = {
-              x: a.x,
-              y: a.y,
-              elementId: element.id,
-              anchorType: a.type
-            };
-          }
-        }
-      }
+    this.nearestAnchor = snap.detectAnchorSnap(
+      mx, my, this._excludes, { role, skipCenter: true }
     );
   }
 
@@ -393,37 +382,27 @@ export class LineTool extends Element {
   private _drawAllAnchors(ctx: CanvasRenderingContext2D, scale: number) {
     if (!this.isDrawingMode) return;
 
+    const snap = this._snap;
+    if (!snap) return;
+
     const size = 3 / scale;
-    const excludes = this._excludes;
-    this.root.searchArea(this.root.viewport.getWorldRect(), ({ element }) => {
-      const resolved = checkElement(element, excludes);
-      if (!resolved || resolved.type === "line") return;
-
-      const anchors = getElementAnchorPoints(element);
-      for (const a of anchors) {
-        const isNearest =
-          this.nearestAnchor &&
-          Math.abs(a.x - this.nearestAnchor.x) < 0.1 &&
-          Math.abs(a.y - this.nearestAnchor.y) < 0.1;
-        if (isNearest) continue;
-
-        const available = isAnchorAvailable(element, a.type);
-        if (!available) {
-          ctx.fillStyle = this.disabledAnchorStyle.fillStyle;
-          ctx.strokeStyle = this.disabledAnchorStyle.strokeStyle;
-          ctx.lineWidth = 1 / scale;
-          ctx.beginPath();
-          ctx.arc(a.x, a.y, size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-        } else {
-          ctx.fillStyle = "rgba(79, 129, 255, 0.5)";
-          ctx.beginPath();
-          ctx.arc(a.x, a.y, size, 0, Math.PI * 2);
-          ctx.fill();
-        }
+    for (const h of snap.anchorHighlights) {
+      if (h.matched) continue;
+      if (!h.available) {
+        ctx.fillStyle = "rgba(180, 180, 180, 0.4)";
+        ctx.strokeStyle = "rgba(180, 180, 180, 0.6)";
+        ctx.lineWidth = 1 / scale;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = "rgba(79, 129, 255, 0.5)";
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, size, 0, Math.PI * 2);
+        ctx.fill();
       }
-    });
+    }
   }
 
   hasInView(): boolean {

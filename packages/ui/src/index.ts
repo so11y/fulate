@@ -42,8 +42,7 @@ export type {
   LineOption,
   AnchorPoint,
   AnchorPointData,
-  AnchorLabelStyle,
-  AnchorSnapContext
+  AnchorLabelStyle
 } from "./line/index";
 
 import { registerElement } from "@fulate/core";

@@ -505,7 +505,9 @@ export function mockSnap() {
     start: vi.fn(),
     detect: vi.fn(() => ({ dx: 0, dy: 0 })),
     stop: vi.fn(),
-    detectAnchorSnap: vi.fn(async () => null),
+    detectAnchorSnap: vi.fn(() => null),
+    validateAnchorConnection: vi.fn(async () => true),
+    anchorHighlights: [],
     isActive: false,
   };
 }

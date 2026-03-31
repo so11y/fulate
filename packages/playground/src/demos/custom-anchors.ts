@@ -142,6 +142,42 @@ registerDemo("custom-anchors", {
 
     root.append(contentLayer, editerLayer);
     root.mount();
+    // 节点 A：拒绝来自节点 D 的连入
+    nodeA.addEventListener("beforeAnchorIn", (e) => {
+      console.log(e.detail, "A beforeAnchorIn");
+      if (!e.detail.data.from) return;
+      const el = root.find(e.detail.data.from.elementId);
+      if (el.id === nodeD.id) {
+        e.detail.reject();
+        e.stopPropagation();
+        alert("节点 A 拒绝来自节点 D 的连入");
+      }
+    });
+
+    // 节点 D：只允许连出到节点 C
+    nodeD.addEventListener("beforeAnchorOut", (e) => {
+      console.log(e.detail, "D beforeAnchorOut");
+      const targetEl = root.find(e.detail.data.to.elementId);
+      if (targetEl.id !== nodeC.id) {
+        e.detail.reject();
+        alert("节点 D 只允许连出到节点 C");
+      }
+    });
+
+    // 节点 B：拒绝所有连入
+    nodeB.addEventListener("beforeAnchorIn", (e) => {
+      console.log(e.detail, "B beforeAnchorIn");
+      e.detail.reject();
+      alert("节点 B 拒绝所有连入");
+    });
+
+    // 全局监听：记录所有连入事件
+    root.addEventListener("beforeAnchorIn", (e) => {
+      console.log(e.detail, "Root beforeAnchorIn");
+    });
+    root.addEventListener("beforeAnchorOut", (e) => {
+      console.log(e.detail, "Root beforeAnchorOut");
+    });
 
     const btnContainer = document.createElement("div");
     btnContainer.style.cssText =
@@ -182,7 +218,11 @@ registerDemo("custom-anchors", {
       const anchors = nodeC.anchors ?? [];
       const flipped = anchors.map((a) => ({
         ...a,
-        edge: (a.edge === "left" ? "right" : a.edge === "right" ? "left" : a.edge) as typeof a.edge
+        edge: (a.edge === "left"
+          ? "right"
+          : a.edge === "right"
+            ? "left"
+            : a.edge) as typeof a.edge
       }));
       nodeC.anchors = flipped;
       nodeC.markNeedsLayout();

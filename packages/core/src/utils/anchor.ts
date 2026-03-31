@@ -13,12 +13,6 @@ export interface AnchorLabelStyle {
   fontWeight?: string | number;
 }
 
-export interface AnchorSnapContext {
-  lineId: string;
-  elementId: string;
-  anchorId: string;
-}
-
 export interface AnchorPointData {
   /** 用户可选的显示名称，方便自己区分 */
   name?: string;
@@ -28,7 +22,12 @@ export interface AnchorPointData {
   labelStyle?: AnchorLabelStyle;
   /** 是否允许多条线连接到此锚点，默认 false（只能一条线） */
   multiLine?: boolean;
-  validateSnap?: (context: AnchorSnapContext) => Promise<boolean>;
+  /**
+   * "input"  — 只能被连接（不能从这里拉线）
+   * "output" — 只能拉出线（不能被别人连）
+   * 不设置   — 都可以（默认）
+   */
+  direction?: "input" | "output";
 }
 
 /**
@@ -191,18 +190,24 @@ export function serializeAnchors(data: AnchorPointData[]): any[] {
     if (a.labelWidth != null) out.labelWidth = a.labelWidth;
     if (a.labelStyle != null) out.labelStyle = { ...a.labelStyle };
     if (a.multiLine) out.multiLine = true;
+    if (a.direction) out.direction = a.direction;
     return out;
   });
 }
 
 /**
  * Check if an anchor on an element is available for a new line connection.
- * Returns false if the anchor is single-line (default) and already occupied.
+ *
+ * @param role - The role the anchor would play in this connection:
+ *   "output" when starting a line from this anchor,
+ *   "input" when connecting a line to this anchor.
+ *   Omit to skip direction checks (backwards-compatible).
  */
 export function isAnchorAvailable(
   element: Element,
   anchorId: string,
-  excludeLineId?: string
+  excludeLineId?: string,
+  role?: "input" | "output"
 ): boolean {
   const anchorDataList: AnchorPointData[] | null = (element as any).anchors;
   let anchorData: AnchorPointData | undefined;
@@ -210,6 +215,11 @@ export function isAnchorAvailable(
     const idMap = buildAnchorIdMap(anchorDataList);
     anchorData = idMap.get(anchorId);
   }
+
+  if (role && anchorData?.direction) {
+    if (anchorData.direction !== role) return false;
+  }
+
   const multiLine = anchorData?.multiLine ?? (element as any).anchorMultiLine ?? false;
   if (multiLine) return true;
 

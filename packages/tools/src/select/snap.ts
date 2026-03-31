@@ -1,8 +1,27 @@
 import { PointType } from "@fulate/util";
 import { BoundingBox, makeBoundsFromPoints } from "@fulate/util";
-import { BaseElementOption, Element, getElementAnchorPoints, isAnchorAvailable, buildAnchorIdMap } from "@fulate/core";
-import type { AnchorPointData } from "@fulate/core";
-import { Node } from "@fulate/core";
+import {
+  BaseElementOption,
+  Element,
+  getElementAnchorPoints,
+  isAnchorAvailable,
+  CustomEvent,
+  AsyncVetoEvent
+} from "@fulate/core";
+import type { Node } from "@fulate/core";
+
+export interface AnchorConnectDetail {
+  from: { elementId: string; anchorId: string } | null;
+  to: { elementId: string; anchorId: string };
+  lineId?: string;
+}
+
+declare module "@fulate/core" {
+  interface FulateEventMap {
+    beforeAnchorIn: CustomEvent<AsyncVetoEvent<AnchorConnectDetail>>;
+    beforeAnchorOut: CustomEvent<AsyncVetoEvent<AnchorConnectDetail>>;
+  }
+}
 import { checkElement } from "./checkElement";
 
 interface SnapLine {
@@ -152,7 +171,13 @@ export function buildAxisSnapLines(
     const range = allRanges[idx];
     if (range.isMoving) continue;
     if (range.max - range.min > 1) {
-      lines.push(mkLine(range.min, range.max, idx === movingIdx - 1 || idx === movingIdx + 1));
+      lines.push(
+        mkLine(
+          range.min,
+          range.max,
+          idx === movingIdx - 1 || idx === movingIdx + 1
+        )
+      );
     }
   }
 
@@ -160,7 +185,9 @@ export function buildAxisSnapLines(
   for (let i = 1; i < allRanges.length; i++) {
     const next = allRanges[i];
     if (next.min > maxReach && next.min - maxReach > 0) {
-      lines.push(mkLine(maxReach, next.min, i - 1 === movingIdx || i === movingIdx));
+      lines.push(
+        mkLine(maxReach, next.min, i - 1 === movingIdx || i === movingIdx)
+      );
     }
     maxReach = Math.max(maxReach, next.max);
   }
@@ -290,7 +317,14 @@ export class Snap extends Element {
         final_dy,
         "x"
       );
-      this.snapLines.push(...buildAxisSnapLines(bestX, range, "vertical", this.root.viewport.scale));
+      this.snapLines.push(
+        ...buildAxisSnapLines(
+          bestX,
+          range,
+          "vertical",
+          this.root.viewport.scale
+        )
+      );
     }
     if (bestY) {
       const range = this.computeMovingRange(
@@ -302,7 +336,14 @@ export class Snap extends Element {
         final_dy,
         "y"
       );
-      this.snapLines.push(...buildAxisSnapLines(bestY, range, "horizontal", this.root.viewport.scale));
+      this.snapLines.push(
+        ...buildAxisSnapLines(
+          bestY,
+          range,
+          "horizontal",
+          this.root.viewport.scale
+        )
+      );
     }
 
     this.layer.requestRender();
@@ -390,19 +431,30 @@ export class Snap extends Element {
     this.layer.requestRender();
   }
 
-  private anchorHighlights: Array<{
+  anchorHighlights: Array<{
     x: number;
     y: number;
     matched: boolean;
     available: boolean;
   }> = [];
 
-  async detectAnchorSnap(
+  detectAnchorSnap(
     worldX: number,
     worldY: number,
     excludeEls: Element[] = [],
-    lineId?: string
-  ): Promise<{ x: number; y: number; elementId: string; anchorType: string } | null> {
+    options?: {
+      lineId?: string;
+      role?: "input" | "output";
+      skipCenter?: boolean;
+    }
+  ): {
+    x: number;
+    y: number;
+    elementId: string;
+    anchorType: string;
+  } | null {
+    const { lineId, role = "input", skipCenter = false } = options ?? {};
+
     const threshold = 10 / this.root.viewport.scale;
     const threshold2 = threshold * threshold;
     let best: {
@@ -410,7 +462,6 @@ export class Snap extends Element {
       y: number;
       elementId: string;
       anchorType: string;
-      anchorData?: AnchorPointData;
     } | null = null;
     let bestDist = threshold2;
 
@@ -420,43 +471,33 @@ export class Snap extends Element {
       if (node.type === "line") return;
 
       const anchors = getElementAnchorPoints(node);
-      const anchorDataList: AnchorPointData[] | null = (node as any).anchors;
-      const anchorIdMap = anchorDataList ? buildAnchorIdMap(anchorDataList) : null;
 
       for (const a of anchors) {
+        if (skipCenter && a.type === "center") continue;
+
         const dx = a.x - worldX;
         const dy = a.y - worldY;
         const d2 = dx * dx + dy * dy;
-        const available = isAnchorAvailable(node, a.type, lineId);
+        const available = isAnchorAvailable(node, a.type, lineId, role);
 
-        this.anchorHighlights.push({ x: a.x, y: a.y, matched: false, available });
+        this.anchorHighlights.push({
+          x: a.x,
+          y: a.y,
+          matched: false,
+          available
+        });
 
         if (available && d2 < bestDist) {
           bestDist = d2;
-          const anchorData = anchorIdMap?.get(a.type);
           best = {
             x: a.x,
             y: a.y,
             elementId: node.id,
-            anchorType: a.type,
-            anchorData
+            anchorType: a.type
           };
         }
       }
     });
-
-    if (best && best.anchorData?.validateSnap && lineId) {
-      try {
-        const allowed = await best.anchorData.validateSnap({
-          lineId,
-          elementId: best.elementId,
-          anchorId: best.anchorType
-        });
-        if (!allowed) best = null;
-      } catch {
-        best = null;
-      }
-    }
 
     if (best) {
       for (const h of this.anchorHighlights) {
@@ -475,6 +516,21 @@ export class Snap extends Element {
       elementId: best.elementId,
       anchorType: best.anchorType
     };
+  }
+
+  async validateAnchorConnection(options: AnchorConnectDetail): Promise<boolean> {
+    const vetoEvent = new AsyncVetoEvent(options);
+    const targetEl = this.root.idElements.get(options.to.elementId);
+    targetEl?.dispatchEvent(
+      new CustomEvent("beforeAnchorIn", { detail: vetoEvent, bubbles: true })
+    );
+    if (options.from) {
+      const sourceEl = this.root.idElements.get(options.from.elementId);
+      sourceEl?.dispatchEvent(
+        new CustomEvent("beforeAnchorOut", { detail: vetoEvent, bubbles: true })
+      );
+    }
+    return vetoEvent.resolve();
   }
 
   paint() {

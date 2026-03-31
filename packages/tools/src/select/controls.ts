@@ -62,7 +62,7 @@ export interface ControlSchema {
   enableRotation?: boolean;
   enableBodyMove?: boolean;
   onDragStart?(select: Select, control: ControlPoint): void;
-  onDragEnd?(select: Select, control: ControlPoint): void;
+  onDragEnd?(select: Select, control: ControlPoint): void | Promise<void>;
   getSnapExcludes?(select: Select): {
     excludePoints?: { element: any; indices: number[] }[];
     excludeElements?: any[];

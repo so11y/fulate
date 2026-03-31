@@ -224,7 +224,7 @@ export class Root extends Node {
   }
 
   find<T = Element>(v: string): T | undefined {
-    return this.keyElmenet.get(v) as T;
+    return (this.keyElmenet.get(v)  ?? this.idElements.get(v) ) as T;
   }
 
   // ================= 碰撞检测（委托） =================

@@ -97,7 +97,7 @@ function getLineControlSchema(line: Line) {
             lineEl.removePoint(ptIndex);
             return true;
           },
-      onDrag: async (select, _point, _state, event) => {
+      onDrag: (select, _point, _state, event) => {
         const lineEl = select.selectEls[0] as Line;
         const snap = select.snapTool;
 
@@ -110,10 +110,10 @@ function getLineControlSchema(line: Line) {
 
         if (snap) {
           if (isEndpoint) {
-            const anchorHit = await snap.detectAnchorSnap(
+            const anchorHit = snap.detectAnchorSnap(
               targetX, targetY,
               [lineEl, select as any],
-              lineEl.id
+              { lineId: lineEl.id, role: "input" }
             );
             if (anchorHit) {
               targetX = anchorHit.x;
@@ -249,8 +249,33 @@ function getLineControlSchema(line: Line) {
         select.snapTool?.start([lineEl, select as any]);
       }
     },
-    onDragEnd(select) {
-      select.snapTool?.stop();
+    async onDragEnd(select, control) {
+      const snap = select.snapTool;
+      if (snap && control.id.startsWith("v")) {
+        const lineEl = select.selectEls[0] as Line;
+        const idx = parseInt(control.id.slice(1), 10);
+        const anchor = lineEl.linePoints[idx]?.anchor;
+        if (anchor) {
+          const otherIdx = idx === 0
+            ? lineEl.linePoints.length - 1
+            : 0;
+          const otherAnchor = lineEl.linePoints[otherIdx]?.anchor;
+          const allowed = await snap.validateAnchorConnection({
+            from: otherAnchor
+              ? { elementId: otherAnchor.elementId, anchorId: otherAnchor.anchorType }
+              : null,
+            to: { elementId: anchor.elementId, anchorId: anchor.anchorType },
+            lineId: lineEl.id
+          });
+          if (!allowed) {
+            lineEl._unregisterAnchor(anchor.elementId);
+            lineEl.linePoints[idx].anchor = undefined;
+            lineEl.rebindAnchors();
+            lineEl.markNeedsLayout();
+          }
+        }
+      }
+      snap?.stop();
     },
     bodyHitTest: (_select, point) => line.hasPointHint(point),
     paintFrame: (select, ctx) => {

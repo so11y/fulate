@@ -135,10 +135,10 @@ function handleControl(select: Select, e: FulateEvent) {
   select.root.addEventListener("pointermove", pointermove);
   select.root.addEventListener(
     "pointerup",
-    () => {
+    async () => {
       select.root.removeEventListener("pointermove", pointermove);
       if (dragStarted) {
-        schema.onDragEnd?.(select, control);
+        await schema.onDragEnd?.(select, control);
       }
       const updated = new Set();
       for (const el of select.selectEls) {

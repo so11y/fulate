@@ -28,6 +28,8 @@ export interface BaseElementOption<T = Element> extends TransformableOptions {
   silent?: boolean;
   pickable?: boolean;
 
+  anchors?: AnchorPointData[];
+
   enableRotation?: boolean;
   enableMove?: boolean;
   enableResize?: boolean;
@@ -88,9 +90,13 @@ export class Element extends Transformable {
     return this._anchors;
   }
   set anchors(value: AnchorPointData[] | null) {
-    const oldIds = this._anchors ? new Set(buildAnchorIdMap(this._anchors).keys()) : new Set<string>();
+    const oldIds = this._anchors
+      ? new Set(buildAnchorIdMap(this._anchors).keys())
+      : new Set<string>();
     this._anchors = value;
-    const newIds = value ? new Set(buildAnchorIdMap(value).keys()) : new Set<string>();
+    const newIds = value
+      ? new Set(buildAnchorIdMap(value).keys())
+      : new Set<string>();
 
     if (this.isActiveed && this.connectedLines) {
       for (const removedId of oldIds) {
@@ -283,9 +289,10 @@ export class Element extends Transformable {
     );
   }
 
-  static _createAnchorIndicator: (data: AnchorPointData, anchorId: string) => Element = (
-    data, anchorId
-  ) => {
+  static _createAnchorIndicator: (
+    data: AnchorPointData,
+    anchorId: string
+  ) => Element = (data, anchorId) => {
     const el = new Element({ width: 8, height: 8, visible: true });
     el.id = `__anchor_${anchorId}`;
     el.selectctbale = false;
@@ -366,7 +373,12 @@ export class Element extends Transformable {
     const root = this.root;
     if (!root) return false;
 
-    const { left: viewLeft, top: viewTop, width: vw, height: vh } = root.viewport.getWorldRect();
+    const {
+      left: viewLeft,
+      top: viewTop,
+      width: vw,
+      height: vh
+    } = root.viewport.getWorldRect();
 
     const m = this._ownMatrixCache;
     let inRootViewport: boolean;
@@ -444,8 +456,10 @@ export class Element extends Transformable {
       const currentValue = (this as any)[key];
 
       if (isColor) {
-        const curIsObj = typeof currentValue === "object" && currentValue !== null;
-        const tarIsObj = typeof targetValue === "object" && targetValue !== null;
+        const curIsObj =
+          typeof currentValue === "object" && currentValue !== null;
+        const tarIsObj =
+          typeof targetValue === "object" && targetValue !== null;
         if (curIsObj || tarIsObj) {
           startState[key] = targetValue;
           endState[key] = targetValue;

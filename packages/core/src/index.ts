@@ -1,12 +1,13 @@
 // Event system
-export { CustomEvent, EventEmitter } from "./event";
+export { CustomEvent, EventEmitter, AsyncVetoEvent } from "./event";
 export type {
   UserCanvasEvent,
   EventName,
   CanvasPointEvent,
   FulateEvent,
   CustomEventInit,
-  AddEventListenerOptions
+  AddEventListenerOptions,
+  FulateEventMap
 } from "./event";
 
 // Node system
@@ -29,8 +30,7 @@ export {
 export type {
   AnchorPoint,
   AnchorPointData,
-  AnchorLabelStyle,
-  AnchorSnapContext
+  AnchorLabelStyle
 } from "./utils/anchor";
 export { Shape } from "./node/shape";
 export type { ShapeOption, BorderPosition, ShadowOption, Outset } from "./node/shape";

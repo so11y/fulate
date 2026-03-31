@@ -9,4 +9,4 @@ export {
   getElementAnchorPoints,
   resolveAnchors
 } from "@fulate/core";
-export type { AnchorPoint, AnchorPointData, AnchorLabelStyle, AnchorSnapContext } from "@fulate/core";
+export type { AnchorPoint, AnchorPointData, AnchorLabelStyle } from "@fulate/core";

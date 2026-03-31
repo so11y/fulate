@@ -12,6 +12,9 @@ export type EventName =
   | "mouseleave"
   | "wheel";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface FulateEventMap {}
+
 export type CanvasPointEvent = (evt: UserCanvasEvent) => void;
 
 export interface FulateEvent<T = any> extends Omit<PointerEvent, "detail"> {
@@ -83,14 +86,24 @@ export class EventEmitter {
 
   private events: Map<string, Set<EventCallback>> = new Map();
 
+  addEventListener<K extends keyof FulateEventMap>(
+    eventName: K,
+    callback: EventCallback<FulateEventMap[K]>,
+    options?: AddEventListenerOptions
+  ): () => void;
   addEventListener<T = FulateEvent>(
     eventName: string,
     callback: EventCallback<T>,
     options?: AddEventListenerOptions
+  ): () => void;
+  addEventListener(
+    eventName: string,
+    callback: EventCallback<any>,
+    options?: AddEventListenerOptions
   ): () => void {
     this.isSubscribed = true;
     const once = options?.once ?? false;
-    const handler: EventCallback<T> = once
+    const handler: EventCallback<any> = once
       ? (data) => {
           callback(data);
           this.removeEventListener(eventName, handler);
@@ -198,5 +211,45 @@ export class EventEmitter {
 
   clearEventListener(): void {
     this.events.clear();
+  }
+}
+
+/**
+ * Async-capable veto event. Listeners call `reject()` to synchronously veto,
+ * or `rejectAsync(promise)` to veto asynchronously (e.g. confirm dialog,
+ * server validation). After dispatching, the caller `await`s `resolve()` to
+ * get the final verdict.
+ */
+export class AsyncVetoEvent<T extends Record<string, any> = Record<string, any>> {
+  readonly data: T;
+
+  private _rejected = false;
+  private _promises: Promise<void>[] = [];
+
+  constructor(data: T) {
+    this.data = data;
+  }
+
+  get rejected() {
+    return this._rejected;
+  }
+
+  reject() {
+    this._rejected = true;
+  }
+
+  rejectAsync(promise: Promise<void>) {
+    this._promises.push(promise);
+  }
+
+  async resolve(): Promise<boolean> {
+    if (this._rejected) return false;
+    if (this._promises.length === 0) return true;
+    try {
+      await Promise.all(this._promises);
+      return !this._rejected;
+    } catch {
+      return false;
+    }
   }
 }
