@@ -48,6 +48,8 @@ export class Node extends EventEmitter {
   _root: Root | null = null;
   _layer: Layer | null = null;
 
+  _initProps: any = null;
+
   get layer(): Layer {
     return this._layer ?? this.inject("layer");
   }
@@ -63,6 +65,23 @@ export class Node extends EventEmitter {
   get lastChild(): this | null {
     if (!this.children?.length) return null;
     return this.children[this.children.length - 1];
+  }
+
+  constructor(options?: any) {
+    super();
+    if (options) {
+      const { children, ...props } = options;
+      this._initProps = props;
+      if (children) this.children = children as any;
+    }
+  }
+
+  syncProps(): this {
+    if (this._initProps) {
+      this.attrs(this._initProps);
+      this._initProps = null;
+    }
+    return this;
   }
 
   attrs(options: any) {}
@@ -224,6 +243,7 @@ export class Node extends EventEmitter {
     if (this.isMounted) {
       return;
     }
+    this.syncProps();
     this.isMounted = true;
     this.uIndex = Node.uIndex++;
     if (this.id === undefined) {

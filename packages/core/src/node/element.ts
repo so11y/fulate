@@ -129,27 +129,10 @@ export class Element extends Transformable {
   private _activeTweens?: Set<Tween<Element>>;
   declare children: this[];
   declare parent: this;
-  private _initProps: any = null;
 
-  constructor(options?: BaseElementOption) {
-    super();
-    if (options) {
-      const { children, ...props } = options;
-      this._initProps = props;
-      if (children) this.children = children as any;
-    }
-  }
 
-  syncProps(): this {
-    if (this._initProps) {
-      this.attrs(this._initProps);
-      this._initProps = null;
-    }
-    return this;
-  }
-
+ 
   mounted() {
-    this.syncProps();
     super.mounted();
     if (this._anchors?.length) this._syncAnchorIndicators();
   }

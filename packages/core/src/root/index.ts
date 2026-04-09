@@ -53,16 +53,17 @@ export class Root extends Node {
       height?: number;
       scale?: { min?: number; max?: number };
       theme?: Partial<Theme>;
+      children?: Array<Element>;
     }
   ) {
-    super();
+    super(options);
     this.container = el;
     this.width = options?.width ?? el.clientWidth;
     this.height = options?.height ?? el.clientHeight;
 
     this.viewport = new Viewport(this, {
       minScale: options?.scale?.min ?? 0.1,
-      maxScale: options?.scale?.max ?? 10,
+      maxScale: options?.scale?.max ?? 10
     });
 
     this.container.style.position = "relative";
@@ -73,7 +74,7 @@ export class Root extends Node {
     this.provide("root", this);
     this.textDefaults = {
       ...defaultTheme.text,
-      ...options?.theme?.text,
+      ...options?.theme?.text
     };
   }
 
@@ -224,7 +225,7 @@ export class Root extends Node {
   }
 
   find<T = Element>(v: string): T | undefined {
-    return (this.keyElmenet.get(v)  ?? this.idElements.get(v) ) as T;
+    return (this.keyElmenet.get(v) ?? this.idElements.get(v)) as T;
   }
 
   // ================= 碰撞检测（委托） =================
@@ -276,7 +277,11 @@ export class Root extends Node {
     if (select && element !== select) {
       this.dispatchEvent(
         new CustomEvent(eventName, {
-          detail: { ctrlKey: (e as any).ctrlKey, shiftKey: (e as any).shiftKey, ...detail }
+          detail: {
+            ctrlKey: (e as any).ctrlKey,
+            shiftKey: (e as any).shiftKey,
+            ...detail
+          }
         })
       );
       return;
@@ -297,7 +302,7 @@ export class Root extends Node {
       viewport: this.viewport.toJSON(),
       textDefaults: { ...this.textDefaults },
       width: this.width,
-      height: this.height,
+      height: this.height
     };
   }
 
