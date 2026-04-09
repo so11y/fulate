@@ -129,18 +129,12 @@ registerDemo("custom-anchors", {
       children: [artboard]
     });
 
-    const contentLayer = new Layer({
-      zIndex: 1,
-      enableDirtyRect: true,
-      children: [workspace]
-    });
-
     const editerLayer = new EditerLayer({
       zIndex: 2,
       children: [new Select(), new Snap(), new LineTool()]
     });
 
-    root.append(contentLayer, editerLayer);
+    root.append(workspace, editerLayer);
     root.mount();
     // 节点 A：拒绝来自节点 D 的连入
     nodeA.addEventListener("beforeAnchorIn", (e) => {
