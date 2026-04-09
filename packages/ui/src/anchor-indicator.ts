@@ -183,23 +183,37 @@ export class AnchorIndicator extends Shape {
     const hostMatrix = host.getOwnMatrix();
     const aLocal = this._anchorLocalOnHost();
     const dot = hostMatrix.transformPoint({ x: aLocal.x, y: aLocal.y });
-    const { cx, cy, wnx, lineH } = this._labelWorldCenter(dot, hostMatrix);
+    const { cx, cy, wnx, wny, lineH } = this._labelWorldCenter(dot, hostMatrix);
 
     const w = this.labelWidth;
-    const align: CanvasTextAlign =
-      Math.abs(wnx) > Math.abs(1 - Math.abs(wnx))
-        ? wnx > 0
-          ? "left"
-          : "right"
-        : "center";
+    const isHorizontalEdge = Math.abs(wnx) > Math.abs(wny);
+    let align: CanvasTextAlign;
+    let x: number;
+    let tx: number;
+
+    if (isHorizontalEdge) {
+      if (wnx > 0) {
+        align = "left";
+        x = cx - GAP;
+        tx = x;
+      } else {
+        align = "right";
+        x = cx + GAP - w;
+        tx = x + w;
+      }
+    } else {
+      align = "center";
+      x = cx - w / 2;
+      tx = cx;
+    }
 
     return {
-      x: cx - w / 2,
+      x,
       y: cy - lineH / 2,
       w,
       h: lineH,
       align,
-      tx: cx,
+      tx,
       ty: cy
     };
   }
@@ -270,9 +284,17 @@ export class AnchorIndicator extends Shape {
     const sx = (x: number) => x * vp.scale + vp.x;
     const sy = (y: number) => y * vp.scale + vp.y;
 
-    ctx.fillStyle = '#fff'
+    const lx = sx(rect.x);
+    const ly = sy(rect.y);
+    const lw = rect.w * vp.scale;
+    const lh = rect.h * vp.scale;
 
-    ctx.rect(sx(rect.tx), sy(rect.ty), 0, 100);
+    ctx.beginPath();
+    ctx.rect(lx, ly, lw, lh);
+    ctx.clip();
+
+    // ctx.fillStyle = "red";
+    // ctx.fillRect(lx, ly, lw, lh);
 
     ctx.font = font;
     ctx.fillStyle = color;
@@ -290,19 +312,22 @@ export class AnchorIndicator extends Shape {
       return this._boundingRectCache;
     }
 
+    const rect = this._labelWorldRect();
     const hostMatrix = this.parent.getOwnMatrix();
     const aLocal = this._anchorLocalOnHost();
     const dotWorld = hostMatrix.transformPoint({ x: aLocal.x, y: aLocal.y });
-    const { cx, cy, lineH } = this._labelWorldCenter(dotWorld, hostMatrix);
 
-    const w = this.labelWidth;
-    const textLeft = cx - w / 2;
-    const textTop = cy - lineH / 2;
+    let minX = dotWorld.x - DOT_RADIUS;
+    let minY = dotWorld.y - DOT_RADIUS;
+    let maxX = dotWorld.x + DOT_RADIUS;
+    let maxY = dotWorld.y + DOT_RADIUS;
 
-    const minX = Math.min(textLeft, dotWorld.x - DOT_RADIUS);
-    const minY = Math.min(textTop, dotWorld.y - DOT_RADIUS);
-    const maxX = Math.max(textLeft + w, dotWorld.x + DOT_RADIUS);
-    const maxY = Math.max(textTop + lineH, dotWorld.y + DOT_RADIUS);
+    if (rect) {
+      minX = Math.min(minX, rect.x);
+      minY = Math.min(minY, rect.y);
+      maxX = Math.max(maxX, rect.x + rect.w);
+      maxY = Math.max(maxY, rect.y + rect.h);
+    }
 
     this._boundingRectCache = new Bound(minX, minY, maxX, maxY);
     return this._boundingRectCache;
