@@ -129,6 +129,8 @@ export class Select extends Element {
         skewY: 0
       });
     }
+    
+    this.dispatchEvent("select:end");
   }
 
   delete() {
@@ -189,6 +191,7 @@ export class Select extends Element {
       }
       el.parent?.removeChild(el);
     });
+    this.dispatchEvent("select:delete-element", { data: { elements: toDelete } });
     this.select([]);
     this.root.nextTick(() => this.root.checkHit());
     this.history.commit();
@@ -271,7 +274,8 @@ export class Select extends Element {
     }
 
     const coords = this.getControlCoords();
-    const padding = (this.controlSize + this.hitPadding) / this.root.viewport.scale;
+    const padding =
+      (this.controlSize + this.hitPadding) / this.root.viewport.scale;
 
     for (const p of coords) {
       baseRect.includePoint(p.x, p.y, padding);
