@@ -18,17 +18,20 @@ export class AnchorIndicator extends Shape {
   dotColor: string = "#4F81FF";
   labelWidth: number = MAX_WIDTH;
   keepLabelUpright: boolean = true;
+  labelStyle?: { fontSize?: number; color?: string; fontFamily?: string; fontWeight?: string | number };
 
   constructor(data: {
     label: string;
     edge: string;
     labelWidth?: number;
+    labelStyle?: { fontSize?: number; color?: string; fontFamily?: string; fontWeight?: string | number };
   }, anchorId: string) {
     super();
     this.id = `__anchor_${anchorId}`;
     this.anchorLabel = data.label;
     this.edge = data.edge as any;
     if (data.labelWidth != null) this.labelWidth = data.labelWidth;
+    if (data.labelStyle != null) this.labelStyle = data.labelStyle;
     this.visible = true;
     this.selectctbale = false;
     this.enableMove = false;
@@ -38,15 +41,25 @@ export class AnchorIndicator extends Shape {
     this.pickable = false;
   }
 
+  private _labelFontSize(): number {
+    return this.labelStyle?.fontSize ?? FONT_SIZE;
+  }
+
   private _getLabelFont(scaledFontSize?: number): {
     font: string;
     color: string;
   } {
     const rootDefaults = (this.root as any)?.textDefaults ?? TEXT_STYLE_DEFAULTS;
-    const style = { ...rootDefaults, fontSize: scaledFontSize ?? FONT_SIZE };
+    const ls = this.labelStyle;
+    const style = {
+      ...rootDefaults,
+      fontSize: scaledFontSize ?? this._labelFontSize(),
+      ...(ls?.fontFamily != null && { fontFamily: ls.fontFamily }),
+      ...(ls?.fontWeight != null && { fontWeight: ls.fontWeight }),
+    };
     return {
       font: buildFontString(style),
-      color: (rootDefaults.color as string) ?? "#555"
+      color: ls?.color ?? (rootDefaults.color as string) ?? "#555"
     };
   }
 
@@ -112,7 +125,7 @@ export class AnchorIndicator extends Shape {
     const wnx = rnx / len;
     const wny = rny / len;
 
-    const lineH = FONT_SIZE * LINE_HEIGHT;
+    const lineH = this._labelFontSize() * LINE_HEIGHT;
     const offset = GAP + DOT_RADIUS + GAP + lineH / 2;
 
     return {
@@ -136,7 +149,7 @@ export class AnchorIndicator extends Shape {
 
     const pw = parent.width || 0;
     const ph = parent.height || 0;
-    const lineH = FONT_SIZE * LINE_HEIGHT;
+    const lineH = this._labelFontSize() * LINE_HEIGHT;
 
     this.width = this.labelWidth;
     this.height = lineH;
@@ -276,7 +289,7 @@ export class AnchorIndicator extends Shape {
 
     const vp = root.viewport;
     const dpr = root.viewport.dpr;
-    const { font, color } = this._getLabelFont(FONT_SIZE * vp.scale);
+    const { font, color } = this._getLabelFont(this._labelFontSize() * vp.scale);
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
