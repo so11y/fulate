@@ -195,6 +195,158 @@ describe("Element", () => {
     });
   });
 
+  // ==================== anchors setter ====================
+
+  describe("anchors setter", () => {
+    function setupWithLine(anchorType: string) {
+      const { el, mockRoot } = createActivatedElement();
+      el.id = "node-1";
+      mockRoot.idElements.set("node-1", el);
+
+      const linePoint = { x: 0, y: 0, anchor: { elementId: "node-1", anchorType } };
+      const fakeLine = {
+        linePoints: [linePoint],
+        markNeedsLayout: vi.fn(),
+      };
+      mockRoot.idElements.set("line-1", fakeLine);
+      el.connectedLines = new Set(["line-1"]);
+
+      return { el, mockRoot, linePoint, fakeLine };
+    }
+
+    it("删除锚点 → 关联 line 的 anchor 引用被清除", () => {
+      const { el, linePoint, fakeLine } = setupWithLine("top_0");
+
+      el.anchors = [{ label: "输入", edge: "top" }];
+      expect(linePoint.anchor).toBeDefined();
+
+      el.anchors = [];
+      expect(linePoint.anchor).toBeUndefined();
+      expect(fakeLine.markNeedsLayout).toHaveBeenCalled();
+    });
+
+    it("保留的锚点 → anchor 引用不受影响", () => {
+      const { el, linePoint } = setupWithLine("top_0");
+
+      el.anchors = [{ label: "输入1", edge: "top" }, { label: "输出", edge: "bottom" }];
+      linePoint.anchor = { elementId: "node-1", anchorType: "top_0" };
+
+      el.anchors = [{ label: "输入1-改", edge: "top" }, { label: "输出", edge: "bottom" }];
+      expect(linePoint.anchor).toBeDefined();
+      expect(linePoint.anchor!.anchorType).toBe("top_0");
+    });
+
+    it("删除部分锚点 → 只清除被删除 id 的 anchor", () => {
+      const { el, mockRoot } = createActivatedElement();
+      el.id = "node-1";
+      mockRoot.idElements.set("node-1", el);
+
+      const pointTop0 = { x: 0, y: 0, anchor: { elementId: "node-1", anchorType: "top_0" } };
+      const pointTop1 = { x: 0, y: 0, anchor: { elementId: "node-1", anchorType: "top_1" } };
+      const fakeLine = {
+        linePoints: [pointTop0, pointTop1],
+        markNeedsLayout: vi.fn(),
+      };
+      mockRoot.idElements.set("line-1", fakeLine);
+      el.connectedLines = new Set(["line-1"]);
+
+      el.anchors = [{ label: "输入1", edge: "top" }, { label: "输入2", edge: "top" }];
+
+      el.anchors = [{ label: "输入1", edge: "top" }];
+      expect(pointTop0.anchor).toBeDefined();
+      expect(pointTop1.anchor).toBeUndefined();
+    });
+
+    it("设为 null → 所有旧锚点 id 对应的 anchor 被清除", () => {
+      const { el, linePoint, fakeLine } = setupWithLine("top_0");
+
+      el.anchors = [{ label: "输入", edge: "top" }];
+      linePoint.anchor = { elementId: "node-1", anchorType: "top_0" };
+
+      el.anchors = null;
+      expect(linePoint.anchor).toBeUndefined();
+      expect(fakeLine.markNeedsLayout).toHaveBeenCalled();
+    });
+
+    it("未激活时 → 不清除 anchor 引用", () => {
+      const el = createElement();
+      el.id = "node-1";
+
+      const linePoint = { x: 0, y: 0, anchor: { elementId: "node-1", anchorType: "top_0" } };
+      el.anchors = [{ label: "输入", edge: "top" }];
+
+      el.anchors = [];
+      expect(linePoint.anchor).toBeDefined();
+    });
+
+    it("无 connectedLines → 不报错，正常赋值", () => {
+      const { el } = createActivatedElement();
+      el.id = "node-1";
+      el.connectedLines = undefined;
+
+      el.anchors = [{ label: "输入", edge: "top" }];
+      el.anchors = [];
+      expect(el.anchors).toEqual([]);
+    });
+
+    it("isActiveed → 触发 _syncAnchorIndicators", () => {
+      const { el } = createActivatedElement();
+      const spy = vi.spyOn(el as any, "_syncAnchorIndicators");
+
+      el.anchors = [{ label: "输入", edge: "top" }];
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      el.anchors = null;
+      expect(spy).toHaveBeenCalledTimes(2);
+    });
+
+    it("_syncAnchorIndicators → 创建 __anchor_ 子节点", () => {
+      const { el } = createActivatedElement();
+
+      el.anchors = [{ label: "输入1", edge: "top" }, { label: "输出", edge: "bottom" }];
+
+      const anchorChildren = (el.children ?? []).filter(
+        (c: any) => typeof c.id === "string" && c.id.startsWith("__anchor_")
+      );
+      expect(anchorChildren.length).toBe(2);
+
+      const ids = anchorChildren.map((c: any) => c.id).sort();
+      expect(ids).toEqual(["__anchor_bottom_0", "__anchor_top_0"]);
+    });
+
+    it("anchors 变更 → 指示器子节点同步增删", () => {
+      const { el } = createActivatedElement();
+
+      el.anchors = [{ label: "输入1", edge: "top" }, { label: "输入2", edge: "top" }];
+      let anchorChildren = (el.children ?? []).filter(
+        (c: any) => typeof c.id === "string" && c.id.startsWith("__anchor_")
+      );
+      expect(anchorChildren.length).toBe(2);
+
+      el.anchors = [{ label: "输入1", edge: "top" }];
+      anchorChildren = (el.children ?? []).filter(
+        (c: any) => typeof c.id === "string" && c.id.startsWith("__anchor_")
+      );
+      expect(anchorChildren.length).toBe(1);
+      expect(anchorChildren[0].id).toBe("__anchor_top_0");
+    });
+
+    it("anchors 设为 null → 所有指示器子节点被移除", () => {
+      const { el } = createActivatedElement();
+
+      el.anchors = [{ label: "输入", edge: "top" }, { label: "输出", edge: "bottom" }];
+      expect(
+        (el.children ?? []).filter((c: any) => c.id?.startsWith("__anchor_")).length
+      ).toBe(2);
+
+      el.anchors = null;
+      const remaining = (el.children ?? []).filter(
+        (c: any) => typeof c.id === "string" && c.id.startsWith("__anchor_")
+      );
+      expect(remaining.length).toBe(0);
+    });
+  });
+
   // ==================== constructor with options ====================
 
   describe("constructor", () => {
