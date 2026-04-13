@@ -120,6 +120,8 @@ export class ForkNode extends Element {
   }
 
   getAnchorSchema() {
+    const fromSuper = super.getAnchorSchema();
+    if (fromSuper?.length) return fromSuper;
     return [
       {
         id: "center",

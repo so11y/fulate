@@ -1,4 +1,5 @@
-import { Point } from "@fulate/util";
+import { Point, rectEdgePosition } from "@fulate/util";
+import type { Edge } from "@fulate/util";
 import type { Element } from "../node/element";
 
 export interface AnchorPoint {
@@ -17,7 +18,7 @@ export interface AnchorPointData {
   /** 用户可选的显示名称，方便自己区分 */
   name?: string;
   label: string;
-  edge: "top" | "right" | "bottom" | "left";
+  edge: Edge;
   labelWidth?: number;
   labelStyle?: AnchorLabelStyle;
   /** 是否允许多条线连接到此锚点，默认 false（只能一条线） */
@@ -72,13 +73,11 @@ export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
       result.push({
         id: anchorId,
         localPosition(el: any) {
-          switch (edge) {
-            case "top":    return new Point(el.width * ratio, 0);
-            case "bottom": return new Point(el.width * ratio, el.height);
-            case "left":   return new Point(0, el.height * ratio);
-            case "right":  return new Point(el.width, el.height * ratio);
-            default:       return new Point(el.width * 0.5, el.height * 0.5);
+          if (typeof el.getEdgePosition === "function") {
+            return el.getEdgePosition(edge, ratio).pos;
           }
+          const ep = rectEdgePosition(el.width, el.height, edge as Edge, ratio);
+          return new Point(ep.x, ep.y);
         }
       });
     });
@@ -86,11 +85,19 @@ export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
   return result;
 }
 
+function defaultAnchorPos(el: any, edge: Edge): Point {
+  if (typeof el.getEdgePosition === "function") {
+    return el.getEdgePosition(edge, 0.5).pos;
+  }
+  const ep = rectEdgePosition(el.width, el.height, edge, 0.5);
+  return new Point(ep.x, ep.y);
+}
+
 export const DEFAULT_ANCHOR_SCHEMA: AnchorPoint[] = [
-  { id: "top", localPosition: (el) => new Point(el.width * 0.5, 0) },
-  { id: "right", localPosition: (el) => new Point(el.width, el.height * 0.5) },
-  { id: "bottom", localPosition: (el) => new Point(el.width * 0.5, el.height) },
-  { id: "left", localPosition: (el) => new Point(0, el.height * 0.5) }
+  { id: "top",    localPosition: (el) => defaultAnchorPos(el, "top") },
+  { id: "right",  localPosition: (el) => defaultAnchorPos(el, "right") },
+  { id: "bottom", localPosition: (el) => defaultAnchorPos(el, "bottom") },
+  { id: "left",   localPosition: (el) => defaultAnchorPos(el, "left") },
 ];
 
 function anchorToWorld(

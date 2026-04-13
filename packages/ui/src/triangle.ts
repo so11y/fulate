@@ -1,6 +1,6 @@
-import { Intersection } from "@fulate/util";
-import { Point } from "@fulate/util";
-import { Shape, AnchorPoint } from "@fulate/core";
+import { Intersection, Point } from "@fulate/util";
+import type { Edge } from "@fulate/util";
+import { Shape } from "@fulate/core";
 
 export class Triangle extends Shape {
   type = "triangle";
@@ -36,15 +36,27 @@ export class Triangle extends Shape {
     ];
   }
 
+  getEdgeSegment(edge: Edge): { start: Point; end: Point } {
+    const w = this.width || 0, h = this.height || 0;
+    switch (edge) {
+      case "left":   return { start: new Point(w / 2, 0), end: new Point(0, h) };
+      case "right":  return { start: new Point(w / 2, 0), end: new Point(w, h) };
+      case "bottom": return { start: new Point(0, h),     end: new Point(w, h) };
+      case "top":    return { start: new Point(w / 2, 0), end: new Point(w / 2, 0) };
+    }
+  }
+
   hasPointHint(point: Point): boolean {
     return Intersection.isPointInPolygon(point, this.getCoords());
   }
 
-  getAnchorSchema(): AnchorPoint[] {
+  getAnchorSchema() {
+    const fromSuper = super.getAnchorSchema();
+    if (fromSuper?.length) return fromSuper;
     return [
-      { id: "left", localPosition: (el) => new Point(el.width * 0.25, el.height * 0.5) },
-      { id: "right", localPosition: (el) => new Point(el.width * 0.75, el.height * 0.5) },
-      { id: "bottom", localPosition: (el) => new Point(el.width * 0.5, el.height) }
+      { id: "left",   localPosition: (el: any) => el.getEdgePosition("left", 0.5).pos },
+      { id: "right",  localPosition: (el: any) => el.getEdgePosition("right", 0.5).pos },
+      { id: "bottom", localPosition: (el: any) => el.getEdgePosition("bottom", 0.5).pos },
     ];
   }
 }

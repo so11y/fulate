@@ -1,5 +1,6 @@
 import { Element, BaseElementOption } from "./element";
 import { Point } from "@fulate/util";
+import type { Edge } from "@fulate/util";
 import {
   isGradient,
   createCanvasGradient,
@@ -89,6 +90,49 @@ export class Shape extends Element {
     }
 
     return { top, right, bottom, left };
+  }
+
+  // ========== 边段 & 锚点定位 ==========
+
+  /**
+   * 返回逻辑边对应的局部坐标线段（不含 visual outset）。
+   * 多边形 / 三角形等子类覆写此方法即可让锚点贴着实际轮廓。
+   */
+  getEdgeSegment(edge: Edge): { start: Point; end: Point } {
+    const w = this.width || 0, h = this.height || 0;
+    switch (edge) {
+      case "top":    return { start: new Point(0, 0), end: new Point(w, 0) };
+      case "right":  return { start: new Point(w, 0), end: new Point(w, h) };
+      case "bottom": return { start: new Point(0, h), end: new Point(w, h) };
+      case "left":   return { start: new Point(0, 0), end: new Point(0, h) };
+    }
+  }
+
+  /**
+   * 返回某条逻辑边上 ratio 处的局部坐标和朝外法线。
+   * 默认实现基于 getEdgeSegment 做线性插值；圆形等曲线形状可直接覆写。
+   */
+  getEdgePosition(edge: Edge, ratio: number): { pos: Point; nx: number; ny: number } {
+    const seg = this.getEdgeSegment(edge);
+    const pos = new Point(
+      seg.start.x + (seg.end.x - seg.start.x) * ratio,
+      seg.start.y + (seg.end.y - seg.start.y) * ratio
+    );
+    const dx = seg.end.x - seg.start.x;
+    const dy = seg.end.y - seg.start.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    let nx = -dy / len;
+    let ny = dx / len;
+
+    const cx = (this.width || 0) / 2;
+    const cy = (this.height || 0) / 2;
+    const mx = (seg.start.x + seg.end.x) / 2;
+    const my = (seg.start.y + seg.end.y) / 2;
+    if (nx * (cx - mx) + ny * (cy - my) > 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    return { pos, nx, ny };
   }
 
   // ========== 几何覆写 ==========

@@ -13,7 +13,8 @@ export {
 } from "./rect";
 export type { Rect, RectWithCenter, RectPoint, BoundingBox, Bounds } from "./rect";
 export { qrDecompose, extractPhysicalTransform } from "./matrix";
-export { degreesToRadians, radiansToDegrees } from "./math";
+export { degreesToRadians, radiansToDegrees, rectEdgePosition } from "./math";
+export type { Edge } from "./math";
 export { Intersection } from "./Intersection";
 export { parseColor, formatColor, blendColor, colorWithAlpha } from "./color";
 export { resolveOrigin } from "./resolveOrigin";

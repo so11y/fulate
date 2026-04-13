@@ -1,5 +1,6 @@
 import { Intersection, Point, makeBoundingBoxFromPoints } from "@fulate/util";
-import { Shape, ShapeOption, AnchorPoint } from "@fulate/core";
+import type { Edge } from "@fulate/util";
+import { Shape, ShapeOption } from "@fulate/core";
 
 export interface PolygonOption extends ShapeOption<Polygon> {
   /** 局部坐标顶点（相对于 left/top，至少 3 个） */
@@ -69,6 +70,48 @@ export class Polygon extends Shape {
     return this.points.map((p) => new Point(p.x, p.y));
   }
 
+  getEdgeSegment(edge: Edge): { start: Point; end: Point } {
+    const pts = this.points;
+    if (pts.length < 2) return super.getEdgeSegment(edge);
+
+    const normals: { mx: number; my: number; nx: number; ny: number; idx: number }[] = [];
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % pts.length];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      let nx = -dy / len;
+      let ny = dx / len;
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      if (nx * (cx - mx) + ny * (cy - my) > 0) { nx = -nx; ny = -ny; }
+      normals.push({ mx, my, nx, ny, idx: i });
+    }
+
+    const edgeDirs: Record<Edge, { x: number; y: number }> = {
+      top:    { x: 0,  y: -1 },
+      bottom: { x: 0,  y: 1 },
+      left:   { x: -1, y: 0 },
+      right:  { x: 1,  y: 0 },
+    };
+    const { x: dirX, y: dirY } = edgeDirs[edge];
+
+    let best = normals[0];
+    let bestDot = -Infinity;
+    for (const n of normals) {
+      const dot = n.nx * dirX + n.ny * dirY;
+      if (dot > bestDot) { bestDot = dot; best = n; }
+    }
+
+    const a = pts[best.idx];
+    const b = pts[(best.idx + 1) % pts.length];
+    return { start: new Point(a.x, a.y), end: new Point(b.x, b.y) };
+  }
+
   getLocalSnapPoints() {
     const pts = this.points;
     const snaps: Point[] = pts.map((p) => new Point(p.x, p.y));
@@ -84,7 +127,9 @@ export class Polygon extends Shape {
     return Intersection.isPointInPolygon(point, this.getCoords());
   }
 
-  getAnchorSchema(): AnchorPoint[] {
+  getAnchorSchema() {
+    const fromSuper = super.getAnchorSchema();
+    if (fromSuper?.length) return fromSuper;
     return this.points.map((_, i) => {
       const next = (i + 1) % this.points.length;
       return {

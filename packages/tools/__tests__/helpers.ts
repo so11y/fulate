@@ -333,6 +333,7 @@ export interface MockSelect {
   _provides: Record<string, any>;
   inject: (key: string) => any;
   provide: (key: string, value: any) => void;
+  dispatchEvent: Mock;
 }
 
 export function createMockSelect(
@@ -438,6 +439,7 @@ export function createMockSelect(
     delete: vi.fn(),
     canDiveIn: vi.fn(() => false),
     snapTool: undefined,
+    dispatchEvent: vi.fn(),
 
     ...overrides,
   };

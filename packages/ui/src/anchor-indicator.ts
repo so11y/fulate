@@ -1,5 +1,6 @@
 import { Element, Shape } from "@fulate/core";
-import { Point, Bound, makeBoundingBoxFromPoints } from "@fulate/util";
+import { Point, Bound, makeBoundingBoxFromPoints, rectEdgePosition } from "@fulate/util";
+import type { Edge } from "@fulate/util";
 import { getMeasureContext } from "./text/measure";
 import { buildFontString, TEXT_STYLE_DEFAULTS } from "./text/style";
 import { fitLineWithEllipsis } from "./text/layout";
@@ -13,7 +14,7 @@ const MAX_WIDTH = 80;
 export class AnchorIndicator extends Shape {
   type = "anchor-indicator";
   anchorLabel: string = "";
-  edge: "top" | "right" | "bottom" | "left" = "top";
+  edge: Edge = "top";
   anchorRatio: number = 0;
   dotColor: string = "#4F81FF";
   labelWidth: number = MAX_WIDTH;
@@ -63,50 +64,28 @@ export class AnchorIndicator extends Shape {
     };
   }
 
+  private _resolveEdgeInfo(): { pos: { x: number; y: number }; nx: number; ny: number } {
+    const host = this.parent;
+    if (host && typeof (host as any).getEdgePosition === "function") {
+      return (host as any).getEdgePosition(this.edge, this.anchorRatio);
+    }
+    const ep = rectEdgePosition(host?.width || 0, host?.height || 0, this.edge, this.anchorRatio);
+    return { pos: { x: ep.x, y: ep.y }, nx: ep.nx, ny: ep.ny };
+  }
+
   private _dotLocal(): { x: number; y: number } {
     const w = this.width || 0;
     const h = this.height || 0;
-    switch (this.edge) {
-      case "top":
-        return { x: w / 2, y: h + GAP + DOT_RADIUS };
-      case "bottom":
-        return { x: w / 2, y: -(GAP + DOT_RADIUS) };
-      case "left":
-        return { x: w + GAP + DOT_RADIUS, y: h / 2 };
-      case "right":
-        return { x: -(GAP + DOT_RADIUS), y: h / 2 };
+    const { nx, ny } = this._resolveEdgeInfo();
+    const isHoriz = Math.abs(nx) > Math.abs(ny);
+    if (isHoriz) {
+      return nx > 0
+        ? { x: -(GAP + DOT_RADIUS), y: h / 2 }
+        : { x: w + GAP + DOT_RADIUS, y: h / 2 };
     }
-  }
-
-  private _anchorLocalOnHost(): { x: number; y: number } {
-    const host = this.parent;
-    if (!host) return { x: 0, y: 0 };
-    const pw = host.width || 0;
-    const ph = host.height || 0;
-    switch (this.edge) {
-      case "top":
-        return { x: pw * this.anchorRatio, y: 0 };
-      case "bottom":
-        return { x: pw * this.anchorRatio, y: ph };
-      case "left":
-        return { x: 0, y: ph * this.anchorRatio };
-      case "right":
-        return { x: pw, y: ph * this.anchorRatio };
-    }
-  }
-
-  /** Edge outward normal in local space (unit vector). */
-  private _edgeNormal(): { nx: number; ny: number } {
-    switch (this.edge) {
-      case "top":
-        return { nx: 0, ny: -1 };
-      case "bottom":
-        return { nx: 0, ny: 1 };
-      case "left":
-        return { nx: -1, ny: 0 };
-      case "right":
-        return { nx: 1, ny: 0 };
-    }
+    return ny > 0
+      ? { x: w / 2, y: -(GAP + DOT_RADIUS) }
+      : { x: w / 2, y: h + GAP + DOT_RADIUS };
   }
 
   /**
@@ -118,7 +97,7 @@ export class AnchorIndicator extends Shape {
     matrix: DOMMatrix
   ) {
     const { a, b, c, d } = matrix;
-    const { nx: lnx, ny: lny } = this._edgeNormal();
+    const { nx: lnx, ny: lny } = this._resolveEdgeInfo();
     const rnx = a * lnx + c * lny;
     const rny = b * lnx + d * lny;
     const len = Math.sqrt(rnx * rnx + rny * rny) || 1;
@@ -147,31 +126,30 @@ export class AnchorIndicator extends Shape {
     const parent = this.parent;
     if (!parent) return;
 
-    const pw = parent.width || 0;
-    const ph = parent.height || 0;
     const lineH = this._labelFontSize() * LINE_HEIGHT;
-
     this.width = this.labelWidth;
     this.height = lineH;
 
-    const dot = this._dotLocal();
-    switch (this.edge) {
-      case "top":
-        this.left = pw * this.anchorRatio - dot.x;
-        this.top = -(lineH + GAP + DOT_RADIUS);
-        break;
-      case "bottom":
-        this.left = pw * this.anchorRatio - dot.x;
-        this.top = ph + GAP + DOT_RADIUS;
-        break;
-      case "left":
-        this.left = -(this.labelWidth + GAP + DOT_RADIUS);
-        this.top = ph * this.anchorRatio - lineH / 2;
-        break;
-      case "right":
-        this.left = pw + GAP + DOT_RADIUS;
-        this.top = ph * this.anchorRatio - lineH / 2;
-        break;
+    const { pos, nx, ny } = this._resolveEdgeInfo();
+    const isHoriz = Math.abs(nx) > Math.abs(ny);
+
+    if (isHoriz) {
+      if (nx > 0) {
+        this.left = pos.x + GAP + DOT_RADIUS;
+        this.top = pos.y - lineH / 2;
+      } else {
+        this.left = pos.x - (this.labelWidth + GAP + DOT_RADIUS);
+        this.top = pos.y - lineH / 2;
+      }
+    } else {
+      const dot = this._dotLocal();
+      if (ny > 0) {
+        this.left = pos.x - dot.x;
+        this.top = pos.y + GAP + DOT_RADIUS;
+      } else {
+        this.left = pos.x - dot.x;
+        this.top = pos.y - (lineH + GAP + DOT_RADIUS);
+      }
     }
   }
 
@@ -194,8 +172,8 @@ export class AnchorIndicator extends Shape {
     if (!host || !this.anchorLabel) return null;
 
     const hostMatrix = host.getOwnMatrix();
-    const aLocal = this._anchorLocalOnHost();
-    const dot = hostMatrix.transformPoint({ x: aLocal.x, y: aLocal.y });
+    const { pos } = this._resolveEdgeInfo();
+    const dot = hostMatrix.transformPoint({ x: pos.x, y: pos.y });
     const { cx, cy, wnx, wny, lineH } = this._labelWorldCenter(dot, hostMatrix);
 
     const w = this.labelWidth;
@@ -265,10 +243,13 @@ export class AnchorIndicator extends Shape {
     ctx.fillStyle = color;
     ctx.textBaseline = "middle";
 
-    if (this.edge === "left") {
+    const { nx, ny } = this._resolveEdgeInfo();
+    const isHoriz = Math.abs(nx) > Math.abs(ny);
+
+    if (isHoriz && nx < 0) {
       ctx.textAlign = "right";
       ctx.fillText(label, w, h / 2);
-    } else if (this.edge === "right") {
+    } else if (isHoriz && nx > 0) {
       ctx.textAlign = "left";
       ctx.fillText(label, 0, h / 2);
     } else {
@@ -327,8 +308,8 @@ export class AnchorIndicator extends Shape {
 
     const rect = this._labelWorldRect();
     const hostMatrix = this.parent.getOwnMatrix();
-    const aLocal = this._anchorLocalOnHost();
-    const dotWorld = hostMatrix.transformPoint({ x: aLocal.x, y: aLocal.y });
+    const { pos } = this._resolveEdgeInfo();
+    const dotWorld = hostMatrix.transformPoint({ x: pos.x, y: pos.y });
 
     let minX = dotWorld.x - DOT_RADIUS;
     let minY = dotWorld.y - DOT_RADIUS;

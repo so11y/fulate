@@ -1,6 +1,6 @@
-import { Intersection } from "@fulate/util";
-import { Point } from "@fulate/util";
-import { ShapeOption, Shape, AnchorPoint } from "@fulate/core";
+import { Intersection, Point } from "@fulate/util";
+import type { Edge } from "@fulate/util";
+import { ShapeOption, Shape } from "@fulate/core";
 
 export class Circle extends Shape {
   type = "circle";
@@ -38,13 +38,25 @@ export class Circle extends Shape {
     );
   }
 
-  getAnchorSchema(): AnchorPoint[] {
-    return [
-      { id: "top", localPosition: (el) => new Point(el.width / 2, el.height / 2 - Math.min(el.width, el.height) / 2) },
-      { id: "right", localPosition: (el) => new Point(el.width / 2 + Math.min(el.width, el.height) / 2, el.height / 2) },
-      { id: "bottom", localPosition: (el) => new Point(el.width / 2, el.height / 2 + Math.min(el.width, el.height) / 2) },
-      { id: "left", localPosition: (el) => new Point(el.width / 2 - Math.min(el.width, el.height) / 2, el.height / 2) }
-    ];
+  getEdgePosition(edge: Edge, ratio: number): { pos: Point; nx: number; ny: number } {
+    const w = this.width || 0, h = this.height || 0;
+    const r = Math.min(w, h) / 2;
+    const cx = w / 2, cy = h / 2;
+
+    const startAngles: Record<Edge, number> = {
+      top:    -3 * Math.PI / 4,
+      right:  -Math.PI / 4,
+      bottom: Math.PI / 4,
+      left:   3 * Math.PI / 4,
+    };
+    const startAngle = startAngles[edge];
+
+    const angle = startAngle + (Math.PI / 2) * ratio;
+    return {
+      pos: new Point(cx + r * Math.cos(angle), cy + r * Math.sin(angle)),
+      nx: Math.cos(angle),
+      ny: Math.sin(angle)
+    };
   }
 
   hasPointHint(point: Point) {
