@@ -112,7 +112,22 @@ export class Element extends Transformable {
               p.anchor = undefined;
             }
           }
-          line.markNeedsLayout?.();
+          const stillConnected = line.linePoints.some(
+            (p: any) => p.anchor?.elementId === this.id
+          );
+          if (!stillConnected) {
+            this.connectedLines!.delete(lineId);
+            const hasAnyAnchor = line.linePoints.some(
+              (p: any) => p.anchor
+            );
+            if (!hasAnyAnchor) {
+              line.parent?.removeChild(line);
+            } else {
+              line.markNeedsLayout?.();
+            }
+          } else {
+            line.markNeedsLayout?.();
+          }
         }
       }
     }
@@ -180,9 +195,8 @@ export class Element extends Transformable {
     if (options.height !== undefined) this._hasExplicitHeight = true;
 
     if (options.anchors !== undefined) {
-      this._anchors = options.anchors;
+      this.anchors = options.anchors;
       delete options.anchors;
-      if (this.isActiveed) this._syncAnchorIndicators();
     }
 
     EVENT_KEYS.forEach((v) => {
