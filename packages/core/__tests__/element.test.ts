@@ -207,6 +207,7 @@ describe("Element", () => {
       const fakeLine = {
         linePoints: [linePoint],
         markNeedsLayout: vi.fn(),
+        parent: { removeChild: vi.fn() },
       };
       mockRoot.idElements.set("line-1", fakeLine);
       el.connectedLines = new Set(["line-1"]);
@@ -222,7 +223,7 @@ describe("Element", () => {
 
       el.anchors = [];
       expect(linePoint.anchor).toBeUndefined();
-      expect(fakeLine.markNeedsLayout).toHaveBeenCalled();
+      expect(fakeLine.parent.removeChild).toHaveBeenCalledWith(fakeLine);
     });
 
     it("保留的锚点 → anchor 引用不受影响", () => {
@@ -265,7 +266,7 @@ describe("Element", () => {
 
       el.anchors = null;
       expect(linePoint.anchor).toBeUndefined();
-      expect(fakeLine.markNeedsLayout).toHaveBeenCalled();
+      expect(fakeLine.parent.removeChild).toHaveBeenCalledWith(fakeLine);
     });
 
     it("未激活时 → 不清除 anchor 引用", () => {

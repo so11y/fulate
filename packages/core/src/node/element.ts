@@ -8,7 +8,7 @@ import {
   resolveAnchors,
   syncAnchorIndicators,
   serializeAnchors,
-  buildAnchorIdMap
+  diffAnchorIds
 } from "../utils/anchor";
 import type { AnchorPointData } from "../utils/anchor";
 
@@ -90,13 +90,8 @@ export class Element extends Transformable {
     return this._anchors;
   }
   set anchors(value: AnchorPointData[] | null) {
-    const oldIds = this._anchors
-      ? new Set(buildAnchorIdMap(this._anchors).keys())
-      : new Set<string>();
+    const { oldIds, newIds, newIdMap } = diffAnchorIds(this._anchors, value);
     this._anchors = value;
-    const newIds = value
-      ? new Set(buildAnchorIdMap(value).keys())
-      : new Set<string>();
 
     if (this.isActiveed && this.connectedLines) {
       for (const removedId of oldIds) {
@@ -132,7 +127,7 @@ export class Element extends Transformable {
       }
     }
 
-    if (this.isActiveed) this._syncAnchorIndicators();
+    if (this.isActiveed) this._syncAnchorIndicators(newIdMap);
   }
 
   private _groupSnapshot: {
@@ -281,12 +276,13 @@ export class Element extends Transformable {
     return null;
   }
 
-  _syncAnchorIndicators() {
+  _syncAnchorIndicators(idMap?: Map<string, AnchorPointData>) {
     this._anchorIndicators = syncAnchorIndicators(
       this,
       this._anchors,
       this._anchorIndicators,
-      Element._createAnchorIndicator
+      Element._createAnchorIndicator,
+      idMap
     );
   }
 

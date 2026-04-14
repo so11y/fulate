@@ -57,6 +57,25 @@ export function buildAnchorIdMap(
   return map;
 }
 
+export interface AnchorIdDiff {
+  oldIds: Set<string>;
+  newIds: Set<string>;
+  newIdMap: Map<string, AnchorPointData>;
+}
+
+export function diffAnchorIds(
+  oldData: AnchorPointData[] | null,
+  newData: AnchorPointData[] | null
+): AnchorIdDiff {
+  const oldIdMap = oldData ? buildAnchorIdMap(oldData) : new Map<string, AnchorPointData>();
+  const newIdMap = newData ? buildAnchorIdMap(newData) : new Map<string, AnchorPointData>();
+  return {
+    oldIds: new Set(oldIdMap.keys()),
+    newIds: new Set(newIdMap.keys()),
+    newIdMap,
+  };
+}
+
 export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
   const groups = new Map<
     string,
@@ -147,7 +166,8 @@ export function syncAnchorIndicators(
   host: Element,
   data: AnchorPointData[] | null,
   indicators: Map<string, Element> | null,
-  createIndicator: (data: AnchorPointData, anchorId: string) => Element
+  createIndicator: (data: AnchorPointData, anchorId: string) => Element,
+  precomputedIdMap?: Map<string, AnchorPointData>
 ): Map<string, Element> | null {
   if (!data?.length) {
     if (indicators) {
@@ -158,7 +178,7 @@ export function syncAnchorIndicators(
     return null;
   }
 
-  const idMap = buildAnchorIdMap(data);
+  const idMap = precomputedIdMap ?? buildAnchorIdMap(data);
   const map = indicators ?? new Map<string, Element>();
   const currentIds = new Set(idMap.keys());
 
