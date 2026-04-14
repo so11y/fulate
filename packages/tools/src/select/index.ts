@@ -18,7 +18,7 @@ export class Select extends Element {
   hitPadding = 6;
   snapAngle = 45;
   snapThreshold = 5;
-  controlCoords: Array<Point>;
+  declare controlCoords: Array<Point>;
   hoverElement: Element | null = null;
   history!: HistoryManager;
   selectEls: Element[] = [];
@@ -45,7 +45,7 @@ export class Select extends Element {
   }
 
   getParentCoords(): Point[] {
-    return super.getCoords();
+    return super.getCoords() ?? [];
   }
 
   doGroup() {
@@ -129,7 +129,7 @@ export class Select extends Element {
         skewY: 0
       });
     }
-    
+
     this.dispatchEvent("select:end");
   }
 
@@ -191,7 +191,9 @@ export class Select extends Element {
       }
       el.parent?.removeChild(el);
     });
-    this.dispatchEvent("select:delete-element", { data: { elements: toDelete } });
+    this.dispatchEvent("select:delete-element", {
+      data: { elements: toDelete }
+    });
     this.select([]);
     this.root.nextTick(() => this.root.checkHit());
     this.history.commit();

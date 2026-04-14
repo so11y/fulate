@@ -138,7 +138,7 @@ export class Viewport {
     }: {
       padding?: number;
       animate?: { duration?: number; easing?: (amount: number) => number };
-    }
+    } = {}
   ): Promise<void> {
     const root = this._root;
     const rulerSize =

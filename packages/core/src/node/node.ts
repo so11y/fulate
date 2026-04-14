@@ -5,7 +5,7 @@ import type { Layer } from "../layer/index";
 function linkNode(child: Node, parent: Node) {
   child.parent = parent;
   if (parent.isActiveed) {
-    const parentProvides = parent._provides ?? parent.root._provides;
+    const parentProvides = parent._provides ?? parent.root?._provides;
     if (
       !child._provides ||
       Object.getPrototypeOf(child._provides) !== parentProvides
@@ -43,7 +43,7 @@ export class Node extends EventEmitter {
   silent = false;
   pickable = true; //false 事件跳过这个节点，继续往上冒
 
-  _provides: Record<string, any>;
+  declare _provides: Record<string, any>;
 
   _root: Root | null = null;
   _layer: Layer | null = null;
@@ -51,11 +51,11 @@ export class Node extends EventEmitter {
   _initProps: any = null;
 
   get layer(): Layer {
-    return this._layer ?? this.inject("layer");
+    return this._layer ?? this.inject("layer")!;
   }
 
   get root(): Root {
-    return this._root ?? this.inject("root");
+    return this._root ?? this.inject("root")!;
   }
 
   get firstChild(): this | null {
