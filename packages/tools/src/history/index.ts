@@ -275,6 +275,8 @@ export class HistoryManager {
       return;
     }
 
+    const elements = entry.records.map((r) => r.element);
+
     this.executeHistory({
       sourceStack: this.undoStack,
       targetStack: this.redoStack,
@@ -286,6 +288,9 @@ export class HistoryManager {
         isRemove: r.type === "create"
       })
     });
+
+    const select = this.root!.find<Select>("select");
+    select?.dispatchEvent("select:undo", { data: { elements } });
   }
 
   redo() {
@@ -299,6 +304,8 @@ export class HistoryManager {
       return;
     }
 
+    const elements = entry.records.map((r) => r.element);
+
     this.executeHistory({
       sourceStack: this.redoStack,
       targetStack: this.undoStack,
@@ -310,5 +317,8 @@ export class HistoryManager {
         isRemove: r.type === "delete"
       })
     });
+
+    const select = this.root!.find<Select>("select");
+    select?.dispatchEvent("select:redo", { data: { elements } });
   }
 }
