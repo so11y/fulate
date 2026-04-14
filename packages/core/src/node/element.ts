@@ -149,6 +149,10 @@ export class Element extends Transformable {
  
   mounted() {
     super.mounted();
+  }
+
+  activate() {
+    super.activate();
     if (this._anchors?.length) this._syncAnchorIndicators();
   }
 

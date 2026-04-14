@@ -457,12 +457,14 @@ export class Snap extends Element {
 
     const threshold = 10 / this.root.viewport.scale;
     const threshold2 = threshold * threshold;
-    let best: {
-      x: number;
-      y: number;
-      elementId: string;
-      anchorType: string;
-    } | null = null;
+    let best:
+      | {
+          x: number;
+          y: number;
+          elementId: string;
+          anchorType: string;
+        }
+      | any = null;
     let bestDist = threshold2;
 
     this.anchorHighlights = [];
@@ -518,7 +520,9 @@ export class Snap extends Element {
     };
   }
 
-  async validateAnchorConnection(options: AnchorConnectDetail): Promise<boolean> {
+  async validateAnchorConnection(
+    options: AnchorConnectDetail
+  ): Promise<boolean> {
     const vetoEvent = new AsyncVetoEvent(options);
     const targetEl = this.root.idElements.get(options.to.elementId);
     targetEl?.dispatchEvent(

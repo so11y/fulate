@@ -51,7 +51,8 @@ export function buildAnchorIdMap(
   for (const d of data) {
     const idx = counters.get(d.edge) ?? 0;
     counters.set(d.edge, idx + 1);
-    map.set(resolveAnchorId(d.edge, idx), d);
+    const id = d.id ?? resolveAnchorId(d.edge, idx);
+    map.set(id, d);
   }
   return map;
 }
@@ -71,7 +72,7 @@ export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
       list = [];
       groups.set(d.edge, list);
     }
-    list.push({ item: d, anchorId: resolveAnchorId(d.edge, idx) });
+    list.push({ item: d, anchorId: d.id ?? resolveAnchorId(d.edge, idx) });
   }
 
   const result: AnchorPoint[] = [];
