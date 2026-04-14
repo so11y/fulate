@@ -15,6 +15,7 @@ export interface AnchorLabelStyle {
 }
 
 export interface AnchorPointData {
+  id?: string;
   /** 用户可选的显示名称，方便自己区分 */
   name?: string;
   label: string;
@@ -42,7 +43,9 @@ export function resolveAnchorId(edge: string, indexOnEdge: number): string {
 /**
  * Build a map from generated anchor id to AnchorPointData for a given list.
  */
-export function buildAnchorIdMap(data: AnchorPointData[]): Map<string, AnchorPointData> {
+export function buildAnchorIdMap(
+  data: AnchorPointData[]
+): Map<string, AnchorPointData> {
   const map = new Map<string, AnchorPointData>();
   const counters = new Map<string, number>();
   for (const d of data) {
@@ -54,14 +57,20 @@ export function buildAnchorIdMap(data: AnchorPointData[]): Map<string, AnchorPoi
 }
 
 export function resolveAnchors(data: AnchorPointData[]): AnchorPoint[] {
-  const groups = new Map<string, { item: AnchorPointData; anchorId: string }[]>();
+  const groups = new Map<
+    string,
+    { item: AnchorPointData; anchorId: string }[]
+  >();
   const counters = new Map<string, number>();
 
   for (const d of data) {
     const idx = counters.get(d.edge) ?? 0;
     counters.set(d.edge, idx + 1);
     let list = groups.get(d.edge);
-    if (!list) { list = []; groups.set(d.edge, list); }
+    if (!list) {
+      list = [];
+      groups.set(d.edge, list);
+    }
     list.push({ item: d, anchorId: resolveAnchorId(d.edge, idx) });
   }
 
@@ -94,10 +103,10 @@ function defaultAnchorPos(el: any, edge: Edge): Point {
 }
 
 export const DEFAULT_ANCHOR_SCHEMA: AnchorPoint[] = [
-  { id: "top",    localPosition: (el) => defaultAnchorPos(el, "top") },
-  { id: "right",  localPosition: (el) => defaultAnchorPos(el, "right") },
+  { id: "top", localPosition: (el) => defaultAnchorPos(el, "top") },
+  { id: "right", localPosition: (el) => defaultAnchorPos(el, "right") },
   { id: "bottom", localPosition: (el) => defaultAnchorPos(el, "bottom") },
-  { id: "left",   localPosition: (el) => defaultAnchorPos(el, "left") },
+  { id: "left", localPosition: (el) => defaultAnchorPos(el, "left") }
 ];
 
 function anchorToWorld(
@@ -162,7 +171,10 @@ export function syncAnchorIndicators(
   const groups = new Map<string, AnchorPointData[]>();
   for (const d of data) {
     let list = groups.get(d.edge);
-    if (!list) { list = []; groups.set(d.edge, list); }
+    if (!list) {
+      list = [];
+      groups.set(d.edge, list);
+    }
     list.push(d);
   }
 
@@ -192,7 +204,7 @@ export function syncAnchorIndicators(
 
 export function serializeAnchors(data: AnchorPointData[]): any[] {
   return data.map((a) => {
-    const out: any = { label: a.label, edge: a.edge };
+    const out: any = { label: a.label, edge: a.edge, id: a.id };
     if (a.name != null) out.name = a.name;
     if (a.labelWidth != null) out.labelWidth = a.labelWidth;
     if (a.labelStyle != null) out.labelStyle = { ...a.labelStyle };
@@ -227,7 +239,8 @@ export function isAnchorAvailable(
     if (anchorData.direction !== role) return false;
   }
 
-  const multiLine = anchorData?.multiLine ?? (element as any).anchorMultiLine ?? false;
+  const multiLine =
+    anchorData?.multiLine ?? (element as any).anchorMultiLine ?? false;
   if (multiLine) return true;
 
   for (const lineId of (element as any).connectedLines ?? []) {
@@ -235,7 +248,10 @@ export function isAnchorAvailable(
     const line = element.root?.idElements.get(lineId) as any;
     if (!line?.linePoints) continue;
     for (const p of line.linePoints) {
-      if (p.anchor?.elementId === element.id && p.anchor?.anchorType === anchorId) {
+      if (
+        p.anchor?.elementId === element.id &&
+        p.anchor?.anchorType === anchorId
+      ) {
         return false;
       }
     }
